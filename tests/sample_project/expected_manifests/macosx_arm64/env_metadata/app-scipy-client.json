@@ -1,0 +1,21 @@
+{
+  "app_launch_module": "scipy_client",
+  "app_launch_module_hash": "sha256/344b1be70920bd9635ce38fa14fca86b531ce2e334f54968321469c5fbb5b608",
+  "archive_build": 1,
+  "archive_hashes": {
+    "sha256": "b4f061f14023391f588940cb8f509ae8c46dd8fca552346c15df153f09eeb85d"
+  },
+  "archive_name": "app-scipy-client.tar.xz",
+  "archive_size": 1400,
+  "install_target": "app-scipy-client",
+  "layer_name": "app-scipy-client",
+  "lock_version": 1,
+  "locked_at": "2024-10-15T10:23:33.147967+00:00",
+  "required_layers": [
+    "framework-scipy",
+    "framework-http-client"
+  ],
+  "requirements_hash": "sha256:fb8a843c694d03d7ee74b457cdac2bd82b6b439de0ed308d72fe698c6c9c6cf4",
+  "runtime_name": "cpython@3.11",
+  "target_platform": "macosx_arm64"
+}

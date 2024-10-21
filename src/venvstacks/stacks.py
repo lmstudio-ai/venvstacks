@@ -1,0 +1,2451 @@
+#!/bin/python3
+"""Portable Python environment stacks
+
+Creates Python runtime, framework, and app environments based on venvstacks.toml
+"""
+
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import sysconfig
+import tempfile
+import tomllib
+import warnings
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field, InitVar
+from datetime import datetime, timezone
+from enum import StrEnum
+from fnmatch import fnmatch
+from itertools import chain
+from pathlib import Path
+from typing import (
+    cast,
+    overload,
+    Any,
+    ClassVar,
+    Iterable,
+    Literal,
+    Mapping,
+    MutableMapping,
+    NamedTuple,
+    NewType,
+    NotRequired,
+    Self,
+    Sequence,
+    TypeVar,
+    TypedDict,
+)
+
+from . import pack_venv
+from ._util import (
+    as_normalized_path,
+    default_tarfile_filter,
+    get_env_python,
+    run_python_command,
+    run_python_command_unchecked,
+    StrPath,
+    WINDOWS_BUILD as _WINDOWS_BUILD,
+)
+
+
+class EnvStackError(ValueError):
+    """Common base class for all errors specific to managing environment stacks"""
+
+
+class LayerSpecError(EnvStackError):
+    """Raised when an internal inconsistency is found in a layer specification"""
+
+
+class BuildEnvError(EnvStackError):
+    """Raised when a build environment doesn't comply with process restrictions"""
+
+
+######################################################
+# Filesystem and git helpers
+######################################################
+
+try:
+    fs_sync = os.sync  # type: ignore[attr-defined,unused-ignore]
+except AttributeError:
+    # No os.sync on Windows
+    def fs_sync() -> None:
+        pass
+
+
+def get_path_mtime(fspath: StrPath) -> datetime | None:
+    path = Path(fspath)
+    if not path.exists():
+        return None
+    return datetime.fromtimestamp(path.lstat().st_mtime).astimezone()
+
+
+def format_as_utc(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).isoformat()
+
+
+def _format_json(data: Any) -> str:
+    return json.dumps(data, indent=2, sort_keys=True)
+
+
+def _write_json(target_path: Path, data: Any) -> None:
+    formatted_data = _format_json(data)
+    with target_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(formatted_data + "\n")
+
+
+def _resolve_lexical_path(path: StrPath, base_path: Path, /) -> Path:
+    # Ensure `~/...` paths are treated as absolute
+    resolved_path = Path(path).expanduser()
+    if not resolved_path.is_absolute():
+        # Resolve paths relative to the given base path
+        resolved_path = base_path / resolved_path
+    # Avoid resolving symlinks (so they're respected when calculating relative paths)
+    # but remove any `/../` segments
+    return as_normalized_path(resolved_path)
+
+
+######################################################
+# Specifying package index access settings
+######################################################
+
+
+@dataclass
+class IndexConfig:
+    """Python package index access configuration"""
+
+    query_default_index: bool = field(default=True)
+    allow_source_builds: bool = field(default=False)
+    local_wheel_dirs: InitVar[Sequence[StrPath] | None] = None
+    local_wheel_paths: list[Path] = field(init=False)
+
+    def __post_init__(self, local_wheel_dirs: Sequence[StrPath] | None) -> None:
+        if isinstance(local_wheel_dirs, (str, Path)):
+            err_msg = f"local_wheel_dirs must be a sequence of paths (got {local_wheel_dirs!r})"
+            raise TypeError(err_msg)
+        if local_wheel_dirs:
+            self.local_wheel_paths = [Path(wheel_dir) for wheel_dir in local_wheel_dirs]
+        else:
+            self.local_wheel_paths = []
+
+    @classmethod
+    def disabled(cls) -> Self:
+        return cls(
+            query_default_index=False,
+            allow_source_builds=False,
+            local_wheel_dirs=None,
+        )
+
+    def resolve_lexical_paths(self, base_path: StrPath) -> None:
+        """Lexically resolve paths in config relative to the given base path"""
+        base_path = Path(base_path)
+        self.local_wheel_paths[:] = [
+            _resolve_lexical_path(path, base_path) for path in self.local_wheel_paths
+        ]
+
+    @staticmethod
+    def _get_require_binary_args() -> list[str]:
+        return ["--only-binary", ":all:"]
+
+    def _get_common_pip_args(self, require_binary: bool) -> list[str]:
+        result = []
+        if not self.query_default_index:
+            result.append("--no-index")
+        if require_binary:
+            result.extend(self._get_require_binary_args())
+        for local_wheel_path in self.local_wheel_paths:
+            result.extend(("--find-links", os.fspath(local_wheel_path)))
+        return result
+
+    def _get_uv_pip_compile_args(self) -> list[str]:
+        require_binary = not self.allow_source_builds
+        return self._get_common_pip_args(require_binary)
+
+    def _get_pip_install_args(self, require_binary: bool | None) -> list[str]:
+        if require_binary is None:
+            require_binary = not self.allow_source_builds
+        return self._get_common_pip_args(require_binary)
+
+    def _get_pip_sync_args(self) -> list[str]:
+        # Local cache should always have been populated by the time sync runs
+        # pip-sync wraps pip, so only some args are accepted at top level
+        sync_args = self._get_common_pip_args(require_binary=False)
+        pip_args = " ".join(self._get_require_binary_args())
+        if pip_args:
+            sync_args.extend(("--pip-args", pip_args))
+        return sync_args
+
+
+######################################################
+# Specifying layered environments
+######################################################
+
+# Define dedicated nominal types to help reduce risk of confusing
+# layer base names (no prefix), layer build environment names
+# (potentially with a kind prefix), and deployed layer environment
+# names (potentially with a version suffix)
+LayerBaseName = NewType("LayerBaseName", str)
+EnvNameBuild = NewType("EnvNameBuild", str)
+EnvNameDeploy = NewType("EnvNameDeploy", str)
+
+
+class EnvironmentLockMetadata(TypedDict):
+    # fmt: off
+    locked_at: str          # ISO formatted date/time value
+    requirements_hash: str  # Uses "algorithm:hexdigest" format
+    lock_version: int       # Auto-incremented from previous lock metadata
+    # fmt: on
+
+
+_T = TypeVar("_T")
+
+
+@dataclass
+class EnvironmentLock:
+    requirements_path: Path
+    versioned: bool
+    lock_metadata_path: Path = field(init=False, repr=False)
+    _requirements_hash: str | None = field(init=False, repr=False)
+    _last_locked: datetime | None = field(init=False, repr=False)
+    _lock_version: int | None = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self.lock_metadata_path = Path(f"{self.requirements_path}.json")
+        self._requirements_hash = requirements_hash = self._hash_requirements()
+        self._last_locked = self._get_last_locked_time(requirements_hash)
+        self._lock_version = self._get_last_locked_version(requirements_hash)
+
+    def get_deployed_name(self, env_name: EnvNameBuild) -> EnvNameDeploy:
+        if self.versioned:
+            return EnvNameDeploy(f"{env_name}@{self.lock_version}")
+        return EnvNameDeploy(env_name)
+
+    @staticmethod
+    def _raise_if_none(value: _T | None) -> _T:
+        if value is None:
+            raise BuildEnvError("Environment has not been locked")
+        return value
+
+    @property
+    def requirements_hash(self) -> str:
+        return self._raise_if_none(self._requirements_hash)
+
+    @property
+    def last_locked(self) -> datetime:
+        return self._raise_if_none(self._last_locked)
+
+    @property
+    def lock_version(self) -> int:
+        if not self.versioned:
+            # Unversioned specs are always considered version 1
+            return 1
+        return self._raise_if_none(self._lock_version)
+
+    @property
+    def is_locked(self) -> bool:
+        return self._last_locked is not None
+
+    @property
+    def locked_at(self) -> str:
+        return format_as_utc(self.last_locked)
+
+    def _hash_requirements(self) -> str | None:
+        requirements_path = self.requirements_path
+        if not requirements_path.exists():
+            return None
+        return _hash_file(self.requirements_path)
+
+    def _load_saved_metadata(self) -> EnvironmentLockMetadata | None:
+        """Loads last locked metadata from disk (if it exists)"""
+        lock_metadata_path = self.lock_metadata_path
+        if not lock_metadata_path.exists():
+            return None
+        with lock_metadata_path.open("r", encoding="utf-8") as f:
+            # mypy is right to complain that the JSON hasn't been validated to conform to
+            # the EnvironmentLockMetadata interface, but we're OK with letting the runtime
+            # errors happen in that scenario. Longer term, explicit JSON schemas should be
+            # defined and used for validation when reading the metadata files.
+            return cast(EnvironmentLockMetadata, json.load(f))
+
+    def load_valid_metadata(
+        self, requirements_hash: str
+    ) -> EnvironmentLockMetadata | None:
+        """Loads last locked metadata only if the requirements hash matches"""
+        lock_metadata = self._load_saved_metadata()
+        if lock_metadata and requirements_hash == lock_metadata["requirements_hash"]:
+            return lock_metadata
+        return None
+
+    def _get_last_locked_metadata(self, requirements_hash: str) -> datetime | None:
+        lock_metadata = self.load_valid_metadata(requirements_hash)
+        if lock_metadata is not None:
+            return datetime.fromisoformat(lock_metadata["locked_at"])
+        return None
+
+    def _get_path_mtime(self) -> datetime | None:
+        return get_path_mtime(self.requirements_path)
+
+    def _get_last_locked_time(self, requirements_hash: str | None) -> datetime | None:
+        # Prefer the lock timestamp from an adjacent (still valid) lock metadata file
+        if requirements_hash is not None:
+            last_locked = self._get_last_locked_metadata(requirements_hash)
+            if last_locked is not None:
+                return last_locked
+        # Otherwise assume the local file mtime reflects when the environment was locked
+        # This will return None if the lock file doesn't exist yet
+        return self._get_path_mtime()
+
+    def _get_last_locked_version(self, requirements_hash: str | None) -> int | None:
+        if requirements_hash is not None:
+            lock_metadata = self.load_valid_metadata(requirements_hash)
+            if lock_metadata is not None:
+                # Unversioned specs are always considered version 1
+                return lock_metadata.get("lock_version", 1)
+        return None
+
+    def _purge_lock(self) -> bool:
+        # Currently a test suite helper, but may become a public API if it proves
+        # useful when implementing https://github.com/lmstudio-ai/venvstacks/issues/10
+        files_removed = False
+        for path_to_remove in (self.requirements_path, self.lock_metadata_path):
+            if path_to_remove.exists():
+                path_to_remove.unlink()
+                files_removed = True
+        return files_removed
+
+    def _write_lock_metadata(self) -> None:
+        requirements_hash = self._requirements_hash
+        if requirements_hash is None:
+            raise BuildEnvError(
+                "Environment must be locked before writing lock metadata"
+            )
+        last_version = self._lock_version
+        if last_version is None:
+            lock_version = 1
+        elif self.versioned:
+            lock_version = last_version + 1
+        else:
+            lock_version = last_version
+        lock_metadata = EnvironmentLockMetadata(
+            locked_at=self.locked_at,
+            requirements_hash=requirements_hash,
+            lock_version=lock_version,
+        )
+        _write_json(self.lock_metadata_path, lock_metadata)
+
+    def update_lock_metadata(self) -> bool:
+        # Calculate current requirements hash
+        requirements_hash = self._hash_requirements()
+        if requirements_hash is None:
+            raise BuildEnvError(
+                "Environment must be locked before updating lock metadata"
+            )
+        self._requirements_hash = requirements_hash
+        # Only update and save the last locked time if
+        # the lockfile contents have changed or if
+        # the lock metadata file doesn't exist yet
+        lock_metadata = self.load_valid_metadata(requirements_hash)
+        if lock_metadata is None:
+            self._last_locked = last_locked = self._get_path_mtime()
+            assert (
+                last_locked is not None
+            ), "Failed to read lock time for locked environment"
+            self._write_lock_metadata()
+            return True
+        return False
+
+
+# Identify target platforms using strings based on
+# https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
+# macOS target system API version info is omitted (as that will be set universally for macOS builds)
+class TargetPlatforms(StrEnum):
+    WINDOWS = "win_amd64"
+    LINUX = "linux_x86_64"
+    MACOS_APPLE = "macosx_arm64"
+    MACOS_INTEL = "macosx_x86_64"  # Note: not currently tested in CI!
+
+    @classmethod
+    def get_all_target_platforms(cls) -> list[Self]:
+        return sorted(set(cls.__members__.values()))
+
+    @classmethod
+    def ensure_platform_list(cls, metadata: MutableMapping[str, Any]) -> None:
+        platform_list = metadata.get("platforms")
+        if platform_list is not None:
+            platform_list = [cls(target) for target in platform_list]
+        else:
+            platform_list = cls.get_all_target_platforms()
+        metadata["platforms"] = platform_list
+
+
+TargetPlatform = (
+    TargetPlatforms  # Use singular name when creating instances from values
+)
+
+
+class LayerVariants(StrEnum):
+    RUNTIME = "runtime"
+    FRAMEWORK = "framework"
+    APPLICATION = "application"
+
+
+class LayerCategories(StrEnum):
+    RUNTIMES = "runtimes"
+    FRAMEWORKS = "frameworks"
+    APPLICATIONS = "applications"
+
+
+def ensure_optional_env_spec_fields(env_metadata: MutableMapping[str, Any]) -> None:
+    """Populate missing environment spec fields that are optional in the TOML file"""
+    TargetPlatforms.ensure_platform_list(env_metadata)
+    env_metadata.setdefault("build_requirements", [])
+    env_metadata.setdefault("versioned", False)
+
+
+@dataclass
+class _PythonEnvironmentSpec(ABC):
+    "Common base class for Python environment specifications"
+
+    # Optionally overridden in concrete subclasses
+    ENV_PREFIX = ""
+
+    # Specified in concrete subclasses
+    kind: ClassVar[LayerVariants]
+    category: ClassVar[LayerCategories]
+
+    # Specified on creation (typically based on TOML layer spec fields)
+    name: LayerBaseName
+    versioned: bool
+    requirements: list[str] = field(repr=False)
+    build_requirements: list[str] = field(repr=False)
+    platforms: list[TargetPlatforms] = field(repr=False)
+
+    def __post_init__(self) -> None:
+        # When instantiating specs that don't have a prefix,
+        # they're not allowed to use prefixes that *are* defined
+        if not self.ENV_PREFIX:
+            spec_name = self.name
+            for spec_type in _PythonEnvironmentSpec.__subclasses__():
+                reserved_prefix = spec_type.ENV_PREFIX
+                if not reserved_prefix:
+                    continue
+                if spec_name.startswith(reserved_prefix + "-"):
+                    err = f"{spec_name} starts with reserved prefix {reserved_prefix}"
+                    raise ValueError(err)
+
+    @property
+    def env_name(self) -> EnvNameBuild:
+        prefix = self.ENV_PREFIX
+        if prefix:
+            return EnvNameBuild(f"{prefix}-{self.name}")
+        return EnvNameBuild(self.name)
+
+    def get_requirements_fname(self, platform: str) -> str:
+        return f"requirements-{self.env_name}-{platform}.txt"
+
+    def get_requirements_path(self, platform: str, requirements_dir: StrPath) -> Path:
+        requirements_fname = self.get_requirements_fname(platform)
+        return Path(requirements_dir) / self.env_name / requirements_fname
+
+
+@dataclass
+class RuntimeSpec(_PythonEnvironmentSpec):
+    kind = LayerVariants.RUNTIME
+    category = LayerCategories.RUNTIMES
+    fully_versioned_name: str = field(repr=False)
+
+    @property
+    def py_version(self) -> str:
+        # fully_versioned_name should be of the form "implementation@X.Y.Z"
+        # (this may need adjusting if runtimes other than CPython are ever used...)
+        return self.fully_versioned_name.partition("@")[2]
+
+
+@dataclass
+class _VirtualEnvironmentSpec(_PythonEnvironmentSpec):
+    # Intermediate class for covariant property typing (never instantiated)
+    runtime: RuntimeSpec = field(repr=False)
+
+
+@dataclass
+class FrameworkSpec(_VirtualEnvironmentSpec):
+    ENV_PREFIX = "framework"
+    kind = LayerVariants.FRAMEWORK
+    category = LayerCategories.FRAMEWORKS
+
+
+@dataclass
+class ApplicationSpec(_VirtualEnvironmentSpec):
+    ENV_PREFIX = "app"
+    kind = LayerVariants.APPLICATION
+    category = LayerCategories.APPLICATIONS
+    launch_module_path: Path = field(repr=False)
+    frameworks: list[FrameworkSpec] = field(repr=False)
+
+
+class LayerSpecMetadata(TypedDict):
+    # fmt: off
+    # Common fields defined for all layers, whether archived or exported
+    layer_name: EnvNameBuild       # Prefixed layer name without lock version info
+    install_target: EnvNameDeploy  # Target installation folder when unpacked
+    requirements_hash: str         # Uses "algorithm:hexdigest" format
+    lock_version: int              # Monotonically increasing version identifier
+    locked_at: str                 # ISO formatted date/time value
+
+    # Extra fields only defined for framework and application environments
+    # runtime_name is set to fully_versioned_name if maintenance updates trigger a rebuild,
+    # otherwise set to runtime's layer spec name so only feature releases force a rebuild
+    runtime_name: NotRequired[str]
+    required_layers: NotRequired[Sequence[EnvNameDeploy]]
+
+    # Extra fields only defined for application environments
+    app_launch_module: NotRequired[str]
+    app_launch_module_hash: NotRequired[str]
+
+    # Note: hashes of layered environment dependencies are intentionally NOT incorporated
+    # into the published metadata. This allows an "only if needed" approach to
+    # rebuilding app and framework layers when the layers they depend on are
+    # updated (app layers will usually only depend on some of the components in the
+    # underlying environment, and such dependencies are picked up as version changes
+    # when regenerating the transitive dependency specifications for each environment)
+    # fmt: on
+
+
+######################################################
+# Defining and describing published artifacts
+######################################################
+
+
+class ArchiveHashes(TypedDict):
+    sha256: str
+    # Only SHA256 hashes for now. Mark both old and new hash fields with `typing.NotRequired`
+    # to migrate to a different hashing function in the future.
+
+
+class ArchiveBuildMetadata(LayerSpecMetadata):
+    """Inputs to an archive build request for a single environment"""
+
+    # fmt: off
+    archive_build: int    # Auto-incremented from previous build metadata
+    archive_name: str     # Adds archive file extension to layer name
+    target_platform: str  # Target platform identifier
+    # fmt: on
+
+
+class ArchiveMetadata(ArchiveBuildMetadata):
+    """Archive details for a single environment (includes build request details)"""
+
+    archive_size: int
+    archive_hashes: ArchiveHashes
+
+
+@dataclass
+class ArchiveBuildRequest:
+    """Structured request to build a named output archive"""
+
+    env_name: EnvNameBuild
+    env_lock: EnvironmentLock
+    archive_base_path: Path
+    build_metadata: ArchiveBuildMetadata = field(repr=False)
+    needs_build: bool = field(repr=False)
+    # TODO: Save full previous metadata for use when build is skipped
+
+    @staticmethod
+    def needs_archive_build(
+        archive_path: Path,
+        metadata: ArchiveBuildMetadata,
+        previous_metadata: ArchiveMetadata | None,
+    ) -> bool:
+        if not previous_metadata or not archive_path.exists():
+            return True
+        if archive_path.name != previous_metadata.get("archive_name"):
+            # Previous build produced a different archive name, force a rebuild
+            return True
+        # Check for any other changes to build input metadata
+        for key, value in metadata.items():
+            if value != previous_metadata.get(key):
+                # Input metadata for the archive build has changed, force a rebuild
+                return True
+        # Only check the metadata so archive builds can be skipped just by downloading
+        # the metadata for previously built versions (rather than the entire archives)
+        return False
+
+    @classmethod
+    def define_build(
+        cls,
+        env_name: EnvNameBuild,
+        env_lock: EnvironmentLock,
+        output_path: Path,
+        target_platform: str,
+        tag_output: bool = False,
+        previous_metadata: ArchiveMetadata | None = None,
+        force: bool = False,
+    ) -> Self:
+        # Bump or set the archive build version
+        lock_version = env_lock.lock_version
+        if previous_metadata is None:
+            last_build_iteration = 0
+        else:
+            last_lock_version = previous_metadata.get("lock_version", 0)
+            if lock_version != last_lock_version:
+                # New lock version, reset the build iteration number
+                last_build_iteration = 0
+            else:
+                # Rebuild with a change that isn't reflected in the lock version
+                last_build_iteration = previous_metadata.get("archive_build", 0)
+        # Work out the basic details of the build request (assuming no rebuild is needed)
+        deployed_name = env_lock.get_deployed_name(env_name)
+        build_iteration = last_build_iteration
+
+        def update_archive_name() -> tuple[Path, Path]:
+            if tag_output:
+                base_name = f"{deployed_name}-{target_platform}-{build_iteration}"
+            else:
+                base_name = deployed_name
+            archive_base_path = output_path / base_name
+            built_archive_path = pack_venv.get_archive_path(archive_base_path)
+            return archive_base_path, built_archive_path
+
+        archive_base_path, built_archive_path = update_archive_name()
+        build_metadata = ArchiveBuildMetadata(
+            archive_build=last_build_iteration,
+            archive_name=built_archive_path.name,
+            install_target=deployed_name,
+            layer_name=env_name,
+            lock_version=lock_version,
+            locked_at=env_lock.locked_at,
+            requirements_hash=env_lock.requirements_hash,
+            target_platform=str(target_platform),  # Convert enums to plain strings
+        )
+        needs_build = force or cls.needs_archive_build(
+            built_archive_path, build_metadata, previous_metadata
+        )
+        if needs_build:
+            # Forced build or input hashes have changed,
+            # so this will be a new version of the archive
+            build_iteration += 1
+            archive_base_path, built_archive_path = update_archive_name()
+            build_metadata["archive_build"] = build_iteration
+            build_metadata["archive_name"] = built_archive_path.name
+        return cls(env_name, env_lock, archive_base_path, build_metadata, needs_build)
+
+    @staticmethod
+    def _hash_archive(archive_path: Path) -> ArchiveHashes:
+        hashes: dict[str, str] = {}
+        for algorithm in ArchiveHashes.__required_keys__:
+            hashes[algorithm] = _hash_file(archive_path, algorithm, omit_prefix=True)
+        # The required keys have been set, but mypy can't prove that,
+        # so use an explicit cast to allow it to make that assumption
+        return cast(ArchiveHashes, hashes)
+
+    def create_archive(
+        self,
+        env_path: Path,
+        previous_metadata: ArchiveMetadata | None = None,
+        work_path: Path | None = None,
+    ) -> tuple[ArchiveMetadata, Path]:
+        if env_path.name != self.env_name:
+            err_msg = (
+                f"Build mismatch (expected {self.env_name!r}, got {env_path.name!r})"
+            )
+            raise BuildEnvError(err_msg)
+        build_metadata = self.build_metadata
+        archive_base_path = self.archive_base_path
+        built_archive_path = archive_base_path.parent / build_metadata["archive_name"]
+        if not self.needs_build:
+            # Already built archive looks OK, so just return the same metadata as last build
+            print(f"Using previously built archive at {str(built_archive_path)!r}")
+            assert previous_metadata is not None
+            return previous_metadata, built_archive_path
+        if built_archive_path.exists():
+            print(f"Removing outdated archive at {str(built_archive_path)!r}")
+            built_archive_path.unlink()
+        print(f"Creating archive for {str(env_path)!r}")
+        last_locked = self.env_lock.last_locked
+        archive_path = Path(
+            pack_venv.create_archive(
+                env_path,
+                archive_base_path,
+                clamp_mtime=last_locked,
+                work_dir=work_path,
+                install_target=build_metadata["install_target"],
+            )
+        )
+        assert built_archive_path == archive_path  # pack_venv ensures this is true
+        print(f"Created {str(archive_path)!r} from {str(env_path)!r}")
+
+        metadata = ArchiveMetadata(
+            archive_size=archive_path.stat().st_size,
+            archive_hashes=self._hash_archive(archive_path),
+            **build_metadata,
+        )
+        return metadata, archive_path
+
+
+class StackPublishingRequest(TypedDict):
+    """Inputs to an archive build request for a full stack specification"""
+
+    layers: Mapping[LayerCategories, Sequence[ArchiveBuildMetadata]]
+
+
+LayeredArchiveMetadata = Mapping[LayerCategories, Sequence[ArchiveMetadata]]
+
+
+class StackPublishingResult(TypedDict):
+    """Archive details for built stack specification (includes build request details)"""
+
+    layers: LayeredArchiveMetadata
+
+
+class PublishedArchivePaths(NamedTuple):
+    metadata_path: Path
+    snippet_paths: list[Path]
+    archive_paths: list[Path]
+
+
+##########################################################
+# Defining and describing locally exported environments
+##########################################################
+
+
+class ExportMetadata(LayerSpecMetadata):
+    """Metadata for a locally exported environment"""
+
+    # Exports currently include only the common metadata
+
+
+@dataclass
+class EnvironmentExportRequest:
+    """Structured request to locally export an environment"""
+
+    env_name: EnvNameBuild
+    env_lock: EnvironmentLock
+    export_path: Path
+    export_metadata: ExportMetadata = field(repr=False)
+    needs_export: bool = field(repr=False)
+    # TODO: Save full previous metadata for use when export is skipped
+
+    @staticmethod
+    def needs_new_export(
+        export_path: Path,
+        metadata: ExportMetadata,
+        previous_metadata: ExportMetadata | None,
+    ) -> bool:
+        if not previous_metadata or not export_path.exists():
+            return True
+        if export_path.name != previous_metadata.get("layer_name"):
+            # Previous export produced a different env name, force a new export
+            return True
+        # Check for any other changes to build input metadata
+        for key, value in metadata.items():
+            if value != previous_metadata.get(key):
+                # Input metadata for the archive build has changed, force a rebuild
+                return True
+        # Previous export used the same build inputs, so probably doesn't need updating
+        return False
+
+    @classmethod
+    def define_export(
+        cls,
+        env_name: EnvNameBuild,
+        env_lock: EnvironmentLock,
+        output_path: Path,
+        previous_metadata: ExportMetadata | None = None,
+        force: bool = False,
+    ) -> Self:
+        # Work out the details of the export request
+        deployed_name = env_lock.get_deployed_name(env_name)
+        export_path = output_path / deployed_name
+        export_metadata = ExportMetadata(
+            install_target=deployed_name,
+            layer_name=env_name,
+            lock_version=env_lock.lock_version,
+            locked_at=env_lock.locked_at,
+            requirements_hash=env_lock.requirements_hash,
+        )
+        needs_export = force or cls.needs_new_export(
+            export_path, export_metadata, previous_metadata
+        )
+        return cls(env_name, env_lock, export_path, export_metadata, needs_export)
+
+    @staticmethod
+    def _run_postinstall(
+        src_path: Path, export_path: Path, postinstall_path: Path
+    ) -> None:
+        exported_env_python_path = get_env_python(export_path)
+        command = [str(exported_env_python_path), "-I", str(postinstall_path)]
+        result = run_python_command_unchecked(command)
+        if result.returncode == 0:
+            # All good, nothing else to check
+            return
+        # Running with the Python inside the exported environment didn't work
+        # This can happen on Windows when "pyvenv.cfg" doesn't exist yet
+        # If that is what has happened, the reported return code will be 106
+        if result.returncode != 106:
+            result.check_returncode()
+        # Self-generating the venv config failed, retry with the build venv
+        # rather than finding and using the exported base runtime environment
+        src_env_python_path = get_env_python(src_path)
+        command[0] = str(src_env_python_path)
+        run_python_command(command)
+
+    def export_environment(
+        self,
+        env_path: Path,
+        previous_metadata: ExportMetadata | None = None,
+    ) -> tuple[ExportMetadata, Path]:
+        if env_path.name != self.env_name:
+            err_msg = (
+                f"Export mismatch (expected {self.env_name!r}, got {env_path.name!r})"
+            )
+            raise BuildEnvError(err_msg)
+        export_metadata = self.export_metadata
+        export_path = self.export_path
+        if not self.needs_export:
+            # Previous export looks OK, so just return the same metadata as last time
+            print(f"Using previously exported environment at {str(export_path)!r}")
+            assert previous_metadata is not None
+            return previous_metadata, export_path
+        if export_path.exists():
+            print(f"Removing outdated environment at {str(export_path)!r}")
+            export_path.unlink()
+        print(f"Exporting {str(env_path)!r} to {str(export_path)!r}")
+
+        def _run_postinstall(export_path: Path, postinstall_path: Path) -> None:
+            self._run_postinstall(env_path, export_path, postinstall_path)
+
+        exported_path = pack_venv.export_venv(
+            env_path,
+            export_path,
+            _run_postinstall,
+        )
+        assert self.export_path == exported_path  # pack_venv ensures this is true
+        print(f"Created {str(export_path)!r} from {str(env_path)!r}")
+        return export_metadata, export_path
+
+
+LayeredExportMetadata = Mapping[LayerCategories, Sequence[ExportMetadata]]
+
+
+class StackExportRequest(TypedDict):
+    layers: LayeredExportMetadata
+
+
+class ExportedEnvironmentPaths(NamedTuple):
+    metadata_path: Path
+    snippet_paths: list[Path]
+    env_paths: list[Path]
+
+
+######################################################
+# Building layered environments from specifications
+######################################################
+
+
+def _pdm_python_install(target_path: Path, request: str) -> Path | None:
+    # from https://github.com/pdm-project/pdm/blob/ce60c223bbf8b5ab2bdb94bf8fa6409b9b16c409/src/pdm/cli/commands/python.py#L122
+    # to work around https://github.com/Textualize/rich/issues/3437
+    from pdm.core import Core
+    from pdm.environments import BareEnvironment
+    from pbs_installer import download, get_download_link, install_file
+    from pbs_installer._install import THIS_ARCH
+
+    implementation, _, version = request.rpartition("@")
+    implementation = implementation.lower() or "cpython"
+    version, _, arch = version.partition("-")
+    arch = "x86" if arch == "32" else (arch or THIS_ARCH)
+
+    # Weird structure here is to work around https://github.com/python/mypy/issues/12535
+    # and https://github.com/frostming/pbs-installer/issues/6
+    checked_impl: Literal["cpython", "pypy"] = "cpython"
+    if implementation == "pypy":
+        checked_impl = "pypy"
+    elif implementation != "cpython":
+        raise ValueError(f"Unknown interpreter implementation: {implementation}")
+    ver, python_file = get_download_link(
+        version, implementation=checked_impl, arch=arch, build_dir=False
+    )
+    destination = target_path / str(ver)
+    interpreter = (
+        destination / "bin" / "python3"
+        if not _WINDOWS_BUILD
+        else destination / "python.exe"
+    )
+    project = Core().create_project()
+    env = BareEnvironment(project)
+    if not destination.exists() or not interpreter.exists():
+        shutil.rmtree(destination, ignore_errors=True)
+        destination.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile() as tf:
+            tf.close()
+            original_filename = download(python_file, tf.name, env.session)
+            # TODO: use "tar_filter" here instead of "fully_trusted"
+            # Currently blocked on Python 3.11 producing different results
+            # if Python 3.12+ enables a filter that actually makes any changes
+            # https://github.com/lmstudio-ai/venvstacks/issues/23
+            with default_tarfile_filter("fully_trusted"):
+                install_file(tf.name, destination, original_filename)
+    if interpreter.exists():
+        # Installation successful, return the path to the installation folder
+        return destination
+    # Failed to install the interpreter
+    return None
+
+
+def _get_py_scheme_path(category: str, base_path: StrPath, py_version: str) -> Path:
+    py_version_short = py_version.rpartition(".")[0]
+    scheme_vars = {
+        "base": str(base_path),
+        "py_version": py_version,
+        "py_version_nodot": "".join(py_version_short.split(".")),
+        "py_version_short": py_version_short,
+    }
+    return Path(sysconfig.get_path(category, "venv", vars=scheme_vars))
+
+
+def _binary_with_extension(name: str) -> str:
+    binary_suffix = Path(sys.executable).suffix
+    return f"{name}{binary_suffix}"
+
+
+def _hash_file(
+    path: Path, algorithm: str = "sha256", *, omit_prefix: bool = False
+) -> str:
+    if not path.exists():
+        return ""
+    with path.open("rb", buffering=0) as f:
+        # MyPy incorrectly complains here: https://github.com/python/typeshed/issues/12414
+        file_hash = hashlib.file_digest(f, algorithm).hexdigest()  # type: ignore[arg-type]
+    if omit_prefix:
+        return file_hash
+    return f"{algorithm}:{file_hash}"
+
+
+def _hash_directory(
+    path: Path, algorithm: str = "sha256", *, omit_prefix: bool = False
+) -> str:
+    incremental_hash = hashlib.new(algorithm)
+    # Alas, there's no `Path.walk` yet in Python 3.11
+    for this_dir, subdirs, files in os.walk(path):
+        if not files:
+            continue
+        dir_path = Path(this_dir)
+        incremental_hash.update(dir_path.name.encode())
+        # Ensure directory tree iteration order is deterministic
+        subdirs.sort()
+        for file in sorted(files):
+            file_path = dir_path / file
+            incremental_hash.update(file_path.name.encode())
+            file_hash = _hash_file(file_path, algorithm)
+            incremental_hash.update(file_hash.encode())
+    dir_hash = incremental_hash.hexdigest()
+    if omit_prefix:
+        return dir_hash
+    return f"{algorithm}/{dir_hash}"
+
+
+def get_build_platform() -> TargetPlatform:
+    # Currently no need for cross-build support, so always query the running system
+    # Examples: win_amd64, linux_x86_64, macosx_10_12_x86_64, macosx_10_12_arm64
+    platform_name = sysconfig.get_platform()
+    if platform_name.startswith("macosx"):
+        platform_os_name, *__, platform_arch = platform_name.split("-")
+        if platform_arch.startswith("universal"):
+            # Want to handle x86_64 and arm64 separately
+            if sys.platform == "win32":
+                assert False  # Ensure mypy knows `uname` won't be used on Windows
+            platform_arch = os.uname().machine
+        platform_name = f"{platform_os_name}_{platform_arch}"
+    return TargetPlatform(platform_name.replace("-", "_"))  # Let ValueError escape
+
+
+@dataclass
+class _PythonEnvironment(ABC):
+    # Specified in concrete subclasses
+    kind: ClassVar[LayerVariants]
+    category: ClassVar[LayerCategories]
+
+    # Specified on creation
+    _env_spec: _PythonEnvironmentSpec = field(repr=False)
+    build_path: Path = field(repr=False)
+    requirements_path: Path = field(repr=False)
+    index_config: IndexConfig = field(repr=False)
+
+    # Derived from target path and spec in __post_init__
+    env_path: Path = field(init=False)
+    pylib_path: Path = field(init=False, repr=False)
+    dynlib_path: Path | None = field(init=False, repr=False)
+    executables_path: Path = field(init=False, repr=False)
+    python_path: Path = field(init=False, repr=False)
+    env_lock: EnvironmentLock = field(init=False)
+
+    # Set in subclass or externally after creation
+    base_python_path: Path | None = field(init=False, repr=False)
+    tools_python_path: Path | None = field(init=False, repr=False)
+    py_version: str = field(init=False, repr=False)
+
+    # Operation flags allow for requested commands to be applied only to selected layers
+    # Notes:
+    #   - the "build if needed" (want_build=None) option is fairly ineffective, since
+    #     there are some operations that are always considered "needed" (at least for now)
+    #   - there is no "if needed" (want_publish=None) option for archive publication
+    want_lock: bool | None = field(
+        default=None, init=False, repr=False
+    )  # Default: if needed
+    want_build: bool | None = field(
+        default=True, init=False, repr=False
+    )  # Default: build
+    want_publish: bool = field(default=True, init=False, repr=False)  # Default: publish
+
+    # State flags used to selectively execute some cleanup operations
+    was_created: bool = field(default=False, init=False, repr=False)
+    was_built: bool = field(default=False, init=False, repr=False)
+
+    def _get_py_scheme_path(self, category: str) -> Path:
+        return _get_py_scheme_path(category, self.env_path, self.py_version)
+
+    def _get_python_dir_path(self) -> Path:
+        # Dedicated method so subclasses can adjust this if needed
+        return self._get_py_scheme_path("scripts")
+
+    @property
+    def env_name(self) -> EnvNameBuild:
+        return self.env_spec.env_name
+
+    @property
+    def install_target(self) -> EnvNameDeploy:
+        return self.env_lock.get_deployed_name(self.env_spec.env_name)
+
+    def __post_init__(self) -> None:
+        self.env_path = self.build_path / self.env_name
+        self.pylib_path = self._get_py_scheme_path("purelib")
+        self.executables_path = self._get_py_scheme_path("scripts")
+        self.python_path = self._get_python_dir_path() / _binary_with_extension(
+            "python"
+        )
+        if _WINDOWS_BUILD:
+            # Intel install some DLLs in a weird spot that needs extra config to handle
+            self.dynlib_path = self.env_path / "Library" / "bin"
+        else:
+            # No extra library search paths on non-Windows systems
+            # (but see https://github.com/lmstudio-ai/venvstacks/issues/1)
+            self.dynlib_path = None
+        self.env_lock = EnvironmentLock(
+            self.requirements_path,
+            self.env_spec.versioned,
+        )
+
+    @property
+    def env_spec(self) -> _PythonEnvironmentSpec:
+        # Define property to allow covariance of the declared type of `env_spec`
+        return self._env_spec
+
+    def select_operations(
+        self,
+        lock: bool | None = False,
+        build: bool | None = True,
+        publish: bool = True,
+    ) -> None:
+        """Enable the selected operations for this environment"""
+        self.want_lock = lock
+        self.want_build = build
+        self.want_publish = publish
+        # Also reset operation state tracking
+        self.was_created = False
+        self.was_built = False
+
+    def _create_environment(
+        self, *, clean: bool = False, build_only: bool = False
+    ) -> None:
+        env_path = self.env_path
+        env_updated = False
+        create_env = True
+        if not env_path.exists():
+            print(f"{str(env_path)!r} does not exist, creating...")
+        elif clean:
+            print(f"{str(env_path)!r} exists, replacing...")
+            shutil.rmtree(self.env_path)
+        else:
+            if self.want_build or self.was_created:
+                # Run the update if requested, or if env was created earlier in the build
+                print(f"{str(env_path)!r} exists, updating...")
+                self._update_existing_environment(build_only=build_only)
+                env_updated = True
+            else:
+                print(f"{str(env_path)!r} exists, reusing without updating...")
+            create_env = False
+        if create_env:
+            self._create_new_environment(build_only=build_only)
+        self.was_created = create_env
+        self.was_built = create_env or env_updated
+
+    def create_environment(self, clean: bool = False) -> None:
+        """Create or update specified environment. Returns True if env is new or updated."""
+        self._create_environment(clean=clean)
+        self._ensure_portability()
+
+    def report_python_site_details(self) -> subprocess.CompletedProcess[str]:
+        print(f"Reporting environment details for {str(self.env_path)!r}")
+        command = [
+            str(self.python_path),
+            "-X",
+            "utf8",
+            "-Im",
+            "site",
+        ]
+        return run_python_command(command)
+
+    def _run_uv(
+        self, cmd: str, cmd_args: list[str], **kwds: Any
+    ) -> subprocess.CompletedProcess[str]:
+        # Always run `uv` via `python -Im` so it gets a valid default interpreter to use
+        command = [
+            str(self.tools_python_path),
+            "-X",
+            "utf8",
+            "-Im",
+            "uv",
+            cmd,
+            *cmd_args,
+        ]
+        return run_python_command(command, **kwds)
+
+    def _run_uv_pip(
+        self, cmd_args: list[str], **kwds: Any
+    ) -> subprocess.CompletedProcess[str]:
+        return self._run_uv("pip", cmd_args, **kwds)
+
+    def _run_uv_pip_compile(
+        self,
+        requirements_path: StrPath,
+        requirements_input_path: StrPath,
+        constraints: Sequence[StrPath],
+    ) -> subprocess.CompletedProcess[str]:
+        # TODO: Explore whether resolution in `--universal` mode might eliminate the
+        #       need for per-platform lock files (it depends on whether `uv` is assuming
+        #       dependency declarations don't vary across wheels, which is not a valid
+        #       assumption for some Python packages, including `pytorch`)
+        cli_lock_command = f"{Path(sys.executable).name} -Im {__package__} lock"
+        uv_pip_args = [
+            "compile",
+            "-o",
+            os.fspath(requirements_path),
+            "--python",
+            str(self.base_python_path),
+            "--python-version",
+            self.py_version,
+            "--custom-compile-command",
+            cli_lock_command,
+            *self.index_config._get_uv_pip_compile_args(),
+            "--quiet",
+            "--no-color",
+            "--no-config",
+            "--no-annotate",  # Annotations include file paths, creating portability problems
+            "--generate-hashes",
+            "--strip-extras",
+            "--no-upgrade",  # Delete the existing lock files to upgrade dependencies
+            "--allow-unsafe",  # Despite the name, this turns off an unwanted legacy behaviour
+            # that disallowed pinning some packaging related PyPI projects
+        ]
+        for constraint_path in constraints:
+            uv_pip_args.extend(("-c", os.fspath(constraint_path)))
+        uv_pip_args.append(os.fspath(requirements_input_path))
+        return self._run_uv_pip(uv_pip_args)
+
+    def _run_pip(
+        self, cmd_args: list[str], **kwds: Any
+    ) -> subprocess.CompletedProcess[str]:
+        command = [
+            str(self.tools_python_path),
+            "-X",
+            "utf8",
+            "-Im",
+            "pip",
+            "--python",
+            str(self.python_path),
+            "--no-input",
+            *cmd_args,
+        ]
+        return run_python_command(command, **kwds)
+
+    def _run_pip_install(
+        self, *pip_install_args: str, require_binary: bool | None = None
+    ) -> subprocess.CompletedProcess[str]:
+        # TODO: Switch to `uv pip install` once https://github.com/astral-sh/uv/issues/2500
+        #       is resolved (so environment layering is still handled correctly)
+        pip_args = [
+            "install",
+            "--no-warn-script-location",
+            *self.index_config._get_pip_install_args(require_binary),
+            *pip_install_args,
+        ]
+        result = self._run_pip(pip_args)
+        print(f"Dependencies installed and updated in {str(self.env_path)!r}")
+        return result
+
+    def _run_pip_sync(
+        self,
+        env_python_path: StrPath,
+        requirements_paths: Sequence[StrPath],
+    ) -> subprocess.CompletedProcess[str]:
+        # TODO: Switch to `uv pip sync` once https://github.com/astral-sh/uv/issues/2500
+        #       is resolved (so environment layering is still handled correctly)
+        # Work around https://github.com/jazzband/pip-tools/issues/2103 by clearing
+        # `pip-sync`'s list of packages to leave behind before running the sync command
+        command = [
+            str(self.tools_python_path),
+            "-X",
+            "utf8",
+            "-Ic",
+            (
+                "import piptools.sync, piptools.scripts.sync; "
+                "piptools.sync.PACKAGES_TO_IGNORE.clear(); "
+                "piptools.scripts.sync.cli()"
+            ),
+            "--quiet",
+            "--no-config",
+            *self.index_config._get_pip_sync_args(),
+            "--python-executable",
+            os.fspath(env_python_path),
+            *(
+                os.fspath(p) for p in requirements_paths
+            ),  # `map` upsets typecheckers here
+        ]
+        return run_python_command(command)
+
+    def get_constraint_paths(self) -> list[Path]:
+        # No constraints files by default, subclasses override as necessary
+        return []
+
+    def lock_requirements(self) -> EnvironmentLock:
+        spec = self.env_spec
+        requirements_path = self.requirements_path
+        if not self.want_lock and requirements_path.exists():
+            print(f"Using existing {str(requirements_path)!r}")
+            return self.env_lock
+        print(f"Generating {str(requirements_path)!r}")
+        requirements_path.parent.mkdir(parents=True, exist_ok=True)
+        constraints = self.get_constraint_paths()
+        requirements_input_path = requirements_path.with_suffix(".in")
+        with requirements_input_path.open("w", encoding="utf-8", newline="\n") as f:
+            lines = [
+                "# DO NOT EDIT. Automatically generated by venvstacks.",
+                "#              Relock layer dependencies to update.",
+                *spec.requirements,
+                "",
+            ]
+            f.write("\n".join(lines))
+        self._run_uv_pip_compile(
+            requirements_path, requirements_input_path, constraints
+        )
+        if not requirements_path.exists():
+            raise BuildEnvError(f"Failed to generate {str(requirements_path)!r}")
+        if self.env_lock.update_lock_metadata():
+            print(f"  Environment lock time set: {self.env_lock.locked_at!r}")
+        return self.env_lock
+
+    def install_build_requirements(self) -> subprocess.CompletedProcess[str] | None:
+        # Install build-only dependencies inside the target environment
+        # All build dependencies must be available as pre-built binary packages
+        # TODO: drop support for implicit source builds (superseded by local wheel dirs)
+        if not self.index_config.allow_source_builds:
+            return None  # No implicit source builds -> never need build dependencies
+        build_requirements = self.env_spec.build_requirements
+        if not build_requirements:
+            return None  # Nothing to remove
+        deprecation_msg = (
+            "Support for implicit source builds is being removed (use local wheels)"
+        )
+        warnings.warn(deprecation_msg, DeprecationWarning)
+        return self._run_pip_install(
+            "--upgrade",
+            *build_requirements,
+            require_binary=True,
+        )
+
+    def install_requirements(self) -> subprocess.CompletedProcess[str]:
+        # Run a pip dependency upgrade inside the target environment
+        # Build isolation is intentionally turned off so source builds that need big
+        # dependencies like `torch` can access the runtime environment
+        # Requirements are fully transitively locked, so no implicit deps are allowed
+        if not self.env_lock.is_locked:
+            raise BuildEnvError(
+                "Environment must be locked before installing dependencies"
+            )
+        if self.index_config.allow_source_builds:
+            self.install_build_requirements()  # Ensure source dependencies can be built
+        return self._run_pip_install(
+            "--no-build-isolation",
+            "--no-deps",
+            "--upgrade",
+            "-r",
+            str(self.requirements_path),
+        )
+
+    def remove_build_only_packages(self) -> subprocess.CompletedProcess[str] | None:
+        # Remove build-only dependencies before publishing the environment layer
+        if not self.index_config.allow_source_builds:
+            return None  # No implicit source builds -> never install build dependencies
+        build_requirements = self.env_spec.build_requirements
+        if not build_requirements or not self.was_built:
+            return (
+                None  # Nothing to remove (no build requirements, or env wasn't built)
+            )
+        requirements_paths = [
+            self.requirements_path,
+            *self.get_constraint_paths(),
+        ]
+        result = self._run_pip_sync(self.python_path, requirements_paths)
+        print(f"Removed build-only packages from {str(self.env_path)!r}")
+        return result
+
+    def ensure_runtime_dependencies(self) -> subprocess.CompletedProcess[str] | None:
+        # Second pass reinstalling purely from local cache
+        # This adds packages previously skipped due to build dependencies in lower layers
+        # Ideally, hashes wouldn't be rechecked to allow for cached wheels built from source
+        # artifacts, but `pip` doesn't allow the hash check to be turned off when hashes are
+        # present in the requirements file
+        if not self.was_built or not self.index_config.allow_source_builds:
+            # Nothing to ensure (env wasn't built or build deps were never installed)
+            return None
+        return self._run_pip_install(
+            # Downloads allowed to work around https://github.com/pypa/pip/issues/12807
+            # "--no-index",
+            "--quiet",
+            "--no-deps",
+            "-r",
+            str(self.requirements_path),
+            require_binary=True,
+        )
+
+    def _update_existing_environment(self, *, build_only: bool = False) -> None:
+        if build_only:
+            self.install_build_requirements()
+        else:
+            self.install_requirements()
+
+    @abstractmethod
+    def _create_new_environment(self, *, build_only: bool = False) -> None:
+        raise NotImplementedError
+
+    def _ensure_portability(self) -> None:
+        # Wrapper and activation scripts are not used on deployment targets,
+        # so drop them entirely rather than making them portable
+        for executable in self.executables_path.iterdir():
+            if not executable.name.lower().startswith("python"):
+                print(f"    Dropping potentially non-portable file {str(executable)!r}")
+                executable.unlink()
+        # Symlinks within the build folder should be relative
+        # Symlinks outside the build folder shouldn't exist
+        build_path = self.build_path
+        relative, external = pack_venv.convert_symlinks(self.env_path, build_path)
+        if relative:
+            msg_lines = ["Converted absolute internal symlinks to relative symlinks:\n"]
+            for file_path, target_path in relative:
+                link_info = f"{str(file_path)!r} -> {str(target_path)!r}"
+                msg_lines.append(f"  {link_info}")
+            print("\n".join(msg_lines))
+        if external:
+            msg_lines = ["Converted absolute external symlinks to hard links:\n"]
+            for file_path, target_path in external:
+                link_info = f"{str(file_path)!r} -> {str(target_path)!r}"
+                msg_lines.append(f"  {link_info}")
+            print("\n".join(msg_lines))
+
+    def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
+        # Hook for subclasses to override
+        assert metadata is not None  # Avoid linter complaints about unused parameters
+
+    def define_archive_build(
+        self,
+        output_path: Path,
+        target_platform: str,
+        tag_output: bool = False,
+        previous_metadata: ArchiveMetadata | None = None,
+        force: bool = False,
+    ) -> ArchiveBuildRequest:
+        request = ArchiveBuildRequest.define_build(
+            self.env_name,
+            self.env_lock,
+            output_path,
+            target_platform,
+            tag_output,
+            previous_metadata,
+            force,
+        )
+        self._update_output_metadata(request.build_metadata)
+        return request
+
+    def create_archive(
+        self,
+        output_path: Path,
+        target_platform: str,
+        tag_output: bool = False,
+        previous_metadata: ArchiveMetadata | None = None,
+        force: bool = False,
+    ) -> tuple[ArchiveMetadata, Path]:
+        env_path = self.env_path
+        if not env_path.exists():
+            raise RuntimeError(
+                "Must create environment before attempting to archive it"
+            )
+
+        # Define the input metadata that gets published in the archive manifest
+        build_request = self.define_archive_build(
+            output_path, target_platform, tag_output, previous_metadata, force
+        )
+        work_path = self.build_path  # /tmp is likely too small for ML environments
+        return build_request.create_archive(env_path, previous_metadata, work_path)
+
+    def request_export(
+        self,
+        output_path: Path,
+        previous_metadata: ExportMetadata | None = None,
+        force: bool = False,
+    ) -> EnvironmentExportRequest:
+        request = EnvironmentExportRequest.define_export(
+            self.env_name, self.env_lock, output_path, previous_metadata, force
+        )
+        self._update_output_metadata(request.export_metadata)
+        return request
+
+    def export_environment(
+        self,
+        output_path: Path,
+        previous_metadata: ExportMetadata | None = None,
+        force: bool = False,
+    ) -> tuple[ExportMetadata, Path]:
+        env_path = self.env_path
+        if not env_path.exists():
+            raise RuntimeError("Must create environment before attempting to export it")
+
+        # Define the input metadata that gets published in the export manifest
+        export_request = self.request_export(output_path, previous_metadata, force)
+        return export_request.export_environment(env_path, previous_metadata)
+
+
+class RuntimeEnv(_PythonEnvironment):
+    kind = LayerVariants.RUNTIME
+    category = LayerCategories.RUNTIMES
+
+    def _get_python_dir_path(self) -> Path:
+        if _WINDOWS_BUILD:
+            # python-build-standalone Windows build doesn't put the binary in `Scripts`
+            return self.env_path
+        return super()._get_python_dir_path()
+
+    def __post_init__(self) -> None:
+        self.py_version = py_version = self.env_spec.py_version
+        super().__post_init__()
+        tools_env_path = self.build_path / "build-tools"
+        if tools_env_path.exists():
+            tools_bin_path = Path(
+                _get_py_scheme_path("scripts", tools_env_path, py_version)
+            )
+            tools_python_path = tools_bin_path / _binary_with_extension("python")
+        else:
+            # No build tools environment created by wrapper script, so use the running Python
+            tools_python_path = Path(sys.executable)
+        # Runtimes have no base Python other than the build tools Python
+        self.base_python_path = tools_python_path
+        self.tools_python_path = tools_python_path
+
+    @property
+    def env_spec(self) -> RuntimeSpec:
+        # Define property to allow covariance of the declared type of `env_spec`
+        assert isinstance(self._env_spec, RuntimeSpec)
+        return self._env_spec
+
+    def _update_existing_environment(self, *, build_only: bool = False) -> None:
+        super()._update_existing_environment(build_only=build_only)
+
+    def _remove_pip(self) -> subprocess.CompletedProcess[str] | None:
+        to_be_checked = ["pip", "wheel", "setuptools"]
+        to_be_removed = []
+        for pylib in to_be_checked:
+            if (self.pylib_path / pylib).exists():
+                to_be_removed.append(pylib)
+        if not to_be_removed:
+            return None
+        pip_args = ["uninstall", "-y", *to_be_removed]
+        return self._run_pip(pip_args)
+
+    def _create_new_environment(self, *, build_only: bool = False) -> None:
+        python_runtime = self.env_spec.fully_versioned_name
+        install_path = _pdm_python_install(self.build_path, python_runtime)
+        if install_path is None:
+            raise BuildEnvError(f"Failed to install {python_runtime}")
+        shutil.move(install_path, self.env_path)
+        if not self.index_config.allow_source_builds:
+            # Only `pip-sync` needs `pip` to be installed in the target environment,
+            # and that step is skipped when implicit source builds are disabled
+            self._remove_pip()
+        fs_sync()
+        if build_only:
+            if self.index_config.allow_source_builds:
+                print(
+                    f"Preparing {str(self.python_path)!r} build dependencies in {self}"
+                )
+                self.install_build_requirements()
+        else:
+            print(
+                f"Using {str(self.python_path)!r} as runtime environment layer in {self}"
+            )
+            self.install_requirements()
+
+    def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
+        super()._update_output_metadata(metadata)
+        # This *is* a runtime layer, so it needs to be updated on maintenance releases
+        metadata["runtime_name"] = self.env_spec.fully_versioned_name
+
+    def create_build_environment(self, *, clean: bool = False) -> None:
+        """Create or update runtime build environment. Returns True if env is new or updated."""
+        super()._create_environment(clean=clean, build_only=True)
+
+
+class _VirtualEnvironment(_PythonEnvironment):
+    _include_system_site_packages = False
+
+    linked_constraints_paths: list[Path] = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self.py_version = self.env_spec.runtime.py_version
+        super().__post_init__()
+        self.linked_constraints_paths = []
+
+    @property
+    def env_spec(self) -> _VirtualEnvironmentSpec:
+        # Define property to allow covariance of the declared type of `env_spec`
+        assert isinstance(self._env_spec, _VirtualEnvironmentSpec)
+        return self._env_spec
+
+    def link_base_runtime_paths(self, runtime: RuntimeEnv) -> None:
+        # Link executable paths
+        self.base_python_path = runtime.python_path
+        self.tools_python_path = runtime.tools_python_path
+        if self.linked_constraints_paths:
+            raise BuildEnvError("Layered environment base runtime already linked")
+        self.linked_constraints_paths[:] = [runtime.requirements_path]
+
+    def get_constraint_paths(self) -> list[Path]:
+        return self.linked_constraints_paths
+
+    def _ensure_virtual_environment(self) -> subprocess.CompletedProcess[str]:
+        # Use the base Python installation to create a new virtual environment
+        if self.base_python_path is None:
+            raise RuntimeError("Base Python path not set in {self!r}")
+        options = ["--without-pip"]
+        if self._include_system_site_packages:
+            options.append("--system-site-packages")
+        if self.env_path.exists():
+            options.append("--upgrade")
+        if _WINDOWS_BUILD:
+            options.append("--copies")
+        else:
+            options.append("--symlinks")
+        command = [
+            str(self.base_python_path),
+            "-X",
+            "utf8",
+            "-Im",
+            "venv",
+            *options,
+            str(self.env_path),
+        ]
+        result = run_python_command(command)
+        self._link_layered_environment()
+        fs_sync()
+        print(f"Virtual environment configured in {str(self.env_path)!r}")
+        return result
+
+    def _link_layered_environment(self) -> None:
+        pass  # Nothing to do by default, subclasses override if necessary
+
+    def _update_existing_environment(self, *, build_only: bool = False) -> None:
+        if build_only:
+            raise RuntimeError(
+                "Only runtime environments support build-only installation"
+            )
+        self._ensure_virtual_environment()
+        super()._update_existing_environment()
+
+    def _create_new_environment(self, *, build_only: bool = False) -> None:
+        self._update_existing_environment(build_only=build_only)
+
+    def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
+        super()._update_output_metadata(metadata)
+        # Non-windows platforms use symlinks, so only need updates on feature releases
+        # Windows copies the main Python binary and support libary, so always needs updates
+        if _WINDOWS_BUILD:
+            runtime_update_trigger = self.env_spec.runtime.fully_versioned_name
+        else:
+            runtime_update_trigger = self.env_spec.runtime.name
+        metadata["runtime_name"] = runtime_update_trigger
+
+
+class FrameworkEnv(_VirtualEnvironment):
+    kind = LayerVariants.FRAMEWORK
+    category = LayerCategories.FRAMEWORKS
+    _include_system_site_packages = True
+
+    @property
+    def env_spec(self) -> FrameworkSpec:
+        # Define property to allow covariance of the declared type of `env_spec`
+        assert isinstance(self._env_spec, FrameworkSpec)
+        return self._env_spec
+
+
+class ApplicationEnv(_VirtualEnvironment):
+    kind = LayerVariants.APPLICATION
+    category = LayerCategories.APPLICATIONS
+
+    launch_module_name: str = field(init=False, repr=False)
+    linked_pylib_paths: list[Path] = field(init=False, repr=False)
+    linked_dynlib_paths: list[Path] = field(init=False, repr=False)
+    linked_frameworks: list[FrameworkEnv] = field(init=False, repr=False)
+
+    @property
+    def env_spec(self) -> ApplicationSpec:
+        # Define property to allow covariance of the declared type of `env_spec`
+        assert isinstance(self._env_spec, ApplicationSpec)
+        return self._env_spec
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.launch_module_name = self.env_spec.launch_module_path.stem
+        self.linked_pylib_paths = []
+        self.linked_dynlib_paths = []
+        self.linked_frameworks = []
+
+    def link_layered_environments(
+        self, runtime: RuntimeEnv, frameworks: Mapping[LayerBaseName, FrameworkEnv]
+    ) -> None:
+        self.link_base_runtime_paths(runtime)
+        constraints_paths = self.linked_constraints_paths
+        if not constraints_paths:
+            raise BuildEnvError("Failed to add base environment constraints path")
+        # The runtime site-packages folder is added here rather than via pyvenv.cfg
+        # to ensure it appears in sys.path after the framework site-packages folders
+        pylib_paths = self.linked_pylib_paths
+        dynlib_paths = self.linked_dynlib_paths
+        fw_envs = self.linked_frameworks
+        if pylib_paths or dynlib_paths or fw_envs:
+            raise BuildEnvError("Layered application environment already linked")
+        for env_spec in self.env_spec.frameworks:
+            env = frameworks[env_spec.name]
+            fw_envs.append(env)
+            constraints_paths.append(env.requirements_path)
+            install_target_path = Path(env.install_target)
+
+            def _fw_env_path(build_path: Path) -> Path:
+                relative_path = build_path.relative_to(env.env_path)
+                return install_target_path / relative_path
+
+            pylib_paths.append(_fw_env_path(env.pylib_path))
+            if env.dynlib_path is not None:
+                dynlib_paths.append(_fw_env_path(env.pylib_path))
+        runtime_target_path = Path(runtime.install_target)
+
+        def _runtime_path(build_path: Path) -> Path:
+            relative_path = build_path.relative_to(runtime.env_path)
+            return runtime_target_path / relative_path
+
+        pylib_paths.append(_runtime_path(runtime.pylib_path))
+        if runtime.dynlib_path is not None:
+            dynlib_paths.append(_runtime_path(runtime.dynlib_path))
+
+    def _link_layered_environment(self) -> None:
+        # Create sitecustomize file
+        sc_dir_path = self.pylib_path
+        sc_contents = [
+            "# Automatically generated by venvstacks",
+            "import site",
+            "import os",
+            "from os.path import abspath, dirname, join as joinpath",
+            "# Allow loading modules and packages from framework environments",
+            "this_dir = dirname(abspath(__file__))",
+        ]
+        # Add framework and runtime folders to sys.path
+        parent_path = self.env_path.parent
+        relative_prefix = Path(
+            os.path.relpath(str(parent_path), start=str(sc_dir_path))
+        )
+        for pylib_path in self.linked_pylib_paths:
+            relative_path = relative_prefix / pylib_path
+            sc_contents.extend(
+                [
+                    f"path_entry = abspath(joinpath(this_dir, {str(relative_path)!r}))",
+                    "site.addsitedir(path_entry)",
+                ]
+            )
+        # Add DLL search folders if needed
+        dynlib_paths = self.linked_dynlib_paths
+        if _WINDOWS_BUILD and dynlib_paths:
+            sc_contents.extend(
+                [
+                    "",
+                    "# Allow loading misplaced DLLs on Windows",
+                ]
+            )
+            for dynlib_path in dynlib_paths:
+                if not dynlib_path.exists():
+                    # Nothing added DLLs to this folder at build time, so skip it
+                    continue
+                relative_path = relative_prefix / dynlib_path
+                sc_contents.extend(
+                    [
+                        f"dll_dir = abspath(joinpath(this_dir, {str(relative_path)!r}))",
+                        "os.add_dll_directory(dll_dir)",
+                    ]
+                )
+        sc_contents.append("")
+        sc_path = self.pylib_path / "sitecustomize.py"
+        print(f"Generating {sc_path!r}...")
+        with open(sc_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(sc_contents))
+
+    def _update_existing_environment(self, *, build_only: bool = False) -> None:
+        super()._update_existing_environment(build_only=build_only)
+        # Also publish the specified launch module as an importable top level module
+        launch_module_source_path = self.env_spec.launch_module_path
+        launch_module_env_path = self.pylib_path / launch_module_source_path.name
+        print(f"Including launch module {launch_module_source_path!r}...")
+        if launch_module_source_path.is_file():
+            shutil.copyfile(launch_module_source_path, launch_module_env_path)
+        else:
+            shutil.copytree(
+                launch_module_source_path, launch_module_env_path, dirs_exist_ok=True
+            )
+
+    def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
+        super()._update_output_metadata(metadata)
+        metadata["app_launch_module"] = self.launch_module_name
+        if self.env_spec.launch_module_path.is_file():
+            metadata["app_launch_module_hash"] = _hash_file(
+                self.env_spec.launch_module_path
+            )
+        else:
+            metadata["app_launch_module_hash"] = _hash_directory(
+                self.env_spec.launch_module_path
+            )
+        framework_env_names = [fw.install_target for fw in self.linked_frameworks]
+        metadata["required_layers"] = framework_env_names
+
+
+######################################################
+# Building layered environments based on a TOML file
+######################################################
+
+BuildEnv = TypeVar("BuildEnv", bound=_PythonEnvironment)
+
+
+@dataclass
+class StackSpec:
+    # Specified on creation
+    spec_path: Path
+    runtimes: MutableMapping[LayerBaseName, RuntimeSpec]
+    frameworks: MutableMapping[LayerBaseName, FrameworkSpec]
+    applications: MutableMapping[LayerBaseName, ApplicationSpec]
+    requirements_dir_path: Path
+
+    # Derived from runtime environment in __post_init__
+    build_platform: str = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self.build_platform = get_build_platform()
+        self.spec_path = as_normalized_path(self.spec_path)
+        # Resolve requirements_dir_path relative to spec_path
+        self.requirements_dir_path = self.resolve_lexical_path(
+            self.requirements_dir_path
+        )
+
+    @classmethod
+    def load(cls, fname: StrPath) -> Self:
+        stack_spec_path = as_normalized_path(fname)
+        with open(stack_spec_path, "rb") as f:
+            data = tomllib.load(f)
+        spec_dir_path = stack_spec_path.parent
+        requirements_dir_path = spec_dir_path / "requirements"
+        # Collect the list of runtime specs
+        runtimes = {}
+        for rt in data["runtimes"]:
+            # No conversions needed for the runtime environment specs
+            name = rt["name"]
+            if name in runtimes:
+                msg = f"Runtime names must be distinct ({name!r} already defined)"
+                raise LayerSpecError(msg)
+            ensure_optional_env_spec_fields(rt)
+            runtimes[name] = RuntimeSpec(**rt)
+        # Collect the list of framework specs
+        frameworks = {}
+        for fw in data["frameworks"]:
+            name = fw["name"]
+            if name in frameworks:
+                msg = f"Framework names must be distinct ({name!r} already defined)"
+                raise LayerSpecError(msg)
+            runtime_name = fw["runtime"]
+            runtime = runtimes.get(runtime_name)
+            if runtime is None:
+                msg = f"Framework {name!r} references unknown runtime {runtime_name!r}"
+                raise LayerSpecError(msg)
+            fw["runtime"] = runtime
+            ensure_optional_env_spec_fields(fw)
+            frameworks[name] = FrameworkSpec(**fw)
+        # Collect the list of application specs
+        applications = {}
+        for app in data["applications"]:
+            name = app["name"]
+            if name in applications:
+                msg = f"Application names must be distinct ({name!r} already defined)"
+                raise LayerSpecError(msg)
+            launch_module_path = spec_dir_path / app.pop("launch_module")
+            if not launch_module_path.exists():
+                msg = f"Specified launch module {launch_module_path!r} does not exist)"
+                raise LayerSpecError(msg)
+            runtime = None
+            app_frameworks = []
+            for fw_name in app["frameworks"]:
+                app_fw = frameworks.get(fw_name)
+                if app_fw is None:
+                    msg = (
+                        f"Application {name!r} references unknown framework {fw_name!r}"
+                    )
+                    raise LayerSpecError(msg)
+                if runtime is None:
+                    runtime = app_fw.runtime
+                elif app_fw.runtime is not runtime:
+                    msg = (
+                        f"Application {name!r} references inconsistent frameworks. "
+                        f"{app_frameworks[0].name!r} requires runtime {runtime.name!r}."
+                        f"while {app_fw!r} requires runtime {app_fw.runtime.name!r}."
+                    )
+                    raise LayerSpecError(msg)
+                app_frameworks.append(app_fw)
+            app["runtime"] = runtime
+            app["frameworks"] = app_frameworks
+            app["launch_module_path"] = launch_module_path
+            ensure_optional_env_spec_fields(app)
+            applications[name] = ApplicationSpec(**app)
+        return cls(
+            stack_spec_path, runtimes, frameworks, applications, requirements_dir_path
+        )
+
+    def all_environment_specs(self) -> Iterable[_PythonEnvironmentSpec]:
+        """Iterate over the specifications for all defined environments.
+
+        All runtimes are produced first, then frameworks, then applications.
+        """
+        return chain(
+            self.runtimes.values(), self.frameworks.values(), self.applications.values()
+        )
+
+    def _define_envs(
+        self,
+        build_path: Path,
+        index_config: IndexConfig,
+        env_class: type[BuildEnv],
+        specs: Mapping[LayerBaseName, _PythonEnvironmentSpec],
+    ) -> MutableMapping[LayerBaseName, BuildEnv]:
+        requirements_dir = self.requirements_dir_path
+        build_environments: dict[LayerBaseName, BuildEnv] = {}
+        build_platform = self.build_platform
+        for name, spec in specs.items():
+            if build_platform not in spec.platforms:
+                print(f"  Skipping env {name!r} as it does not target this platform")
+                continue
+            requirements_path = spec.get_requirements_path(
+                build_platform, requirements_dir
+            )
+            build_env = env_class(spec, build_path, requirements_path, index_config)
+            build_environments[name] = build_env
+            print(f"  Defined {name!r}: {build_env!r}")
+        return build_environments
+
+    def resolve_lexical_path(self, related_location: StrPath, /) -> Path:
+        """Resolve a path relative to the location of the stack specification"""
+        return _resolve_lexical_path(related_location, self.spec_path.parent)
+
+    def define_build_environment(
+        self,
+        build_dir: StrPath = "",
+        index_config: IndexConfig | None = None,
+    ) -> "BuildEnvironment":
+        build_path = self.resolve_lexical_path(build_dir)
+        if index_config is None:
+            index_config = IndexConfig()
+        index_config.resolve_lexical_paths(self.spec_path.parent)
+        print("Defining runtime environments:")
+        runtimes = self._define_envs(
+            build_path, index_config, RuntimeEnv, self.runtimes
+        )
+        print("Defining framework environments:")
+        frameworks = self._define_envs(
+            build_path, index_config, FrameworkEnv, self.frameworks
+        )
+        for fw_env in frameworks.values():
+            runtime = runtimes[fw_env.env_spec.runtime.name]
+            fw_env.link_base_runtime_paths(runtime)
+        print("Defining application environments:")
+        applications = self._define_envs(
+            build_path, index_config, ApplicationEnv, self.applications
+        )
+        for app_env in applications.values():
+            runtime = runtimes[app_env.env_spec.runtime.name]
+            app_env.link_layered_environments(runtime, frameworks)
+        return BuildEnvironment(
+            self,
+            runtimes,
+            frameworks,
+            applications,
+            build_path,
+        )
+
+
+@dataclass
+class BuildEnvironment:
+    METADATA_DIR = "__venvstacks__"  # Output subdirectory for the build metadata
+    METADATA_MANIFEST = "venvstacks.json"  # File with full metadata for this build
+    METADATA_ENV_DIR = (
+        "env_metadata"  # Files with metadata snippets for each environment
+    )
+
+    # Specified on creation
+    stack_spec: StackSpec
+    runtimes: MutableMapping[LayerBaseName, RuntimeEnv] = field(repr=False)
+    frameworks: MutableMapping[LayerBaseName, FrameworkEnv] = field(repr=False)
+    applications: MutableMapping[LayerBaseName, ApplicationEnv] = field(repr=False)
+    build_path: Path
+
+    def __post_init__(self) -> None:
+        # Resolve local config folders relative to spec path
+        stack_spec = self.stack_spec
+        self.build_path = stack_spec.resolve_lexical_path(self.build_path)
+
+    # Provide more convenient access to selected stack_spec attributes
+    @property
+    def requirements_dir_path(self) -> Path:
+        return self.stack_spec.requirements_dir_path
+
+    @property
+    def build_platform(self) -> str:
+        return self.stack_spec.build_platform
+
+    # Iterators over various categories of included environments
+    def all_environments(self) -> Iterable[_PythonEnvironment]:
+        """Iterate over all defined environments.
+
+        All runtimes are produced first, then frameworks, then applications.
+        """
+        return chain(
+            self.runtimes.values(), self.frameworks.values(), self.applications.values()
+        )
+
+    def environments_to_lock(self) -> Iterable[_PythonEnvironment]:
+        """Iterate over all environments where locking is requested or allowed.
+
+        Runtimes are produced first, then frameworks, then applications.
+        """
+        for env in self.all_environments():
+            if env.want_lock is not False:  # Accepts `None` as meaning "lock if needed"
+                yield env
+
+    def runtimes_to_lock(self) -> Iterable[RuntimeEnv]:
+        """Iterate over runtime environments where locking is requested or allowed."""
+        for env in self.runtimes.values():
+            if env.want_lock is not False:  # Accepts `None` as meaning "lock if needed"
+                yield env
+
+    def environments_to_build(self) -> Iterable[_PythonEnvironment]:
+        """Iterate over all environments where building is requested or allowed.
+
+        Runtimes are produced first, then frameworks, then applications.
+        """
+        for env in self.all_environments():
+            if (
+                env.want_build is not False
+            ):  # Accepts `None` as meaning "build if needed"
+                yield env
+
+    def runtimes_to_build(self) -> Iterable[RuntimeEnv]:
+        """Iterate over runtime environments where building is requested or allowed."""
+        for env in self.runtimes.values():
+            if (
+                env.want_build is not False
+            ):  # Accepts `None` as meaning "build if needed"
+                yield env
+
+    def venvstacks_to_build(self) -> Iterable[_VirtualEnvironment]:
+        """Iterate over non-runtime environments where building is requested or allowed.
+
+        Frameworks are produced first, then applications.
+        """
+        for env in chain(self.frameworks.values(), self.applications.values()):
+            if (
+                env.want_build is not False
+            ):  # Accepts `None` as meaning "build if needed"
+                yield env
+
+    def built_environments(self) -> Iterable[_PythonEnvironment]:
+        """Iterate over all environments that were built by this build process.
+
+        Runtimes are produced first, then frameworks, then applications.
+        """
+        for env in self.all_environments():
+            if env.was_built:
+                yield env
+
+    def environments_to_publish(self) -> Iterable[_PythonEnvironment]:
+        """Iterate over all environments where publication is requested or allowed.
+
+        Runtimes are produced first, then frameworks, then applications.
+        """
+        for env in self.all_environments():
+            if env.want_publish:  # There's no "if needed" option for publication
+                yield env
+
+    # Assign environments to the different operation categories
+    def select_operations(
+        self,
+        lock: bool | None = False,
+        build: bool | None = True,
+        publish: bool = True,
+    ) -> None:
+        """Configure the selected operations on all defined environments"""
+        for env in self.all_environments():
+            env.select_operations(lock=lock, build=build, publish=publish)
+
+    def get_unmatched_patterns(self, patterns: Iterable[str]) -> list[str]:
+        """Returns a list of the given patterns which do not match any environments"""
+        env_names = [env.env_name for env in self.all_environments()]
+        return [
+            pattern
+            for pattern in patterns
+            if not any(fnmatch(env_name, pattern) for env_name in env_names)
+        ]
+
+    def select_layers(
+        self,
+        include: Iterable[str],
+        lock: bool | None = False,
+        build: bool | None = True,
+        publish: bool = True,
+        lock_dependencies: bool = False,
+        build_dependencies: bool = False,
+        publish_dependencies: bool = False,
+        build_derived: bool = True,
+        publish_derived: bool = True,
+    ) -> None:
+        """Selectively configure operations only on the specified environments"""
+        # Ensure later pipeline stages are skipped when earlier ones are skipped
+        # Also update the related layer handling based on the enabled pipeline stages
+        if lock:
+            # When locking, locking derived layers is not optional
+            lock_derived = True
+            # Don't build or publish dependencies if they're not relocked
+            if not lock_dependencies:
+                build_dependencies = publish_dependencies = False
+        else:
+            # If the included layers aren't being locked, don't lock anything else
+            lock_derived = lock_dependencies = False
+        if build:
+            # When building, don't publish environments that haven't been built
+            if not build_dependencies:
+                publish_dependencies = False
+            if not build_derived:
+                publish_derived = False
+        else:
+            # If the included layers aren't being built, don't build anything else
+            build_derived = build_dependencies = False
+        if not publish:
+            # If the included layers aren't being published, don't publish anything else
+            publish_derived = publish_dependencies = False
+        # Identify explicitly included environments
+        envs_by_name: dict[EnvNameBuild, _PythonEnvironment] = {
+            env.env_name: env for env in self.all_environments()
+        }
+        inclusion_patterns = list(include)
+        included_envs: set[str] = set()
+        for env_name, env in envs_by_name.items():
+            if any(fnmatch(env_name, pattern) for pattern in inclusion_patterns):
+                # Run all requested operations on this environment
+                included_envs.add(env_name)
+                env.select_operations(lock=lock, build=build, publish=publish)
+            else:
+                # Skip running operations on this environment
+                env.select_operations(lock=False, build=False, publish=False)
+        # Enable operations on related layers if requested
+        # Dependencies are always checked so they can be set to "if needed" locks & builds
+        check_derived = lock_derived or build_derived or publish_derived
+        derived_envs: set[EnvNameBuild] = set()
+        dependency_envs: set[EnvNameBuild] = set()
+        # Check frameworks
+        for fw_env in self.frameworks.values():
+            env_name = fw_env.env_name
+            rt_env_name = fw_env.env_spec.runtime.env_name
+            if env_name in included_envs:
+                # This env is included, check if any of its dependencies need inclusion
+                if rt_env_name not in included_envs:
+                    dependency_envs.add(rt_env_name)
+            elif check_derived:
+                # Check for the runtime this env depends on being included
+                if rt_env_name in included_envs:
+                    derived_envs.add(env_name)
+        # Check applications
+        for app_env in self.applications.values():
+            env_name = app_env.env_name
+            app_spec = app_env.env_spec
+            rt_env_name = app_spec.runtime.env_name
+            fw_env_names = [fw_spec.env_name for fw_spec in app_spec.frameworks]
+            if env_name in included_envs:
+                # This env is included, check if any of its dependencies need inclusion
+                for fw_env_name in fw_env_names:
+                    if fw_env_name in included_envs:
+                        continue
+                    dependency_envs.add(fw_env_name)
+                if rt_env_name not in included_envs:
+                    dependency_envs.add(rt_env_name)
+            elif check_derived:
+                # Check for any framework or the runtime this env depends on being included
+                if rt_env_name in included_envs:
+                    derived_envs.add(env_name)
+                else:
+                    for fw_env_name in fw_env_names:
+                        if fw_env_name in included_envs:
+                            derived_envs.add(env_name)
+                            break
+        # Check if conflicting requirements have been given for any framework layers
+        potential_conflicts = derived_envs & dependency_envs
+        if potential_conflicts:
+            cause = None
+            if lock_derived != lock_dependencies:
+                cause = "lock"
+            elif build_derived != build_dependencies:
+                cause = "build"
+            elif publish_derived != publish_dependencies:
+                cause = "publication"
+            if cause is not None:
+                msg = f"Conflicting {cause} instructions for {sorted(potential_conflicts)}"
+                raise BuildEnvError(msg)
+        # Derived environments never need to be locked or built implicitly
+        for env_name in derived_envs:
+            env = envs_by_name[env_name]
+            env.select_operations(
+                lock=lock_derived, build=build_derived, publish=publish_derived
+            )
+        # Dependencies are always allowed to be locked or built implicitly
+        # (this only happens if the operation's outputs don't exist yet)
+        for env_name in dependency_envs:
+            env = envs_by_name[env_name]
+            env.select_operations(
+                lock=lock_dependencies or None,    # Allow locking if neeeded
+                build=build_dependencies or None,  # Allow building if needed
+                publish=publish_dependencies,      # No implicit publication
+            )  # fmt: skip
+
+    # Define the various operations on the included environments
+    def _needs_lock(self) -> bool:
+        spec_dir = self.requirements_dir_path
+        build_platform = self.build_platform
+
+        def lock_exists(spec: _PythonEnvironmentSpec) -> bool:
+            return spec.get_requirements_path(build_platform, spec_dir).exists()
+
+        return not all(lock_exists(env.env_spec) for env in self.environments_to_lock())
+
+    def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
+        # Lock environments without fully building them
+        # Necessarily creates the runtime environments and
+        # installs any declared build dependencies
+        self.requirements_dir_path.mkdir(parents=True, exist_ok=True)
+        for rt_env in self.runtimes_to_lock():
+            rt_env.create_build_environment(clean=clean)
+        return [env.lock_requirements() for env in self.environments_to_lock()]
+
+    def create_environments(self, *, clean: bool = False, lock: bool = False) -> None:
+        # Base runtime environments need to exist before dependencies can be locked
+        self.build_path.mkdir(parents=True, exist_ok=True)
+        clean_runtime_envs = clean
+        if lock or self._needs_lock():
+            clean_runtime_envs = False  # Don't clean the runtime envs again below
+            self.lock_environments(clean=clean)
+        # Create base runtime environments
+        for rt_env in self.runtimes_to_build():
+            rt_env.create_environment(clean=clean_runtime_envs)
+        # Create framework and application environments atop the base runtimes
+        for layered_env in self.venvstacks_to_build():
+            layered_env.create_environment(clean=clean)
+            layered_env.report_python_site_details()
+        # Remove build packages that shouldn't be shipped
+        for env in reversed(list(self.built_environments())):
+            env.remove_build_only_packages()
+        # Fix up layered environments that were inadvertently relying on build dependencies
+        # Need to check all upper layers, not just those that declared the build-only dependencies
+        for env in self.built_environments():
+            if env.kind == LayerVariants.RUNTIME:
+                # Runtimes have no dependencies, so nothing to check
+                continue
+            env.ensure_runtime_dependencies()
+
+    @staticmethod
+    def _env_metadata_path(
+        env_metadata_dir: Path, env_name: EnvNameBuild, platform_tag: str = ""
+    ) -> Path:
+        return env_metadata_dir / f"{env_name}{platform_tag}.json"
+
+    def _load_env_metadata(
+        self, env_metadata_dir: Path, env: _PythonEnvironment, platform_tag: str
+    ) -> Any:
+        metadata_path = self._env_metadata_path(
+            env_metadata_dir, env.env_name, platform_tag
+        )
+        if not metadata_path.exists():
+            return None
+        with metadata_path.open("r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def load_archive_metadata(
+        self, env_metadata_dir: Path, env: _PythonEnvironment, platform_tag: str = ""
+    ) -> ArchiveMetadata | None:
+        # mypy is right to complain that the JSON hasn't been validated to conform
+        # to the ArchiveMetadata interface, but we're OK with letting the runtime
+        # errors happen in that scenario. Longer term, explicit JSON schemas should be
+        # defined and used for validation when reading the metadata files.
+        metadata = self._load_env_metadata(env_metadata_dir, env, platform_tag)
+        return cast(ArchiveMetadata, metadata)
+
+    def load_export_metadata(
+        self, env_metadata_dir: Path, env: _PythonEnvironment
+    ) -> ExportMetadata | None:
+        # mypy is right to complain that the JSON hasn't been validated to conform
+        # to the ExportMetadata interface, but we're OK with letting the runtime
+        # errors happen in that scenario. Longer term, explicit JSON schemas should be
+        # defined and used for validation when reading the metadata files.
+        metadata = self._load_env_metadata(env_metadata_dir, env, platform_tag="")
+        return cast(ExportMetadata, metadata)
+
+    @overload
+    def publish_artifacts(
+        self,
+        output_dir: StrPath | None = ...,
+        *,
+        force: bool = ...,
+        tag_outputs: bool = ...,
+        dry_run: Literal[False] = ...,
+    ) -> PublishedArchivePaths: ...
+    @overload
+    def publish_artifacts(
+        self,
+        output_dir: StrPath | None = ...,
+        *,
+        force: bool = ...,
+        tag_outputs: bool = ...,
+        dry_run: Literal[True] = ...,
+    ) -> tuple[Path, StackPublishingRequest]: ...
+    def publish_artifacts(
+        self,
+        output_dir: StrPath | None = None,
+        *,
+        force: bool = False,
+        tag_outputs: bool = False,
+        dry_run: bool = False,
+    ) -> PublishedArchivePaths | tuple[Path, StackPublishingRequest]:
+        layer_data: dict[
+            LayerCategories, list[ArchiveMetadata | ArchiveBuildMetadata]
+        ] = {
+            RuntimeEnv.category: [],
+            FrameworkEnv.category: [],
+            ApplicationEnv.category: [],
+        }
+        archive_paths = []
+        platform_tag = f"-{self.build_platform}" if tag_outputs else ""
+        if output_dir is None:
+            output_dir = self.build_path
+        output_path = self.stack_spec.resolve_lexical_path(output_dir)
+        metadata_dir = output_path / self.METADATA_DIR
+        env_metadata_dir = metadata_dir / self.METADATA_ENV_DIR
+
+        if dry_run:
+            # Return metadata generated by a dry run rather than writing it to disk
+            for env in self.environments_to_publish():
+                previous_metadata = self.load_archive_metadata(
+                    env_metadata_dir, env, platform_tag
+                )
+                build_request = env.define_archive_build(
+                    output_path,
+                    target_platform=self.build_platform,
+                    tag_output=tag_outputs,
+                    previous_metadata=previous_metadata,
+                )
+                layer_data[env.category].append(build_request.build_metadata)
+            publishing_request: StackPublishingRequest = {"layers": layer_data}
+            return output_path, publishing_request
+        # Build all requested archives and export the corresponding manifests
+        output_path.mkdir(parents=True, exist_ok=True)
+        result_data = cast(dict[LayerCategories, list[ArchiveMetadata]], layer_data)
+        for env in self.environments_to_publish():
+            previous_metadata = self.load_archive_metadata(
+                env_metadata_dir, env, platform_tag
+            )
+            build_metadata, archive_path = env.create_archive(
+                output_path,
+                target_platform=self.build_platform,
+                tag_output=tag_outputs,
+                previous_metadata=previous_metadata,
+                force=force,
+            )
+            archive_paths.append(archive_path)
+            result_data[env.category].append(build_metadata)
+        manifest_data: StackPublishingResult = {"layers": result_data}
+        manifest_path, snippet_paths = self.write_artifacts_manifest(
+            metadata_dir, manifest_data, platform_tag
+        )
+        return PublishedArchivePaths(manifest_path, snippet_paths, archive_paths)
+
+    def write_archive_metadata(
+        self,
+        env_metadata_dir: StrPath,
+        archive_metadata: ArchiveMetadata,
+        platform_tag: str = "",
+    ) -> Path:
+        env_metadata_dir_path = self.stack_spec.resolve_lexical_path(env_metadata_dir)
+        metadata_path = self._env_metadata_path(
+            env_metadata_dir_path, archive_metadata["layer_name"], platform_tag
+        )
+        _write_json(metadata_path, archive_metadata)
+        return metadata_path
+
+    def write_artifacts_manifest(
+        self,
+        metadata_dir: StrPath,
+        manifest_data: StackPublishingResult,
+        platform_tag: str = "",
+    ) -> tuple[Path, list[Path]]:
+        formatted_manifest = _format_json(manifest_data)
+        # Save the full build metadata
+        metadata_dir_path = self.stack_spec.resolve_lexical_path(metadata_dir)
+        metadata_dir_path.mkdir(parents=True, exist_ok=True)
+        manifest_path = metadata_dir_path / self.METADATA_MANIFEST
+        if platform_tag:
+            stem, sep, suffixes = manifest_path.name.partition(".")
+            tagged_manifest_name = f"{stem}{platform_tag}{sep}{suffixes}"
+            manifest_path = manifest_path.with_name(tagged_manifest_name)
+        with manifest_path.open("w", encoding="utf-8", newline="\n") as f:
+            f.write(formatted_manifest + "\n")
+        # Save the environment snippets (some of these may also have been loaded from disk)
+        env_metadata_dir = metadata_dir_path / self.METADATA_ENV_DIR
+        env_metadata_dir.mkdir(parents=True, exist_ok=True)
+        snippet_paths: list[Path] = []
+        layer_metadata = manifest_data["layers"]
+        for category in (
+            LayerCategories.RUNTIMES,
+            LayerCategories.FRAMEWORKS,
+            LayerCategories.APPLICATIONS,
+        ):
+            for env in layer_metadata[category]:
+                snippet_paths.append(
+                    self.write_archive_metadata(env_metadata_dir, env, platform_tag)
+                )
+        return manifest_path, snippet_paths
+
+    @overload
+    def export_environments(
+        self,
+        output_dir: StrPath | None = ...,
+        *,
+        force: bool = ...,
+        dry_run: Literal[False] = ...,
+    ) -> ExportedEnvironmentPaths: ...
+    @overload
+    def export_environments(
+        self,
+        output_dir: StrPath | None = ...,
+        *,
+        force: bool = ...,
+        dry_run: Literal[True] = ...,
+    ) -> tuple[Path, StackExportRequest]: ...
+    def export_environments(
+        self,
+        output_dir: StrPath | None = None,
+        *,
+        force: bool = False,
+        dry_run: bool = False,
+    ) -> ExportedEnvironmentPaths | tuple[Path, StackExportRequest]:
+        export_data: dict[LayerCategories, list[ExportMetadata]] = {
+            RuntimeEnv.category: [],
+            FrameworkEnv.category: [],
+            ApplicationEnv.category: [],
+        }
+        export_paths = []
+        if output_dir is None:
+            output_dir = self.build_path
+        output_path = self.stack_spec.resolve_lexical_path(output_dir)
+        metadata_dir = output_path / self.METADATA_DIR
+        env_metadata_dir = metadata_dir / self.METADATA_ENV_DIR
+
+        if dry_run:
+            # Return metadata generated by a dry run rather than writing it to disk
+            for env in self.environments_to_publish():
+                previous_metadata = self.load_export_metadata(env_metadata_dir, env)
+                export_request = env.request_export(
+                    output_path,
+                    previous_metadata=previous_metadata,
+                )
+                export_data[env.category].append(export_request.export_metadata)
+            output_request: StackExportRequest = {"layers": export_data}
+            return output_path, output_request
+        # Export the requested environments and the corresponding manifests
+        output_path.mkdir(parents=True, exist_ok=True)
+        for env in self.environments_to_publish():
+            previous_metadata = self.load_export_metadata(env_metadata_dir, env)
+            export_metadata, export_path = env.export_environment(
+                output_path,
+                previous_metadata=previous_metadata,
+                force=force,
+            )
+            export_paths.append(export_path)
+            export_data[env.category].append(export_metadata)
+        manifest_data: StackExportRequest = {"layers": export_data}
+        manifest_path, snippet_paths = self.write_export_manifest(
+            metadata_dir, manifest_data
+        )
+        return ExportedEnvironmentPaths(manifest_path, snippet_paths, export_paths)
+
+    def write_env_metadata(
+        self,
+        env_metadata_dir: StrPath,
+        env_metadata: ExportMetadata,
+        platform_tag: str = "",
+    ) -> Path:
+        env_metadata_dir_path = self.stack_spec.resolve_lexical_path(env_metadata_dir)
+        metadata_path = self._env_metadata_path(
+            env_metadata_dir_path, env_metadata["layer_name"], platform_tag
+        )
+        _write_json(metadata_path, env_metadata)
+        return metadata_path
+
+    def write_export_manifest(
+        self, metadata_dir: StrPath, manifest_data: StackExportRequest
+    ) -> tuple[Path, list[Path]]:
+        formatted_manifest = _format_json(manifest_data)
+        # Save the full build metadata
+        metadata_dir_path = self.stack_spec.resolve_lexical_path(metadata_dir)
+        metadata_dir_path.mkdir(parents=True, exist_ok=True)
+        manifest_path = metadata_dir_path / self.METADATA_MANIFEST
+        with manifest_path.open("w", encoding="utf-8", newline="\n") as f:
+            f.write(formatted_manifest + "\n")
+        # Save the environment snippets (some of these may also have been loaded from disk)
+        env_metadata_dir = metadata_dir_path / self.METADATA_ENV_DIR
+        env_metadata_dir.mkdir(parents=True, exist_ok=True)
+        snippet_paths: list[Path] = []
+        env_metadata = manifest_data["layers"]
+        for category in (
+            LayerCategories.RUNTIMES,
+            LayerCategories.FRAMEWORKS,
+            LayerCategories.APPLICATIONS,
+        ):
+            for env in env_metadata[category]:
+                snippet_paths.append(self.write_env_metadata(env_metadata_dir, env))
+        return manifest_path, snippet_paths

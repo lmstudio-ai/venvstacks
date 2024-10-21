@@ -1,0 +1,15 @@
+{
+  "archive_build": 1,
+  "archive_hashes": {
+    "sha256": "66c677c7e2d823df72107f50ac0a3ce107d532947c9b24464561f9d74801851f"
+  },
+  "archive_name": "framework-http-client.tar.xz",
+  "archive_size": 362600,
+  "install_target": "framework-http-client",
+  "layer_name": "framework-http-client",
+  "lock_version": 1,
+  "locked_at": "2024-10-15T10:23:43.145588+00:00",
+  "requirements_hash": "sha256:c9668bc44dcd9728f98686cb7d72b4cdfc3c3ed44512d29b279a484723c9525a",
+  "runtime_name": "cpython@3.11",
+  "target_platform": "linux_x86_64"
+}

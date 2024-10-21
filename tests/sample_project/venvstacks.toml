@@ -1,0 +1,126 @@
+# Sample Python runtime, framework and application layers for venvstacks testing
+# 
+# While it is recommended that all layers use the same runtime, allowance is made for
+# multiple runtimes to handle incremental migrations to newer Python versions (e.g. shipping
+# both Python 3.11 and 3.12 as different frameworks and applications are migrated rather than
+# having to migrate everything all at once)
+
+# By default, inplace runtime and framework updates are permitted without requiring layers
+# that depend on them to be updated (this allows lower impact security and maintenance
+# updates to the runtime and framework layers).
+#
+# If an update does imply compatibility issues for higher layers, then either it needs to
+# be handled as a new layer with an updated name (e.g. appending a version number), or
+# else affected higher layer components need to be updated at the same time.
+
+# Each layer definition may include a `platforms` list that specifies which platforms the
+# layer should be built for. This is intended for use when particular frameworks only
+# support a subset of an overall applications target platforms (for example, LMStudio
+# supports MLX, but only on macOS with Apple silicon).
+#
+# Permitted entries in the `platforms` list are:
+#
+# * "win_amd64": Windows on x86-64
+# * "linux_x86_64": Linux on x86_64
+# * "macosx_arm64": macOS on Apple silicon
+# * "macosx_x86_64": macOS on Intel silicon (not currently tested in CI)
+#
+# The specific platform strings used are chosen for convenience in comparison with the
+# platform identifying strings emitted by Python's `sysconfig.get_platform()` API.
+#
+# Omitting the field entirely means "build for all platforms", setting it to an empty
+# list allows a layer to be defined for shared testing purposes without adding it
+# to the default build set yet.
+
+######################################
+# Python runtime layers
+######################################
+
+[[runtimes]]
+# Runtime naming convention is inspired by the approach used in the PDM project
+# It is relaxed slightly to allow lower impact runtime security and maintenance updates
+name = "cpython@3.11"
+fully_versioned_name = "cpython@3.11.10"
+requirements = [
+    "numpy",
+    # `dlltracer` helps to debug any binary wheel DLL import failures on Windows.
+    # It is used here just as an example of a minimal platform dependent library
+    "dlltracer; sys_platform == 'win32'",
+]
+
+[[runtimes]]
+# Same spec as the Python 3.11 runtime, just for a newer Python version
+name = "cpython@3.12"
+fully_versioned_name = "cpython@3.12.7"
+requirements = [
+    # Omit dlltracer, as it doesn't publish 3.12 binaries (as of 2024-10-15)
+    "numpy",
+]
+
+# Add more [[runtimes]] sections to define additional runtimes (TOML array of tables) 
+
+######################################
+# Sample project framework layers
+######################################
+
+[[frameworks]]
+name = "scipy"
+# Automatic versioning currently breaks venv layering
+# https://github.com/lmstudio-ai/venvstacks/issues/24
+# versioned = true
+runtime = "cpython@3.11"
+requirements = [
+    "scipy",
+]
+
+[[frameworks]]
+name = "sklearn"
+runtime = "cpython@3.12"
+requirements = [
+    "scikit-learn",
+]
+
+[[frameworks]]
+name = "http-client"
+runtime = "cpython@3.11"
+requirements = [
+    # Framework layer for non-ML app layers that just do HTTP requests
+    "httpx",
+]
+
+# Add more [[frameworks]] sections to define additional frameworks (TOML array of tables)
+
+######################################
+# Sample project application layers
+######################################
+
+[[applications]]
+name = "scipy-import"
+# Automatic versioning currently breaks venv layering
+# https://github.com/lmstudio-ai/venvstacks/issues/24
+# versioned = true
+launch_module = "launch_modules/scipy_import.py"
+frameworks = ["scipy"]
+requirements = [
+    "scipy"
+]
+
+[[applications]]
+name = "scipy-client"
+launch_module = "launch_modules/scipy_client"
+frameworks = ["scipy", "http-client"]
+requirements = [
+    "scipy",
+    "httpx",
+]
+
+[[applications]]
+name = "sklearn-import"
+launch_module = "launch_modules/sklearn_import.py"
+frameworks = ["sklearn"]
+requirements = [
+    "scikit-learn",
+]
+platforms = ["linux_x86_64"]
+
+# Add more [[applications]] sections to define additional applications (TOML array of tables)

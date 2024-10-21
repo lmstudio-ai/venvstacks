@@ -1,0 +1,22 @@
+# Minimal Python runtime, framework and application layers for venvstacks testing
+
+# See `sample_project` for a more complex environment build that covers more features.
+# This minimal project is aimed at testing features like archive tagging where the
+# actual content of the layers doesn't matter, the environments just need to exist.
+
+[[runtimes]]
+name = "cpython@3.11"
+fully_versioned_name = "cpython@3.11.10"
+requirements = []
+build_requirements = []
+
+[[frameworks]]
+name = "layer"
+runtime = "cpython@3.11"
+requirements = []
+
+[[applications]]
+name = "empty"
+launch_module = "empty.py"
+frameworks = ["layer"]
+requirements = []

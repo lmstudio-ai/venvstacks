@@ -1,0 +1,37 @@
+########################################################
+# Expected output configuration for test cases
+#
+# Changes to this file will trigger a GitHub action that
+# updates the relevant PR with the related changes to the
+# expected lock file contents and output metadata.
+########################################################
+
+# Exact versions of packages which affect output details
+# are pinned in the pyproject.toml dev dependencies.
+# Those pins are repeated here and checked in the
+# test suite so any attempts to update them will
+# also trigger updates to the expected test results.
+[pinned-dev-packages]
+# Ensure the lockfiles don't unexpectedly change format
+uv="0.4.21"
+# Ensure the runtime layer hashes have the expected value
+pbs-installer="2024.10.10"
+
+# Additional environment variable settings to ensure
+# test_sample_project produces the expected metadata
+[env]
+UV_EXCLUDE_NEWER="2024-10-15 00:00:00+00:00"
+
+########################################################
+# Explicitly requested updates
+########################################################
+
+# While the metadata is not explicitly versioned,
+# update the comment below to trigger metadata updates
+# for new feature additions to the output metadata
+
+# Metadata updates can also be requested when the
+# launch module content in the sample project changes
+
+# Last requested update: launch module autoformatting
+

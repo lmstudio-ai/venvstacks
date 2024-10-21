@@ -1,0 +1,16 @@
+# Artifacts exported from CI by test suite
+/export/
+
+# VSCode config is platform specific
+.vscode
+
+# Exclude generated Python folders
+__pycache__
+.pdm-*
+.venv
+.tox
+.ruff*
+.mypy*
+*.egg-info
+*.dist-info
+
