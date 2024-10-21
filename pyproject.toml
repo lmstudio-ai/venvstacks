@@ -5,6 +5,10 @@ description = "Use layered Python virtual environment stacks to share large depe
 authors = [
     {name = "Alyssa Coghlan", email = "ncoghlan@gmail.com"},
 ]
+maintainers = [
+    {name = "LMStudio", email = "team@lmstudio.ai"},
+]
+
 dependencies = [
     # Environment package installation is run externally (from the build tools environment)
     "pip>=24.1.1",
