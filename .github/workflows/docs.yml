@@ -16,7 +16,13 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Not actually a matrix build, but defined as one for consistency
+      max-parallel: 1
+      matrix:
+        python-version: [3.12]
+        os: [ubuntu-latest]
     permissions:
       # Allow updating the gh-pages branch
       contents: write
@@ -25,6 +31,25 @@ jobs:
     # for latest versions if the standard actions start emitting warnings
     steps:
     - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        echo "dir=$(python -m pip cache dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache docs build dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key:
+          pip-docs-${{ matrix.os }}-${{ matrix.python-version }}-v1-${{ hashFiles('docs/requirements.txt') }}
+        restore-keys: |
+          pip-docs-${{ matrix.os }}-${{ matrix.python-version }}-v1-
 
     - name: Build HTML
       uses: ammaraskar/sphinx-action@master
