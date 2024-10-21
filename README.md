@@ -79,11 +79,11 @@ Project History
 ---------------
 
 The initial (and ongoing) development of the `venvstacks` project is being funded
-by [LMStudio](https://lmstudio.ai/), where it serves as the foundation of
-LMStudio's support for local execution of Python AI frameworks such as
+by [LM Studio](https://lmstudio.ai/), where it serves as the foundation of
+LM Studio's support for local execution of Python AI frameworks such as
 [Apple's MLX](https://lmstudio.ai/blog/lmstudio-v0.3.4).
 
 The use of "🐸" (frog) and "🦎" (newts are often mistaken for lizards and
 vice-versa!) as the Unicode support test characters is a reference to the
-internal LMStudio project that initially built and continues to maintain
+internal LM Studio project that initially built and continues to maintain
 `venvstacks`: Project Amphibian.

@@ -6,7 +6,7 @@ authors = [
     {name = "Alyssa Coghlan", email = "ncoghlan@gmail.com"},
 ]
 maintainers = [
-    {name = "LMStudio", email = "team@lmstudio.ai"},
+    {name = "LM Studio", email = "team@lmstudio.ai"},
 ]
 
 dependencies = [

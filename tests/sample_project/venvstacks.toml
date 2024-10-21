@@ -15,7 +15,7 @@
 
 # Each layer definition may include a `platforms` list that specifies which platforms the
 # layer should be built for. This is intended for use when particular frameworks only
-# support a subset of an overall applications target platforms (for example, LMStudio
+# support a subset of an overall applications target platforms (for example, LM Studio
 # supports MLX, but only on macOS with Apple silicon).
 #
 # Permitted entries in the `platforms` list are:
