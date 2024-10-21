@@ -1,0 +1,48 @@
+name: "Sphinx: Render docs"
+
+on:
+  pull_request:
+    branches:
+      - "**"
+    paths:
+      # Run for changes to *this* workflow file, but not for other workflows
+      - ".github/workflows/docs.yml"
+      # Trigger off docs and Python source code changes
+      - "docs/**"
+      - "src/**.py"
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      # Allow updating the gh-pages branch
+      contents: write
+
+    # Check https://github.com/actions/action-versions/tree/main/config/actions
+    # for latest versions if the standard actions start emitting warnings
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build HTML
+      uses: ammaraskar/sphinx-action@master
+      with:
+        docs-folder: "docs/"
+        # Skip link check until after the venvstacks repo is public
+        # pre-build-command: "sphinx-build -b linkcheck . _build"
+        build-command: "sphinx-build -b dirhtml . _build"
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: html-docs
+        path: docs/_build/dirhtml/
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: docs/_build/dirhtml

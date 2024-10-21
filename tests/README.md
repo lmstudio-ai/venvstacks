@@ -20,19 +20,19 @@ Running checks locally
 
 Static analysis:
 
-    tox -e lint,typecheck
+    tox -m static
 
-Full test suite (py3.11 testing is also defined):
+Full test suite (using the default target Python version):
 
-    tox -e py3.12
+    tox -m test
 
 Skip slow tests (options after `--` are passed to `pytest`):
 
-    tox -e py3.12 -- -m "not slow"
+    tox -m test -- -m "not slow"
 
 Specific tests (options after `--` are passed to `pytest`):
 
-    tox -e py3.12 -- -k test_minimal_project
+    tox -m test -- -k test_minimal_project
 
 Refer to https://docs.pytest.org/en/6.2.x/usage.html#specifying-tests-selecting-tests for
 additional details on how to select which tests to run.
@@ -47,14 +47,28 @@ Tests which take more than a few seconds to run should be marked as slow:
     def test_locking_and_publishing(self) -> None:
         ...
 
+Marking tests with committed output files
+-----------------------------------------
+
+Some tests work by comparing freshly generated outputs with expected outputs
+committed to the repository (usually locked requirements files and expected
+artifact metadata files).
+
+Tests which work this way must be marked as defined expected outputs:
+
+    @pytest.mark.slow
+    def test_locking_and_publishing(self) -> None:
+        ...
+
 
 Updating metadata and examining built artifacts
 -----------------------------------------------
 
-To generate a full local build to update metadata or to debug failures:
+To generate a full local sample project build to help debug failures:
 
     $ cd /path/to/repo/src/
-    $ ../.venv/bin/python -m venvstacks build --publish ../tests/sample_project/venvstacks.toml ~/path/to/output/folder
+    $ ../.venv/bin/python -m venvstacks build --publish \
+        ../tests/sample_project/venvstacks.toml ~/path/to/output/folder
 
 (use `../.venv/Scripts/python` on Windows)
 
@@ -66,9 +80,9 @@ built artifacts from the running test suite:
     VENVSTACKS_EXPORT_TEST_ARTIFACTS="~/path/to/output/folder"
     VENVSTACKS_FORCE_TEST_EXPORT=1
 
-The test suite can then be executed via `tox -e py3.11` or `tox -e py3.12` (the generated
-metadata and artifacts should be identical regardless of which version of Python is used
-to run `venvstacks`).
+The test suite can then be executed via `tox --m test` (the generated metadata and
+artifacts should be identical regardless of which version of Python is used to run
+`venvstacks`).
 
 If the forced export env var is not set or is set to the empty string, artifacts will only be
 exported when test cases fail. Forcing exports can be useful for generating reference
@@ -81,6 +95,8 @@ reference artifacts for debugging purposes.
 Debugging test suite failures related to artifact reproducibility
 -----------------------------------------------------------------
 
-`diffoscope` is a very helpful utility when trying to track down artifact discrepancies
-(only available for non-Windows systems, but can be used in WSL or another Linux environment
-to examine artifacts produced on Windows).
+[`diffoscope`](https://pypi.org/project/diffoscope/) is a very helpful utility
+when trying to track down artifact discrepancies.
+
+While it is only available for non-Windows systems, it can be used in WSL or
+another non-Windows environment to examine artifacts produced on Windows.
