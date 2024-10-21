@@ -1,0 +1,103 @@
+"""Common utilities for stack creation and venv publication"""
+
+import os
+import os.path
+import subprocess
+import sys
+import tarfile
+
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Any, Generator
+
+WINDOWS_BUILD = hasattr(os, "add_dll_directory")
+
+StrPath = str | os.PathLike[str]
+
+
+def as_normalized_path(path: StrPath, /) -> Path:
+    """Normalize given path and make it absolute, *without* resolving symlinks
+
+    Expands user directory references, but *not* environment variable references.
+    """
+    # Ensure user directory references are handled as absolute paths
+    expanded_path = os.path.expanduser(path)
+    return Path(os.path.abspath(expanded_path))
+
+
+@contextmanager
+def default_tarfile_filter(filter: str) -> Generator[None, None, None]:
+    """Temporarily set a global tarfile filter (useful for 3rd party API warnings)"""
+    if sys.version_info < (3, 12):
+        # Python 3.11 or earlier, can't set a default extraction filter
+        yield
+        return
+    # Python 3.12 or later, set a scoped default tarfile filter
+    if not filter.endswith("_filter"):
+        # Allow users to omit the `_filter` suffix
+        filter = f"{filter}_filter"
+    default_filter = getattr(tarfile, filter)
+    old_filter = tarfile.TarFile.extraction_filter
+    try:
+        tarfile.TarFile.extraction_filter = staticmethod(default_filter)
+        yield
+    finally:
+        tarfile.TarFile.extraction_filter = old_filter
+
+
+def get_env_python(env_path: Path) -> Path:
+    """Return the main Python binary in the given Python environment"""
+    if WINDOWS_BUILD:
+        env_python = env_path / "Scripts" / "python.exe"
+        if not env_python.exists():
+            # python-build-standalone puts the Windows Python CLI
+            # at the base of the runtime folder
+            env_python = env_path / "python.exe"
+    else:
+        env_python = env_path / "bin" / "python"
+    if env_python.exists():
+        return env_python
+    raise FileNotFoundError(f"No Python runtime found in {env_path}")
+
+
+_SUBPROCESS_PYTHON_CONFIG = {
+    # Ensure any Python invocations don't pick up unwanted sys.path entries
+    "PYTHONNOUSERSITE": "1",
+    "PYTHONSAFEPATH": "1",
+    "PYTHONPATH": "",
+    "PYTHONSTARTUP": "",
+    # Ensure UTF-8 mode is used
+    "PYTHONUTF8": "1",
+    "PYTHONLEGACYWINDOWSFSENCODING": "",
+    "PYTHONLEGACYWINDOWSSTDIO": "",
+    # There are other dev settings that may cause problems, but are also unlikely to be set
+    # See https://docs.python.org/3/using/cmdline.html#environment-variables
+    # These settings are here specifically to avoid the `pip-sync` issues noted
+    # in https://github.com/jazzband/pip-tools/issues/2117
+}
+
+
+def run_python_command_unchecked(
+    # Narrow list/dict type specs here due to the way `subprocess.run` params are typed
+    command: list[str],
+    *,
+    env: dict[str, str] | None = None,
+    **kwds: Any,
+) -> subprocess.CompletedProcess[str]:
+    if env is None:
+        env = os.environ.copy()
+    env.update(_SUBPROCESS_PYTHON_CONFIG)
+    result: subprocess.CompletedProcess[str] = subprocess.run(
+        command, env=env, text=True, **kwds
+    )
+    return result
+
+
+def run_python_command(
+    # Narrow list/dict type specs here due to the way `subprocess.run` params are typed
+    command: list[str],
+    **kwds: Any,
+) -> subprocess.CompletedProcess[str]:
+    result = run_python_command_unchecked(command, **kwds)
+    result.check_returncode()
+    return result

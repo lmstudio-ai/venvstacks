@@ -1,0 +1,1 @@
+This file has different contents for the hashing tests

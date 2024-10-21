@@ -1,0 +1,131 @@
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - "**"
+    paths:
+      # Run for changes to *this* workflow file, but not for other workflows
+      - ".github/workflows/test.yml"
+      # Trigger off all top level files by default
+      - "*"
+      # Trigger off source and test changes
+      - "src/**"
+      - "tests/**"
+      # Python scripts under misc still need linting & typechecks
+      - "misc/**.py"
+      # Skip running the source code checks when only documentation has been updated
+      - "!**.md"
+      - "!**.rst"
+      - "!**.txt"  # Any requirements file changes will also involve changing other files
+  push:
+    branches:
+      - main
+
+defaults:
+  run:
+    # Use the Git for Windows bash shell, rather than supporting Powershell
+    # This also implies `set -eo pipefail` (rather than just `set -e`)
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  tox:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false  # Always report results for all targets
+      max-parallel: 6
+      matrix:
+        python-version: [3.11, 3.12]
+        # Note: while venvstacks nominally supports x86-64 macOS, the actual demand
+        #       for that is unclear, so skip macos-12 testing until it is requested
+        os: [ubuntu-20.04, windows-2019, macos-14]
+
+    # Check https://github.com/actions/action-versions/tree/main/config/actions
+    # for latest versions if the standard actions start emitting warnings
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Capture timestamp for debugging artifacts
+      id: timestamp
+      run: |
+        echo "minutes=$(date '+%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        echo "dir=$(python -m pip cache dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache bootstrapping dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key:
+          pip-${{ matrix.os }}-${{ matrix.python-version }}-v1-${{ hashFiles('pdm.lock') }}
+        restore-keys: |
+          pip-${{ matrix.os }}-${{ matrix.python-version }}-v1-
+
+    - name: Install PDM
+      run: |
+        # Ensure `pdm` uses the same version as specified in `pdm.lock`
+        # while avoiding the error raised by https://github.com/pypa/pip/issues/12889
+        python -m pip install --upgrade -r ci-bootstrap-requirements.txt
+
+    - name: Create development virtual environment
+      run: |
+        python -m pdm sync --no-self --dev
+        # Handle Windows vs non-Windows differences in .venv layout
+        VIRTUAL_ENV_BIN_DIR="$PWD/.venv/bin"
+        test -e "$VIRTUAL_ENV_BIN_DIR" || VIRTUAL_ENV_BIN_DIR="$PWD/.venv/Scripts"
+        echo "VIRTUAL_ENV_BIN_DIR=$VIRTUAL_ENV_BIN_DIR" >> "$GITHUB_ENV"
+
+    - name: Get uv cache dir
+      id: uv-cache
+      run: |
+        source "$VIRTUAL_ENV_BIN_DIR/activate"
+        echo "dir=$(python -m uv cache dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache test suite stack dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.uv-cache.outputs.dir }}
+        key:
+          uv-${{ matrix.os }}-${{ matrix.python-version }}-v1-${{ hashFiles('tests/sample_project/requirements/**') }}
+        restore-keys: |
+          uv-${{ matrix.os }}-${{ matrix.python-version }}-v1-
+
+    - name: Static checks
+      run: |
+        source "$VIRTUAL_ENV_BIN_DIR/activate"
+        python -m tox -v -m static
+
+    - name: Fast tests
+      run: |
+        source "$VIRTUAL_ENV_BIN_DIR/activate"
+        python -m tox -v -- -m 'not slow'
+
+    - name: Slow tests
+      id: slow_tests
+      run: |
+        export VENVSTACKS_EXPORT_TEST_ARTIFACTS="$GITHUB_WORKSPACE/export/tests"
+        mkdir -p "$VENVSTACKS_EXPORT_TEST_ARTIFACTS"
+        source "$VIRTUAL_ENV_BIN_DIR/activate"
+        python -m tox -v -- -m slow
+
+    - name: Upload test failure debugging artifacts
+      if: failure() && steps.slow_tests.conclusion == 'failure'
+      uses: actions/upload-artifact@v4
+      with:
+        # ensure test artifact upload names are unique
+        name: exported-test-artifacts-${{ steps.timestamp.outputs.minutes }}-${{ matrix.os }}-py${{ matrix.python-version }}
+        path: |
+          export/tests
+        retention-days: 3 # Just for debugging, don't need to keep these long term

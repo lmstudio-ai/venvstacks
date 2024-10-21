@@ -1,0 +1,220 @@
+name: Update expected output
+
+on:
+  pull_request:
+    # Don't update PRs on every push. PRs can be closed and
+    # reopened if the update action should be run again.
+    types: [opened, reopened]
+    branches:
+      - "**"
+    paths:
+      # Run for changes to *this* workflow file, but not for other workflows
+      - ".github/workflows/update-expected-output.yml"
+      # Check PRs that update the expected test suite output configuration
+      - "tests/expected-output-config.toml"
+      - "tests/sample_project/venvstacks.toml"
+
+defaults:
+  run:
+    # Use the Git for Windows bash shell, rather than supporting Powershell
+    # This also implies `set -eo pipefail` (rather than just `set -e`)
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  timestamp:
+    runs-on: ubuntu-20.04
+    outputs:
+      iso8601: ${{ steps.timestamp.outputs.iso8601 }}
+      rfc3339: ${{ steps.timestamp.outputs.rfc3339 }}
+      seconds: ${{ steps.timestamp.outputs.seconds }}
+    steps:
+    - name: Capture timestamp for branch name generation
+      id: timestamp
+      run: |
+        timestamp_iso8601="$(date --utc --iso-8601=seconds)"
+        echo "iso8601=$timestamp_iso8601"| tee -a "$GITHUB_OUTPUT"
+        timestamp_rfc3339="$(date --date="$timestamp_iso8601" --rfc-3339=seconds)"
+        echo "rfc3339=$timestamp_rfc3339"| tee -a "$GITHUB_OUTPUT"
+        timestamp_seconds="$(date --date="$timestamp_iso8601" '+%Y%m%d-%H%M%S')"
+        echo "seconds=$timestamp_seconds"| tee -a "$GITHUB_OUTPUT"
+
+  test:
+    needs: timestamp
+    runs-on: ${{ matrix.os }}
+    outputs:
+      # Define multiple output variables to work around a matrix output
+      # limitation: https://github.com/orgs/community/discussions/17245
+      want-pr-linux: ${{ steps.set-matrix-result.outputs.want-pr-ubuntu }}
+      want-pr-windows: ${{ steps.set-matrix-result.outputs.want-pr-windows }}
+      want-pr-macos: ${{ steps.set-matrix-result.outputs.want-pr-macos }}
+    strategy:
+      fail-fast: true  # Don't bother updating if any test run fails
+      max-parallel: 3
+      matrix:
+        # Expected test output is required to be Python version independent
+        # The version specified here should match the `test` label in `tox.ini`
+        python-version: [3.12]
+        os: [ubuntu-20.04, windows-2019, macos-14]
+
+    # Check https://github.com/actions/action-versions/tree/main/config/actions
+    # for latest versions if the standard actions start emitting warnings
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        echo "dir=$(python -m pip cache dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache bootstrapping dependencies
+      uses: actions/cache@v4
+      with:
+        path:
+          ${{ steps.pip-cache.outputs.dir }}
+        key:
+          pip-${{ matrix.os }}-${{ matrix.python-version }}-v1-${{ hashFiles('pdm.lock') }}
+        restore-keys: |
+          pip-${{ matrix.os }}-${{ matrix.python-version }}-v1-
+
+    - name: Install PDM
+      run: |
+        # Ensure `pdm` uses the same version as specified in `pdm.lock`
+        # while avoiding the error raised by https://github.com/pypa/pip/issues/12889
+        python -m pip install --upgrade -r ci-bootstrap-requirements.txt
+
+    - name: Create development virtual environment
+      run: |
+        python -m pdm sync --no-self --dev
+        # Handle Windows vs non-Windows differences in .venv layout
+        VIRTUAL_ENV_BIN_DIR="$PWD/.venv/bin"
+        test -e "$VIRTUAL_ENV_BIN_DIR" || VIRTUAL_ENV_BIN_DIR="$PWD/.venv/Scripts"
+        echo "VIRTUAL_ENV_BIN_DIR=$VIRTUAL_ENV_BIN_DIR" >> "$GITHUB_ENV"
+
+    - name: Get uv cache dir
+      id: uv-cache
+      run: |
+        source "$VIRTUAL_ENV_BIN_DIR/activate"
+        echo "dir=$(python -m uv cache dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache test suite stack dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.uv-cache.outputs.dir }}
+        key:
+          uv-${{ matrix.os }}-${{ matrix.python-version }}-v1-${{ hashFiles('tests/sample_project/requirements/**') }}
+        restore-keys: |
+          uv-${{ matrix.os }}-${{ matrix.python-version }}-v1-
+
+    - name: Static checks
+      run: |
+        source "$VIRTUAL_ENV_BIN_DIR/activate"
+        python -m tox -v -m static
+
+    - name: Ensure other fast tests pass
+      run: |
+        source "$VIRTUAL_ENV_BIN_DIR/activate"
+        python -m tox -m test -- -m "not slow and not expected_output"
+
+    - name: Ensure other slow tests pass
+      run: |
+        source "$VIRTUAL_ENV_BIN_DIR/activate"
+        python -m tox -m test -- -m "slow and not expected_output"
+
+    - name: Update outputs
+      id: update-test-outputs
+      run: |
+        export VENVSTACKS_EXPORT_DIR="$GITHUB_WORKSPACE/export/"
+        mkdir -p "$VENVSTACKS_EXPORT_DIR"
+        export VENVSTACKS_UPDATED_TEST_OUTPUTS="$VENVSTACKS_EXPORT_DIR/updated-test-outputs.txt"
+        source "$VIRTUAL_ENV_BIN_DIR/activate"
+        tests/update-expected-output.sh "$VENVSTACKS_UPDATED_TEST_OUTPUTS"
+        UPDATED_TEST_OUTPUTS="$(cat "$VENVSTACKS_UPDATED_TEST_OUTPUTS")"
+        if [ -z "$UPDATED_TEST_OUTPUTS" ]; then
+            echo 'updated='| tee -a "$GITHUB_OUTPUT"
+        else
+            echo 'updated<<end-of-list'| tee -a "$GITHUB_OUTPUT"
+            echo "$UPDATED_TEST_OUTPUTS"| tee -a "$GITHUB_OUTPUT"
+            echo 'end-of-list'| tee -a "$GITHUB_OUTPUT"
+        fi
+
+    - name: Upload modified test output files
+      id: upload-changes
+      if: steps.update-test-outputs.outputs.updated
+      uses: actions/upload-artifact@v4
+      with:
+        name: venvstacks-test-outputs-${{ matrix.os }}
+        path: ${{ steps.update-test-outputs.outputs.updated }}
+        # Just for passing the updated lock files to the update job
+        retention-days: 1
+        if-no-files-found: error
+
+    - name: Set matrix job result
+      id: set-matrix-result
+      if: steps.update-test-outputs.outputs.updated
+      # Work around the matrix output limitations in Github Actions
+      run: |
+        output_var_name="want-pr-$(echo "$CI_TARGET" | cut -d '-' -f 1)"
+        echo "$output_var_name=true"| tee -a "$GITHUB_OUTPUT"
+      env:
+        CI_TARGET: ${{ matrix.os }}
+
+  update:
+    # Run this as a separate step to minimise the scope of the access token
+    # with permission to create pull requests
+    needs: [timestamp, test]
+    runs-on: ubuntu-20.04
+    # Need to check the output for each matrix job separately due to GitHub matrix output limitations
+    if: needs.test.outputs.want-pr-linux || needs.test.outputs.want-pr-windows || needs.test.outputs.want-pr-macos
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+    - name: Checkout PR branch
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+
+    - name: Download all updated output files
+      uses: actions/download-artifact@v4
+      with:
+        path: "import"
+
+    - name: Prepare output file updates
+      run: |
+          for update_dir in import/*; do
+            cp -RT "$update_dir/" tests/
+          done
+          git add tests/
+          git status
+
+    # See https://github.com/orgs/community/discussions/26560#discussioncomment-3531273
+    # for the origin of the magic number used in the commit email address
+    # Also see https://api.github.com/users/github-actions[bot]
+    - name: Create PR for output file updates
+      run: |
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        target_branch="$(git rev-parse --abbrev-ref --symbolic-full-name HEAD)"
+        new_branch="automated/expected-output/${BRANCH_TIMESTAMP}-$(git rev-parse --short @)"
+        git switch -c "$new_branch"
+        # Link the PR number as the trigger reference
+        pr_trigger="source PR: #$(echo "$GITHUB_REF_NAME" | cut -d '/' -f 1)"
+        pr_title="Update expected output ($UPDATE_TIME)"
+        pr_body="Update expected test output files from $new_branch ($pr_trigger)"
+        git commit -m "$pr_title" -m "$pr_body"
+        git show
+        git push --set-upstream origin "$new_branch"
+        gh pr create -B "$target_branch" -H "$new_branch" --fill-first
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH_TIMESTAMP: ${{ needs.timestamp.outputs.seconds }}
+        UPDATE_TIME: ${{ needs.timestamp.outputs.rfc3339 }}

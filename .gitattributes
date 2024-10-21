@@ -1,0 +1,23 @@
+# Ensure script file consistency
+*.ps1 text eol=lf
+*.py text eol=lf
+*.sh text eol=lf
+
+# Ensure config file consistency
+*.ini text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+
+# Ensure metadata consistency
+*.json text eol=lf
+*.lock text eol=lf
+ci-*.txt text eol=lf
+*.in text eol=lf
+
+# Ensure documentation consistency
+*.md text eol=lf
+*.rst text eol=lf
+
+# Ensure file content hash consistency
+requirements*.txt text eol=lf
+tests/hash_fodder/** text eol=lf

@@ -1,0 +1,2 @@
+# Don't commit the locked requirements or the lock metadata for the minimal project
+requirements/
