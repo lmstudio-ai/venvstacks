@@ -32,28 +32,29 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+    # sphinx-action uses docker under the hood and doesn't play nice with the
+    # dependency caching, so it may be better to switch to using `tox -e docs`
+    # and living without the nice integrated GitHub Actions error reporting.
 
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "dir=$(python -m pip cache dir)" >> $GITHUB_OUTPUT
+    # - name: Set up Python ${{ matrix.python-version }}
+    #   uses: actions/setup-python@v5
+    #   with:
+    #     python-version: ${{ matrix.python-version }}
 
-    - name: Cache docs build dependencies
-      uses: actions/cache@v4
-      with:
-        path: ${{ steps.pip-cache.outputs.dir }}
-        key:
-          pip-docs-${{ matrix.os }}-${{ matrix.python-version }}-v1-${{ hashFiles('docs/requirements.txt') }}
-        restore-keys: |
-          pip-docs-${{ matrix.os }}-${{ matrix.python-version }}-v1-
+    # - name: Get pip cache dir
+    #   id: pip-cache
+    #   run: |
+    #     echo "dir=$(python -m pip cache dir)" >> $GITHUB_OUTPUT
 
-    # This uses docker under the hood and doesn't play nice with the dependency
-    # caching, so it may be better to switch to using `tox -e docs` and live
-    # without the nice integrated error reporting.
+    # - name: Cache docs build dependencies
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: ${{ steps.pip-cache.outputs.dir }}
+    #     key:
+    #       pip-docs-${{ matrix.os }}-${{ matrix.python-version }}-v1-${{ hashFiles('docs/requirements.txt') }}
+    #     restore-keys: |
+    #       pip-docs-${{ matrix.os }}-${{ matrix.python-version }}-v1-
+
     - name: Build HTML
       uses: ammaraskar/sphinx-action@8.0.2
       with:
@@ -66,11 +67,11 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: html-docs
-        path: docs/_build/dirhtml/
+        path: docs/_build/
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       if: github.ref == 'refs/heads/main'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: docs/_build/dirhtml
+        publish_dir: docs/_build/
