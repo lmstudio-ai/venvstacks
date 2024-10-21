@@ -13,4 +13,5 @@ __pycache__
 .mypy*
 *.egg-info
 *.dist-info
+/dist/
 
