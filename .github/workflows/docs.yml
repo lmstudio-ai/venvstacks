@@ -51,8 +51,11 @@ jobs:
         restore-keys: |
           pip-docs-${{ matrix.os }}-${{ matrix.python-version }}-v1-
 
+    # This uses docker under the hood and doesn't play nice with the dependency
+    # caching, so it may be better to switch to using `tox -e docs` and live
+    # without the nice integrated error reporting.
     - name: Build HTML
-      uses: ammaraskar/sphinx-action@master
+      uses: ammaraskar/sphinx-action@8.0.2
       with:
         docs-folder: "docs/"
         # Skip link check until after the venvstacks repo is public
