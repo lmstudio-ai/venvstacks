@@ -10,9 +10,10 @@ on:
     paths:
       # Run for changes to *this* workflow file, but not for other workflows
       - ".github/workflows/update-expected-output.yml"
-      # Check PRs that update the expected test suite output configuration
+      # Check PRs that update the expected test suite output results
       - "tests/expected-output-config.toml"
       - "tests/sample_project/venvstacks.toml"
+      - "tests/sample_project/launch_modules/**"
 
 defaults:
   run:
