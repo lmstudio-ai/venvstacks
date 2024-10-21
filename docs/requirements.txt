@@ -78,4 +78,4 @@ urllib3==2.2.3
 uv==0.4.21
 virtualenv==20.27.0
 wheel==0.44.0
--e .  # this package
+.  # this package
