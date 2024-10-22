@@ -47,8 +47,7 @@ autosummary_generate = False
 # -- Options for intersphinx ----------------------------------------------------------
 
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3", None),
-    "pypug": ("https://packaging.python.org", None),
+    "py": ("https://docs.python.org/3", None),
 }
 
 
