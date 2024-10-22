@@ -1,9 +1,9 @@
 .. venvstacks documentation master file, created by
    sphinx-quickstart on Mon Oct 21 20:08:31 2024.
 
-======================================
-Welcome to venvstacks's documentation!
-======================================
+==========================================
+Welcome to ``venvstacks``'s documentation!
+==========================================
 
 .. toctree::
    :maxdepth: 2
@@ -11,5 +11,6 @@ Welcome to venvstacks's documentation!
 
    overview
    glossary
+   design
    api/index
    development/index
