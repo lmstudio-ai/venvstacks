@@ -67,6 +67,8 @@ Caveats and Limitations
   declared as stable in the documentation may be renamed or relocated without a
   deprecation period. API stabilisation (mostly splitting up the overly large
   `venvstacks.stacks` namespace) will be the trigger for the 1.0 milestone release.
+* while the `venvstacks` CLI is broadly stable, there are still some specific areas
+  where changes may occur (such as in the handling of relative paths).
 * dynamic library dependencies across layers currently only work on Windows.
   There is a [proposal](https://github.com/lmstudio-ai/venvstacks/issues/1) in
   place for resolving that limitation, but it has not yet been implemented.

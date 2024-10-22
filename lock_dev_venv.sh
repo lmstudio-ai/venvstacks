@@ -16,3 +16,7 @@ echo "Exported $ci_bootstrap_file"
 ci_constraints_file="ci-constraints.txt"
 pdm export --dev --no-extras -o "$ci_constraints_file"
 echo "Exported $ci_constraints_file"
+# Export the docs build dependencies for the sphinx build
+docs_requirements_file="docs/requirements.txt"
+pdm export --dev --self --no-hashes -o "$docs_requirements_file"
+echo "Exported $docs_requirements_file"
