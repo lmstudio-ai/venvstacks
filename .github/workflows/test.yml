@@ -114,7 +114,7 @@ jobs:
 
     # Only run the slow tests on the oldest and newest versions
     - name: Slow tests
-      if: contains(fromJSON('["3.11", "3.13"]'), matrix.os)
+      if: contains(fromJSON('["3.11", "3.13"]'), matrix.python-version)
       id: slow_tests
       run: |
         export VENVSTACKS_EXPORT_TEST_ARTIFACTS="$GITHUB_WORKSPACE/export/tests"
