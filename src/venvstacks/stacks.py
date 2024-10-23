@@ -1031,7 +1031,7 @@ class _PythonEnvironment(ABC):
             self.dynlib_path = self.env_path / "Library" / "bin"
         else:
             # No extra library search paths on non-Windows systems
-            # (but see https://github.com/lmstudio-ai/venvstacks/issues/1)
+            # (but see https://github.com/lmstudio-ai/venvstacks/issues/38)
             self.dynlib_path = None
         self.env_lock = EnvironmentLock(
             self.requirements_path,
