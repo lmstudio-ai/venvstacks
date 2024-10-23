@@ -18,14 +18,14 @@ _THIS_PACKAGE = __spec__.parent
 
 
 def _get_usage_name() -> str:
-    exec_name = os.path.basename(sys.argv[0])
+    exec_name = os.path.basename(sys.argv[0]).removesuffix(".exe")
     if exec_name == _THIS_PACKAGE:
         # Entry point wrapper, suggest direct execution
         return exec_name
     # Could be `python -m`, could be the test suite,
     # could be something else calling `venvstacks.cli.main`,
     # but treat it as `python -m venvstacks` regardless
-    py_name = os.path.basename(sys.executable)
+    py_name = os.path.basename(sys.executable).removesuffix(".exe")
     return f"{py_name} -m {_THIS_PACKAGE}"
 
 
