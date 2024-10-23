@@ -38,7 +38,7 @@ jobs:
       fail-fast: false  # Always report results for all targets
       max-parallel: 6
       matrix:
-        python-version: [3.11, 3.12]
+        python-version: [3.11, 3.12, 3.13]
         # Note: while venvstacks nominally supports x86-64 macOS, the actual demand
         #       for that is unclear, so skip macos-12 testing until it is requested
         os: [ubuntu-20.04, windows-2019, macos-14]
@@ -112,7 +112,9 @@ jobs:
         source "$VIRTUAL_ENV_BIN_DIR/activate"
         python -m tox -v -- -m 'not slow'
 
+    # Only run the slow tests on the oldest and newest versions
     - name: Slow tests
+      if: contains(fromJSON('["3.11", "3.13"]'), matrix.os)
       id: slow_tests
       run: |
         export VENVSTACKS_EXPORT_TEST_ARTIFACTS="$GITHUB_WORKSPACE/export/tests"
