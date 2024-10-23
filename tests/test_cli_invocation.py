@@ -148,12 +148,14 @@ class TestTopLevelCommand:
         assert result.exception is None, report_traceback(result.exception)
         assert result.exit_code == 0
 
+    # See https://github.com/lmstudio-ai/venvstacks/issues/42
+    @pytest.mark.xfail(
+        sys.platform == "win32", reason="UnicodeDecodeError parsing output"
+    )
     def test_entry_point_help(self) -> None:
         if sys.prefix == sys.base_prefix:
             pytest.skip("Entry point test requires test execution in venv")
         expected_entry_point = Path(sys.executable).parent / "venvstacks"
-        if sys.platform == "win32":
-            expected_entry_point = expected_entry_point.with_suffix(".exe")
         command = [str(expected_entry_point), "--help"]
         result = run_python_command_unchecked(
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
