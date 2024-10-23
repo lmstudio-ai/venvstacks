@@ -306,14 +306,19 @@ and the framework layers to share dependencies installed in the runtime layers.<
 <section id="installing">
 <h2>Installing<a class="headerlink" href="#installing" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> is available from the <a class="extlink-pypi reference external" href="https://pypi.org/project/venvstacks/">Python Package Index</a>,
-and can be installed with <a class="extlink-pypi reference external" href="https://pypi.org/project/pip/">pip</a>:</p>
+and can be installed with <a class="extlink-pypi reference external" href="https://pypi.org/project/pipx/">pipx</a> (or similar tools):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pipx<span class="w"> </span>install<span class="w"> </span>venvstacks
+</pre></div>
+</div>
+<p>Alternatively, it can be installed as a user level package (although this may
+make future Python version upgrades more irritating):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>venvstacks
 </pre></div>
 </div>
 <p>The command line help also provides additional usage information:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>.venv/bin/python<span class="w"> </span>-m<span class="w"> </span>venvstacks<span class="w"> </span>--help
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>--help
 
-<span class="go">Usage: python -m venvstacks [OPTIONS] COMMAND [ARGS]...</span>
+<span class="go">Usage: venvstacks [OPTIONS] COMMAND [ARGS]...</span>
 
 <span class="go">Lock, build, and publish Python virtual environment stacks.</span>
 
@@ -379,7 +384,7 @@ all running in a controlled Python 3.11 base runtime:</p>
 </section>
 <section id="locking-environment-stacks">
 <h2>Locking environment stacks<a class="headerlink" href="#locking-environment-stacks" title="Link to this heading">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>venvstacks<span class="w"> </span>lock<span class="w"> </span>sklearn_demo/venvstacks.toml
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>lock<span class="w"> </span>sklearn_demo/venvstacks.toml
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">lock</span></code> subcommand takes the defined layer requirements from the specification,
@@ -392,7 +397,7 @@ rather than upper layers needing to be rebuilt for <em>every</em> change to a lo
 </section>
 <section id="building-environment-stacks">
 <h2>Building environment stacks<a class="headerlink" href="#building-environment-stacks" title="Link to this heading">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>venvstacks<span class="w"> </span>build<span class="w"> </span>sklearn_demo/venvstacks.toml
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>build<span class="w"> </span>sklearn_demo/venvstacks.toml
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">build</span></code> subcommand performs the step of converting the layer specifications
@@ -406,7 +411,7 @@ and publishing to be performed in a single step (see the command line help for d
 </section>
 <section id="publishing-environment-layer-archives">
 <h2>Publishing environment layer archives<a class="headerlink" href="#publishing-environment-layer-archives" title="Link to this heading">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>venvstacks<span class="w"> </span>publish<span class="w"> </span>--tag-outputs<span class="w"> </span>--output-dir<span class="w"> </span>demo_artifacts<span class="w"> </span>sklearn_demo/venvstacks.toml
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>publish<span class="w"> </span>--tag-outputs<span class="w"> </span>--output-dir<span class="w"> </span>demo_artifacts<span class="w"> </span>sklearn_demo/venvstacks.toml
 </pre></div>
 </div>
 <p>Once the environments have been successfully built,
@@ -424,7 +429,7 @@ and the included launch modules) and output details
 </section>
 <section id="locally-exporting-environment-stacks">
 <h2>Locally exporting environment stacks<a class="headerlink" href="#locally-exporting-environment-stacks" title="Link to this heading">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>venvstacks<span class="w"> </span>local-export<span class="w"> </span>--output-dir<span class="w"> </span>demo_export<span class="w"> </span>sklearn_demo/venvstacks.toml
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>local-export<span class="w"> </span>--output-dir<span class="w"> </span>demo_export<span class="w"> </span>sklearn_demo/venvstacks.toml
 </pre></div>
 </div>
 <p>Given that even considering the use of <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> implies that some layer archives may be of
