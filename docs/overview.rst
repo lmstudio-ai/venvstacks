@@ -17,7 +17,14 @@ Installing
 ----------
 
 ``venvstacks`` is available from the :pypi:`Python Package Index <venvstacks>`,
-and can be installed with :pypi:`pip`:
+and can be installed with :pypi:`pipx` (or similar tools):
+
+.. code-block:: console
+
+   $ pipx install venvstacks
+
+Alternatively, it can be installed as a user level package (although this may
+make future Python version upgrades more irritating):
 
 .. code-block:: console
 
@@ -27,9 +34,9 @@ The command line help also provides additional usage information:
 
 .. code-block:: console
 
-   $ .venv/bin/python -m venvstacks --help
+   $ venvstacks --help
 
-   Usage: python -m venvstacks [OPTIONS] COMMAND [ARGS]...
+   Usage: venvstacks [OPTIONS] COMMAND [ARGS]...
 
    Lock, build, and publish Python virtual environment stacks.
 
@@ -100,7 +107,7 @@ Locking environment stacks
 
 .. code-block:: console
 
-   $ python -m venvstacks lock sklearn_demo/venvstacks.toml
+   $ venvstacks lock sklearn_demo/venvstacks.toml
 
 The ``lock`` subcommand takes the defined layer requirements from the specification,
 and uses them to perform a complete combined resolution of all of the environment stacks
@@ -116,7 +123,7 @@ Building environment stacks
 
 .. code-block:: console
 
-   $ python -m venvstacks build sklearn_demo/venvstacks.toml
+   $ venvstacks build sklearn_demo/venvstacks.toml
 
 The ``build`` subcommand performs the step of converting the layer specifications
 and their locked requirements into a working Python environment
@@ -133,7 +140,7 @@ Publishing environment layer archives
 
 .. code-block:: console
 
-   $ python -m venvstacks publish --tag-outputs --output-dir demo_artifacts sklearn_demo/venvstacks.toml
+   $ venvstacks publish --tag-outputs --output-dir demo_artifacts sklearn_demo/venvstacks.toml
 
 Once the environments have been successfully built,
 the ``publish`` command allows each layer to be converted to a separate
@@ -154,7 +161,7 @@ Locally exporting environment stacks
 
 .. code-block:: console
 
-   $ python -m venvstacks local-export --output-dir demo_export sklearn_demo/venvstacks.toml 
+   $ venvstacks local-export --output-dir demo_export sklearn_demo/venvstacks.toml 
 
 Given that even considering the use of ``venvstacks`` implies that some layer archives may be of
 significant size (a fully built `pytorch` archive weighs in at multiple gigabytes, for example),

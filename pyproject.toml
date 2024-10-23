@@ -49,6 +49,9 @@ rich-cli = [
   "typer>=0.12.4",
 ]
 
+[project.scripts]
+venvstacks = "venvstacks.cli:main"
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"

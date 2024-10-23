@@ -46,9 +46,9 @@ venvstacks can then be executed via the ``-m`` switch:
 
 .. code-block:: console
 
-    $ .venv/bin/python -m venvstacks --help
+    $ .venv/bin/venvstacks --help
 
-     Usage: python -m venvstacks [OPTIONS] COMMAND [ARGS]...
+     Usage: venvstacks [OPTIONS] COMMAND [ARGS]...
 
      Lock, build, and publish Python virtual environment stacks.
 
