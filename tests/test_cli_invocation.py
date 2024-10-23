@@ -132,6 +132,8 @@ def mocked_runner() -> Generator[MockedRunner, None, None]:
 class TestTopLevelCommand:
     def test_implicit_help(self, mocked_runner: MockedRunner) -> None:
         result = mocked_runner.invoke([])
+        # Usage message should suggest indirect execution
+        assert "Usage: python -m venvstacks [" in result.stdout
         # Top-level callback docstring is used as the overall CLI help text
         cli_help = cli.handle_app_options.__doc__
         assert cli_help is not None
@@ -155,7 +157,7 @@ class TestTopLevelCommand:
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         # Usage message should suggest direct execution
-        assert "Usage: venvstacks" in result.stdout
+        assert "Usage: venvstacks [" in result.stdout
         # Top-level callback docstring is used as the overall CLI help text
         cli_help = cli.handle_app_options.__doc__
         assert cli_help is not None
@@ -164,7 +166,7 @@ class TestTopLevelCommand:
         assert result.returncode == 0
 
 
-EXPECTED_USAGE_PREFIX = "Usage: python -m venvstacks"
+EXPECTED_USAGE_PREFIX = "Usage: python -m venvstacks "
 EXPECTED_SUBCOMMANDS = ["lock", "build", "local-export", "publish"]
 NO_SPEC_PATH: list[str] = []
 NEEDS_SPEC_PATH = sorted(set(EXPECTED_SUBCOMMANDS) - set(NO_SPEC_PATH))
