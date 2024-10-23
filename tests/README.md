@@ -69,7 +69,7 @@ Updating metadata and examining built artifacts
 To generate a full local sample project build to help debug failures:
 
     $ cd /path/to/repo/
-    $ pdm run python -m venvstacks build --publish \
+    $ pdm run venvstacks build --publish \
         tests/sample_project/venvstacks.toml ~/path/to/output/folder
 
 This assumes `pdm sync --dev` has been used to set up a local development venv.

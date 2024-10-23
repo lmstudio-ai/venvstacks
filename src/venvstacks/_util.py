@@ -8,7 +8,7 @@ import tarfile
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any, Generator, Mapping
 
 WINDOWS_BUILD = hasattr(os, "add_dll_directory")
 
@@ -78,15 +78,16 @@ _SUBPROCESS_PYTHON_CONFIG = {
 
 
 def run_python_command_unchecked(
-    # Narrow list/dict type specs here due to the way `subprocess.run` params are typed
+    # Narrow list type spec here due to the way `subprocess.run` params are typed
     command: list[str],
     *,
-    env: dict[str, str] | None = None,
+    env: Mapping[str, str] | None = None,
     **kwds: Any,
 ) -> subprocess.CompletedProcess[str]:
-    if env is None:
-        env = os.environ.copy()
-    env.update(_SUBPROCESS_PYTHON_CONFIG)
+    run_env = os.environ.copy()
+    if env is not None:
+        run_env.update(env)
+    run_env.update(_SUBPROCESS_PYTHON_CONFIG)
     result: subprocess.CompletedProcess[str] = subprocess.run(
         command, env=env, text=True, **kwds
     )
@@ -94,7 +95,7 @@ def run_python_command_unchecked(
 
 
 def run_python_command(
-    # Narrow list/dict type specs here due to the way `subprocess.run` params are typed
+    # Narrow list type spec here due to the way `subprocess.run` params are typed
     command: list[str],
     **kwds: Any,
 ) -> subprocess.CompletedProcess[str]:

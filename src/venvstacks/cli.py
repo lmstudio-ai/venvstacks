@@ -1,12 +1,33 @@
 """Command line interface implementation"""
 
 import os.path
+import sys
 
 from typing import Annotated
 
 import typer
 
 from .stacks import StackSpec, BuildEnvironment, _format_json, IndexConfig
+
+# Inspired by the Python 3.13+ `argparse` feature,
+# but reports `python -m venvstacks` whenever `__main__`
+# refers to something other than the entry point script,
+# rather than trying to infer anything from the main
+# module's `__spec__` attributes.
+_THIS_PACKAGE = __spec__.parent
+
+
+def _get_usage_name() -> str:
+    exec_name = os.path.basename(sys.argv[0]).removesuffix(".exe")
+    if exec_name == _THIS_PACKAGE:
+        # Entry point wrapper, suggest direct execution
+        return exec_name
+    # Could be `python -m`, could be the test suite,
+    # could be something else calling `venvstacks.cli.main`,
+    # but treat it as `python -m venvstacks` regardless
+    py_name = os.path.basename(sys.executable).removesuffix(".exe")
+    return f"{py_name} -m {_THIS_PACKAGE}"
+
 
 _cli = typer.Typer(
     add_completion=False,
@@ -15,7 +36,7 @@ _cli = typer.Typer(
 )
 
 
-@_cli.callback(name="python -m venvstacks")
+@_cli.callback(name=_get_usage_name())
 def handle_app_options() -> None:
     """Lock, build, and publish Python virtual environment stacks."""
     # TODO: Handle app logging config via main command level options
