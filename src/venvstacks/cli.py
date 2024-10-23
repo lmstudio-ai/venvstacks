@@ -17,7 +17,7 @@ from .stacks import StackSpec, BuildEnvironment, _format_json, IndexConfig
 _THIS_PACKAGE = __spec__.parent
 
 
-def _get_usage_name():
+def _get_usage_name() -> str:
     exec_name = os.path.basename(sys.argv[0])
     if exec_name == _THIS_PACKAGE:
         # Entry point wrapper, suggest direct execution
