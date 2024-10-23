@@ -375,27 +375,41 @@ setup and execution of these tests across multiple Python versions.</p>
 <p>Some of the tests build and deploy full environment stacks, which makes them
 take a long time to run (5+ minutes for the sample project build and export,
 even with fully cached dependencies).</p>
-<p>Local test runs will usually want to skip these slow tests:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tox<span class="w"> </span>-m<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;not slow&quot;</span>
+<p>Local test runs skip these slow tests by default, but they can be specifically
+requested by overriding the default positional arguments in the <code class="docutils literal notranslate"><span class="pre">tox</span></code> command.</p>
+<p>For example, this will run <em>just</em> the slow tests using the default testing
+environment:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tox<span class="w"> </span>-m<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;slow&quot;</span>
 </pre></div>
 </div>
 <p>The example above runs tests against the default Python version configured in
 <code class="docutils literal notranslate"><span class="pre">tox.ini</span></code>. You can also use other defined versions by specifying the target
 environment directly:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tox<span class="w"> </span>-e<span class="w"> </span>py3.11<span class="w"> </span>--<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;not slow&quot;</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tox<span class="w"> </span>-e<span class="w"> </span>py3.11
+</pre></div>
+</div>
+<p>There are also additional labels defined for running the oldest test environment,
+the latest test environment, and all test environments:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tox<span class="w"> </span>-m<span class="w"> </span>test_oldest
+<span class="gp">$ </span>tox<span class="w"> </span>-m<span class="w"> </span>test_latest
+<span class="gp">$ </span>tox<span class="w"> </span>-m<span class="w"> </span>test_all
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">tox</span></code> has been configured to forward any additional arguments it is given to
-<code class="docutils literal notranslate"><span class="pre">pytest</span></code> (as shown in the examples). This enables the use of pytest’s <a class="reference external" href="https://docs.pytest.org/en/stable/how-to/usage.html#specifying-which-tests-to-run">rich CLI</a>.
-In particular, you can select tests using all the optionts that pytest provides:</p>
+<code class="docutils literal notranslate"><span class="pre">pytest</span></code> (as shown in the slow test example).
+This enables the use of pytest’s <a class="reference external" href="https://docs.pytest.org/en/stable/how-to/usage.html#specifying-which-tests-to-run">rich CLI</a>.
+In particular, you can select tests using all the options that pytest provides:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="c1"># Using file name</span>
 <span class="gp">$ </span>tox<span class="w"> </span>-m<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--<span class="w"> </span>tests/test_basics.py
 <span class="gp">$ </span><span class="c1"># Using markers</span>
-<span class="gp">$ </span>tox<span class="w"> </span>-m<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;not slow&quot;</span>
+<span class="gp">$ </span>tox<span class="w"> </span>-m<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;slow&quot;</span>
 <span class="gp">$ </span><span class="c1"># Using keyword text search</span>
 <span class="gp">$ </span>tox<span class="w"> </span>-m<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--<span class="w"> </span>-k<span class="w"> </span><span class="s2">&quot;lock and not publish&quot;</span>
 </pre></div>
 </div>
+<p>Keep in mind when doing this that the arguments given will <em>replace</em> the
+default <code class="docutils literal notranslate"><span class="pre">-m</span> <span class="pre">&quot;not</span> <span class="pre">slow&quot;</span></code> test marker filtering, so remember to include
+that explicitly when it is still desired.</p>
 <p>Additional notes on running and updating the tests can be found in the
 <a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/blob/main/tests/README.md">testing README file</a>.</p>
 <section id="tests-with-committed-expected-output">
