@@ -22,20 +22,20 @@ Static analysis:
 
     tox -m static
 
-Full test suite (using the default target Python version):
+Skip slow tests (`-m "not slow"` is passed to `pytest` by default):
 
     tox -m test
 
-Skip slow tests (options after `--` are passed to `pytest`):
+Full test run (options after `--` are passed to `pytest`):
 
-    tox -m test -- -m "not slow"
+    tox -m test -- -m ""
 
-Specific tests (options after `--` are passed to `pytest`):
+Specific tests (using `--` *replaces* the default `pytest` args):
 
-    tox -m test -- -k test_minimal_project
+    tox -m test -- -k test_minimal_project -m "not slow"
 
-Refer to https://docs.pytest.org/en/6.2.x/usage.html#specifying-tests-selecting-tests for
-additional details on how to select which tests to run.
+Refer to https://docs.pytest.org/en/stable/how-to/usage.html#specifying-which-tests-to-run
+for additional details on how to select which tests to run.
 
 
 Marking slow tests
@@ -47,6 +47,7 @@ Tests which take more than a few seconds to run should be marked as slow:
     def test_locking_and_publishing(self) -> None:
         ...
 
+
 Marking tests with committed output files
 -----------------------------------------
 
@@ -54,10 +55,11 @@ Some tests work by comparing freshly generated outputs with expected outputs
 committed to the repository (usually locked requirements files and expected
 artifact metadata files).
 
-Tests which work this way must be marked as defined expected outputs:
+Tests which work this way must be marked as relying on expected outputs:
 
     @pytest.mark.slow
-    def test_locking_and_publishing(self) -> None:
+    @pytest.mark.expected_output
+    def test_build_is_reproducible(self) -> None:
         ...
 
 
@@ -66,13 +68,11 @@ Updating metadata and examining built artifacts
 
 To generate a full local sample project build to help debug failures:
 
-    $ cd /path/to/repo/src/
-    $ ../.venv/bin/python -m venvstacks build --publish \
-        ../tests/sample_project/venvstacks.toml ~/path/to/output/folder
+    $ cd /path/to/repo/
+    $ pdm run python -m venvstacks build --publish \
+        tests/sample_project/venvstacks.toml ~/path/to/output/folder
 
-(use `../.venv/Scripts/python` on Windows)
-
-This assumes `pdm sync --no-self --dev` has been used to set up a local development venv.
+This assumes `pdm sync --dev` has been used to set up a local development venv.
 
 Alternatively, the following CI export variables may be set locally to export metadata and
 built artifacts from the running test suite:
@@ -80,13 +80,15 @@ built artifacts from the running test suite:
     VENVSTACKS_EXPORT_TEST_ARTIFACTS="~/path/to/output/folder"
     VENVSTACKS_FORCE_TEST_EXPORT=1
 
-The test suite can then be executed via `tox --m test` (the generated metadata and
-artifacts should be identical regardless of which version of Python is used to run
-`venvstacks`).
+The test suite can then be executed via `tox --m test -- -m "expected_output"`
+(the generated metadata and artifacts should be identical regardless of which
+version of Python is used to run `venvstacks`).
 
 If the forced export env var is not set or is set to the empty string, artifacts will only be
 exported when test cases fail. Forcing exports can be useful for generating reference
 artifacts and metadata when tests are passing locally but failing in pre-merge CI.
+
+If the target export directory doesn't exist, the artifact exports will be skipped.
 
 The `misc/export_test_artifacts.sh` script can be used to simplify the creation of
 reference artifacts for debugging purposes.

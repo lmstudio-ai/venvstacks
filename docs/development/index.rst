@@ -109,11 +109,15 @@ Some of the tests build and deploy full environment stacks, which makes them
 take a long time to run (5+ minutes for the sample project build and export,
 even with fully cached dependencies).
 
-Local test runs will usually want to skip these slow tests:
+Local test runs skip these slow tests by default, but they can be specifically
+requested by overriding the default positional arguments in the ``tox`` command.
+
+For example, this will run *just* the slow tests using the default testing
+environment:
 
 .. code-block:: console
 
-    $ tox -m test -- -m "not slow"
+    $ tox -m test -- -m "slow"
 
 The example above runs tests against the default Python version configured in
 ``tox.ini``. You can also use other defined versions by specifying the target
@@ -121,20 +125,34 @@ environment directly:
 
 .. code-block:: console
 
-    $ tox -e py3.11 -- -m "not slow"
+    $ tox -e py3.11
+
+There are also additional labels defined for running the oldest test environment,
+the latest test environment, and all test environments:
+
+.. code-block:: console
+
+    $ tox -m test_oldest
+    $ tox -m test_latest
+    $ tox -m test_all
 
 ``tox`` has been configured to forward any additional arguments it is given to
-``pytest`` (as shown in the examples). This enables the use of pytest's `rich CLI`_.
-In particular, you can select tests using all the optionts that pytest provides:
+``pytest`` (as shown in the slow test example).
+This enables the use of pytest's `rich CLI`_.
+In particular, you can select tests using all the options that pytest provides:
 
 .. code-block:: console
 
     $ # Using file name
     $ tox -m test -- tests/test_basics.py
     $ # Using markers
-    $ tox -m test -- -m "not slow"
+    $ tox -m test -- -m "slow"
     $ # Using keyword text search
     $ tox -m test -- -k "lock and not publish"
+
+Keep in mind when doing this that the arguments given will *replace* the
+default ``-m "not slow"`` test marker filtering, so remember to include
+that explicitly when it is still desired.
 
 Additional notes on running and updating the tests can be found in the
 `testing README file`_.
