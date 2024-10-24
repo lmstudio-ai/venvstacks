@@ -882,11 +882,9 @@ def _pdm_python_install(target_path: Path, request: str) -> Path | None:
         with tempfile.NamedTemporaryFile() as tf:
             tf.close()
             original_filename = download(python_file, tf.name, env.session)
-            # TODO: use "tar_filter" here instead of "fully_trusted"
-            # Currently blocked on Python 3.11 producing different results
-            # if Python 3.12+ enables a filter that actually makes any changes
-            # https://github.com/lmstudio-ai/venvstacks/issues/23
-            with default_tarfile_filter("fully_trusted"):
+            # Use "tar_filter" if stdlib tar extraction filters are available
+            # (they were only added in Python 3.12, so no filtering on 3.11)
+            with default_tarfile_filter("tar_filter"):
                 install_file(tf.name, destination, original_filename)
     if interpreter.exists():
         # Installation successful, return the path to the installation folder
