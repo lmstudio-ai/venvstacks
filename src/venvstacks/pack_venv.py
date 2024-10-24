@@ -267,7 +267,7 @@ def create_archive(
             def report_progress(_: Any) -> None:
                 pass
         else:
-            progress_bar = ProgressBar()
+            progress_bar = _ProgressBar()
             progress_bar.show(0.0)
             num_archive_entries = 0
             total_entries_to_archive = sum(1 for __ in env_path.rglob("*"))
@@ -379,6 +379,15 @@ def _make_tar_archive(
         tarinfo.uname = tarinfo.gname = "root"
         if _clamp_mtime is not None:
             tarinfo.mtime = _clamp_mtime(tarinfo.mtime)
+        # Ensure permissions are compatible with `tar_filter` extraction
+        # Layered environments will still need to be fully trusted when
+        # unpacking them (due to the external symlinks to the base runtime)
+        mode = tarinfo.mode
+        if mode is not None:
+            # Apply the same mode filtering as tarfile.tar_filter in 3.12+
+            # https://docs.python.org/3.13/library/tarfile.html#tarfile.tar_filter
+            # Clears high bits (e.g. setuid/)setgid, and the group/other write bits
+            tarinfo.mode = mode & 0o755
         # Report progress if requested
         if progress_callback is not None:
             progress_callback(tarinfo.name)
@@ -405,12 +414,12 @@ def _make_tar_archive(
 
 if _WINDOWS_BUILD:
 
-    def set_mtime(fspath: str, mtime: int | float) -> None:
+    def _set_mtime(fspath: str, mtime: int | float) -> None:
         # There's no `follow_symlinks` option available on Windows
         os.utime(fspath, (mtime, mtime))
 else:
 
-    def set_mtime(fspath: str, mtime: int | float) -> None:
+    def _set_mtime(fspath: str, mtime: int | float) -> None:
         os.utime(fspath, (mtime, mtime), follow_symlinks=False)
 
 
@@ -476,7 +485,7 @@ def _make_zipfile(
             fs_mtime = os.lstat(fspath).st_mtime
             zip_entry_mtime = adjust_mtime(min(fs_mtime, max_mtime))
             if zip_entry_mtime != fs_mtime:
-                set_mtime(fspath, zip_entry_mtime)
+                _set_mtime(fspath, zip_entry_mtime)
             zf.write(fspath, arcname)
 
         arcname = os.path.normpath(base_dir)
@@ -516,22 +525,25 @@ else:
     # Everywhere else, create XZ compressed tar archives
     _make_archive = _make_tar_archive
 
-# Basic progress bar support, taken from my SO answer at
+# Basic progress bar support, taken from ncoghlan's SO answer at
 # https://stackoverflow.com/questions/3160699/python-progress-bar/78590319#78590319
-# (since the code originated with me, it isn't subject to Stack Overflow's CC-BY-SA terms)
+# (since the code originated with her, it isn't subject to Stack Overflow's CC-BY-SA terms)
 #
-# I originally skipped this, but archiving pytorch (and similarly large AI/ML libraries)
-# takes a long time, so you really need some assurance that progress is being made.
+# Archiving pytorch (and similarly large AI/ML libraries) takes a long time,
+# so you really need some assurance that progress is being made.
 #
 # If compression times are a significant problem, it would be worth moving in the same
 # direction as conda-pack did, and implementing support for parallel compression (the
 # compression libraries all drop the GIL when compressing data chunks, so this approach
 # scales effectively up to the number of available CPUs)
-ProgressSummary = tuple[int, str]
-ProgressReport = tuple[str, ProgressSummary]
+#
+# See https://github.com/lmstudio-ai/venvstacks/issues/4
+
+_ProgressSummary = tuple[int, str]
+_ProgressReport = tuple[str, _ProgressSummary]
 
 
-class ProgressBar:
+class _ProgressBar:
     """Display & update a progress bar"""
 
     TEXT_ABORTING = "Aborting..."
@@ -541,7 +553,7 @@ class ProgressBar:
     bar_length: int
     stream: TextIO
     _last_displayed_text: str | None
-    _last_displayed_summary: ProgressSummary | None
+    _last_displayed_summary: _ProgressSummary | None
 
     def __init__(self, bar_length: int = 25, stream: TextIO = sys.stdout) -> None:
         self.bar_length = bar_length
@@ -554,7 +566,7 @@ class ProgressBar:
         self._last_displayed_text = None
         self._last_displayed_summary = None
 
-    def _format_progress(self, progress: float, aborting: bool) -> ProgressReport:
+    def _format_progress(self, progress: float, aborting: bool) -> _ProgressReport:
         """Internal helper that also reports the number of completed increments"""
         bar_length = self.bar_length
         progress = float(progress)
