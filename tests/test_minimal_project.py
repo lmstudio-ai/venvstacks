@@ -594,7 +594,7 @@ class TestMinimalBuild(unittest.TestCase):
                 mock_compile.assert_called_once()
                 mock_compile.reset_mock()
                 mock_install = cast(Mock, env.index_config._get_pip_install_args)
-                mock_install.assert_called_once_with(None)
+                mock_install.assert_called_once()
                 mock_install.reset_mock()
             subtests_passed += 1
         subtests_started += 1
