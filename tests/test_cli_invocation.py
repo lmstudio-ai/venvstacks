@@ -186,6 +186,24 @@ class TestTopLevelCommand:
         assert result.returncode == 0
         assert result.stdout is not None
 
+    def test_module_execution(self) -> None:
+        # TODO: `coverage.py` isn't picking this up as executing `venvstacks/__main__.py`
+        #       (even an indirect invocation via the runpy module doesn't get detected)
+        command = [sys.executable, "-m", "venvstacks", "--help"]
+        result = run_python_command_unchecked(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        if result.stdout is not None:
+            # Usage message should suggest indirect execution
+            assert "Usage: python -m venvstacks [" in result.stdout
+            # Top-level callback docstring is used as the overall CLI help text
+            cli_help = cli.handle_app_options.__doc__
+            assert cli_help is not None
+            assert cli_help.strip() in result.stdout
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.returncode == 0
+        assert result.stdout is not None
+
 
 EXPECTED_USAGE_PREFIX = "Usage: python -m venvstacks "
 EXPECTED_SUBCOMMANDS = ["lock", "build", "local-export", "publish"]
