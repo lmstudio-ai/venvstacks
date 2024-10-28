@@ -93,6 +93,7 @@ tmp_path_retention_policy = "failed"
 tmp_path_retention_count = 1
 
 [tool.coverage.run]
+debug = ["pathmap"]
 relative_files = true
 source_pkgs = [
     "venvstacks",
@@ -109,7 +110,7 @@ omit = [
 [tool.coverage.paths]
 source = [
     "src/",
-    ".tox/*/lib/python*/site-packages/",
+    "**/.tox/**/site-packages/",
 ]
 
 [tool.ruff]
