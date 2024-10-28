@@ -591,10 +591,10 @@ class TestMinimalBuild(unittest.TestCase):
             for env in self.build_env.all_environments():
                 # First environment build: lock with uv, install with pip
                 mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once()
+                mock_compile.assert_called_once_with()
                 mock_compile.reset_mock()
                 mock_install = cast(Mock, env.index_config._get_pip_install_args)
-                mock_install.assert_called_once()
+                mock_install.assert_called_once_with()
                 mock_install.reset_mock()
             subtests_passed += 1
         subtests_started += 1
@@ -619,10 +619,10 @@ class TestMinimalBuild(unittest.TestCase):
                 # The lock file is recreated, the timestamp metadata just doesn't
                 # get updated if the hash of the contents doesn't change
                 mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once()
+                mock_compile.assert_called_once_with()
                 mock_compile.reset_mock()
                 mock_install = cast(Mock, env.index_config._get_pip_install_args)
-                mock_install.assert_not_called()
+                mock_install.assert_not_called_with()
             subtests_passed += 1
         # Test stage: ensure lock timestamps *do* change when the requirements "change"
         for env in build_env.all_environments():
@@ -644,10 +644,10 @@ class TestMinimalBuild(unittest.TestCase):
             for env in self.build_env.all_environments():
                 # Locked, but not rebuilt, so only uv should be called
                 mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once()
+                mock_compile.assert_called_once_with()
                 mock_compile.reset_mock()
                 mock_install = cast(Mock, env.index_config._get_pip_install_args)
-                mock_install.assert_not_called()
+                mock_install.assert_not_called_with()
             subtests_passed += 1
         # Test stage: ensure exported environments allow launch module execution
         subtests_started += 1
