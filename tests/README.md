@@ -47,6 +47,19 @@ Tests which take more than a few seconds to run should be marked as slow:
     def test_locking_and_publishing(self) -> None:
         ...
 
+The slow tests are part of the test suite because the fast tests only
+get to just over 60% coverage of `venvstacks.stacks` and less than
+20% coverage of `venvstacks.pack_venv`. The combined fast coverage
+on a single platform (Linux for these numbers) is just over 60%.
+
+When the slow tests are included, even running on a single platform,
+those numbers increase to nearly 90% coverage of `venvstacks.stacks`,
+nearly 70% coverage of `venvstacks.pack_venv`, and just under 90%
+combined across the test suite and package source code.
+
+When the results across all platforms are combined, the overall
+numbers are TBD...
+
 
 Marking tests with committed output files
 -----------------------------------------

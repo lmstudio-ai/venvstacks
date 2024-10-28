@@ -65,6 +65,7 @@ dev = [
     "ruff>=0.5.4",
     "mypy>=1.11.0",
     "pytest-subtests>=0.13.1",
+    "coverage[toml]>=7.6.4",
     # Use exact pin for dev as runtime environments are sensitive to the exact pbs version
     "pbs-installer==2024.10.10",
     # Uses exact pin for dev as lock file regeneration is sensitive to the exact uv version
@@ -90,6 +91,17 @@ verbosity_assertions = 2
 # Ensure test suite doesn't consume too much space in /tmp, while still allowing debugging
 tmp_path_retention_policy = "failed"
 tmp_path_retention_count = 1
+
+[tool.coverage.run]
+source = [
+    "venvstacks",
+    "tests/",
+]
+omit = [
+    # There is quite a bit of test support code that
+    # only runs to help diagnose failures in CI
+    "tests/support.py",
+]
 
 [tool.ruff]
 # Assume Python 3.11

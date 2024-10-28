@@ -150,6 +150,7 @@ class TestTopLevelCommand:
         assert result.exception is None, report_traceback(result.exception)
         assert result.exit_code == 0
 
+    # TODO: Collect test coverage stats for this entry point invocation
     @requires_venv("Entry point test")
     def test_entry_point_help_raw(self) -> None:
         expected_entry_point = Path(sys.executable).parent / "venvstacks"
@@ -168,6 +169,7 @@ class TestTopLevelCommand:
         assert result.returncode == 0
         assert result.stdout is not None
 
+    # TODO: Collect test coverage stats for this entry point invocation
     @requires_venv("Entry point test")
     def test_entry_point_help(self) -> None:
         expected_entry_point = Path(sys.executable).parent / "venvstacks"

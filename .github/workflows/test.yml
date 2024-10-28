@@ -32,7 +32,7 @@ permissions:
   contents: read
 
 jobs:
-  tox:
+  tests:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false  # Always report results for all targets
@@ -131,3 +131,52 @@ jobs:
         path: |
           export/tests
         retention-days: 3 # Just for debugging, don't need to keep these long term
+
+    - name: Upload coverage data
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-data-${{ matrix.os }}-py${{ matrix.python-version }}
+        path: .coverage.*
+        include-hidden-files: true
+        if-no-files-found: ignore
+
+  # Coverage check based on https://hynek.me/articles/ditch-codecov-python/
+  coverage:
+    name: Combine & check coverage
+    if: always()
+    needs: tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          # Use latest Python, so it understands all syntax.
+          python-version: "3.13"
+      - uses: hynek/setup-cached-uv@v2
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-data-*
+          merge-multiple: true
+
+      - name: Combine coverage & fail if it's <100%
+        run: |
+          uv tool install 'coverage[toml]'
+
+          coverage combine
+          coverage html --skip-covered --skip-empty
+
+          # Report and write to summary.
+          coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+
+          # Report again and fail if under 99%.
+          # (some error handling paths are not yet exercised in CI)
+          coverage report --fail-under=99
+
+      - name: Upload HTML report if check failed
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report
+          path: htmlcov
+        if: ${{ failure() }}
