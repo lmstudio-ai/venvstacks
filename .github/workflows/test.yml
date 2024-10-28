@@ -120,8 +120,7 @@ jobs:
         export VENVSTACKS_EXPORT_TEST_ARTIFACTS="$GITHUB_WORKSPACE/export/tests"
         mkdir -p "$VENVSTACKS_EXPORT_TEST_ARTIFACTS"
         source "$VIRTUAL_ENV_BIN_DIR/activate"
-        # Testing: only cover the fast tests
-        # python -m tox -v -- -m slow
+        python -m tox -v -- -m slow
 
     - name: Upload test failure debugging artifacts
       if: failure() && steps.slow_tests.conclusion == 'failure'
