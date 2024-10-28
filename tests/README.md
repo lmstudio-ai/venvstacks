@@ -53,12 +53,15 @@ get to just over 60% coverage of `venvstacks.stacks` and less than
 on a single platform (Linux for these numbers) is just over 60%.
 
 When the slow tests are included, even running on a single platform,
-those numbers increase to nearly 90% coverage of `venvstacks.stacks`,
+statement coverages rises to nearly 90% coverage of `venvstacks.stacks`,
 nearly 70% coverage of `venvstacks.pack_venv`, and just under 90%
-combined across the test suite and package source code.
+combined coverage across the test suite and package source code.
 
 When the results across all platforms are combined, the overall
-numbers are TBD...
+coverage of `venvstacks.stacks` doesn't improve much, but
+`venvstacks.pack_venv` improves to more than 85%, and the overall
+test coverage exceeds 90% (as of 0.1.0, CI checks for at least 92%
+statement coverage).
 
 
 Marking tests with committed output files

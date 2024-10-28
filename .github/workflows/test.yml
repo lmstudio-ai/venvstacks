@@ -170,9 +170,9 @@ jobs:
           # Report and write to summary.
           coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
 
-          # Report again and fail if under 99%.
-          # (some error handling paths are not yet exercised in CI)
-          coverage report --fail-under=99
+          # Report again and fail if under 92%.
+          # (threshold is based on 0.1.0rc1 CI statement coverage)
+          coverage report --fail-under=92
 
       - name: Upload HTML report if check failed
         uses: actions/upload-artifact@v4
