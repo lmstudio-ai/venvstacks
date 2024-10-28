@@ -15,15 +15,12 @@ venvstacks.stacks.ApplicationEnv
       ~ApplicationEnv.create_archive
       ~ApplicationEnv.create_environment
       ~ApplicationEnv.define_archive_build
-      ~ApplicationEnv.ensure_runtime_dependencies
       ~ApplicationEnv.export_environment
       ~ApplicationEnv.get_constraint_paths
-      ~ApplicationEnv.install_build_requirements
       ~ApplicationEnv.install_requirements
       ~ApplicationEnv.link_base_runtime_paths
       ~ApplicationEnv.link_layered_environments
       ~ApplicationEnv.lock_requirements
-      ~ApplicationEnv.remove_build_only_packages
       ~ApplicationEnv.report_python_site_details
       ~ApplicationEnv.request_export
       ~ApplicationEnv.select_operations
