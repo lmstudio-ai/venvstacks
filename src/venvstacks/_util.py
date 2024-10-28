@@ -82,26 +82,24 @@ def run_python_command_unchecked(
     command: list[str],
     *,
     env: Mapping[str, str] | None = ...,
-    text: Literal[True]|None = ...,
-    **kwds: Any
-) -> subprocess.CompletedProcess[str]:
-    ...
+    text: Literal[True] | None = ...,
+    **kwds: Any,
+) -> subprocess.CompletedProcess[str]: ...
 @overload
 def run_python_command_unchecked(
     command: list[str],
     *,
     env: Mapping[str, str] | None = ...,
     text: Literal[False] = ...,
-    **kwds: Any
-) -> subprocess.CompletedProcess[bytes]:
-    ...
+    **kwds: Any,
+) -> subprocess.CompletedProcess[bytes]: ...
 def run_python_command_unchecked(
     command: list[str],
     *,
     env: Mapping[str, str] | None = None,
-    text: bool|None = True,
+    text: bool | None = True,
     **kwds: Any,
-) -> subprocess.CompletedProcess[str]|subprocess.CompletedProcess[bytes]:
+) -> subprocess.CompletedProcess[str] | subprocess.CompletedProcess[bytes]:
     # Ensure required env vars are passed down on Windows,
     # and run Python in isolated mode with UTF-8 as the text encoding
     run_env = os.environ.copy()

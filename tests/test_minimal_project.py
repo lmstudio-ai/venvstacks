@@ -34,7 +34,7 @@ from venvstacks.stacks import (
     LayerVariants,
     ExportedEnvironmentPaths,
     ExportMetadata,
-    IndexConfig,
+    PackageIndexConfig,
     PublishedArchivePaths,
     get_build_platform,
 )
@@ -366,7 +366,7 @@ class TestMinimalBuild(unittest.TestCase):
             return _filter_manifest(json.load(f))[0]
 
     def mock_index_config_options(
-        self, reference_config: IndexConfig | None = None
+        self, reference_config: PackageIndexConfig | None = None
     ) -> None:
         # Mock the index configs in order to check for
         # expected CLI argument lookups
@@ -700,7 +700,7 @@ class TestMinimalBuild(unittest.TestCase):
         # declarations, since actual build failures need to fail the entire test method.
         subtests_started = subtests_passed = 0  # Track subtest failures
         build_env = self.build_env
-        source_build_index_config = IndexConfig(allow_source_builds=True)
+        source_build_index_config = PackageIndexConfig(allow_source_builds=True)
         self.mock_index_config_options(source_build_index_config)
         platform_tag = build_env.build_platform
         expected_tag = f"-{platform_tag}"

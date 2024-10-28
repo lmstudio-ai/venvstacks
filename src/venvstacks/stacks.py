@@ -114,7 +114,7 @@ def _resolve_lexical_path(path: StrPath, base_path: Path, /) -> Path:
 
 
 @dataclass
-class IndexConfig:
+class PackageIndexConfig:
     """Python package index access configuration"""
 
     query_default_index: bool = field(default=True)
@@ -970,7 +970,7 @@ class _PythonEnvironment(ABC):
     _env_spec: _PythonEnvironmentSpec = field(repr=False)
     build_path: Path = field(repr=False)
     requirements_path: Path = field(repr=False)
-    index_config: IndexConfig = field(repr=False)
+    index_config: PackageIndexConfig = field(repr=False)
 
     # Derived from target path and spec in __post_init__
     env_path: Path = field(init=False)
@@ -1843,7 +1843,7 @@ class StackSpec:
     def _define_envs(
         self,
         build_path: Path,
-        index_config: IndexConfig,
+        index_config: PackageIndexConfig,
         env_class: type[BuildEnv],
         specs: Mapping[LayerBaseName, _PythonEnvironmentSpec],
     ) -> MutableMapping[LayerBaseName, BuildEnv]:
@@ -1869,11 +1869,11 @@ class StackSpec:
     def define_build_environment(
         self,
         build_dir: StrPath = "",
-        index_config: IndexConfig | None = None,
+        index_config: PackageIndexConfig | None = None,
     ) -> "BuildEnvironment":
         build_path = self.resolve_lexical_path(build_dir)
         if index_config is None:
-            index_config = IndexConfig()
+            index_config = PackageIndexConfig()
         index_config.resolve_lexical_paths(self.spec_path.parent)
         print("Defining runtime environments:")
         runtimes = self._define_envs(

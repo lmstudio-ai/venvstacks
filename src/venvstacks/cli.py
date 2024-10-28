@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from .stacks import StackSpec, BuildEnvironment, _format_json, IndexConfig
+from .stacks import StackSpec, BuildEnvironment, _format_json, PackageIndexConfig
 
 # Inspired by the Python 3.13+ `argparse` feature,
 # but reports `python -m venvstacks` whenever `__main__`
@@ -183,7 +183,7 @@ def _define_build_environment(
 ) -> BuildEnvironment:
     """Load given stack specification and define a build environment"""
     stack_spec = StackSpec.load(spec_path)
-    index_config = IndexConfig(
+    index_config = PackageIndexConfig(
         query_default_index=index,
         allow_source_builds=allow_source,
         local_wheel_dirs=local_wheels,

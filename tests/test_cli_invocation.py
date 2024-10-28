@@ -19,10 +19,11 @@ from typer.models import ArgumentInfo, OptionInfo
 from typer.testing import CliRunner
 
 from venvstacks import cli
-from venvstacks.stacks import BuildEnvironment, EnvironmentLock, IndexConfig
+from venvstacks.stacks import BuildEnvironment, EnvironmentLock, PackageIndexConfig
 from venvstacks._util import run_python_command_unchecked
 
 from support import requires_venv
+
 
 def report_traceback(exc: BaseException | None) -> str:
     if exc is None:
@@ -96,7 +97,7 @@ class MockedRunner:
         return self.runner.invoke(self.app, cli_args)
 
     def assert_build_config(
-        self, expected_build_dir: str, expected_index_config: IndexConfig
+        self, expected_build_dir: str, expected_index_config: PackageIndexConfig
     ) -> None:
         """Check environment build path and index configuration details"""
         env_definition = self.mocked_stack_spec.define_build_environment
@@ -195,11 +196,11 @@ ACCEPTS_OUTPUT_DIR = ["build", "local-export", "publish"]
 ACCEPTS_INDEX_CONFIG = ["lock", "build"]
 
 
-def _get_default_index_config(command: str) -> IndexConfig:
+def _get_default_index_config(command: str) -> PackageIndexConfig:
     if command in ACCEPTS_INDEX_CONFIG:
-        return IndexConfig()
+        return PackageIndexConfig()
     # Commands that don't support index access should turn it off in their config
-    return IndexConfig.disabled()
+    return PackageIndexConfig.disabled()
 
 
 ARGUMENT_PREFIX = "_CLI_ARG"
@@ -334,12 +335,12 @@ class TestSubcommands:
         return f"({' '.join(extra_cli_args)})"
 
     # CLI option handling test cases for package index access configuration
-    IndexConfigCase = tuple[tuple[str, ...], IndexConfig]
+    IndexConfigCase = tuple[tuple[str, ...], PackageIndexConfig]
     _INDEX_CONFIG_ARGS = (
         # Define how the relevant CLI options map to build environment config settings
         (
             (),
-            IndexConfig(
+            PackageIndexConfig(
                 query_default_index=True,
                 allow_source_builds=False,
                 local_wheel_dirs=None,
@@ -347,7 +348,7 @@ class TestSubcommands:
         ),
         (
             ("--index", "--no-allow-source"),
-            IndexConfig(
+            PackageIndexConfig(
                 query_default_index=True,
                 allow_source_builds=False,
                 local_wheel_dirs=None,
@@ -355,7 +356,7 @@ class TestSubcommands:
         ),
         (
             ("--no-index",),
-            IndexConfig(
+            PackageIndexConfig(
                 query_default_index=False,
                 allow_source_builds=False,
                 local_wheel_dirs=None,
@@ -363,7 +364,7 @@ class TestSubcommands:
         ),
         (
             ("--allow-source",),
-            IndexConfig(
+            PackageIndexConfig(
                 query_default_index=True,
                 allow_source_builds=True,
                 local_wheel_dirs=None,
@@ -371,7 +372,7 @@ class TestSubcommands:
         ),
         (
             ("--local-wheels", "/some_dir", "--local-wheels", "some/other/dir"),
-            IndexConfig(
+            PackageIndexConfig(
                 query_default_index=True,
                 allow_source_builds=False,
                 local_wheel_dirs=["/some_dir", "some/other/dir"],
@@ -481,7 +482,7 @@ class TestSubcommands:
         expected_build_dir = "_build"
         expected_output_dir = "_artifacts"
         mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
-        mocked_runner.assert_build_config(expected_build_dir, IndexConfig())
+        mocked_runner.assert_build_config(expected_build_dir, PackageIndexConfig())
         # Defaults to selecting operations rather than stacks
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once_with(
@@ -534,7 +535,7 @@ class TestSubcommands:
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "_build"
         mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
-        mocked_runner.assert_build_config(expected_build_dir, IndexConfig())
+        mocked_runner.assert_build_config(expected_build_dir, PackageIndexConfig())
         # Defaults to selecting operations rather than stacks
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once_with(
@@ -627,7 +628,9 @@ class TestSubcommands:
         expected_build_dir = "_build"
         expected_output_dir = "_artifacts"
         mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
-        mocked_runner.assert_build_config(expected_build_dir, IndexConfig.disabled())
+        mocked_runner.assert_build_config(
+            expected_build_dir, PackageIndexConfig.disabled()
+        )
         # Defaults to selecting operations rather than stacks
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once_with(
@@ -715,7 +718,9 @@ class TestSubcommands:
         expected_build_dir = "_build"
         expected_output_dir = "_export"
         mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
-        mocked_runner.assert_build_config(expected_build_dir, IndexConfig.disabled())
+        mocked_runner.assert_build_config(
+            expected_build_dir, PackageIndexConfig.disabled()
+        )
         # Defaults to selecting operations rather than stacks
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once_with(
