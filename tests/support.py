@@ -3,12 +3,15 @@
 import json
 import os
 import subprocess
+import sys
 import tomllib
 
 from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any, cast, Mapping
 from unittest.mock import create_autospec
+
+import pytest
 
 from venvstacks._util import run_python_command
 from venvstacks.stacks import (
@@ -19,6 +22,21 @@ from venvstacks.stacks import (
 )
 
 _THIS_DIR = Path(__file__).parent
+
+##################################
+# Marking test cases
+##################################
+
+# Basic marking uses the pytest.mark API directly
+# See pyproject.toml and tests/README.md for the defined marks
+
+def requires_venv(description: str) -> pytest.MarkDecorator:
+    """Skip test case when running tests outside a virtual environment"""
+    return pytest.mark.skipif(
+        sys.prefix == sys.base_prefix,
+        reason=f"{description} requires test execution in venv",
+    )
+
 
 ##################################
 # Exporting test artifacts

@@ -84,12 +84,18 @@ def run_python_command_unchecked(
     env: Mapping[str, str] | None = None,
     **kwds: Any,
 ) -> subprocess.CompletedProcess[str]:
+    # Ensure required env vars are passed down on Windows,
+    # and run Python in isolated mode with UTF-8 as the text encoding
     run_env = os.environ.copy()
     if env is not None:
         run_env.update(env)
     run_env.update(_SUBPROCESS_PYTHON_CONFIG)
+    # Default to running in text mode,
+    # but allow it to be explicitly switched off
+    text = kwds.pop("text", True)
+    encoding = "utf-8" if text else None
     result: subprocess.CompletedProcess[str] = subprocess.run(
-        command, env=env, text=True, **kwds
+        command, env=env, text=text, encoding=encoding, **kwds
     )
     return result
 
