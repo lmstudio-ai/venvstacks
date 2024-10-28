@@ -93,6 +93,7 @@ tmp_path_retention_policy = "failed"
 tmp_path_retention_count = 1
 
 [tool.coverage.run]
+relative_files = true
 source_pkgs = [
     "venvstacks",
 ]
@@ -102,7 +103,7 @@ source = [
 omit = [
     # There is quite a bit of test support code that
     # only runs to help diagnose failures in CI
-    "tests/ci_diagnostics.py",
+    "tests/support.py",
 ]
 
 [tool.coverage.paths]
