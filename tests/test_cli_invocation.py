@@ -22,6 +22,7 @@ from venvstacks import cli
 from venvstacks.stacks import BuildEnvironment, EnvironmentLock, IndexConfig
 from venvstacks._util import run_python_command_unchecked
 
+from support import requires_venv
 
 def report_traceback(exc: BaseException | None) -> str:
     if exc is None:
@@ -148,26 +149,41 @@ class TestTopLevelCommand:
         assert result.exception is None, report_traceback(result.exception)
         assert result.exit_code == 0
 
-    # See https://github.com/lmstudio-ai/venvstacks/issues/42
-    @pytest.mark.xfail(
-        sys.platform == "win32", reason="UnicodeDecodeError parsing output"
-    )
+    @requires_venv("Entry point test")
+    def test_entry_point_help_raw(self) -> None:
+        expected_entry_point = Path(sys.executable).parent / "venvstacks"
+        command = [str(expected_entry_point), "--help"]
+        result = run_python_command_unchecked(
+            command, text=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        if result.stdout is not None:
+            # Usage message should suggest direct execution
+            assert b"Usage: venvstacks [" in result.stdout
+            # Top-level callback docstring is used as the overall CLI help text
+            cli_help = cli.handle_app_options.__doc__
+            assert cli_help is not None
+            assert cli_help.strip().encode() in result.stdout
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.returncode == 0
+        assert result.stdout is not None
+
+    @requires_venv("Entry point test")
     def test_entry_point_help(self) -> None:
-        if sys.prefix == sys.base_prefix:
-            pytest.skip("Entry point test requires test execution in venv")
         expected_entry_point = Path(sys.executable).parent / "venvstacks"
         command = [str(expected_entry_point), "--help"]
         result = run_python_command_unchecked(
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        # Usage message should suggest direct execution
-        assert "Usage: venvstacks [" in result.stdout
-        # Top-level callback docstring is used as the overall CLI help text
-        cli_help = cli.handle_app_options.__doc__
-        assert cli_help is not None
-        assert cli_help.strip() in result.stdout
+        if result.stdout is not None:
+            # Usage message should suggest direct execution
+            assert "Usage: venvstacks [" in result.stdout
+            # Top-level callback docstring is used as the overall CLI help text
+            cli_help = cli.handle_app_options.__doc__
+            assert cli_help is not None
+            assert cli_help.strip() in result.stdout
         # Check operation result last to ensure test results are as informative as possible
         assert result.returncode == 0
+        assert result.stdout is not None
 
 
 EXPECTED_USAGE_PREFIX = "Usage: python -m venvstacks "
