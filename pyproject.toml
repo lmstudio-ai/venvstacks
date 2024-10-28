@@ -93,14 +93,22 @@ tmp_path_retention_policy = "failed"
 tmp_path_retention_count = 1
 
 [tool.coverage.run]
-source = [
+source_pkgs = [
     "venvstacks",
+]
+source = [
     "tests/",
 ]
 omit = [
     # There is quite a bit of test support code that
     # only runs to help diagnose failures in CI
-    "tests/support.py",
+    "tests/ci_diagnostics.py",
+]
+
+[tool.coverage.paths]
+source = [
+    "src/",
+    ".tox/*/lib/python*/site-packages/",
 ]
 
 [tool.ruff]
