@@ -8,7 +8,7 @@ import tarfile
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator, Mapping
+from typing import Any, Generator, Literal, Mapping, overload
 
 WINDOWS_BUILD = hasattr(os, "add_dll_directory")
 
@@ -77,13 +77,31 @@ _SUBPROCESS_PYTHON_CONFIG = {
 }
 
 
+@overload
 def run_python_command_unchecked(
-    # Narrow list type spec here due to the way `subprocess.run` params are typed
+    command: list[str],
+    *,
+    env: Mapping[str, str] | None = ...,
+    text: Literal[True]|None = ...,
+    **kwds: Any
+) -> subprocess.CompletedProcess[str]:
+    ...
+@overload
+def run_python_command_unchecked(
+    command: list[str],
+    *,
+    env: Mapping[str, str] | None = ...,
+    text: Literal[False] = ...,
+    **kwds: Any
+) -> subprocess.CompletedProcess[bytes]:
+    ...
+def run_python_command_unchecked(
     command: list[str],
     *,
     env: Mapping[str, str] | None = None,
+    text: bool|None = True,
     **kwds: Any,
-) -> subprocess.CompletedProcess[str]:
+) -> subprocess.CompletedProcess[str]|subprocess.CompletedProcess[bytes]:
     # Ensure required env vars are passed down on Windows,
     # and run Python in isolated mode with UTF-8 as the text encoding
     run_env = os.environ.copy()
@@ -92,7 +110,7 @@ def run_python_command_unchecked(
     run_env.update(_SUBPROCESS_PYTHON_CONFIG)
     # Default to running in text mode,
     # but allow it to be explicitly switched off
-    text = kwds.pop("text", True)
+    text = text if text else False
     encoding = "utf-8" if text else None
     result: subprocess.CompletedProcess[str] = subprocess.run(
         command, env=env, text=text, encoding=encoding, **kwds
@@ -105,6 +123,6 @@ def run_python_command(
     command: list[str],
     **kwds: Any,
 ) -> subprocess.CompletedProcess[str]:
-    result = run_python_command_unchecked(command, **kwds)
+    result = run_python_command_unchecked(command, text=True, **kwds)
     result.check_returncode()
     return result
