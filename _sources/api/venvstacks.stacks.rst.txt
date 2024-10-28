@@ -23,7 +23,7 @@
       ExportedEnvironmentPaths
       FrameworkEnv
       FrameworkSpec
-      IndexConfig
+      PackageIndexConfig
       LayerCategories
       LayerSpecMetadata
       LayerVariants
