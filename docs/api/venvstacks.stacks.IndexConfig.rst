@@ -1,9 +1,9 @@
-venvstacks.stacks.IndexConfig
-=============================
+venvstacks.stacks.PackageIndexConfig
+====================================
 
 .. currentmodule:: venvstacks.stacks
 
-.. autoclass:: IndexConfig
+.. autoclass:: PackageIndexConfig
 
 
    .. automethod:: __init__
@@ -13,16 +13,16 @@ venvstacks.stacks.IndexConfig
 
    .. autosummary::
 
-      ~IndexConfig.disabled
-      ~IndexConfig.resolve_lexical_paths
+      ~PackageIndexConfig.disabled
+      ~PackageIndexConfig.resolve_lexical_paths
 
 
    .. rubric:: Attributes
 
    .. autosummary::
 
-      ~IndexConfig.allow_source_builds
-      ~IndexConfig.local_wheel_dirs
-      ~IndexConfig.query_default_index
-      ~IndexConfig.local_wheel_paths
+      ~PackageIndexConfig.allow_source_builds
+      ~PackageIndexConfig.local_wheel_dirs
+      ~PackageIndexConfig.query_default_index
+      ~PackageIndexConfig.local_wheel_paths
 

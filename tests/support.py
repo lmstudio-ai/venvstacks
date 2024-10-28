@@ -18,7 +18,7 @@ from venvstacks.stacks import (
     BuildEnvironment,
     EnvNameDeploy,
     LayerBaseName,
-    IndexConfig,
+    PackageIndexConfig,
 )
 
 _THIS_DIR = Path(__file__).parent
@@ -29,6 +29,7 @@ _THIS_DIR = Path(__file__).parent
 
 # Basic marking uses the pytest.mark API directly
 # See pyproject.toml and tests/README.md for the defined marks
+
 
 def requires_venv(description: str) -> pytest.MarkDecorator:
     """Skip test case when running tests outside a virtual environment"""
@@ -173,9 +174,9 @@ class ManifestData:
 ##################################
 
 
-def make_mock_index_config(reference_config: IndexConfig | None = None) -> Any:
+def make_mock_index_config(reference_config: PackageIndexConfig | None = None) -> Any:
     if reference_config is None:
-        reference_config = IndexConfig()
+        reference_config = PackageIndexConfig()
     mock_config = create_autospec(reference_config, spec_set=True)
     # Make conditional checks and iteration reflect the actual field values
     checked_methods = ("__bool__", "__len__", "__iter__")

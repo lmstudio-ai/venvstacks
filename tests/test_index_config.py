@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from venvstacks.stacks import IndexConfig
+from venvstacks.stacks import PackageIndexConfig
 
 
 class TestDefaultOptions:
-    TEST_CONFIG = IndexConfig()
+    TEST_CONFIG = PackageIndexConfig()
 
     def test_uv_pip_compile(self) -> None:
         # Nominal config is always used when locking
@@ -33,7 +33,7 @@ class TestDefaultOptions:
 
 
 class TestConfiguredOptions:
-    TEST_CONFIG = IndexConfig(
+    TEST_CONFIG = PackageIndexConfig(
         query_default_index=False,
         allow_source_builds=True,
         local_wheel_dirs=["/some_dir"],
@@ -80,7 +80,7 @@ class TestConfiguredOptions:
 # Miscellaneous test cases
 def test_wheel_dir_not_in_sequence() -> None:
     with pytest.raises(TypeError):
-        IndexConfig(local_wheel_dirs="/some_dir")
+        PackageIndexConfig(local_wheel_dirs="/some_dir")
 
 
 def test_lexical_path_resolution() -> None:
@@ -100,6 +100,6 @@ def test_lexical_path_resolution() -> None:
         Path.home() / "some/path",
         Path.home() / "some/path",
     ]
-    config = IndexConfig(local_wheel_dirs=paths_to_resolve)
+    config = PackageIndexConfig(local_wheel_dirs=paths_to_resolve)
     config.resolve_lexical_paths("/base_path")
     assert config.local_wheel_paths == expected_paths
