@@ -72,8 +72,9 @@ _SUBPROCESS_PYTHON_CONFIG = {
     "PYTHONLEGACYWINDOWSSTDIO": "",
     # There are other dev settings that may cause problems, but are also unlikely to be set
     # See https://docs.python.org/3/using/cmdline.html#environment-variables
-    # These settings are here specifically to avoid the `pip-sync` issues noted
-    # in https://github.com/jazzband/pip-tools/issues/2117
+    # These settings were originally added to avoid the `pip-sync` issues noted
+    # in https://github.com/jazzband/pip-tools/issues/2117, and then retained
+    # even after the `pip-sync` dependency was removed
 }
 
 

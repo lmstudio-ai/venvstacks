@@ -21,7 +21,6 @@ venvstacks.stacks.PackageIndexConfig
 
    .. autosummary::
 
-      ~PackageIndexConfig.allow_source_builds
       ~PackageIndexConfig.local_wheel_dirs
       ~PackageIndexConfig.query_default_index
       ~PackageIndexConfig.local_wheel_paths

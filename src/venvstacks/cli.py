@@ -99,12 +99,6 @@ _CLI_OPT_FLAG_index = Annotated[
         help="Query the default package index (PyPI) for installation artifacts"
     ),
 ]  # fmt: skip
-_CLI_OPT_FLAG_allow_source = Annotated[
-    bool,
-    typer.Option(
-        help="Allow implicit source builds (may affect archive reproducibility)"
-    ),
-]  # fmt: skip
 _CLI_OPT_STRLIST_local_wheels = Annotated[
     list[str] | None,
     typer.Option(
@@ -178,14 +172,12 @@ def _define_build_environment(
     build_path: str,
     *,
     index: bool,
-    allow_source: bool,
     local_wheels: list[str] | None,
 ) -> BuildEnvironment:
     """Load given stack specification and define a build environment"""
     stack_spec = StackSpec.load(spec_path)
     index_config = PackageIndexConfig(
         query_default_index=index,
-        allow_source_builds=allow_source,
         local_wheel_dirs=local_wheels,
     )
     return stack_spec.define_build_environment(build_path, index_config)
@@ -328,7 +320,6 @@ def build(
     publish: _CLI_OPT_FLAG_publish = False,
     # Package index access configuration
     index: _CLI_OPT_FLAG_index = True,
-    allow_source: _CLI_OPT_FLAG_allow_source = False,
     local_wheels: _CLI_OPT_STRLIST_local_wheels = None,
     # Adjust naming of published archives and metadata files
     tag_outputs: _CLI_OPT_FLAG_tag_outputs = False,
@@ -355,7 +346,6 @@ def build(
         spec_path,
         build_dir,
         index=index,
-        allow_source=allow_source,
         local_wheels=local_wheels,
     )
     # Update the various `want_*` flags on each environment
@@ -396,7 +386,6 @@ def lock(
     clean: _CLI_OPT_FLAG_clean = False,
     # Package index access configuration
     index: _CLI_OPT_FLAG_index = True,
-    allow_source: _CLI_OPT_FLAG_allow_source = False,
     local_wheels: _CLI_OPT_STRLIST_local_wheels = None,
     # Selective processing of defined layers
     include: _CLI_OPT_STRLIST_include = None,
@@ -410,7 +399,6 @@ def lock(
         spec_path,
         build_dir,
         index=index,
-        allow_source=allow_source,
         local_wheels=local_wheels,
     )
     # Update the various `want_*` flags on each environment
@@ -474,7 +462,6 @@ def publish(
         build_dir,
         # No locking or build steps will be invoked on the environment
         index=False,
-        allow_source=False,
         local_wheels=None,
     )
     # Update the various `want_*` flags on each environment
@@ -528,7 +515,6 @@ def local_export(
         build_dir,
         # No locking or build steps will be invoked on the environment
         index=False,
-        allow_source=False,
         local_wheels=None,
     )
     # Update the various `want_*` flags on each environment

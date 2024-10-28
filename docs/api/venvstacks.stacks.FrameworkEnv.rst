@@ -16,14 +16,11 @@ venvstacks.stacks.FrameworkEnv
       ~FrameworkEnv.create_archive
       ~FrameworkEnv.create_environment
       ~FrameworkEnv.define_archive_build
-      ~FrameworkEnv.ensure_runtime_dependencies
       ~FrameworkEnv.export_environment
       ~FrameworkEnv.get_constraint_paths
-      ~FrameworkEnv.install_build_requirements
       ~FrameworkEnv.install_requirements
       ~FrameworkEnv.link_base_runtime_paths
       ~FrameworkEnv.lock_requirements
-      ~FrameworkEnv.remove_build_only_packages
       ~FrameworkEnv.report_python_site_details
       ~FrameworkEnv.request_export
       ~FrameworkEnv.select_operations
