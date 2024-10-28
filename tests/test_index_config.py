@@ -13,35 +13,21 @@ class TestDefaultOptions:
     TEST_CONFIG = PackageIndexConfig()
 
     def test_uv_pip_compile(self) -> None:
-        # Nominal config is always used when locking
-        assert self.TEST_CONFIG._get_uv_pip_compile_args() == ["--only-binary", ":all:"]
+        assert self.TEST_CONFIG._get_uv_pip_compile_args() == []
 
     def test_pip_install(self) -> None:
-        # Nominal config can be overridden for package installation commands
-        allow_source_config: list[str] = []
-        binary_only_config = ["--only-binary", ":all:"]
-        assert self.TEST_CONFIG._get_pip_install_args(None) == binary_only_config
-        assert self.TEST_CONFIG._get_pip_install_args(False) == allow_source_config
-        assert self.TEST_CONFIG._get_pip_install_args(True) == binary_only_config
-
-    def test_pip_sync(self) -> None:
-        # Final sync to remove source build dependencies is always binary-only
-        assert self.TEST_CONFIG._get_pip_sync_args() == [
-            "--pip-args",
-            "--only-binary :all:",
-        ]
+        assert self.TEST_CONFIG._get_pip_install_args() == []
 
 
 class TestConfiguredOptions:
     TEST_CONFIG = PackageIndexConfig(
         query_default_index=False,
-        allow_source_builds=True,
         local_wheel_dirs=["/some_dir"],
     )
     WHEEL_DIR = f"{os.sep}some_dir"
 
     def test_uv_pip_compile(self) -> None:
-        # Nominal config is always used when locking
+        # There are currently no locking specific args
         assert self.TEST_CONFIG._get_uv_pip_compile_args() == [
             "--no-index",
             "--find-links",
@@ -49,31 +35,11 @@ class TestConfiguredOptions:
         ]
 
     def test_pip_install(self) -> None:
-        # Nominal config can be overridden for package installation commands
-        allow_source_config: list[str] = [
+        # There are currently no installation specific args
+        assert self.TEST_CONFIG._get_pip_install_args() == [
             "--no-index",
             "--find-links",
             self.WHEEL_DIR,
-        ]
-        binary_only_config = [
-            "--no-index",
-            "--only-binary",
-            ":all:",
-            "--find-links",
-            self.WHEEL_DIR,
-        ]
-        assert self.TEST_CONFIG._get_pip_install_args(None) == allow_source_config
-        assert self.TEST_CONFIG._get_pip_install_args(False) == allow_source_config
-        assert self.TEST_CONFIG._get_pip_install_args(True) == binary_only_config
-
-    def test_pip_sync(self) -> None:
-        # Final sync to remove source build dependencies is always binary-only
-        assert self.TEST_CONFIG._get_pip_sync_args() == [
-            "--no-index",
-            "--find-links",
-            self.WHEEL_DIR,
-            "--pip-args",
-            "--only-binary :all:",
         ]
 
 

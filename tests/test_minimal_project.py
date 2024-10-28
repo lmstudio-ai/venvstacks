@@ -10,7 +10,7 @@ from typing import Any, Callable, cast, Mapping, Sequence, TypeVar
 
 # Use unittest for consistency with test_sample_project (which needs the better diff support)
 import unittest
-from unittest.mock import Mock, call as expect_call
+from unittest.mock import Mock
 
 import pytest  # To mark slow test cases
 
@@ -31,7 +31,6 @@ from venvstacks.stacks import (
     BuildEnvironment,
     EnvNameDeploy,
     StackSpec,
-    LayerVariants,
     ExportedEnvironmentPaths,
     ExportMetadata,
     PackageIndexConfig,
@@ -590,16 +589,13 @@ class TestMinimalBuild(unittest.TestCase):
             self.assertRecentlyLocked(dry_run_last_locked_times, minimum_lock_time)
             # Check for expected subprocess argument lookups
             for env in self.build_env.all_environments():
-                # First binary only build: lock with uv, install with pip
-                # sync is never called for binary only builds
+                # First environment build: lock with uv, install with pip
                 mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once()
+                mock_compile.assert_called_once_with()
                 mock_compile.reset_mock()
                 mock_install = cast(Mock, env.index_config._get_pip_install_args)
-                mock_install.assert_called_once_with(None)
+                mock_install.assert_called_once_with()
                 mock_install.reset_mock()
-                mock_sync = cast(Mock, env.index_config._get_pip_sync_args)
-                mock_sync.assert_not_called()
             subtests_passed += 1
         subtests_started += 1
         with self.subTest("Check tagged dry run"):
@@ -623,12 +619,10 @@ class TestMinimalBuild(unittest.TestCase):
                 # The lock file is recreated, the timestamp metadata just doesn't
                 # get updated if the hash of the contents doesn't change
                 mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once()
+                mock_compile.assert_called_once_with()
                 mock_compile.reset_mock()
                 mock_install = cast(Mock, env.index_config._get_pip_install_args)
                 mock_install.assert_not_called()
-                mock_sync = cast(Mock, env.index_config._get_pip_sync_args)
-                mock_sync.assert_not_called()
             subtests_passed += 1
         # Test stage: ensure lock timestamps *do* change when the requirements "change"
         for env in build_env.all_environments():
@@ -650,12 +644,10 @@ class TestMinimalBuild(unittest.TestCase):
             for env in self.build_env.all_environments():
                 # Locked, but not rebuilt, so only uv should be called
                 mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once()
+                mock_compile.assert_called_once_with()
                 mock_compile.reset_mock()
                 mock_install = cast(Mock, env.index_config._get_pip_install_args)
                 mock_install.assert_not_called()
-                mock_sync = cast(Mock, env.index_config._get_pip_sync_args)
-                mock_sync.assert_not_called()
             subtests_passed += 1
         # Test stage: ensure exported environments allow launch module execution
         subtests_started += 1
@@ -681,162 +673,6 @@ class TestMinimalBuild(unittest.TestCase):
                 tagged_publication_result, tagged_dry_run_result, expected_tag
             )
             self.check_archive_deployment(tagged_publication_result)
-            subtests_passed += 1
-        # TODO: Add another test stage that confirms build versions increment as expected
-
-        # Work aroung pytest-subtests not failing the test case when subtests fail
-        # https://github.com/pytest-dev/pytest-subtests/issues/76
-        self.assertEqual(
-            subtests_passed, subtests_started, "Fail due to failed subtest(s)"
-        )
-
-    @pytest.mark.slow
-    def test_implicit_source_builds(self) -> None:
-        # TODO: Completely drop support for implicit source builds (use local wheel dirs instead)
-        # This is organised as subtests in a monolothic test sequence to reduce CI overhead
-        # Separating the tests wouldn't really make them independent, unless the outputs of
-        # the earlier steps were checked in for use when testing the later steps.
-        # Actually configuring and building the environments is executed outside the subtest
-        # declarations, since actual build failures need to fail the entire test method.
-        subtests_started = subtests_passed = 0  # Track subtest failures
-        build_env = self.build_env
-        source_build_index_config = PackageIndexConfig(allow_source_builds=True)
-        self.mock_index_config_options(source_build_index_config)
-        platform_tag = build_env.build_platform
-        expected_tag = f"-{platform_tag}"
-        versioned_tag = (
-            f"{expected_tag}-1"  # No previous metadata when running the test
-        )
-        expected_dry_run_result = EXPECTED_MANIFEST
-        expected_tagged_dry_run_result = _tag_manifest(EXPECTED_MANIFEST, versioned_tag)
-        # Ensure the locking and publication steps always run for all environments
-        build_env.select_operations(lock=True, build=True, publish=True)
-        # Handle running this test case repeatedly in a local checkout
-        # Also inject a cheap-to-install build dependency in all environments
-        for env in build_env.all_environments():
-            env.env_lock._purge_lock()
-            env.env_spec.build_requirements = ["uv"]
-        # Test stage: check dry run metadata results are as expected
-        minimum_lock_time = datetime.now(timezone.utc)
-        with pytest.deprecated_call():
-            build_env.create_environments()
-        subtests_started += 1
-        with self.subTest("Check untagged dry run"):
-            dry_run_result, dry_run_last_locked_times = _filter_manifest(
-                build_env.publish_artifacts(dry_run=True)[1]
-            )
-            self.assertEqual(dry_run_result, expected_dry_run_result)
-            self.assertRecentlyLocked(dry_run_last_locked_times, minimum_lock_time)
-            # Check for expected subprocess argument lookups
-            for env in self.build_env.all_environments():
-                # Source allowed lock & build invocation:
-                #   * install build deps with pip prior to locking
-                #   * lock with uv
-                #   * install build deps and runtime deps with pip
-                #   * remove build deps with pip-sync
-                #   * ensure runtime deps are installed in upper layers with pip
-                mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once()
-                mock_compile.reset_mock()
-                mock_install = cast(Mock, env.index_config._get_pip_install_args)
-                if env.kind == LayerVariants.RUNTIME:
-                    expected_install_calls = [
-                        expect_call(True),  # Pre-lock install_build_requirements()
-                        expect_call(True),  # install_build_requirements()
-                        expect_call(None),  # install_requirements()
-                    ]
-                else:
-                    expected_install_calls = [
-                        expect_call(True),  # install_build_requirements()
-                        expect_call(None),  # install_requirements()
-                        expect_call(True),  # ensure_runtime_dependencies()
-                    ]
-                self.assertEqual(mock_install.call_args_list, expected_install_calls)
-                mock_install.reset_mock()
-                mock_sync = cast(Mock, env.index_config._get_pip_sync_args)
-                mock_sync.assert_called_once()
-                mock_sync.reset_mock()
-            subtests_passed += 1
-        subtests_started += 1
-        with self.subTest("Check tagged dry run"):
-            tagged_dry_run_result, tagged_last_locked_times = _filter_manifest(
-                build_env.publish_artifacts(dry_run=True, tag_outputs=True)[1]
-            )
-            self.assertEqual(tagged_dry_run_result, expected_tagged_dry_run_result)
-            self.assertEqual(tagged_last_locked_times, dry_run_last_locked_times)
-            subtests_passed += 1
-        # Test stage: ensure lock timestamps don't change when requirements don't change
-        build_env.lock_environments()
-        subtests_started += 1
-        with self.subTest("Check lock timestamps don't change for stable requirements"):
-            stable_dry_run_result, stable_last_locked_times = _filter_manifest(
-                build_env.publish_artifacts(dry_run=True)[1]
-            )
-            self.assertEqual(stable_dry_run_result, expected_dry_run_result)
-            self.assertEqual(stable_last_locked_times, dry_run_last_locked_times)
-            # Check for expected subprocess argument lookups
-            for env in self.build_env.all_environments():
-                # The lock file is recreated, the timestamp metadata just doesn't
-                # get updated if the hash of the contents doesn't change
-                mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once()
-                mock_compile.reset_mock()
-                mock_install = cast(Mock, env.index_config._get_pip_install_args)
-                if env.kind == LayerVariants.RUNTIME:
-                    # Pre-lock install_build_requirements()
-                    mock_install.assert_called_once_with(True)
-                    mock_install.reset_mock()
-                else:
-                    mock_install.assert_not_called()
-                mock_sync = cast(Mock, env.index_config._get_pip_sync_args)
-                mock_sync.assert_not_called()
-            subtests_passed += 1
-        # Test stage: ensure lock timestamps *do* change when the requirements "change"
-        for env in build_env.all_environments():
-            # Rather than actually make the hash change, instead change the hash *records*
-            env_lock = env.env_lock
-            env_lock._requirements_hash = "ensure requirements appear to have changed"
-            env_lock._write_lock_metadata()
-        minimum_relock_time = datetime.now(timezone.utc)
-        build_env.lock_environments()
-        subtests_started += 1
-        with self.subTest("Check lock timestamps change for updated requirements"):
-            relocked_dry_run_result, relocked_last_locked_times = _filter_manifest(
-                build_env.publish_artifacts(dry_run=True)[1]
-            )
-            self.assertEqual(relocked_dry_run_result, expected_dry_run_result)
-            self.assertGreater(minimum_relock_time, minimum_lock_time)
-            self.assertRecentlyLocked(relocked_last_locked_times, minimum_relock_time)
-            # Check for expected subprocess argument lookups
-            for env in self.build_env.all_environments():
-                # Locked, but not rebuilt, so only uv should be called
-                mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once()
-                mock_compile.reset_mock()
-                mock_install = cast(Mock, env.index_config._get_pip_install_args)
-                if env.kind == LayerVariants.RUNTIME:
-                    # Pre-lock install_build_requirements()
-                    mock_install.assert_called_once_with(True)
-                    mock_install.reset_mock()
-                else:
-                    mock_install.assert_not_called()
-                mock_sync = cast(Mock, env.index_config._get_pip_sync_args)
-                mock_sync.assert_not_called()
-            subtests_passed += 1
-        # Test stage: ensure published archives and manifests have the expected name
-        subtests_started += 1
-        with self.subTest("Check untagged publication"):
-            publication_result = build_env.publish_artifacts()
-            self.check_publication_result(
-                publication_result, dry_run_result, expected_tag=None
-            )
-            subtests_passed += 1
-        subtests_started += 1
-        with self.subTest("Check tagged publication"):
-            tagged_publication_result = build_env.publish_artifacts(tag_outputs=True)
-            self.check_publication_result(
-                tagged_publication_result, tagged_dry_run_result, expected_tag
-            )
             subtests_passed += 1
         # TODO: Add another test stage that confirms build versions increment as expected
 

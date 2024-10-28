@@ -13,7 +13,6 @@ import sys
 import sysconfig
 import tempfile
 import tomllib
-import warnings
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, InitVar
@@ -118,7 +117,6 @@ class PackageIndexConfig:
     """Python package index access configuration"""
 
     query_default_index: bool = field(default=True)
-    allow_source_builds: bool = field(default=False)
     local_wheel_dirs: InitVar[Sequence[StrPath] | None] = None
     local_wheel_paths: list[Path] = field(init=False)
 
@@ -133,9 +131,9 @@ class PackageIndexConfig:
 
     @classmethod
     def disabled(cls) -> Self:
+        """Package index configuration that disallows package installation"""
         return cls(
             query_default_index=False,
-            allow_source_builds=False,
             local_wheel_dirs=None,
         )
 
@@ -146,37 +144,19 @@ class PackageIndexConfig:
             _resolve_lexical_path(path, base_path) for path in self.local_wheel_paths
         ]
 
-    @staticmethod
-    def _get_require_binary_args() -> list[str]:
-        return ["--only-binary", ":all:"]
-
-    def _get_common_pip_args(self, require_binary: bool) -> list[str]:
+    def _get_common_pip_args(self) -> list[str]:
         result = []
         if not self.query_default_index:
             result.append("--no-index")
-        if require_binary:
-            result.extend(self._get_require_binary_args())
         for local_wheel_path in self.local_wheel_paths:
             result.extend(("--find-links", os.fspath(local_wheel_path)))
         return result
 
     def _get_uv_pip_compile_args(self) -> list[str]:
-        require_binary = not self.allow_source_builds
-        return self._get_common_pip_args(require_binary)
+        return self._get_common_pip_args()
 
-    def _get_pip_install_args(self, require_binary: bool | None) -> list[str]:
-        if require_binary is None:
-            require_binary = not self.allow_source_builds
-        return self._get_common_pip_args(require_binary)
-
-    def _get_pip_sync_args(self) -> list[str]:
-        # Local cache should always have been populated by the time sync runs
-        # pip-sync wraps pip, so only some args are accepted at top level
-        sync_args = self._get_common_pip_args(require_binary=False)
-        pip_args = " ".join(self._get_require_binary_args())
-        if pip_args:
-            sync_args.extend(("--pip-args", pip_args))
-        return sync_args
+    def _get_pip_install_args(self) -> list[str]:
+        return self._get_common_pip_args()
 
 
 ######################################################
@@ -1056,7 +1036,7 @@ class _PythonEnvironment(ABC):
         self.was_built = False
 
     def _create_environment(
-        self, *, clean: bool = False, build_only: bool = False
+        self, *, clean: bool = False, lock_only: bool = False
     ) -> None:
         env_path = self.env_path
         env_updated = False
@@ -1070,13 +1050,13 @@ class _PythonEnvironment(ABC):
             if self.want_build or self.was_created:
                 # Run the update if requested, or if env was created earlier in the build
                 print(f"{str(env_path)!r} exists, updating...")
-                self._update_existing_environment(build_only=build_only)
+                self._update_existing_environment(lock_only=lock_only)
                 env_updated = True
             else:
                 print(f"{str(env_path)!r} exists, reusing without updating...")
             create_env = False
         if create_env:
-            self._create_new_environment(build_only=build_only)
+            self._create_new_environment(lock_only=lock_only)
         self.was_created = create_env
         self.was_built = create_env or env_updated
 
@@ -1170,49 +1150,25 @@ class _PythonEnvironment(ABC):
         return run_python_command(command, **kwds)
 
     def _run_pip_install(
-        self, *pip_install_args: str, require_binary: bool | None = None
+        self, *pip_install_args: str
     ) -> subprocess.CompletedProcess[str]:
         # TODO: Switch to `uv pip install` once https://github.com/astral-sh/uv/issues/2500
         #       is resolved (so environment layering is still handled correctly)
+        # Requirements are fully transitively locked, so no implicit deps are allowed
+        # Implicit source builds are not supported (use local wheel dirs instead)
         pip_args = [
             "install",
             "--no-warn-script-location",
-            *self.index_config._get_pip_install_args(require_binary),
+            *self.index_config._get_pip_install_args(),
+            "--only-binary",
+            ":all:",
+            "--no-deps",
+            "--upgrade",
             *pip_install_args,
         ]
         result = self._run_pip(pip_args)
         print(f"Dependencies installed and updated in {str(self.env_path)!r}")
         return result
-
-    def _run_pip_sync(
-        self,
-        env_python_path: StrPath,
-        requirements_paths: Sequence[StrPath],
-    ) -> subprocess.CompletedProcess[str]:
-        # TODO: Switch to `uv pip sync` once https://github.com/astral-sh/uv/issues/2500
-        #       is resolved (so environment layering is still handled correctly)
-        # Work around https://github.com/jazzband/pip-tools/issues/2103 by clearing
-        # `pip-sync`'s list of packages to leave behind before running the sync command
-        command = [
-            str(self.tools_python_path),
-            "-X",
-            "utf8",
-            "-Ic",
-            (
-                "import piptools.sync, piptools.scripts.sync; "
-                "piptools.sync.PACKAGES_TO_IGNORE.clear(); "
-                "piptools.scripts.sync.cli()"
-            ),
-            "--quiet",
-            "--no-config",
-            *self.index_config._get_pip_sync_args(),
-            "--python-executable",
-            os.fspath(env_python_path),
-            *(
-                os.fspath(p) for p in requirements_paths
-            ),  # `map` upsets typecheckers here
-        ]
-        return run_python_command(command)
 
     def get_constraint_paths(self) -> list[Path]:
         # No constraints files by default, subclasses override as necessary
@@ -1245,88 +1201,23 @@ class _PythonEnvironment(ABC):
             print(f"  Environment lock time set: {self.env_lock.locked_at!r}")
         return self.env_lock
 
-    def install_build_requirements(self) -> subprocess.CompletedProcess[str] | None:
-        # Install build-only dependencies inside the target environment
-        # All build dependencies must be available as pre-built binary packages
-        # TODO: drop support for implicit source builds (superseded by local wheel dirs)
-        if not self.index_config.allow_source_builds:
-            return None  # No implicit source builds -> never need build dependencies
-        build_requirements = self.env_spec.build_requirements
-        if not build_requirements:
-            return None  # Nothing to remove
-        deprecation_msg = (
-            "Support for implicit source builds is being removed (use local wheels)"
-        )
-        warnings.warn(deprecation_msg, DeprecationWarning)
-        return self._run_pip_install(
-            "--upgrade",
-            *build_requirements,
-            require_binary=True,
-        )
-
     def install_requirements(self) -> subprocess.CompletedProcess[str]:
         # Run a pip dependency upgrade inside the target environment
-        # Build isolation is intentionally turned off so source builds that need big
-        # dependencies like `torch` can access the runtime environment
-        # Requirements are fully transitively locked, so no implicit deps are allowed
         if not self.env_lock.is_locked:
             raise BuildEnvError(
                 "Environment must be locked before installing dependencies"
             )
-        if self.index_config.allow_source_builds:
-            self.install_build_requirements()  # Ensure source dependencies can be built
         return self._run_pip_install(
-            "--no-build-isolation",
-            "--no-deps",
-            "--upgrade",
             "-r",
             str(self.requirements_path),
         )
 
-    def remove_build_only_packages(self) -> subprocess.CompletedProcess[str] | None:
-        # Remove build-only dependencies before publishing the environment layer
-        if not self.index_config.allow_source_builds:
-            return None  # No implicit source builds -> never install build dependencies
-        build_requirements = self.env_spec.build_requirements
-        if not build_requirements or not self.was_built:
-            return (
-                None  # Nothing to remove (no build requirements, or env wasn't built)
-            )
-        requirements_paths = [
-            self.requirements_path,
-            *self.get_constraint_paths(),
-        ]
-        result = self._run_pip_sync(self.python_path, requirements_paths)
-        print(f"Removed build-only packages from {str(self.env_path)!r}")
-        return result
-
-    def ensure_runtime_dependencies(self) -> subprocess.CompletedProcess[str] | None:
-        # Second pass reinstalling purely from local cache
-        # This adds packages previously skipped due to build dependencies in lower layers
-        # Ideally, hashes wouldn't be rechecked to allow for cached wheels built from source
-        # artifacts, but `pip` doesn't allow the hash check to be turned off when hashes are
-        # present in the requirements file
-        if not self.was_built or not self.index_config.allow_source_builds:
-            # Nothing to ensure (env wasn't built or build deps were never installed)
-            return None
-        return self._run_pip_install(
-            # Downloads allowed to work around https://github.com/pypa/pip/issues/12807
-            # "--no-index",
-            "--quiet",
-            "--no-deps",
-            "-r",
-            str(self.requirements_path),
-            require_binary=True,
-        )
-
-    def _update_existing_environment(self, *, build_only: bool = False) -> None:
-        if build_only:
-            self.install_build_requirements()
-        else:
+    def _update_existing_environment(self, *, lock_only: bool = False) -> None:
+        if not lock_only:
             self.install_requirements()
 
     @abstractmethod
-    def _create_new_environment(self, *, build_only: bool = False) -> None:
+    def _create_new_environment(self, *, lock_only: bool = False) -> None:
         raise NotImplementedError
 
     def _ensure_portability(self) -> None:
@@ -1457,9 +1348,6 @@ class RuntimeEnv(_PythonEnvironment):
         assert isinstance(self._env_spec, RuntimeSpec)
         return self._env_spec
 
-    def _update_existing_environment(self, *, build_only: bool = False) -> None:
-        super()._update_existing_environment(build_only=build_only)
-
     def _remove_pip(self) -> subprocess.CompletedProcess[str] | None:
         to_be_checked = ["pip", "wheel", "setuptools"]
         to_be_removed = []
@@ -1471,24 +1359,18 @@ class RuntimeEnv(_PythonEnvironment):
         pip_args = ["uninstall", "-y", *to_be_removed]
         return self._run_pip(pip_args)
 
-    def _create_new_environment(self, *, build_only: bool = False) -> None:
+    def _create_new_environment(self, *, lock_only: bool = False) -> None:
         python_runtime = self.env_spec.fully_versioned_name
         install_path = _pdm_python_install(self.build_path, python_runtime)
         if install_path is None:
             raise BuildEnvError(f"Failed to install {python_runtime}")
         shutil.move(install_path, self.env_path)
-        if not self.index_config.allow_source_builds:
-            # Only `pip-sync` needs `pip` to be installed in the target environment,
-            # and that step is skipped when implicit source builds are disabled
-            self._remove_pip()
+        # No build step needs `pip` to be installed in the target environment,
+        # and we don't want to ship it unless explicitly requested to do so
+        # as a declared dependency of an included component
+        self._remove_pip()
         fs_sync()
-        if build_only:
-            if self.index_config.allow_source_builds:
-                print(
-                    f"Preparing {str(self.python_path)!r} build dependencies in {self}"
-                )
-                self.install_build_requirements()
-        else:
+        if not lock_only:
             print(
                 f"Using {str(self.python_path)!r} as runtime environment layer in {self}"
             )
@@ -1501,7 +1383,7 @@ class RuntimeEnv(_PythonEnvironment):
 
     def create_build_environment(self, *, clean: bool = False) -> None:
         """Create or update runtime build environment. Returns True if env is new or updated."""
-        super()._create_environment(clean=clean, build_only=True)
+        super()._create_environment(clean=clean, lock_only=True)
 
 
 class _VirtualEnvironment(_PythonEnvironment):
@@ -1562,16 +1444,16 @@ class _VirtualEnvironment(_PythonEnvironment):
     def _link_layered_environment(self) -> None:
         pass  # Nothing to do by default, subclasses override if necessary
 
-    def _update_existing_environment(self, *, build_only: bool = False) -> None:
-        if build_only:
+    def _update_existing_environment(self, *, lock_only: bool = False) -> None:
+        if lock_only:
             raise RuntimeError(
-                "Only runtime environments support build-only installation"
+                "Only runtime environments support lock-only installation"
             )
         self._ensure_virtual_environment()
         super()._update_existing_environment()
 
-    def _create_new_environment(self, *, build_only: bool = False) -> None:
-        self._update_existing_environment(build_only=build_only)
+    def _create_new_environment(self, *, lock_only: bool = False) -> None:
+        self._update_existing_environment(lock_only=lock_only)
 
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
         super()._update_output_metadata(metadata)
@@ -1705,8 +1587,8 @@ class ApplicationEnv(_VirtualEnvironment):
         with open(sc_path, "w", encoding="utf-8") as f:
             f.write("\n".join(sc_contents))
 
-    def _update_existing_environment(self, *, build_only: bool = False) -> None:
-        super()._update_existing_environment(build_only=build_only)
+    def _update_existing_environment(self, *, lock_only: bool = False) -> None:
+        super()._update_existing_environment(lock_only=lock_only)
         # Also publish the specified launch module as an importable top level module
         launch_module_source_path = self.env_spec.launch_module_path
         launch_module_env_path = self.pylib_path / launch_module_source_path.name
@@ -2176,16 +2058,6 @@ class BuildEnvironment:
         for layered_env in self.venvstacks_to_build():
             layered_env.create_environment(clean=clean)
             layered_env.report_python_site_details()
-        # Remove build packages that shouldn't be shipped
-        for env in reversed(list(self.built_environments())):
-            env.remove_build_only_packages()
-        # Fix up layered environments that were inadvertently relying on build dependencies
-        # Need to check all upper layers, not just those that declared the build-only dependencies
-        for env in self.built_environments():
-            if env.kind == LayerVariants.RUNTIME:
-                # Runtimes have no dependencies, so nothing to check
-                continue
-            env.ensure_runtime_dependencies()
 
     @staticmethod
     def _env_metadata_path(

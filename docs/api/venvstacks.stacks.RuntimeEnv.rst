@@ -17,13 +17,10 @@ venvstacks.stacks.RuntimeEnv
       ~RuntimeEnv.create_build_environment
       ~RuntimeEnv.create_environment
       ~RuntimeEnv.define_archive_build
-      ~RuntimeEnv.ensure_runtime_dependencies
       ~RuntimeEnv.export_environment
       ~RuntimeEnv.get_constraint_paths
-      ~RuntimeEnv.install_build_requirements
       ~RuntimeEnv.install_requirements
       ~RuntimeEnv.lock_requirements
-      ~RuntimeEnv.remove_build_only_packages
       ~RuntimeEnv.report_python_site_details
       ~RuntimeEnv.request_export
       ~RuntimeEnv.select_operations

@@ -342,15 +342,6 @@ class TestSubcommands:
             (),
             PackageIndexConfig(
                 query_default_index=True,
-                allow_source_builds=False,
-                local_wheel_dirs=None,
-            ),
-        ),
-        (
-            ("--index", "--no-allow-source"),
-            PackageIndexConfig(
-                query_default_index=True,
-                allow_source_builds=False,
                 local_wheel_dirs=None,
             ),
         ),
@@ -358,15 +349,6 @@ class TestSubcommands:
             ("--no-index",),
             PackageIndexConfig(
                 query_default_index=False,
-                allow_source_builds=False,
-                local_wheel_dirs=None,
-            ),
-        ),
-        (
-            ("--allow-source",),
-            PackageIndexConfig(
-                query_default_index=True,
-                allow_source_builds=True,
                 local_wheel_dirs=None,
             ),
         ),
@@ -374,7 +356,6 @@ class TestSubcommands:
             ("--local-wheels", "/some_dir", "--local-wheels", "some/other/dir"),
             PackageIndexConfig(
                 query_default_index=True,
-                allow_source_builds=False,
                 local_wheel_dirs=["/some_dir", "some/other/dir"],
             ),
         ),
