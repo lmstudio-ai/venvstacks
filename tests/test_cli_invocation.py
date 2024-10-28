@@ -150,7 +150,6 @@ class TestTopLevelCommand:
         assert result.exception is None, report_traceback(result.exception)
         assert result.exit_code == 0
 
-    # TODO: Collect test coverage stats for this entry point invocation
     @requires_venv("Entry point test")
     def test_entry_point_help_raw(self) -> None:
         expected_entry_point = Path(sys.executable).parent / "venvstacks"
@@ -169,7 +168,6 @@ class TestTopLevelCommand:
         assert result.returncode == 0
         assert result.stdout is not None
 
-    # TODO: Collect test coverage stats for this entry point invocation
     @requires_venv("Entry point test")
     def test_entry_point_help(self) -> None:
         expected_entry_point = Path(sys.executable).parent / "venvstacks"
@@ -180,6 +178,24 @@ class TestTopLevelCommand:
         if result.stdout is not None:
             # Usage message should suggest direct execution
             assert "Usage: venvstacks [" in result.stdout
+            # Top-level callback docstring is used as the overall CLI help text
+            cli_help = cli.handle_app_options.__doc__
+            assert cli_help is not None
+            assert cli_help.strip() in result.stdout
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.returncode == 0
+        assert result.stdout is not None
+
+    def test_module_execution(self) -> None:
+        # TODO: `coverage.py` isn't picking this up as executing `venvstacks/__main__.py`
+        #       (even an indirect invocation via the runpy module doesn't get detected)
+        command = [sys.executable, "-m", "venvstacks", "--help"]
+        result = run_python_command_unchecked(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        if result.stdout is not None:
+            # Usage message should suggest indirect execution
+            assert "Usage: python -m venvstacks [" in result.stdout
             # Top-level callback docstring is used as the overall CLI help text
             cli_help = cli.handle_app_options.__doc__
             assert cli_help is not None
