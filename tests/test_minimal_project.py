@@ -622,7 +622,7 @@ class TestMinimalBuild(unittest.TestCase):
                 mock_compile.assert_called_once_with()
                 mock_compile.reset_mock()
                 mock_install = cast(Mock, env.index_config._get_pip_install_args)
-                mock_install.assert_not_called_with()
+                mock_install.assert_not_called()
             subtests_passed += 1
         # Test stage: ensure lock timestamps *do* change when the requirements "change"
         for env in build_env.all_environments():
@@ -647,7 +647,7 @@ class TestMinimalBuild(unittest.TestCase):
                 mock_compile.assert_called_once_with()
                 mock_compile.reset_mock()
                 mock_install = cast(Mock, env.index_config._get_pip_install_args)
-                mock_install.assert_not_called_with()
+                mock_install.assert_not_called()
             subtests_passed += 1
         # Test stage: ensure exported environments allow launch module execution
         subtests_started += 1
