@@ -70,6 +70,7 @@ dev = [
     "pbs-installer==2024.10.10",
     # Uses exact pin for dev as lock file regeneration is sensitive to the exact uv version
     "uv==0.4.21",
+    "scriv[toml]>=1.5.1",
 ]
 bootstrap = [
     "pdm>=2.16.1",
@@ -115,3 +116,7 @@ source = [
 [tool.ruff]
 # Assume Python 3.11
 target-version = "py311"
+
+[tool.scriv]
+version = "literal: pyproject.toml: project.version"
+ghrel_template = "file: ghrel_template.md.j2"

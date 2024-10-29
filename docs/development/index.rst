@@ -1,7 +1,12 @@
 .. _dev-guide:
 
+-----------
 Development
-===========
+-----------
+
+
+Getting Started
+===============
 
 (With thanks to pip's `Getting Started`_ guide for the general structure here!)
 
@@ -30,6 +35,29 @@ In order to work on venvstacks, you need to install
 
 Given these tools, the default development environment can be set up
 and other commands executed as described below.
+
+
+Changelog Entries
+-----------------
+
+The ``venvstacks`` changelog is managed with :pypi:`scriv`.
+
+Entries are written in ``.rst`` format by default, so they
+can use semantic references to the rest of the documentation.
+However, ``.md`` fragments are entirely fine if internal
+semantic links aren't needed.
+
+All changes which may affect ``venvstacks`` users should be
+given a user facing changelog entry with ``scriv create``.
+
+Refer to the
+`"per-user" settings <https://scriv.readthedocs.io/en/1.5.1/configuration.html#per-user-git-settings>`__
+in the ``scriv`` documentation for details on how to customise the
+local behaviour of ``scriv create``.
+
+The project level ``scriv`` settings are stored in
+``pyproject.toml`` (but the project largely relies on the default
+settings)
 
 
 Running from the source tree
@@ -62,6 +90,22 @@ venvstacks can then be executed via the ``-m`` switch:
     │ publish        Publish layer archives for Python virtual environment stacks.    │
     ╰─────────────────────────────────────────────────────────────────────────────────╯
 
+Building Documentation
+----------------------
+
+pip's documentation is built using :pypi:`Sphinx`. The documentation is written
+in reStructuredText.
+
+To build it locally, run:
+
+.. code-block:: console
+
+    $ tox -e docs
+
+The built documentation can be found in the ``docs/_build`` folder.
+
+Automated Testing
+=================
 
 Code consistency checks
 -----------------------
@@ -95,7 +139,7 @@ All of these commands can be invoked via tox:
     ``# fmt: off/on`` and ``# fmt: skip`` comments may be used as needed
     when the autoformatter makes readability worse instead of better
     (for example, collapsing lists to a single line when they intentionally
-    cover multiple lines, or )
+    cover multiple lines, or breaking alignment of end-of-line comments).
 
 
 Running tests locally
@@ -183,19 +227,51 @@ closing and reopening the PR once the relevants fixes have been
 implemented.
 
 
-Building Documentation
+Release Management
+==================
+
+.. _version-numbering:
+
+Version Numbering
+-----------------
+
+Until the Python API has stabilised, ``venvstacks`` is using
+`ZeroVer <https://0ver.org/>`__ (starting from 0.1.0).
+
+The versioning scheme to be used after the leading zero is
+dropped has not yet been decided (see
+:external+packaging:ref:`versioning`
+for some of the options being considered).
+
+Except for when a release is being prepared, the nominal version on
+``main`` will have ``.dev0`` appended to indicate it is not a
+release build.
+
+Most releases are expected to be published directly without a prior
+release candidate build, but one may be used if it is deemed
+necessary (for example, ``0.1.0rc1`` was published in order to
+test the release pipeline prior to publishing ``0.1.0``).
+
+
+Preparing New Releases
 ----------------------
 
-pip's documentation is built using :pypi:`Sphinx`. The documentation is written
-in reStructuredText.
+Prior to release:
 
-To build it locally, run:
+* Update the version in ``pyproject.toml`` to remove the pre-release suffix
+* Run ``scriv collect`` to update ``CHANGELOG.rst``
+* Create a PR for the collected change log updates
+* Check the updated docs after the PR has been merged
 
-.. code-block:: console
+Release (requires ``pandoc``):
 
-    $ tox -e docs
+* Run ``scriv github-release --dry-run`` to check what would be published
+* Run ``scriv github-release`` to make the release tag
 
-The built documentation can be found in the ``docs/_build`` folder.
+After release:
+
+* Check the release GitHub Action has published to PyPI correctly
+* Bump the version in ``pyproject.toml`` and add a ``.dev0`` suffix
 
 .. _`Getting Started`: https://pip.pypa.io/en/stable/development/getting-started/
 .. _`open an issue`: https://github.com/lmstudio/venvstacks/issues/new?title=Trouble+with+development+environment

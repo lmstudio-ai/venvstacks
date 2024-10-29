@@ -1,5 +1,6 @@
+----------------------------------
 Layered Virtual Environment Stacks
-==================================
+----------------------------------
 
 ``venvstacks`` uses Python's ``sitecustomize.py`` environment setup feature
 to chain together three layers of Python virtual environments:
@@ -14,7 +15,7 @@ and the framework layers to share dependencies installed in the runtime layers.
 
 
 Installing
-----------
+==========
 
 ``venvstacks`` is available from the :pypi:`Python Package Index <venvstacks>`,
 and can be installed with :pypi:`pipx` (or similar tools):
@@ -58,6 +59,9 @@ The command line help also provides additional usage information:
    However, direct execution as ``venvstacks`` is expected to be
    :issue:`supported in a future release <26>`.
 
+
+Working with environment stacks
+===============================
 
 Defining environment stacks
 ---------------------------
@@ -178,7 +182,7 @@ but the details related specifically to the published archive (such as its size 
 contents hash) are necessarily omitted.
 
 Contributing to ``venvstacks`` development
-------------------------------------------
+==========================================
 
 ``venvstacks`` is MIT Licensed and `developed on GitHub <https://github.com/lmstudio-ai/venvstacks>`__.
 

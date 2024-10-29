@@ -48,6 +48,7 @@ autosummary_generate = False
 
 intersphinx_mapping = {
     "py": ("https://docs.python.org/3", None),
+    "packaging": ("https://packaging.python.org/en/latest/", None),
 }
 
 

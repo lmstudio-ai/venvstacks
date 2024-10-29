@@ -1,5 +1,9 @@
+-----------------
 Design Discussion
-=================
+-----------------
+
+Project
+=======
 
 Why does ``venvstacks`` exist?
 ------------------------------
@@ -37,7 +41,7 @@ environments, it doesn't refer to being able combine ``sys.path``
 across multiple environments.
 
 Splitting environments into layers the way ``venvstacks`` does
-really doesn't align well with the way the ``conda`` dependency
+also doesn't align well with the way the ``conda`` dependency
 resolver works, so it ended up making more sense to design
 ``venvstacks`` to work with ``venv`` and ``pip``.
 
@@ -46,6 +50,10 @@ standalone platform native executables or Python :py:mod:`zipapp`
 archives were eliminated from consideration as they lacked the ability
 to readily share the large common framework components that feature
 heavily in the Python AI ecosystem across different applications.
+
+
+Technical
+=========
 
 Why use ``python-build-standalone`` for the base runtimes?
 ----------------------------------------------------------
