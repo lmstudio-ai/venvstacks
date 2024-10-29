@@ -48,6 +48,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Capture timestamp for debugging artifacts
       id: timestamp
@@ -149,6 +151,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - uses: actions/setup-python@v5
         with:
           # Use latest Python, so it understands all syntax.
