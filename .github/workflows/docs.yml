@@ -31,6 +31,8 @@ jobs:
     # for latest versions if the standard actions start emitting warnings
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     # sphinx-action uses docker under the hood and doesn't play nice with the
     # dependency caching, so it may be better to switch to using `tox -e docs`
