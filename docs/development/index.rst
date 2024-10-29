@@ -230,6 +230,8 @@ implemented.
 Release Management
 ==================
 
+.. _version-numbering:
+
 Version Numbering
 -----------------
 
@@ -237,7 +239,8 @@ Until the Python API has stabilised, ``venvstacks`` is using
 `ZeroVer <https://0ver.org/>`__ (starting from 0.1.0).
 
 The versioning scheme to be used after the leading zero is
-dropped has not yet been decided (see :ref:`choosing-a-versioning-scheme`
+dropped has not yet been decided (see
+:external+packaging:ref:`versioning`
 for some of the options being considered).
 
 Except for when a release is being prepared, the nominal version on
