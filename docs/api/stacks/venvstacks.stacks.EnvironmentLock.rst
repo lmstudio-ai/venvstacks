@@ -6,9 +6,6 @@ venvstacks.stacks.EnvironmentLock
 .. autoclass:: EnvironmentLock
 
 
-   .. automethod:: __init__
-
-
    .. rubric:: Methods
 
    .. autosummary::

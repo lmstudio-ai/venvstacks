@@ -173,6 +173,8 @@ EnvNameDeploy = NewType("EnvNameDeploy", str)
 
 
 class EnvironmentLockMetadata(TypedDict):
+    """Details of the last time this environment was locked"""
+
     # fmt: off
     locked_at: str          # ISO formatted date/time value
     requirements_hash: str  # Uses "algorithm:hexdigest" format
@@ -185,6 +187,8 @@ _T = TypeVar("_T")
 
 @dataclass
 class EnvironmentLock:
+    """Layered environment dependency locking management"""
+
     requirements_path: Path
     versioned: bool
     lock_metadata_path: Path = field(init=False, repr=False)
@@ -342,6 +346,8 @@ class EnvironmentLock:
 # https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
 # macOS target system API version info is omitted (as that will be set universally for macOS builds)
 class TargetPlatforms(StrEnum):
+    """Enum for support target deployment platforms"""
+
     WINDOWS = "win_amd64"
     LINUX = "linux_x86_64"
     MACOS_APPLE = "macosx_arm64"
@@ -367,12 +373,16 @@ TargetPlatform = (
 
 
 class LayerVariants(StrEnum):
+    """Enum for defined layer variants"""
+
     RUNTIME = "runtime"
     FRAMEWORK = "framework"
     APPLICATION = "application"
 
 
 class LayerCategories(StrEnum):
+    """Enum for defined layer categories (collections of each variant)"""
+
     RUNTIMES = "runtimes"
     FRAMEWORKS = "frameworks"
     APPLICATIONS = "applications"
@@ -433,6 +443,8 @@ class _PythonEnvironmentSpec(ABC):
 
 @dataclass
 class RuntimeSpec(_PythonEnvironmentSpec):
+    """Base runtime layer specification"""
+
     kind = LayerVariants.RUNTIME
     category = LayerCategories.RUNTIMES
     fully_versioned_name: str = field(repr=False)
@@ -452,6 +464,8 @@ class _VirtualEnvironmentSpec(_PythonEnvironmentSpec):
 
 @dataclass
 class FrameworkSpec(_VirtualEnvironmentSpec):
+    """Framework layer specification"""
+
     ENV_PREFIX = "framework"
     kind = LayerVariants.FRAMEWORK
     category = LayerCategories.FRAMEWORKS
@@ -459,6 +473,8 @@ class FrameworkSpec(_VirtualEnvironmentSpec):
 
 @dataclass
 class ApplicationSpec(_VirtualEnvironmentSpec):
+    """Application layer specification"""
+
     ENV_PREFIX = "app"
     kind = LayerVariants.APPLICATION
     category = LayerCategories.APPLICATIONS
@@ -467,6 +483,8 @@ class ApplicationSpec(_VirtualEnvironmentSpec):
 
 
 class LayerSpecMetadata(TypedDict):
+    """Details of a defined environment layer"""
+
     # fmt: off
     # Common fields defined for all layers, whether archived or exported
     layer_name: EnvNameBuild       # Prefixed layer name without lock version info
@@ -500,6 +518,8 @@ class LayerSpecMetadata(TypedDict):
 
 
 class ArchiveHashes(TypedDict):
+    """Hash details of a built archive"""
+
     sha256: str
     # Only SHA256 hashes for now. Mark both old and new hash fields with `typing.NotRequired`
     # to migrate to a different hashing function in the future.
@@ -681,6 +701,8 @@ class StackPublishingResult(TypedDict):
 
 
 class PublishedArchivePaths(NamedTuple):
+    """Locations of published metadata and archive files"""
+
     metadata_path: Path
     snippet_paths: list[Path]
     archive_paths: list[Path]
@@ -811,10 +833,14 @@ LayeredExportMetadata = Mapping[LayerCategories, Sequence[ExportMetadata]]
 
 
 class StackExportRequest(TypedDict):
+    """Inputs to an environment export request for a full stack specification"""
+
     layers: LayeredExportMetadata
 
 
 class ExportedEnvironmentPaths(NamedTuple):
+    """Locations of exported metadata files and deployed environments"""
+
     metadata_path: Path
     snippet_paths: list[Path]
     env_paths: list[Path]
@@ -1317,6 +1343,8 @@ class _PythonEnvironment(ABC):
 
 
 class RuntimeEnv(_PythonEnvironment):
+    """Base runtime layer build environment"""
+
     kind = LayerVariants.RUNTIME
     category = LayerCategories.RUNTIMES
 
@@ -1467,6 +1495,8 @@ class _VirtualEnvironment(_PythonEnvironment):
 
 
 class FrameworkEnv(_VirtualEnvironment):
+    """Framework layer build environment"""
+
     kind = LayerVariants.FRAMEWORK
     category = LayerCategories.FRAMEWORKS
     _include_system_site_packages = True
@@ -1479,6 +1509,8 @@ class FrameworkEnv(_VirtualEnvironment):
 
 
 class ApplicationEnv(_VirtualEnvironment):
+    """Application layer build environment"""
+
     kind = LayerVariants.APPLICATION
     category = LayerCategories.APPLICATIONS
 
@@ -1624,6 +1656,8 @@ BuildEnv = TypeVar("BuildEnv", bound=_PythonEnvironment)
 
 @dataclass
 class StackSpec:
+    """Layered environment stack specification"""
+
     # Specified on creation
     spec_path: Path
     runtimes: MutableMapping[LayerBaseName, RuntimeSpec]
@@ -1644,6 +1678,8 @@ class StackSpec:
 
     @classmethod
     def load(cls, fname: StrPath) -> Self:
+        """Load stack specification from given TOML file"""
+
         stack_spec_path = as_normalized_path(fname)
         with open(stack_spec_path, "rb") as f:
             data = tomllib.load(f)
@@ -1753,6 +1789,8 @@ class StackSpec:
         build_dir: StrPath = "",
         index_config: PackageIndexConfig | None = None,
     ) -> "BuildEnvironment":
+        """Define layer build environments for this specification"""
+
         build_path = self.resolve_lexical_path(build_dir)
         if index_config is None:
             index_config = PackageIndexConfig()
@@ -1786,6 +1824,8 @@ class StackSpec:
 
 @dataclass
 class BuildEnvironment:
+    """Interface to build specified layered environment stacks"""
+
     METADATA_DIR = "__venvstacks__"  # Output subdirectory for the build metadata
     METADATA_MANIFEST = "venvstacks.json"  # File with full metadata for this build
     METADATA_ENV_DIR = (
@@ -2036,6 +2076,8 @@ class BuildEnvironment:
         return not all(lock_exists(env.env_spec) for env in self.environments_to_lock())
 
     def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
+        """Lock build environments for specified layers"""
+
         # Lock environments without fully building them
         # Necessarily creates the runtime environments and
         # installs any declared build dependencies
@@ -2045,6 +2087,8 @@ class BuildEnvironment:
         return [env.lock_requirements() for env in self.environments_to_lock()]
 
     def create_environments(self, *, clean: bool = False, lock: bool = False) -> None:
+        """Create build environments for specified layers"""
+
         # Base runtime environments need to exist before dependencies can be locked
         self.build_path.mkdir(parents=True, exist_ok=True)
         clean_runtime_envs = clean
@@ -2079,6 +2123,8 @@ class BuildEnvironment:
     def load_archive_metadata(
         self, env_metadata_dir: Path, env: _PythonEnvironment, platform_tag: str = ""
     ) -> ArchiveMetadata | None:
+        """Load previously published archive metadata"""
+
         # mypy is right to complain that the JSON hasn't been validated to conform
         # to the ArchiveMetadata interface, but we're OK with letting the runtime
         # errors happen in that scenario. Longer term, explicit JSON schemas should be
@@ -2089,6 +2135,8 @@ class BuildEnvironment:
     def load_export_metadata(
         self, env_metadata_dir: Path, env: _PythonEnvironment
     ) -> ExportMetadata | None:
+        """Load previously exported environment metadata"""
+
         # mypy is right to complain that the JSON hasn't been validated to conform
         # to the ExportMetadata interface, but we're OK with letting the runtime
         # errors happen in that scenario. Longer term, explicit JSON schemas should be
@@ -2122,6 +2170,8 @@ class BuildEnvironment:
         tag_outputs: bool = False,
         dry_run: bool = False,
     ) -> PublishedArchivePaths | tuple[Path, StackPublishingRequest]:
+        """Publish metadata and archives for specified layers"""
+
         layer_data: dict[
             LayerCategories, list[ArchiveMetadata | ArchiveBuildMetadata]
         ] = {
@@ -2169,12 +2219,12 @@ class BuildEnvironment:
             archive_paths.append(archive_path)
             result_data[env.category].append(build_metadata)
         manifest_data: StackPublishingResult = {"layers": result_data}
-        manifest_path, snippet_paths = self.write_artifacts_manifest(
+        manifest_path, snippet_paths = self._write_artifacts_manifest(
             metadata_dir, manifest_data, platform_tag
         )
         return PublishedArchivePaths(manifest_path, snippet_paths, archive_paths)
 
-    def write_archive_metadata(
+    def _write_archive_metadata(
         self,
         env_metadata_dir: StrPath,
         archive_metadata: ArchiveMetadata,
@@ -2187,7 +2237,7 @@ class BuildEnvironment:
         _write_json(metadata_path, archive_metadata)
         return metadata_path
 
-    def write_artifacts_manifest(
+    def _write_artifacts_manifest(
         self,
         metadata_dir: StrPath,
         manifest_data: StackPublishingResult,
@@ -2216,7 +2266,7 @@ class BuildEnvironment:
         ):
             for env in layer_metadata[category]:
                 snippet_paths.append(
-                    self.write_archive_metadata(env_metadata_dir, env, platform_tag)
+                    self._write_archive_metadata(env_metadata_dir, env, platform_tag)
                 )
         return manifest_path, snippet_paths
 
@@ -2243,6 +2293,8 @@ class BuildEnvironment:
         force: bool = False,
         dry_run: bool = False,
     ) -> ExportedEnvironmentPaths | tuple[Path, StackExportRequest]:
+        """Locally export environments for specified layers"""
+
         export_data: dict[LayerCategories, list[ExportMetadata]] = {
             RuntimeEnv.category: [],
             FrameworkEnv.category: [],
@@ -2278,12 +2330,12 @@ class BuildEnvironment:
             export_paths.append(export_path)
             export_data[env.category].append(export_metadata)
         manifest_data: StackExportRequest = {"layers": export_data}
-        manifest_path, snippet_paths = self.write_export_manifest(
+        manifest_path, snippet_paths = self._write_export_manifest(
             metadata_dir, manifest_data
         )
         return ExportedEnvironmentPaths(manifest_path, snippet_paths, export_paths)
 
-    def write_env_metadata(
+    def _write_env_metadata(
         self,
         env_metadata_dir: StrPath,
         env_metadata: ExportMetadata,
@@ -2296,7 +2348,7 @@ class BuildEnvironment:
         _write_json(metadata_path, env_metadata)
         return metadata_path
 
-    def write_export_manifest(
+    def _write_export_manifest(
         self, metadata_dir: StrPath, manifest_data: StackExportRequest
     ) -> tuple[Path, list[Path]]:
         formatted_manifest = _format_json(manifest_data)
@@ -2317,5 +2369,5 @@ class BuildEnvironment:
             LayerCategories.APPLICATIONS,
         ):
             for env in env_metadata[category]:
-                snippet_paths.append(self.write_env_metadata(env_metadata_dir, env))
+                snippet_paths.append(self._write_env_metadata(env_metadata_dir, env))
         return manifest_path, snippet_paths

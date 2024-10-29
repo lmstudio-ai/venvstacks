@@ -5,9 +5,6 @@ venvstacks.stacks.ApplicationEnv
 
 .. autoclass:: ApplicationEnv
 
-
-   .. automethod:: __init__
-
    .. rubric:: Methods
 
    .. autosummary::

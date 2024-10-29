@@ -5,9 +5,6 @@ venvstacks.stacks.ExportedEnvironmentPaths
 
 .. autoclass:: ExportedEnvironmentPaths
 
-
-   .. automethod:: __init__
-
    .. rubric:: Attributes
 
    .. autosummary::

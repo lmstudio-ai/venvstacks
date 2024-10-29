@@ -6,9 +6,6 @@ venvstacks.stacks.FrameworkSpec
 .. autoclass:: FrameworkSpec
 
 
-   .. automethod:: __init__
-
-
    .. rubric:: Methods
 
    .. autosummary::

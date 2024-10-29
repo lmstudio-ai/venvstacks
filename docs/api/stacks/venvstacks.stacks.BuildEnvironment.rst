@@ -5,10 +5,6 @@ venvstacks.stacks.BuildEnvironment
 
 .. autoclass:: BuildEnvironment
 
-
-   .. automethod:: __init__
-
-
    .. rubric:: Methods
 
    .. autosummary::
@@ -30,10 +26,6 @@ venvstacks.stacks.BuildEnvironment
       ~BuildEnvironment.select_layers
       ~BuildEnvironment.select_operations
       ~BuildEnvironment.venvstacks_to_build
-      ~BuildEnvironment.write_archive_metadata
-      ~BuildEnvironment.write_artifacts_manifest
-      ~BuildEnvironment.write_env_metadata
-      ~BuildEnvironment.write_export_manifest
 
    .. rubric:: Attributes
 

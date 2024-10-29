@@ -6,9 +6,6 @@ venvstacks.stacks.ArchiveBuildRequest
 .. autoclass:: ArchiveBuildRequest
 
 
-   .. automethod:: __init__
-
-
    .. rubric:: Methods
 
    .. autosummary::

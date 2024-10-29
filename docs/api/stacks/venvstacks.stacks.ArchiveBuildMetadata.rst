@@ -5,9 +5,6 @@ venvstacks.stacks.ArchiveBuildMetadata
 
 .. autoclass:: ArchiveBuildMetadata
 
-
-   .. automethod:: __init__
-
    .. rubric:: Attributes
 
    .. autosummary::

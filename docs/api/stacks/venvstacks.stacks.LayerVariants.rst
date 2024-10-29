@@ -5,9 +5,6 @@ venvstacks.stacks.LayerVariants
 
 .. autoclass:: LayerVariants
 
-
-   .. automethod:: __init__
-
    .. rubric:: Attributes
 
    .. autosummary::

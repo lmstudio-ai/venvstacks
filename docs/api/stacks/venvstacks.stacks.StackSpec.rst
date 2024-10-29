@@ -5,8 +5,6 @@ venvstacks.stacks.StackSpec
 
 .. autoclass:: StackSpec
 
-   .. automethod:: __init__
-
    .. rubric:: Methods
 
    .. autosummary::

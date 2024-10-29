@@ -39,9 +39,10 @@ html_use_modindex = False
 html_use_index = False
 
 
-# -- Options for intersphinx ----------------------------------------------------------
+# -- Options for autosummary ----------------------------------------------------------
 
-# Run `tox -e regen-apidocs` to regenerate the API stub pages
+# API docs are being migrated over to custom narrative documentation
+# (still using autodoc, but no generated stub files)
 autosummary_generate = False
 
 # -- Options for intersphinx ----------------------------------------------------------

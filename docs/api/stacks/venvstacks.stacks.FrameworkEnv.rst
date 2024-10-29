@@ -6,9 +6,6 @@ venvstacks.stacks.FrameworkEnv
 .. autoclass:: FrameworkEnv
 
 
-   .. automethod:: __init__
-
-
    .. rubric:: Methods
 
    .. autosummary::
