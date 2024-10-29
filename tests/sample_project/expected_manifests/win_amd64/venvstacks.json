@@ -3,13 +3,13 @@
     "applications": [
       {
         "app_launch_module": "scipy_import",
-        "app_launch_module_hash": "sha256:6278ff255372146d752518ffdf49f3432667d7c93997ed980b3676fdc75406ee",
+        "app_launch_module_hash": "sha256:d806d778921ad216c1f950886d27b4b77e5561fe3467046fec258805980cc6d1",
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "3ebb818738bdd10e5eebdb48fda4be41ac73af88890ba9f749c7dbb23ce2aaa8"
+          "sha256": "1907700fc74c6a0bc62d851dce87bfed6a0ad52d0fec5863c9eadd1e26c029ff"
         },
         "archive_name": "app-scipy-import.zip",
-        "archive_size": 254578,
+        "archive_size": 254658,
         "install_target": "app-scipy-import",
         "layer_name": "app-scipy-import",
         "lock_version": 1,
@@ -23,13 +23,13 @@
       },
       {
         "app_launch_module": "scipy_client",
-        "app_launch_module_hash": "sha256/344b1be70920bd9635ce38fa14fca86b531ce2e334f54968321469c5fbb5b608",
+        "app_launch_module_hash": "sha256/bbe4da6de13a8f13a05cdd2bb3b90884861a6636b1450248d03aea799a7fc828",
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "a4229a9be2b24b0739b11729278d9acb68320b1d36b1f2a7d46191b359f4df74"
+          "sha256": "69060c0e0a74290723c5e65a343e463112a249da960d8bf29997933cd1565787"
         },
         "archive_name": "app-scipy-client.zip",
-        "archive_size": 255062,
+        "archive_size": 255147,
         "install_target": "app-scipy-client",
         "layer_name": "app-scipy-client",
         "lock_version": 1,
