@@ -1,5 +1,6 @@
 # Artifacts exported from CI by test suite
 /export/
+*.sarif
 
 # VSCode config is platform specific
 .vscode
