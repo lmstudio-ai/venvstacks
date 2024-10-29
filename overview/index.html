@@ -251,6 +251,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../development/">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog/">Changelog</a></li>
 </ul>
 
 </div>
@@ -342,8 +343,10 @@ However, direct execution as <code class="docutils literal notranslate"><span cl
 <a class="extlink-issue reference external" href="https://github.com/lmstudio/venvstacks/issues/26">supported in a future release</a>.</p>
 </div>
 </section>
+<section id="working-with-environment-stacks">
+<h2>Working with environment stacks<a class="headerlink" href="#working-with-environment-stacks" title="Link to this heading">¶</a></h2>
 <section id="defining-environment-stacks">
-<h2>Defining environment stacks<a class="headerlink" href="#defining-environment-stacks" title="Link to this heading">¶</a></h2>
+<h3>Defining environment stacks<a class="headerlink" href="#defining-environment-stacks" title="Link to this heading">¶</a></h3>
 <p>The environment layers to be published are defined in a <code class="docutils literal notranslate"><span class="pre">venvstacks.toml</span></code> stack specification,
 with a separate array of tables for each kind of layer definition.</p>
 <p>For example, the following specification defines a pair of applications which use
@@ -383,7 +386,7 @@ all running in a controlled Python 3.11 base runtime:</p>
 </div>
 </section>
 <section id="locking-environment-stacks">
-<h2>Locking environment stacks<a class="headerlink" href="#locking-environment-stacks" title="Link to this heading">¶</a></h2>
+<h3>Locking environment stacks<a class="headerlink" href="#locking-environment-stacks" title="Link to this heading">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>lock<span class="w"> </span>sklearn_demo/venvstacks.toml
 </pre></div>
 </div>
@@ -396,7 +399,7 @@ uses from lower layers affect them,
 rather than upper layers needing to be rebuilt for <em>every</em> change to a lower layer.</p>
 </section>
 <section id="building-environment-stacks">
-<h2>Building environment stacks<a class="headerlink" href="#building-environment-stacks" title="Link to this heading">¶</a></h2>
+<h3>Building environment stacks<a class="headerlink" href="#building-environment-stacks" title="Link to this heading">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>build<span class="w"> </span>sklearn_demo/venvstacks.toml
 </pre></div>
 </div>
@@ -410,7 +413,7 @@ the build step will lock them as necessary.</p>
 and publishing to be performed in a single step (see the command line help for details).</p>
 </section>
 <section id="publishing-environment-layer-archives">
-<h2>Publishing environment layer archives<a class="headerlink" href="#publishing-environment-layer-archives" title="Link to this heading">¶</a></h2>
+<h3>Publishing environment layer archives<a class="headerlink" href="#publishing-environment-layer-archives" title="Link to this heading">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>publish<span class="w"> </span>--tag-outputs<span class="w"> </span>--output-dir<span class="w"> </span>demo_artifacts<span class="w"> </span>sklearn_demo/venvstacks.toml
 </pre></div>
 </div>
@@ -428,7 +431,7 @@ and the included launch modules) and output details
 (such as the exact size and exact hash of the built layer archive).</p>
 </section>
 <section id="locally-exporting-environment-stacks">
-<h2>Locally exporting environment stacks<a class="headerlink" href="#locally-exporting-environment-stacks" title="Link to this heading">¶</a></h2>
+<h3>Locally exporting environment stacks<a class="headerlink" href="#locally-exporting-environment-stacks" title="Link to this heading">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>local-export<span class="w"> </span>--output-dir<span class="w"> </span>demo_export<span class="w"> </span>sklearn_demo/venvstacks.toml
 </pre></div>
 </div>
@@ -443,6 +446,7 @@ related to reproducible builds, like clamping the maximum file modification time
 <p>Locally exporting environments produces much of the same metadata as publishing layer archives,
 but the details related specifically to the published archive (such as its size and expected
 contents hash) are necessarily omitted.</p>
+</section>
 </section>
 <section id="contributing-to-venvstacks-development">
 <h2>Contributing to <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> development<a class="headerlink" href="#contributing-to-venvstacks-development" title="Link to this heading">¶</a></h2>
@@ -525,11 +529,14 @@ the following Discord channels are the best way to get directly in touch with th
             <ul>
 <li><a class="reference internal" href="#">Layered Virtual Environment Stacks</a><ul>
 <li><a class="reference internal" href="#installing">Installing</a></li>
+<li><a class="reference internal" href="#working-with-environment-stacks">Working with environment stacks</a><ul>
 <li><a class="reference internal" href="#defining-environment-stacks">Defining environment stacks</a></li>
 <li><a class="reference internal" href="#locking-environment-stacks">Locking environment stacks</a></li>
 <li><a class="reference internal" href="#building-environment-stacks">Building environment stacks</a></li>
 <li><a class="reference internal" href="#publishing-environment-layer-archives">Publishing environment layer archives</a></li>
 <li><a class="reference internal" href="#locally-exporting-environment-stacks">Locally exporting environment stacks</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#contributing-to-venvstacks-development">Contributing to <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> development</a></li>
 </ul>
 </li>

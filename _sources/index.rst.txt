@@ -14,3 +14,4 @@ Welcome to ``venvstacks``'s documentation!
    design
    api/index
    development/index
+   changelog

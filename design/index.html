@@ -251,6 +251,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../development/">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog/">Changelog</a></li>
 </ul>
 
 </div>
@@ -293,8 +294,10 @@
         <article role="main" id="furo-main-content">
           <section id="design-discussion">
 <h1>Design Discussion<a class="headerlink" href="#design-discussion" title="Link to this heading">¶</a></h1>
+<section id="project">
+<h2>Project<a class="headerlink" href="#project" title="Link to this heading">¶</a></h2>
 <section id="why-does-venvstacks-exist">
-<h2>Why does <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> exist?<a class="headerlink" href="#why-does-venvstacks-exist" title="Link to this heading">¶</a></h2>
+<h3>Why does <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> exist?<a class="headerlink" href="#why-does-venvstacks-exist" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> exists because LM Studio were looking for a way
 to integrate Python based AI projects into their cross-platform
 desktop application, and after trialling other potential mechanisms,
@@ -302,7 +305,7 @@ decided that there was a genuine gap in the Python packaging tooling
 landscape, and invested in building something new to fill that need.</p>
 </section>
 <section id="what-other-existing-projects-were-considered">
-<h2>What other existing projects were considered?<a class="headerlink" href="#what-other-existing-projects-were-considered" title="Link to this heading">¶</a></h2>
+<h3>What other existing projects were considered?<a class="headerlink" href="#what-other-existing-projects-were-considered" title="Link to this heading">¶</a></h3>
 <p>There were two primary existing projects considered as potential
 solutions:</p>
 <ul class="simple">
@@ -324,7 +327,7 @@ refers specifically to accessing the <code class="docutils literal notranslate">
 environments, it doesn’t refer to being able combine <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>
 across multiple environments.</p>
 <p>Splitting environments into layers the way <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> does
-really doesn’t align well with the way the <code class="docutils literal notranslate"><span class="pre">conda</span></code> dependency
+also doesn’t align well with the way the <code class="docutils literal notranslate"><span class="pre">conda</span></code> dependency
 resolver works, so it ended up making more sense to design
 <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> to work with <code class="docutils literal notranslate"><span class="pre">venv</span></code> and <code class="docutils literal notranslate"><span class="pre">pip</span></code>.</p>
 <p>The assorted “Python application packaging” utilities that produce
@@ -333,8 +336,11 @@ archives were eliminated from consideration as they lacked the ability
 to readily share the large common framework components that feature
 heavily in the Python AI ecosystem across different applications.</p>
 </section>
+</section>
+<section id="technical">
+<h2>Technical<a class="headerlink" href="#technical" title="Link to this heading">¶</a></h2>
 <section id="why-use-python-build-standalone-for-the-base-runtimes">
-<h2>Why use <code class="docutils literal notranslate"><span class="pre">python-build-standalone</span></code> for the base runtimes?<a class="headerlink" href="#why-use-python-build-standalone-for-the-base-runtimes" title="Link to this heading">¶</a></h2>
+<h3>Why use <code class="docutils literal notranslate"><span class="pre">python-build-standalone</span></code> for the base runtimes?<a class="headerlink" href="#why-use-python-build-standalone-for-the-base-runtimes" title="Link to this heading">¶</a></h3>
 <p>The short answer to this question is “Because that’s what <a class="extlink-pypi reference external" href="https://pypi.org/project/pdm/">pdm</a> uses,
 and <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> was already using <code class="docutils literal notranslate"><span class="pre">pdm</span></code> as its project management tool”.</p>
 <p>The longer answer is that there’s a genuinely strong alignment between the
@@ -344,6 +350,7 @@ needs in its base runtime layers.</p>
 <p>Supporting additional base runtime layer providers (such as <a class="extlink-pypi reference external" href="https://pypi.org/project/conda/">conda</a>)
 could be a genuinely interesting capability, but there are no current
 plans to implement such a mechanism.</p>
+</section>
 </section>
 </section>
 
@@ -403,9 +410,15 @@ plans to implement such a mechanism.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Design Discussion</a><ul>
+<li><a class="reference internal" href="#project">Project</a><ul>
 <li><a class="reference internal" href="#why-does-venvstacks-exist">Why does <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> exist?</a></li>
 <li><a class="reference internal" href="#what-other-existing-projects-were-considered">What other existing projects were considered?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#technical">Technical</a><ul>
 <li><a class="reference internal" href="#why-use-python-build-standalone-for-the-base-runtimes">Why use <code class="docutils literal notranslate"><span class="pre">python-build-standalone</span></code> for the base runtimes?</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
