@@ -32,6 +32,46 @@ Given these tools, the default development environment can be set up
 and other commands executed as described below.
 
 
+Changelog Entries
+-----------------
+
+The ``venvstacks`` changelog is managed with :pypi:`scriv`.
+
+Entries are written in ``.rst`` format by default, so they
+can use semantic references to the rest of the documentation.
+However, ``.md`` fragments are entirely fine if internal
+semantic links aren't needed.
+
+All changes which may affect ``venvstacks`` users should by
+given a user facing changelog entry with ``scriv create``.
+
+Refer to the
+`"per-user" settings <https://scriv.readthedocs.io/en/1.5.1/configuration.html#per-user-git-settings>`__
+in the ``scriv`` documentation for details on how to customise the
+local behaviour of ``scriv create``.
+
+The project level ``scriv`` settings are stored in
+``pyproject.toml`` (but the project largely relies on the default
+settings)
+
+
+Version Numbering
+-----------------
+
+Until the Python API has stabilised, ``venvstacks`` is using
+``ZeroVer`` (starting from 0.1.0). The versioning scheme to be
+used after the leading zero is dropped has not yet been decided.
+
+Except for when a release is being prepared, the nominal version on
+``main`` will have ``.dev0`` appended to indicate it is not a
+release build.
+
+Most releases are expected to be published directly without a prior
+release candidate build, but one may be used if it is deemed
+necessary (for example, ``0.1.0rc1`` was published in order to
+test the release pipeline prior to published ``0.1.0``).
+
+
 Running from the source tree
 ----------------------------
 
@@ -196,6 +236,27 @@ To build it locally, run:
     $ tox -e docs
 
 The built documentation can be found in the ``docs/_build`` folder.
+
+
+Preparing new releases
+----------------------
+
+Prior to release:
+
+* Update the version in ``pyproject.toml`` to remove the pre-release suffix
+* Run ``scriv collect`` to update ``CHANGELOG.rst``
+* Create a PR for the collected change log updates
+* Check the updated docs after the PR has been merged
+
+Release (requires ``pandoc``):
+
+* Run ``scriv github-release --dry-run`` to check what would be published
+* Run ``scriv github-release`` to make the release tag
+
+After release:
+
+* Check the release GitHub Action has published to PyPI correctly
+* Bump the version in ``pyproject.toml`` and add a ``.dev0`` suffix
 
 .. _`Getting Started`: https://pip.pypa.io/en/stable/development/getting-started/
 .. _`open an issue`: https://github.com/lmstudio/venvstacks/issues/new?title=Trouble+with+development+environment
