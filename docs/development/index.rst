@@ -89,13 +89,13 @@ Changelog Entries
 
 The ``venvstacks`` changelog is managed with :pypi:`scriv`.
 
+All changes which may affect ``venvstacks`` users should be
+given a user facing changelog entry with ``scriv create``.
+
 Entries are written in ``.rst`` format by default, so they
 can use semantic references to the rest of the documentation.
 However, ``.md`` fragments are entirely fine if internal
 semantic links aren't needed.
-
-All changes which may affect ``venvstacks`` users should be
-given a user facing changelog entry with ``scriv create``.
 
 Refer to the
 `"per-user" settings <https://scriv.readthedocs.io/en/1.5.1/configuration.html#per-user-git-settings>`__
