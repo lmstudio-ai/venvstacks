@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="search" title="Search" href="search/" /><link rel="next" title="Layered Virtual Environment Stacks" href="overview/" />
+<link rel="search" title="Search" href="search/" /><link rel="next" title="Project Overview" href="overview/" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>venvstacks 0.1 documentation</title>
@@ -198,9 +198,8 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="overview/">Layered Virtual Environment Stacks</a></li>
+  <ul>
+<li class="toctree-l1"><a class="reference internal" href="overview/">Project Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="glossary/">Essential Terms and Concepts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design/">Design Discussion</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="api/">Python API</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Python API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -283,13 +282,36 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="welcome-to-venvstacks-s-documentation">
-<h1>Welcome to <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code>’s documentation!<a class="headerlink" href="#welcome-to-venvstacks-s-documentation" title="Link to this heading">¶</a></h1>
+          <section id="virtual-environment-stacks">
+<h1>Virtual Environment Stacks<a class="headerlink" href="#virtual-environment-stacks" title="Link to this heading">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> uses Python’s <code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code> environment setup feature
+to chain together three layers of Python virtual environments:</p>
+<ul class="simple">
+<li><p>“Runtime” layers: environments containing the desired version of a specific Python interpreter</p></li>
+<li><p>“Framework” layers: environments containing desired versions of key Python frameworks</p></li>
+<li><p>“Application” layers: environments containing components to be launched directly</p></li>
+</ul>
+<p>Application layer environments may include additional unpackaged Python launch modules or
+packages for invocation with <code class="docutils literal notranslate"><span class="pre">python</span></code>’s <a class="reference external" href="https://docs.python.org/3/using/cmdline.html#cmdoption-m" title="(in Python v3.13)"><code class="xref std std-option docutils literal notranslate"><span class="pre">-m</span></code></a> switch.</p>
+<p>While the layers are archived and published separately, their dependency locking is integrated,
+allowing the application layers to share dependencies installed in the framework layers,
+and the framework layers to share dependencies installed in the runtime layers.</p>
+<p>Refer to the <a class="reference internal" href="overview/#overview"><span class="std std-ref">Project Overview</span></a> for an example of
+specifying, locking, building, and publishing a set of environment stacks.</p>
+<p id="installing"><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> is available from the <a class="extlink-pypi reference external" href="https://pypi.org/project/venvstacks/">Python Package Index</a>,
+and can be installed with <a class="extlink-pypi reference external" href="https://pypi.org/project/pipx/">pipx</a> (or similar tools):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pipx<span class="w"> </span>install<span class="w"> </span>venvstacks
+</pre></div>
+</div>
+<p>Alternatively, it can be installed as a user level package (although this may
+make future Python version upgrades more irritating):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>venvstacks
+</pre></div>
+</div>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="overview/">Layered Virtual Environment Stacks</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="overview/#installing">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview/">Project Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview/#command-line-interface">Command line interface</a></li>
 <li class="toctree-l2"><a class="reference internal" href="overview/#working-with-environment-stacks">Working with environment stacks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="overview/#contributing-to-venvstacks-development">Contributing to <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> development</a></li>
 </ul>
@@ -331,7 +353,7 @@
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Layered Virtual Environment Stacks</div>
+                <div class="title">Project Overview</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>

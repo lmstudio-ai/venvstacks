@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="search" title="Search" href="../search/" /><link rel="next" title="Essential Terms and Concepts" href="../glossary/" /><link rel="prev" title="Welcome to venvstacks’s documentation!" href="../" />
+<link rel="search" title="Search" href="../search/" /><link rel="next" title="Essential Terms and Concepts" href="../glossary/" /><link rel="prev" title="Virtual Environment Stacks" href="../" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
-        <title>Layered Virtual Environment Stacks - venvstacks 0.1 documentation</title>
+        <title>Project Overview - venvstacks 0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
@@ -198,9 +198,8 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Layered Virtual Environment Stacks</a></li>
+  <ul class="current">
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Project Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../glossary/">Essential Terms and Concepts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/">Design Discussion</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/">Python API</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Python API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -283,31 +282,11 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="layered-virtual-environment-stacks">
-<h1>Layered Virtual Environment Stacks<a class="headerlink" href="#layered-virtual-environment-stacks" title="Link to this heading">¶</a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> uses Python’s <code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code> environment setup feature
-to chain together three layers of Python virtual environments:</p>
-<ul class="simple">
-<li><p>“Runtime” layers: environments containing the desired version of a specific Python interpreter</p></li>
-<li><p>“Framework” layers: environments containing desired versions of key Python frameworks</p></li>
-<li><p>“Application” layers: environments containing components to be launched directly</p></li>
-</ul>
-<p>While the layers are archived and published separately, their dependency locking is integrated,
-allowing the application layers to share dependencies installed in the framework layers,
-and the framework layers to share dependencies installed in the runtime layers.</p>
-<section id="installing">
-<h2>Installing<a class="headerlink" href="#installing" title="Link to this heading">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> is available from the <a class="extlink-pypi reference external" href="https://pypi.org/project/venvstacks/">Python Package Index</a>,
-and can be installed with <a class="extlink-pypi reference external" href="https://pypi.org/project/pipx/">pipx</a> (or similar tools):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pipx<span class="w"> </span>install<span class="w"> </span>venvstacks
-</pre></div>
-</div>
-<p>Alternatively, it can be installed as a user level package (although this may
-make future Python version upgrades more irritating):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>venvstacks
-</pre></div>
-</div>
-<p>The command line help also provides additional usage information:</p>
+          <section id="project-overview">
+<span id="overview"></span><h1>Project Overview<a class="headerlink" href="#project-overview" title="Link to this heading">¶</a></h1>
+<section id="command-line-interface">
+<h2>Command line interface<a class="headerlink" href="#command-line-interface" title="Link to this heading">¶</a></h2>
+<p>The command line interface is the recommended interface for working with <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>--help
 
 <span class="go">Usage: venvstacks [OPTIONS] COMMAND [ARGS]...</span>
@@ -324,14 +303,6 @@ make future Python version upgrades more irritating):</p>
 <span class="go">│ publish        Publish layer archives for Python virtual environment stacks.    │</span>
 <span class="go">╰─────────────────────────────────────────────────────────────────────────────────╯</span>
 </pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> command is currently only available via the Python interpreter’s
-<a class="reference external" href="https://docs.python.org/3/using/cmdline.html#cmdoption-m" title="(in Python v3.13)"><code class="xref std std-option docutils literal notranslate"><span class="pre">-m</span></code></a> switch, so Python command execution utilities like <code class="docutils literal notranslate"><span class="pre">pipx</span> <span class="pre">run</span></code>
-and <code class="docutils literal notranslate"><span class="pre">uvx</span></code> don’t work yet.
-However, direct execution as <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> is expected to be
-<a class="extlink-issue reference external" href="https://github.com/lmstudio/venvstacks/issues/26">supported in a future release</a>.</p>
 </div>
 </section>
 <section id="working-with-environment-stacks">
@@ -518,8 +489,8 @@ the following Discord channels are the best way to get directly in touch with th
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Layered Virtual Environment Stacks</a><ul>
-<li><a class="reference internal" href="#installing">Installing</a></li>
+<li><a class="reference internal" href="#">Project Overview</a><ul>
+<li><a class="reference internal" href="#command-line-interface">Command line interface</a></li>
 <li><a class="reference internal" href="#working-with-environment-stacks">Working with environment stacks</a><ul>
 <li><a class="reference internal" href="#defining-environment-stacks">Defining environment stacks</a></li>
 <li><a class="reference internal" href="#locking-environment-stacks">Locking environment stacks</a></li>
