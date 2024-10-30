@@ -28,9 +28,6 @@ defaults:
     # This also implies `set -eo pipefail` (rather than just `set -e`)
     shell: bash
 
-permissions:
-  contents: read
-
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
