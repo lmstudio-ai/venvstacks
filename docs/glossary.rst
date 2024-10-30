@@ -51,7 +51,7 @@ Essential Terms and Concepts
         requirements specified as part of a base runtime layer are installed
         directly into the base runtime (there is no virtual environment defined).
       * *framework layers*: these layers primarily contain large dependencies
-        (such as :pypi:`pytorch`) which should not be published multiple times,
+        (such as :pypi:`PyTorch <torch>`) which should not be published multiple times,
         even when they are used by multiple applications. Applications are
         constrained to use the versions of any packages installed in the
         framework layers they depend on. Each framework layer depends on a
