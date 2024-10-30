@@ -10,7 +10,6 @@ jobs:
     name: Upload release to PyPI
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       # Allow use of GitHub OIDC for PyPI authentication
       id-token: write
     steps:

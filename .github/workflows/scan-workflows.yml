@@ -15,11 +15,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      # required for all workflows
+      # Write access needed to upload SARIF scan results
       security-events: write
-      # only required for workflows in private repositories
-      actions: read
-      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
