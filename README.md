@@ -1,6 +1,14 @@
 Virtual Environment Stacks for Python
 =====================================
 
+Machine learning and AI libraries for Python are big. Really big. Nobody wants to download
+and install multiple copies of [PyTorch](https://pypi.org/project/torch/) or
+[CUDA](https://pypi.org/project/cuda-python/) if they can reasonably avoid it.
+
+``venvstacks`` allows you to package Python applications and all their dependencies into a
+portable, deterministic format, *without* needing to include copies of these large Python
+frameworks in every application archive.
+
 The `venvstacks` project uses Python's `sitecustomize.py` environment setup feature to
 chain together three layers of Python virtual environments:
 
