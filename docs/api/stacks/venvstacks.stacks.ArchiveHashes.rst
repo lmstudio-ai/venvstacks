@@ -5,8 +5,6 @@ venvstacks.stacks.ArchiveHashes
 
 .. autoclass:: ArchiveHashes
 
-   .. automethod:: __init__
-
    .. rubric:: Attributes
 
    .. autosummary::

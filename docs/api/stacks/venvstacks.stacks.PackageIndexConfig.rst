@@ -6,9 +6,6 @@ venvstacks.stacks.PackageIndexConfig
 .. autoclass:: PackageIndexConfig
 
 
-   .. automethod:: __init__
-
-
    .. rubric:: Methods
 
    .. autosummary::

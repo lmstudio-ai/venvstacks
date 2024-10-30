@@ -5,9 +5,6 @@ venvstacks.stacks.LayerSpecMetadata
 
 .. autoclass:: LayerSpecMetadata
 
-
-   .. automethod:: __init__
-
    .. rubric:: Attributes
 
    .. autosummary::

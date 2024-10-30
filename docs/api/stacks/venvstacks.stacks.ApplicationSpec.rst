@@ -6,9 +6,6 @@ venvstacks.stacks.ApplicationSpec
 .. autoclass:: ApplicationSpec
 
 
-   .. automethod:: __init__
-
-
    .. rubric:: Methods
 
    .. autosummary::

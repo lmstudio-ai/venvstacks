@@ -6,9 +6,6 @@ venvstacks.stacks.EnvironmentExportRequest
 .. autoclass:: EnvironmentExportRequest
 
 
-   .. automethod:: __init__
-
-
    .. rubric:: Methods
 
    .. autosummary::

@@ -5,9 +5,6 @@ venvstacks.stacks.LayerCategories
 
 .. autoclass:: LayerCategories
 
-
-   .. automethod:: __init__
-
    .. rubric:: Attributes
 
    .. autosummary::

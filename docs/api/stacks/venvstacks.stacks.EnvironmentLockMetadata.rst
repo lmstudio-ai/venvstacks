@@ -5,9 +5,6 @@ venvstacks.stacks.EnvironmentLockMetadata
 
 .. autoclass:: EnvironmentLockMetadata
 
-
-   .. automethod:: __init__
-
    .. rubric:: Attributes
 
    .. autosummary::

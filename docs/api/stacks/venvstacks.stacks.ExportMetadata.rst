@@ -5,9 +5,6 @@ venvstacks.stacks.ExportMetadata
 
 .. autoclass:: ExportMetadata
 
-
-   .. automethod:: __init__
-
    .. rubric:: Attributes
 
    .. autosummary::

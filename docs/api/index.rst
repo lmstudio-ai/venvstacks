@@ -12,9 +12,8 @@ Python API
 
    .. rubric:: Modules
 
-   .. autosummary::
-      :toctree:
+   .. toctree::
 
-      cli
-      pack_venv
-      stacks
+      cli/index
+      pack_venv/index
+      stacks/index

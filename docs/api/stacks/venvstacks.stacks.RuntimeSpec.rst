@@ -6,9 +6,6 @@ venvstacks.stacks.RuntimeSpec
 .. autoclass:: RuntimeSpec
 
 
-   .. automethod:: __init__
-
-
    .. rubric:: Methods
 
    .. autosummary::
