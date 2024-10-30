@@ -1,5 +1,5 @@
-Layered Virtual Environment Stacks for Python
-=============================================
+Virtual Environment Stacks for Python
+=====================================
 
 The `venvstacks` project uses Python's `sitecustomize.py` environment setup feature to
 chain together three layers of Python virtual environments:
@@ -11,29 +11,26 @@ chain together three layers of Python virtual environments:
 Application layer environments may include additional unpackaged Python launch modules or
 packages for invocation with `python`'s `-m` switch.
 
-This project does NOT support combining arbitrary virtual environments with each other.
-Instead, it allows larger integrated applications to split up their Python dependencies into
-distinct layers, without needing to download and install multiple copies of large
-dependencies (such as the `pytorch` ML/AI framework). The environment stack specification
-and build process helps ensure that shared dependencies are kept consistent across layers,
-while unshared dependencies are free to vary across the application components that need them.
+While the layers are archived and published separately, their dependency locking is integrated,
+allowing the application layers to share dependencies installed in the framework layers,
+and the framework layers to share dependencies installed in the runtime layers.
 
-As an example, the main sample project used in the test suite defines the following layers:
+Refer to the [Project Overview](https://lmstudio-ai.github.io/venvstacks/overview/) for an
+example of specifying, locking, building, and publishing a set of environment stacks.
 
-* `cpython@3.11`: CPython 3.11 base runtime
-* `cpython@3.12`: CPython 3.12 base runtime
-* `framework-scipy`: example framework layer (based on 3.11 runtime)
-* `framework-sklearn` example framework layer (based on 3.12 runtime)
-* `framework-http-client`: example framework layer (based on 3.11 runtime)
-* `app-scipy-import`: example app layer with a single framework and a simple launch module
-* `app-scipy-client`: example app layer with two frameworks and a multi-file launch package
-* `app-sklearn-import`: example of defining a platform specific app layer
 
-Refer to `tests\sample_project\venvstacks.toml` for the full definition of this example.
+Installing
+----------
 
-To avoid relying on the Python ecosystem's still limited support for cross-platform
-component installation, the stack build processes need to be executed on the target
-platform (for example, by using an OS matrix in GitHub Actions).
+`venvstacks` is available from the [Python Package Index](https://pypi.org/project/venvstacks/),
+and can be installed with [pipx](https://pypi.org/project/pipx/):
+
+    $ pipx install venvstacks
+
+Alternatively, it can be installed as a user level package (although this may
+make future Python version upgrades more irritating):
+
+    $ pip install --user venvstacks
 
 
 Interactions with other packaging tools
@@ -63,18 +60,27 @@ may be useful in generating the required input archives.
 Caveats and Limitations
 -----------------------
 
-* the `venvstacks` Python API is *not yet stable*. Any interface not specifically
+* This project does NOT support combining arbitrary virtual environments with each other.
+  Instead, it allows larger integrated applications to split up their Python dependencies into
+  distinct layers, without needing to download and install multiple copies of large
+  dependencies (such as the `pytorch` ML/AI framework). The environment stack specification
+  and build process helps ensure that shared dependencies are kept consistent across layers,
+  while unshared dependencies are free to vary across the application components that need them.
+* The `venvstacks` Python API is *not yet stable*. Any interface not specifically
   declared as stable in the documentation may be renamed or relocated without a
   deprecation period. API stabilisation (mostly splitting up the overly large
   `venvstacks.stacks` namespace) will be the trigger for the 1.0 milestone release.
-* while the `venvstacks` CLI is broadly stable, there are still some specific areas
+* While the `venvstacks` CLI is broadly stable, there are still some specific areas
   where changes may occur (such as in the handling of relative paths).
-* dynamic library dependencies across layers currently only work on Windows.
+* Dynamic library dependencies across layers currently only work on Windows.
   There is a [proposal](https://github.com/lmstudio-ai/venvstacks/issues38) in
   place for resolving that limitation, but it has not yet been implemented.
-* local exports to filesystems which do not support symlinks (such as `VFAT` and
+* Local exports to filesystems which do not support symlinks (such as `VFAT` and
   `FAT32`) are nominally supported (with symlinks being replaced by the files
   they refer to), but this support is *not* currently tested.
+* To avoid relying on the Python ecosystem's still limited support for cross-platform
+  component installation, the stack build processes need to be executed on the target
+  platform (for example, by using an OS matrix in GitHub Actions).
 
 
 Project History

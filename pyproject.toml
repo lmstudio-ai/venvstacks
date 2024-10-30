@@ -1,6 +1,6 @@
 [project]
 name = "venvstacks"
-version = "0.1.0rc1"
+version = "0.1.0rc1.post0"
 description = "Use layered Python virtual environment stacks to share large dependencies"
 authors = [
     {name = "Alyssa Coghlan", email = "ncoghlan@gmail.com"},
@@ -48,6 +48,12 @@ rich-cli = [
 
 [project.scripts]
 venvstacks = "venvstacks.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/lmstudio-ai/venvstacks"
+Documentation = "https://lmstudio-ai.github.io/venvstacks/"
+Issues = "https://github.com/lmstudio-ai/venvstacks/issues"
+Changelog = "https://lmstudio-ai.github.io/venvstacks/changelog/"
 
 [build-system]
 requires = ["pdm-backend"]
