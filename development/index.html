@@ -302,26 +302,10 @@ available on <a class="reference external" href="https://github.com/lmstudio/ven
 <section id="development-environment">
 <h3>Development Environment<a class="headerlink" href="#development-environment" title="Link to this heading">¶</a></h3>
 <p>In order to work on venvstacks, you need to install
-<a class="extlink-pypi reference external" href="https://pypi.org/project/pdm/">pdm</a>, <a class="extlink-pypi reference external" href="https://pypi.org/project/tox/">tox</a>, and <a class="extlink-pypi reference external" href="https://pypi.org/project/tox-pdm/">tox-pdm</a>.</p>
+<a class="extlink-pypi reference external" href="https://pypi.org/project/pdm/">pdm</a>, <a class="extlink-pypi reference external" href="https://pypi.org/project/tox/">tox</a>, <a class="extlink-pypi reference external" href="https://pypi.org/project/tox-pdm/">tox-pdm</a>, and <a class="extlink-pypi reference external" href="https://pypi.org/project/scriv/">scriv</a>
+(everything else can be executed via <code class="docutils literal notranslate"><span class="pre">tox</span></code> environments).</p>
 <p>Given these tools, the default development environment can be set up
 and other commands executed as described below.</p>
-</section>
-<section id="changelog-entries">
-<h3>Changelog Entries<a class="headerlink" href="#changelog-entries" title="Link to this heading">¶</a></h3>
-<p>The <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> changelog is managed with <a class="extlink-pypi reference external" href="https://pypi.org/project/scriv/">scriv</a>.</p>
-<p>Entries are written in <code class="docutils literal notranslate"><span class="pre">.rst</span></code> format by default, so they
-can use semantic references to the rest of the documentation.
-However, <code class="docutils literal notranslate"><span class="pre">.md</span></code> fragments are entirely fine if internal
-semantic links aren’t needed.</p>
-<p>All changes which may affect <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> users should be
-given a user facing changelog entry with <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">create</span></code>.</p>
-<p>Refer to the
-<a class="reference external" href="https://scriv.readthedocs.io/en/1.5.1/configuration.html#per-user-git-settings">“per-user” settings</a>
-in the <code class="docutils literal notranslate"><span class="pre">scriv</span></code> documentation for details on how to customise the
-local behaviour of <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">create</span></code>.</p>
-<p>The project level <code class="docutils literal notranslate"><span class="pre">scriv</span></code> settings are stored in
-<code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> (but the project largely relies on the default
-settings)</p>
 </section>
 <section id="running-from-the-source-tree">
 <h3>Running from the source tree<a class="headerlink" href="#running-from-the-source-tree" title="Link to this heading">¶</a></h3>
@@ -330,8 +314,8 @@ to set up an editable install in the default venv:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pdm<span class="w"> </span>sync<span class="w"> </span>--dev
 </pre></div>
 </div>
-<p>venvstacks can then be executed via the <code class="docutils literal notranslate"><span class="pre">-m</span></code> switch:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>.venv/bin/venvstacks<span class="w"> </span>--help
+<p>venvstacks can then be executed with <code class="docutils literal notranslate"><span class="pre">pdm</span> <span class="pre">run</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pdm<span class="w"> </span>run<span class="w"> </span>venvstacks<span class="w"> </span>--help
 
 <span class="go"> Usage: venvstacks [OPTIONS] COMMAND [ARGS]...</span>
 
@@ -358,6 +342,23 @@ in reStructuredText.</p>
 </pre></div>
 </div>
 <p>The built documentation can be found in the <code class="docutils literal notranslate"><span class="pre">docs/_build</span></code> folder.</p>
+</section>
+<section id="changelog-entries">
+<h3>Changelog Entries<a class="headerlink" href="#changelog-entries" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> changelog is managed with <a class="extlink-pypi reference external" href="https://pypi.org/project/scriv/">scriv</a>.</p>
+<p>All changes which may affect <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> users should be
+given a user facing changelog entry with <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">create</span></code>.</p>
+<p>Entries are written in <code class="docutils literal notranslate"><span class="pre">.rst</span></code> format by default, so they
+can use semantic references to the rest of the documentation.
+However, <code class="docutils literal notranslate"><span class="pre">.md</span></code> fragments are entirely fine if internal
+semantic links aren’t needed.</p>
+<p>Refer to the
+<a class="reference external" href="https://scriv.readthedocs.io/en/1.5.1/configuration.html#per-user-git-settings">“per-user” settings</a>
+in the <code class="docutils literal notranslate"><span class="pre">scriv</span></code> documentation for details on how to customise the
+local behaviour of <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">create</span></code>.</p>
+<p>The project level <code class="docutils literal notranslate"><span class="pre">scriv</span></code> settings are stored in
+<code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> (but the project largely relies on the default
+settings)</p>
 </section>
 </section>
 <section id="automated-testing">
@@ -411,7 +412,7 @@ environment directly:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tox<span class="w"> </span>-e<span class="w"> </span>py3.11
 </pre></div>
 </div>
-<p>There are also additional labels defined for running the oldest test environment,
+<p>There are additional labels defined for running the oldest test environment,
 the latest test environment, and all test environments:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tox<span class="w"> </span>-m<span class="w"> </span>test_oldest
 <span class="gp">$ </span>tox<span class="w"> </span>-m<span class="w"> </span>test_latest
@@ -452,7 +453,7 @@ impact of the changes that were (for example, launch module changes
 should only affect the hashes and sizes of the application layer
 archives that include those launch modules).</p>
 <p>If the original PR is not correct, then it can be retriggered by
-closing and reopening the PR once the relevants fixes have been
+closing and reopening the PR once the relevant fixes have been
 implemented.</p>
 </section>
 </section>
@@ -481,13 +482,15 @@ test the release pipeline prior to publishing <code class="docutils literal notr
 <ul class="simple">
 <li><p>Update the version in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> to remove the pre-release suffix</p></li>
 <li><p>Run <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">collect</span></code> to update <code class="docutils literal notranslate"><span class="pre">CHANGELOG.rst</span></code></p></li>
-<li><p>Create a PR for the collected change log updates</p></li>
+<li><p>Commit and push the updated version number and collected change log updates</p></li>
 <li><p>Check the updated docs after the PR has been merged</p></li>
 </ul>
-<p>Release (requires <code class="docutils literal notranslate"><span class="pre">pandoc</span></code>):</p>
+<p>Release (requires <code class="docutils literal notranslate"><span class="pre">pandoc</span></code> and a GitHub access token with release permissions):</p>
 <ul class="simple">
+<li><p>Use <a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/blob/main/misc/tag-release.sh">misc/tag-release.sh</a> to create an annotated tag for the current version</p></li>
+<li><p>Push the tag to the remote repo</p></li>
 <li><p>Run <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">github-release</span> <span class="pre">--dry-run</span></code> to check what would be published</p></li>
-<li><p>Run <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">github-release</span></code> to make the release tag</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">github-release</span></code> to make the release from the annotated tag</p></li>
 </ul>
 <p>After release:</p>
 <ul class="simple">
@@ -557,9 +560,9 @@ test the release pipeline prior to publishing <code class="docutils literal notr
 <li><a class="reference internal" href="#getting-started">Getting Started</a><ul>
 <li><a class="reference internal" href="#get-the-source-code">Get the source code</a></li>
 <li><a class="reference internal" href="#development-environment">Development Environment</a></li>
-<li><a class="reference internal" href="#changelog-entries">Changelog Entries</a></li>
 <li><a class="reference internal" href="#running-from-the-source-tree">Running from the source tree</a></li>
 <li><a class="reference internal" href="#building-documentation">Building Documentation</a></li>
+<li><a class="reference internal" href="#changelog-entries">Changelog Entries</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#automated-testing">Automated Testing</a><ul>

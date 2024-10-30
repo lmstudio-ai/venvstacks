@@ -38,7 +38,7 @@ The environment layers to be published are defined in a ``venvstacks.toml`` stac
 with a separate array of tables for each kind of layer definition.
 
 For example, the following specification defines a pair of applications which use
-`scikit-learn <https://scikit-learn.org/>`__` as a shared framework layer with
+`scikit-learn <https://scikit-learn.org/>`__ as a shared framework layer with
 `numpy <https://numpy.org/>`__ preinstalled in the runtime layer,
 all running in a controlled Python 3.11 base runtime:
 
@@ -136,8 +136,8 @@ Locally exporting environment stacks
    $ venvstacks local-export --output-dir demo_export sklearn_demo/venvstacks.toml 
 
 Given that even considering the use of ``venvstacks`` implies that some layer archives may be of
-significant size (a fully built `pytorch` archive weighs in at multiple gigabytes, for example),
-packing and unpacking the layer archives can take a substantial amount of time.
+significant size (a fully built :pypi:`PyTorch <torch>` archive weighs in at multiple gigabytes,
+for example), packing and unpacking the layer archives can take a substantial amount of time.
 
 To avoid that overhead when iterating on layer definitions and launch module details,
 the ``local-export`` subcommand allows the built environments to be copied to a different

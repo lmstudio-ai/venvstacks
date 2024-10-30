@@ -31,33 +31,11 @@ Development Environment
 -----------------------
 
 In order to work on venvstacks, you need to install
-:pypi:`pdm`, :pypi:`tox`, and :pypi:`tox-pdm`.
+:pypi:`pdm`, :pypi:`tox`, :pypi:`tox-pdm`, and :pypi:`scriv`
+(everything else can be executed via ``tox`` environments).
 
 Given these tools, the default development environment can be set up
 and other commands executed as described below.
-
-
-Changelog Entries
------------------
-
-The ``venvstacks`` changelog is managed with :pypi:`scriv`.
-
-Entries are written in ``.rst`` format by default, so they
-can use semantic references to the rest of the documentation.
-However, ``.md`` fragments are entirely fine if internal
-semantic links aren't needed.
-
-All changes which may affect ``venvstacks`` users should be
-given a user facing changelog entry with ``scriv create``.
-
-Refer to the
-`"per-user" settings <https://scriv.readthedocs.io/en/1.5.1/configuration.html#per-user-git-settings>`__
-in the ``scriv`` documentation for details on how to customise the
-local behaviour of ``scriv create``.
-
-The project level ``scriv`` settings are stored in
-``pyproject.toml`` (but the project largely relies on the default
-settings)
 
 
 Running from the source tree
@@ -70,11 +48,11 @@ to set up an editable install in the default venv:
 
     $ pdm sync --dev
 
-venvstacks can then be executed via the ``-m`` switch:
+venvstacks can then be executed with ``pdm run``:
 
 .. code-block:: console
 
-    $ .venv/bin/venvstacks --help
+    $ pdm run venvstacks --help
 
      Usage: venvstacks [OPTIONS] COMMAND [ARGS]...
 
@@ -90,6 +68,7 @@ venvstacks can then be executed via the ``-m`` switch:
     │ publish        Publish layer archives for Python virtual environment stacks.    │
     ╰─────────────────────────────────────────────────────────────────────────────────╯
 
+
 Building Documentation
 ----------------------
 
@@ -103,6 +82,30 @@ To build it locally, run:
     $ tox -e docs
 
 The built documentation can be found in the ``docs/_build`` folder.
+
+
+Changelog Entries
+-----------------
+
+The ``venvstacks`` changelog is managed with :pypi:`scriv`.
+
+All changes which may affect ``venvstacks`` users should be
+given a user facing changelog entry with ``scriv create``.
+
+Entries are written in ``.rst`` format by default, so they
+can use semantic references to the rest of the documentation.
+However, ``.md`` fragments are entirely fine if internal
+semantic links aren't needed.
+
+Refer to the
+`"per-user" settings <https://scriv.readthedocs.io/en/1.5.1/configuration.html#per-user-git-settings>`__
+in the ``scriv`` documentation for details on how to customise the
+local behaviour of ``scriv create``.
+
+The project level ``scriv`` settings are stored in
+``pyproject.toml`` (but the project largely relies on the default
+settings)
+
 
 Automated Testing
 =================
@@ -171,7 +174,7 @@ environment directly:
 
     $ tox -e py3.11
 
-There are also additional labels defined for running the oldest test environment,
+There are additional labels defined for running the oldest test environment,
 the latest test environment, and all test environments:
 
 .. code-block:: console
@@ -223,7 +226,7 @@ should only affect the hashes and sizes of the application layer
 archives that include those launch modules).
 
 If the original PR is not correct, then it can be retriggered by
-closing and reopening the PR once the relevants fixes have been
+closing and reopening the PR once the relevant fixes have been
 implemented.
 
 
@@ -260,13 +263,15 @@ Prior to release:
 
 * Update the version in ``pyproject.toml`` to remove the pre-release suffix
 * Run ``scriv collect`` to update ``CHANGELOG.rst``
-* Create a PR for the collected change log updates
+* Commit and push the updated version number and collected change log updates
 * Check the updated docs after the PR has been merged
 
-Release (requires ``pandoc``):
+Release (requires ``pandoc`` and a GitHub access token with release permissions):
 
+* Use `misc/tag-release.sh`_ to create an annotated tag for the current version
+* Push the tag to the remote repo
 * Run ``scriv github-release --dry-run`` to check what would be published
-* Run ``scriv github-release`` to make the release tag
+* Run ``scriv github-release`` to make the release from the annotated tag
 
 After release:
 
@@ -278,3 +283,4 @@ After release:
 .. _`rich CLI`: https://docs.pytest.org/en/stable/how-to/usage.html#specifying-which-tests-to-run
 .. _`GitHub`: https://github.com/lmstudio/venvstacks
 .. _`testing README file`: https://github.com/lmstudio-ai/venvstacks/blob/main/tests/README.md
+.. _`misc/tag-release.sh`: https://github.com/lmstudio-ai/venvstacks/blob/main/misc/tag-release.sh

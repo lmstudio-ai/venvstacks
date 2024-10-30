@@ -284,6 +284,12 @@
         <article role="main" id="furo-main-content">
           <section id="virtual-environment-stacks">
 <h1>Virtual Environment Stacks<a class="headerlink" href="#virtual-environment-stacks" title="Link to this heading">¶</a></h1>
+<p>Machine learning and AI libraries for Python are big. Really big. Nobody wants to download
+and install multiple copies of <a class="extlink-pypi reference external" href="https://pypi.org/project/torch/">PyTorch</a> or <a class="extlink-pypi reference external" href="https://pypi.org/project/cuda-python/">CUDA</a> if
+they can reasonably avoid it.</p>
+<p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> allows you to package Python applications and all their dependencies into a
+portable, deterministic format, <em>without</em> needing to include copies of these large Python
+frameworks in every application archive.</p>
 <p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> uses Python’s <code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code> environment setup feature
 to chain together three layers of Python virtual environments:</p>
 <ul class="simple">

@@ -312,7 +312,7 @@
 <p>The environment layers to be published are defined in a <code class="docutils literal notranslate"><span class="pre">venvstacks.toml</span></code> stack specification,
 with a separate array of tables for each kind of layer definition.</p>
 <p>For example, the following specification defines a pair of applications which use
-<cite>scikit-learn &lt;https://scikit-learn.org/&gt;`__</cite> as a shared framework layer with
+<a class="reference external" href="https://scikit-learn.org/">scikit-learn</a> as a shared framework layer with
 <a class="reference external" href="https://numpy.org/">numpy</a> preinstalled in the runtime layer,
 all running in a controlled Python 3.11 base runtime:</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[[runtimes]]</span>
@@ -398,8 +398,8 @@ and the included launch modules) and output details
 </pre></div>
 </div>
 <p>Given that even considering the use of <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> implies that some layer archives may be of
-significant size (a fully built <cite>pytorch</cite> archive weighs in at multiple gigabytes, for example),
-packing and unpacking the layer archives can take a substantial amount of time.</p>
+significant size (a fully built <a class="extlink-pypi reference external" href="https://pypi.org/project/torch/">PyTorch</a> archive weighs in at multiple gigabytes,
+for example), packing and unpacking the layer archives can take a substantial amount of time.</p>
 <p>To avoid that overhead when iterating on layer definitions and launch module details,
 the <code class="docutils literal notranslate"><span class="pre">local-export</span></code> subcommand allows the built environments to be copied to a different
 location on the same system, with most of the same filtering steps applied as would be
