@@ -266,7 +266,7 @@ Prior to release:
 * Commit and push the updated version number and collected change log updates
 * Check the updated docs after the PR has been merged
 
-Release (requires ``pandoc`` and a valid):
+Release (requires ``pandoc`` and a GitHub access token with release permissions):
 
 * Use `misc/tag-release.sh`_ to create an annotated tag for the current version
 * Push the tag to the remote repo
