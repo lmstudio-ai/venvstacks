@@ -1,37 +1,13 @@
-----------------------------------
-Layered Virtual Environment Stacks
-----------------------------------
+.. _overview:
 
-``venvstacks`` uses Python's ``sitecustomize.py`` environment setup feature
-to chain together three layers of Python virtual environments:
+----------------
+Project Overview
+----------------
 
-* "Runtime" layers: environments containing the desired version of a specific Python interpreter
-* "Framework" layers: environments containing desired versions of key Python frameworks
-* "Application" layers: environments containing components to be launched directly
+Command line interface
+======================
 
-While the layers are archived and published separately, their dependency locking is integrated,
-allowing the application layers to share dependencies installed in the framework layers,
-and the framework layers to share dependencies installed in the runtime layers.
-
-
-Installing
-==========
-
-``venvstacks`` is available from the :pypi:`Python Package Index <venvstacks>`,
-and can be installed with :pypi:`pipx` (or similar tools):
-
-.. code-block:: console
-
-   $ pipx install venvstacks
-
-Alternatively, it can be installed as a user level package (although this may
-make future Python version upgrades more irritating):
-
-.. code-block:: console
-
-   $ pip install --user venvstacks
-
-The command line help also provides additional usage information:
+The command line interface is the recommended interface for working with ``venvstacks``:
 
 .. code-block:: console
 
@@ -50,14 +26,6 @@ The command line help also provides additional usage information:
    │ lock           Lock layer requirements for Python virtual environment stacks.   │
    │ publish        Publish layer archives for Python virtual environment stacks.    │
    ╰─────────────────────────────────────────────────────────────────────────────────╯
-
-.. note::
-
-   The ``venvstacks`` command is currently only available via the Python interpreter's
-   :py:option:`-m` switch, so Python command execution utilities like ``pipx run``
-   and ``uvx`` don't work yet.
-   However, direct execution as ``venvstacks`` is expected to be
-   :issue:`supported in a future release <26>`.
 
 
 Working with environment stacks

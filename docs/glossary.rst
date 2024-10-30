@@ -65,4 +65,4 @@ Essential Terms and Concepts
       An application layer with its supporting framework and base runtime layers.
 
    stack specification
-      A ``venvstacks.toml`` file that definez one or more environment stacks.
+      A ``venvstacks.toml`` file that defines one or more environment stacks.
