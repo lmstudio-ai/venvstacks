@@ -168,7 +168,7 @@ the following Discord channels are the best way to get directly in touch with th
 * Discuss ``venvstacks`` in general in the ``#venvstacks`` channel on the
   `PyPA Discord Server <https://discord.com/invite/pypa>`__.
 * Discuss the use of ``venvstacks`` in LM Studio in the ``#dev-chat`` channel on the
-  `LM Studio Discord Server <https://discord.gg/rDk28gC7nv>`__.
+  `LM Studio Discord Server <https://discord.gg/aPQfnNkxGC>`__.
 
 The `"Packaging" category <https://discuss.python.org/c/packaging/14>`__ on
 `discuss.python.org <https://discuss.python.org/>`__ is also a reasonable place to provide feedback.

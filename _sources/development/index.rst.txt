@@ -23,7 +23,7 @@ available on `GitHub`_.
 
 .. code-block:: console
 
-    $ git clone https://github.com/lmstudio/venvstacks
+    $ git clone https://github.com/lmstudio-ai/venvstacks
     $ cd venvstacks
 
 
@@ -279,8 +279,8 @@ After release:
 * Bump the version in ``pyproject.toml`` and add a ``.dev0`` suffix
 
 .. _`Getting Started`: https://pip.pypa.io/en/stable/development/getting-started/
-.. _`open an issue`: https://github.com/lmstudio/venvstacks/issues/new?title=Trouble+with+development+environment
+.. _`open an issue`: https://github.com/lmstudio-ai/venvstacks/issues/new?title=Trouble+with+development+environment
 .. _`rich CLI`: https://docs.pytest.org/en/stable/how-to/usage.html#specifying-which-tests-to-run
-.. _`GitHub`: https://github.com/lmstudio/venvstacks
+.. _`GitHub`: https://github.com/lmstudio-ai/venvstacks
 .. _`testing README file`: https://github.com/lmstudio-ai/venvstacks/blob/main/tests/README.md
 .. _`misc/tag-release.sh`: https://github.com/lmstudio-ai/venvstacks/blob/main/misc/tag-release.sh
