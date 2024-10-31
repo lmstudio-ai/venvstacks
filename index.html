@@ -290,7 +290,7 @@ they can reasonably avoid it.</p>
 <p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> allows you to package Python applications and all their dependencies into a
 portable, deterministic format, <em>without</em> needing to include copies of these large Python
 frameworks in every application archive.</p>
-<p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> uses Python’s <code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code> environment setup feature
+<p>It achieves this by using Python’s <code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code> environment setup feature
 to chain together three layers of Python virtual environments:</p>
 <ul class="simple">
 <li><p>“Runtime” layers: environments containing the desired version of a specific Python interpreter</p></li>
