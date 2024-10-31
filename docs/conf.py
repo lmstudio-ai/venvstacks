@@ -36,6 +36,7 @@ html_static_path = ["_static"]
 
 # Docs are published directly to GitHub pages, consider them to be unversioned
 html_title = "venvstacks documentation"
+html_baseurl = "https://venvstacks.lmstudio.ai/"
 
 # Disable the generation of the various indexes
 html_use_modindex = False
