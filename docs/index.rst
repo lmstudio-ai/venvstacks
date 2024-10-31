@@ -10,7 +10,7 @@ they can reasonably avoid it.
 portable, deterministic format, *without* needing to include copies of these large Python
 frameworks in every application archive.
 
-``venvstacks`` uses Python's ``sitecustomize.py`` environment setup feature
+It achieves this by using Python's ``sitecustomize.py`` environment setup feature
 to chain together three layers of Python virtual environments:
 
 * "Runtime" layers: environments containing the desired version of a specific Python interpreter

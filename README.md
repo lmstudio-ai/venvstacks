@@ -9,7 +9,7 @@ and install multiple copies of [PyTorch](https://pypi.org/project/torch/) or
 portable, deterministic format, *without* needing to include copies of these large Python
 frameworks in every application archive.
 
-The `venvstacks` project uses Python's `sitecustomize.py` environment setup feature to
+It achieves this by using Python's `sitecustomize.py` environment setup feature to
 chain together three layers of Python virtual environments:
 
 * "Runtime" layers: environment containing the desired version of a specific Python runtime
@@ -71,7 +71,7 @@ Caveats and Limitations
 * This project does NOT support combining arbitrary virtual environments with each other.
   Instead, it allows larger integrated applications to split up their Python dependencies into
   distinct layers, without needing to download and install multiple copies of large
-  dependencies (such as the `pytorch` ML/AI framework). The environment stack specification
+  dependencies (such as the PyTorch ML/AI framework). The environment stack specification
   and build process helps ensure that shared dependencies are kept consistent across layers,
   while unshared dependencies are free to vary across the application components that need them.
 * The `venvstacks` Python API is *not yet stable*. Any interface not specifically
