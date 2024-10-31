@@ -51,9 +51,9 @@ venvstacks = "venvstacks.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/lmstudio-ai/venvstacks"
-Documentation = "https://lmstudio-ai.github.io/venvstacks/"
+Documentation = "https://venvstacks.lmstudio.ai/"
 Issues = "https://github.com/lmstudio-ai/venvstacks/issues"
-Changelog = "https://lmstudio-ai.github.io/venvstacks/changelog/"
+Changelog = "https://venvstacks.lmstudio.ai/changelog/"
 
 [build-system]
 requires = ["pdm-backend"]

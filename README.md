@@ -23,7 +23,7 @@ While the layers are archived and published separately, their dependency locking
 allowing the application layers to share dependencies installed in the framework layers,
 and the framework layers to share dependencies installed in the runtime layers.
 
-Refer to the [Project Overview](https://lmstudio-ai.github.io/venvstacks/overview/) for an
+Refer to the [Project Overview](https://venvstacks.lmstudio.ai/overview/) for an
 example of specifying, locking, building, and publishing a set of environment stacks.
 
 

@@ -9,7 +9,7 @@
 project = "venvstacks"
 copyright = "2024, Element Labs Inc."
 author = "LM Studio"
-release = "0.1"
+release = "latest" # Docs are currently unversioned
 
 
 # -- General configuration ---------------------------------------------------
@@ -33,6 +33,9 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "furo"
 html_static_path = ["_static"]
+
+# Docs are published directly to GitHub pages, consider them to be unversioned
+html_title = "venvstacks documentation"
 
 # Disable the generation of the various indexes
 html_use_modindex = False
