@@ -23,6 +23,23 @@ See the fragment files in the `changelog.d directory`_.
 
 .. scriv-insert-here
 
+.. _changelog-0.1.1:
+
+0.1.1 — 2024-11-01
+==================
+
+Changed
+-------
+
+- Update docs URL to `https://venvstacks.lmstudio.ai`__
+
+- Add OpenGraph metadata to docs landing page
+
+- Resolved several broken links in the documentation
+
+- Documentation is now marked as being unversioned
+  (it is published directly from the main branch)
+
 .. _changelog-0.1.0:
 
 0.1.0 — 2024-10-31
