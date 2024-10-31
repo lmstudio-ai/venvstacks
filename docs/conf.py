@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "venvstacks"
-copyright = "2024, LM Studio"
+copyright = "2024, Element Labs Inc."
 author = "LM Studio"
 release = "0.1"
 
@@ -56,7 +56,7 @@ intersphinx_mapping = {
 # -- Options for extlinks -------------------------------------------------------------
 
 extlinks = {
-    "issue": ("https://github.com/lmstudio/venvstacks/issues/%s", "#%s"),
-    "pr": ("https://github.com/lmstudio/venvstacks/pull/%s", "PR #%s"),
+    "issue": ("https://github.com/lmstudio-ai/venvstacks/issues/%s", "#%s"),
+    "pr": ("https://github.com/lmstudio-ai/venvstacks/pull/%s", "PR #%s"),
     "pypi": ("https://pypi.org/project/%s/", "%s"),
 }
