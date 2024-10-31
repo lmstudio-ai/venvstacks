@@ -23,10 +23,10 @@ For general `venvstacks` discussion (not specific to its use in LM Studio), ther
 
 For questions specifically related to the Python environment stacks used in LM Studio,
 the team is available through the `#dev-chat` channel within the
-[LM Studio Discord server](https://discord.gg/pwQWNhmQTY).
+[LM Studio Discord server](https://discord.gg/aPQfnNkxGC).
 
 ## Development Documentation
 
-Our [development documentation](https://lmstudio-ai.github.io/venvstacks//development/)
+Our [development documentation](https://lmstudio-ai.github.io/venvstacks/development/)
 contains details on how to get started with contributing to `venvstacks`,
 and details of our development processes.
