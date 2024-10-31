@@ -2,6 +2,12 @@
 Virtual Environment Stacks
 ==========================
 
+.. meta::
+   :og:title: venvstacks - venvstacks Documentation
+   :og:type: website
+   :og:url: https://venvstacks.lmstudio.ai/
+   :og:description: Virtual Environment Stacks for Python - venvstacks Documentation
+
 Machine learning and AI libraries for Python are big. Really big. Nobody wants to download
 and install multiple copies of :pypi:`PyTorch <torch>` or :pypi:`CUDA <cuda-python>` if
 they can reasonably avoid it.
