@@ -196,12 +196,15 @@ def _supports_symlinks(target_path: Path) -> bool:
 def export_venv(
     source_dir: StrPath,
     target_dir: StrPath,
+    sitecustomize_source: StrPath | None = None,
     run_postinstall: Callable[[Path, Path], None] | None = None,
 ) -> Path:
     """Export the given build environment, skipping archive creation and unpacking
 
     * injects a suitable `postinstall.py` script for the environment being exported
-    * excludes __pycache__ folders and package metadata RECORD files
+    * excludes `__pycache__` folders and package metadata `RECORD` files
+    * allows build environment `sitecustomize.py` to be replaced with a deployed variant
+    * excludes `*sitecustomize.py` files from the tree copy if a specific source is given
     * replaces symlinks with copies on Windows or if the target doesn't support symlinks
 
     If supplied, *run_postinstall* is called with the path to the environment's Python
@@ -213,7 +216,15 @@ def export_venv(
     """
     source_path = as_normalized_path(source_dir)
     target_path = as_normalized_path(target_dir)
-    excluded = shutil.ignore_patterns("__pycache__", "RECORD")
+    patterns_to_ignore = ["__pycache__", "RECORD"]
+    if sitecustomize_source is not None:
+        # The deployed `sitecustomize.py` should be saved alongside the
+        # build version with a name like `_deployed_sitecustomize.py`
+        sc_source_path = as_normalized_path(sitecustomize_source)
+        sc_relative_path = sc_source_path.relative_to(source_path)
+        sc_target_path = target_path / sc_relative_path.with_name("sitecustomize.py")
+        patterns_to_ignore.append("*sitecustomize.py")
+    excluded = shutil.ignore_patterns(*patterns_to_ignore)
     # Avoid symlinks on Windows, as they need elevated privileges to create
     # Also avoid them if the target folder doesn't support symlink creation
     # (that way exports to FAT/FAT32/VFAT file systems should work, even if
@@ -228,6 +239,8 @@ def export_venv(
         symlinks=publish_symlinks,
         dirs_exist_ok=True,
     )
+    if sitecustomize_source is not None:
+        shutil.copy2(sc_source_path, sc_target_path)
     postinstall_path = _inject_postinstall_script(target_path)
     if run_postinstall is not None:
         run_postinstall(target_path, postinstall_path)
@@ -237,6 +250,7 @@ def export_venv(
 def create_archive(
     source_dir: StrPath,
     archive_base_name: StrPath,
+    sitecustomize_source: StrPath | None = None,
     *,
     install_target: str | None = None,
     clamp_mtime: datetime | None = None,
@@ -261,7 +275,7 @@ def create_archive(
         install_target = source_path.name
     with tempfile.TemporaryDirectory(dir=work_dir) as tmp_dir:
         target_path = Path(tmp_dir) / install_target
-        env_path = export_venv(source_path, target_path)
+        env_path = export_venv(source_path, target_path, sitecustomize_source)
         if not show_progress:
 
             def report_progress(_: Any) -> None:
