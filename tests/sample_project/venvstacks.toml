@@ -65,9 +65,7 @@ requirements = [
 
 [[frameworks]]
 name = "scipy"
-# Automatic versioning currently breaks venv layering
-# https://github.com/lmstudio-ai/venvstacks/issues/24
-# versioned = true
+versioned = true
 runtime = "cpython@3.11"
 requirements = [
     "scipy",
@@ -96,9 +94,7 @@ requirements = [
 
 [[applications]]
 name = "scipy-import"
-# Automatic versioning currently breaks venv layering
-# https://github.com/lmstudio-ai/venvstacks/issues/24
-# versioned = true
+versioned = true
 launch_module = "launch_modules/scipy_import.py"
 frameworks = ["scipy"]
 requirements = [
