@@ -3,16 +3,16 @@
   "app_launch_module_hash": "sha256:d806d778921ad216c1f950886d27b4b77e5561fe3467046fec258805980cc6d1",
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "1907700fc74c6a0bc62d851dce87bfed6a0ad52d0fec5863c9eadd1e26c029ff"
+    "sha256": "e987f9c43f8df61602699686e28f5178e7547c509e3d838285d7c22d995974b3"
   },
-  "archive_name": "app-scipy-import.zip",
-  "archive_size": 254658,
-  "install_target": "app-scipy-import",
+  "archive_name": "app-scipy-import@1.zip",
+  "archive_size": 254660,
+  "install_target": "app-scipy-import@1",
   "layer_name": "app-scipy-import",
   "lock_version": 1,
   "locked_at": "2024-10-15T10:24:36.386938+00:00",
   "required_layers": [
-    "framework-scipy"
+    "framework-scipy@1"
   ],
   "requirements_hash": "sha256:9aba38b5efe287f35d58825dce6b1c47ed556b930056e6edc00ca9e1a165796b",
   "runtime_name": "cpython@3.11.10",
