@@ -532,26 +532,28 @@ class TestMinimalBuild(unittest.TestCase):
 
             self.check_deployed_environments(layered_metadata, get_exported_python)
 
-    def check_environment_exports(self, export_paths: ExportedEnvironmentPaths) -> None:
+    def check_environment_exports(
+        self, export_path: Path, export_paths: ExportedEnvironmentPaths
+    ) -> None:
         metadata_path, snippet_paths, env_paths = export_paths
         exported_manifests = ManifestData(metadata_path, snippet_paths)
-        env_name_to_path: dict[str, Path] = {}
+        deployed_name_to_path: dict[str, Path] = {}
         for env_metadata, env_path in zip(exported_manifests.snippet_data, env_paths):
             # TODO: Check more details regarding expected metadata contents
             self.assertTrue(env_path.exists())
-            env_name = EnvNameDeploy(env_metadata["install_target"])
-            self.assertEqual(env_path.name, env_name)
-            env_name_to_path[env_name] = env_path
+            deployed_name = EnvNameDeploy(env_metadata["install_target"])
+            self.assertEqual(env_path, export_path / deployed_name)
+            deployed_name_to_path[deployed_name] = env_path
         layered_metadata = exported_manifests.combined_data["layers"]
 
         def get_exported_python(
             env: ExportMetadata,
         ) -> tuple[EnvNameDeploy, Path, list[str]]:
-            env_name = env["install_target"]
-            env_path = env_name_to_path[env_name]
+            deployed_name = env["install_target"]
+            env_path = deployed_name_to_path[deployed_name]
             env_python = get_env_python(env_path)
             env_sys_path = get_sys_path(env_python)
-            return env_name, env_python, env_sys_path
+            return deployed_name, env_python, env_sys_path
 
         self.check_deployed_environments(layered_metadata, get_exported_python)
 
@@ -654,7 +656,7 @@ class TestMinimalBuild(unittest.TestCase):
         with self.subTest("Check environment export"):
             export_path = self.working_path / "_export🦎"
             export_result = build_env.export_environments(export_path)
-            self.check_environment_exports(export_result)
+            self.check_environment_exports(export_path, export_result)
             subtests_passed += 1
         # Test stage: ensure published archives and manifests have the expected name
         #             and that unpacking them allows launch module execution

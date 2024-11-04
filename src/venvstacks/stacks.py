@@ -1449,7 +1449,9 @@ class _VirtualEnvironment(_PythonEnvironment):
 
     def link_base_runtime(self, runtime: RuntimeEnv) -> None:
         if self.base_runtime is not None:
-            raise BuildEnvError(f"Layered environment base runtime already linked {self}")
+            raise BuildEnvError(
+                f"Layered environment base runtime already linked {self}"
+            )
         # Link the runtime environment
         self.base_runtime = runtime
         # Link executable paths
@@ -1663,7 +1665,9 @@ class ApplicationEnv(_VirtualEnvironment):
         deployed_sc_path = self.sitecustomize_source_path
         assert deployed_sc_path is not None
         print(f"Generating {deployed_sc_path!r}...")
-        deployed_sc_path.write_text(deployed_sc_contents, encoding="utf-8", newline="\n")
+        deployed_sc_path.write_text(
+            deployed_sc_contents, encoding="utf-8", newline="\n"
+        )
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         super()._update_existing_environment(lock_only=lock_only)

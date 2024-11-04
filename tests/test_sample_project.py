@@ -322,14 +322,16 @@ class TestBuildEnvironment(unittest.TestCase):
             )
             self.assertEqual(launch_result.stderr, "")
 
-    def check_environment_exports(self, export_paths: ExportedEnvironmentPaths) -> None:
+    def check_environment_exports(
+        self, export_path: Path, export_paths: ExportedEnvironmentPaths
+    ) -> None:
         metadata_path, snippet_paths, env_paths = export_paths
         exported_manifests = ManifestData(metadata_path, snippet_paths)
         deployed_name_to_path: dict[str, Path] = {}
         for env_metadata, env_path in zip(exported_manifests.snippet_data, env_paths):
             self.assertTrue(env_path.exists())
             deployed_name = EnvNameDeploy(env_metadata["install_target"])
-            self.assertEqual(env_path.name, deployed_name)
+            self.assertEqual(env_path, export_path / deployed_name)
             deployed_name_to_path[deployed_name] = env_path
         layered_metadata = exported_manifests.combined_data["layers"]
 
@@ -450,7 +452,7 @@ class TestBuildEnvironment(unittest.TestCase):
         with self.subTest("Check environment export"):
             export_path = self.working_path / "_export🦎"
             export_result = build_env.export_environments(export_path)
-            self.check_environment_exports(export_result)
+            self.check_environment_exports(export_path, export_result)
             subtests_passed += 1
 
         # Work aroung pytest-subtests not failing the test case when subtests fail
