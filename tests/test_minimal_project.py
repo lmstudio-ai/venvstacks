@@ -1,7 +1,9 @@
 """Test building the minimal project produces the expected results"""
 
 import json
+import os.path
 import shutil
+import sys
 import tempfile
 
 from datetime import datetime, timezone
@@ -30,6 +32,7 @@ from venvstacks.stacks import (
     StackPublishingRequest,
     BuildEnvironment,
     EnvNameDeploy,
+    LayerVariants,
     StackSpec,
     ExportedEnvironmentPaths,
     ExportMetadata,
@@ -37,7 +40,8 @@ from venvstacks.stacks import (
     PublishedArchivePaths,
     get_build_platform,
 )
-from venvstacks._util import get_env_python, run_python_command, WINDOWS_BUILD
+from venvstacks._injected.postinstall import DEPLOYED_LAYER_CONFIG
+from venvstacks._util import get_env_python, capture_python_output, WINDOWS_BUILD
 
 ##################################
 # Minimal project test helpers
@@ -474,11 +478,20 @@ class TestMinimalBuild(unittest.TestCase):
             self.assertEqual(launch_result.stdout, "")
             self.assertEqual(launch_result.stderr, "")
 
-    @staticmethod
-    def _run_postinstall(base_python_path: Path, env_path: Path) -> None:
+    def _run_postinstall(self, env_path: Path) -> None:
+        config_path = env_path / DEPLOYED_LAYER_CONFIG
+        self.assertTrue(config_path.exists())
         postinstall_script = env_path / "postinstall.py"
         if postinstall_script.exists():
-            run_python_command([str(base_python_path), str(postinstall_script)])
+            # Post-installation scripts are required to work even when they're
+            # executed with an entirely unrelated Python installation
+            capture_python_output([
+                sys.executable,
+                "-X",
+                "utf8",
+                "-I",
+                str(postinstall_script)
+            ])
 
     def check_archive_deployment(self, published_paths: PublishedArchivePaths) -> None:
         metadata_path, snippet_paths, archive_paths = published_paths
@@ -512,14 +525,13 @@ class TestMinimalBuild(unittest.TestCase):
             self.assertTrue(published_manifests.combined_data)
             layered_metadata = published_manifests.combined_data["layers"]
             base_runtime_env_name = layered_metadata["runtimes"][0]["install_target"]
-            base_runtime_env_path = env_name_to_path[base_runtime_env_name]
-            base_python_path = get_env_python(base_runtime_env_path)
-            self._run_postinstall(base_python_path, env_path)
+            env_path = env_name_to_path[base_runtime_env_name]
+            self._run_postinstall(env_path)
             for env_name, env_path in env_name_to_path.items():
                 if env_name == base_runtime_env_name:
                     # Already configured
                     continue
-                self._run_postinstall(base_python_path, env_path)
+                self._run_postinstall(env_path)
 
             def get_exported_python(
                 env: ArchiveMetadata,
@@ -555,6 +567,9 @@ class TestMinimalBuild(unittest.TestCase):
 
         self.check_deployed_environments(layered_metadata, get_exported_python)
 
+    def assertPathExists(self, expected_path: Path) -> None:
+        self.assertTrue(expected_path.exists(), f"No such path: {str(expected_path)}")
+
     @pytest.mark.slow
     def test_locking_and_publishing(self) -> None:
         # This is organised as subtests in a monolothic test sequence to reduce CI overhead
@@ -577,9 +592,31 @@ class TestMinimalBuild(unittest.TestCase):
         # Handle running this test case repeatedly in a local checkout
         for env in build_env.all_environments():
             env.env_lock._purge_lock()
-        # Test stage: check dry run metadata results are as expected
+        # Test stage: create and link build environments
         minimum_lock_time = datetime.now(timezone.utc)
         build_env.create_environments()
+        subtests_started += 1
+        with self.subTest("Check build environments have been linked"):
+            for env in self.build_env.all_environments():
+                config_path = env.env_path / DEPLOYED_LAYER_CONFIG
+                self.assertPathExists(config_path)
+                layer_config = json.loads(config_path.read_text(encoding="utf-8"))
+                python_path = env.env_path / layer_config["python"]
+                expected_python_path = env.python_path
+                self.assertEqual(str(python_path), str(expected_python_path))
+                base_python_path = env.env_path / layer_config["base_python"]
+                if env.kind == LayerVariants.RUNTIME:
+                    # base_python should refer to the runtime layer itself
+                    expected_base_python_path = expected_python_path
+                else:
+                    # base_python should refer to the venv's base Python runtime
+                    self.assertIsNotNone(env.base_python_path)
+                    assert env.base_python_path is not None
+                    base_python_path = Path(os.path.normpath(base_python_path))
+                    expected_base_python_path = env.base_python_path
+                self.assertEqual(str(base_python_path), str(expected_base_python_path))
+            subtests_passed += 1
+        # Test stage: check dry run metadata results are as expected
         subtests_started += 1
         with self.subTest("Check untagged dry run"):
             dry_run_result, dry_run_last_locked_times = _filter_manifest(

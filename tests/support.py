@@ -13,7 +13,7 @@ from unittest.mock import create_autospec
 
 import pytest
 
-from venvstacks._util import run_python_command
+from venvstacks._util import capture_python_output
 from venvstacks.stacks import (
     BuildEnvironment,
     EnvNameDeploy,
@@ -202,17 +202,24 @@ def make_mock_index_config(reference_config: PackageIndexConfig | None = None) -
 # Running commands in a deployed environment
 ##############################################
 
-
-def capture_python_output(command: list[str]) -> subprocess.CompletedProcess[str]:
-    return run_python_command(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-
 def get_sys_path(env_python: Path) -> list[str]:
-    command = [str(env_python), "-Ic", "import json, sys; print(json.dumps(sys.path))"]
+    command = [
+        str(env_python),
+        "-X",
+        "utf8",
+        "-Ic",
+        "import json, sys; print(json.dumps(sys.path))"
+    ]
     result = capture_python_output(command)
     return cast(list[str], json.loads(result.stdout))
 
 
 def run_module(env_python: Path, module_name: str) -> subprocess.CompletedProcess[str]:
-    command = [str(env_python), "-Im", module_name]
+    command = [
+        str(env_python),
+        "-X",
+        "utf8",
+        "-Im",
+        module_name
+    ]
     return capture_python_output(command)

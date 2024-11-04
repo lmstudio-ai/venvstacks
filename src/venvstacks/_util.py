@@ -125,3 +125,6 @@ def run_python_command(
     result = run_python_command_unchecked(command, text=True, **kwds)
     result.check_returncode()
     return result
+
+def capture_python_output(command: list[str]) -> subprocess.CompletedProcess[str]:
+    return run_python_command(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

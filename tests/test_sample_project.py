@@ -1,5 +1,6 @@
 """Test building the sample project produces the expected results"""
 
+import json
 import os.path
 import shutil
 import tempfile
@@ -37,7 +38,9 @@ from venvstacks.stacks import (
     LayerCategories,
     ExportedEnvironmentPaths,
     ExportMetadata,
+    LayerVariants,
 )
+from venvstacks._injected.postinstall import DEPLOYED_LAYER_CONFIG
 from venvstacks._util import get_env_python
 
 ##################################
@@ -344,6 +347,9 @@ class TestBuildEnvironment(unittest.TestCase):
 
         self.check_deployed_environments(layered_metadata, get_exported_python)
 
+    def assertPathExists(self, expected_path: Path) -> None:
+        self.assertTrue(expected_path.exists(), f"No such path: {str(expected_path)}")
+
     @pytest.mark.slow
     @pytest.mark.expected_output
     def test_build_is_reproducible(self) -> None:
@@ -363,9 +369,31 @@ class TestBuildEnvironment(unittest.TestCase):
         expected_tagged_dry_run_result = _get_expected_dry_run_result(
             build_env, expect_tagged_outputs=True
         )
-        # Test stage 1: ensure lock files can be regenerated without alteration
+        # Test stage: create and link build environments
         committed_locked_requirements = _collect_locked_requirements(build_env)
         build_env.create_environments(lock=True)
+        subtests_started += 1
+        with self.subTest("Check build environments have been linked"):
+            for env in self.build_env.all_environments():
+                config_path = env.env_path / DEPLOYED_LAYER_CONFIG
+                self.assertPathExists(config_path)
+                layer_config = json.loads(config_path.read_text(encoding="utf-8"))
+                python_path = env.env_path / layer_config["python"]
+                expected_python_path = env.python_path
+                self.assertEqual(str(python_path), str(expected_python_path))
+                base_python_path = env.env_path / layer_config["base_python"]
+                if env.kind == LayerVariants.RUNTIME:
+                    # base_python should refer to the runtime layer itself
+                    expected_base_python_path = expected_python_path
+                else:
+                    # base_python should refer to the venv's base Python runtime
+                    self.assertIsNotNone(env.base_python_path)
+                    assert env.base_python_path is not None
+                    base_python_path = Path(os.path.normpath(base_python_path))
+                    expected_base_python_path = env.base_python_path
+                self.assertEqual(str(base_python_path), str(expected_base_python_path))
+            subtests_passed += 1
+        # Test stage: ensure lock files can be regenerated without alteration
         generated_locked_requirements = _collect_locked_requirements(build_env)
         export_locked_requirements = True
         subtests_started += 1
@@ -383,7 +411,7 @@ class TestBuildEnvironment(unittest.TestCase):
                 build_env,
                 list(generated_locked_requirements.keys()),
             )
-        # Test stage 2: ensure environments can be populated without building the artifacts
+        # Test stage: ensure environments can be populated without building the artifacts
         build_env.create_environments()  # Use committed lock files
         subtests_started += 1
         with self.subTest("Ensure archive publication requests are reproducible"):
@@ -408,7 +436,7 @@ class TestBuildEnvironment(unittest.TestCase):
                 post_rebuild_locked_requirements, generated_locked_requirements
             )
             subtests_passed += 1
-        # Test stage 3: ensure built artifacts have the expected manifest contents
+        # Test stage: ensure built artifacts have the expected manifest contents
         manifest_path, snippet_paths, archive_paths = build_env.publish_artifacts()
         export_published_archives = True
         subtests_started += 1
