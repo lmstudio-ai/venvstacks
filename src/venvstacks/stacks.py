@@ -1659,11 +1659,11 @@ class ApplicationEnv(_VirtualEnvironment):
         )
         sc_path = self.pylib_path / "sitecustomize.py"
         print(f"Generating {sc_path!r}...")
-        sc_path.write_text(sc_contents)
+        sc_path.write_text(sc_contents, encoding="utf-8", newline="\n")
         deployed_sc_path = self.sitecustomize_source_path
         assert deployed_sc_path is not None
         print(f"Generating {deployed_sc_path!r}...")
-        deployed_sc_path.write_text(deployed_sc_contents)
+        deployed_sc_path.write_text(deployed_sc_contents, encoding="utf-8", newline="\n")
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         super()._update_existing_environment(lock_only=lock_only)
