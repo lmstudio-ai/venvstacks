@@ -176,7 +176,7 @@ def _inject_postinstall_script(
     else:
         script_contents = _BASE_RUNTIME_POST_INSTALL_SCRIPT
     script_path = env_path / script_name
-    script_path.write_text(script_contents, encoding="utf-8")
+    script_path.write_text(script_contents, encoding="utf-8", newline="\n")
     return script_path
 
 
