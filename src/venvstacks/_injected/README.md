@@ -7,5 +7,5 @@ exporting environments.
 
 They are also designed to be importable so that
 the build process can access their functionality
-without need to duplicate the implementation,
+without needing to duplicate the implementation,
 and to make them more amenable to unit testing.

@@ -778,13 +778,7 @@ class EnvironmentExportRequest:
     def _run_postinstall(postinstall_path: Path) -> None:
         # Post-installation scripts are required to work even when they're
         # executed with an entirely unrelated Python installation
-        command = [
-            sys.executable,
-            "-X",
-            "utf8",
-            "-I",
-            str(postinstall_path)
-        ]
+        command = [sys.executable, "-X", "utf8", "-I", str(postinstall_path)]
         capture_python_output(command)
 
     def export_environment(
@@ -1049,7 +1043,7 @@ class _PythonEnvironment(ABC):
         self,
         pylib_paths: Iterable[Path] | None,
         dynlib_paths: Iterable[Path] | None,
-        link_external_base: bool = True
+        link_external_base: bool = True,
     ) -> postinstall.LayerConfig:
         # Helper for subclass get_deployed_config implementations
         base_python_path = self.base_python_path
@@ -1060,9 +1054,11 @@ class _PythonEnvironment(ABC):
         def from_internal_path(build_path: Path) -> str:
             # Absolute path, inside the environment
             return str(build_path.relative_to(build_env_path))
+
         def from_external_path(build_path: Path) -> str:
             # Absolute path, potentially outside the environment
             return str(build_path.relative_to(build_env_path, walk_up=True))
+
         def from_relative_path(relative_build_path: Path) -> str:
             # Path relative to the base of the build directory
             build_path = self.build_path / relative_build_path

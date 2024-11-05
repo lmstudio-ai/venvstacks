@@ -1,4 +1,5 @@
 """Tests for venvstacks post-install script generation"""
+
 import os
 
 from pathlib import Path
@@ -12,6 +13,7 @@ version = {py_version}
 executable = {python_bin}
 """
 
+
 def test_pyvenv_cfg() -> None:
     example_path = Path("/example/python/bin/python")
     example_version = "6.28"
@@ -21,12 +23,15 @@ def test_pyvenv_cfg() -> None:
         python_bin=str(example_path),
     )
     pyvenv_cfg = postinstall.generate_pyvenv_cfg(
-        example_path, example_version,
+        example_path,
+        example_version,
     )
     assert pyvenv_cfg == expected_pyvenv_cfg
 
+
 def test_sitecustomize_empty() -> None:
     assert postinstall.generate_sitecustomize([], []) is None
+
 
 def _make_pylib_paths() -> tuple[list[Path], str]:
     pylib_dirs = [f"pylib{n}" for n in range(5)]
@@ -34,11 +39,13 @@ def _make_pylib_paths() -> tuple[list[Path], str]:
     expected_lines = "\n".join(f"addsitedir({d!r})" for d in pylib_dirs)
     return pylib_paths, expected_lines
 
+
 def _make_dynlib_paths() -> tuple[list[Path], str]:
     dynlib_dirs = [f"dynlib{n}" for n in range(5)]
     dynlib_paths = [Path(d) for d in dynlib_dirs]
     expected_lines = "\n".join(f"add_dll_directory({d!r})" for d in dynlib_dirs)
     return dynlib_paths, expected_lines
+
 
 def test_sitecustomize() -> None:
     pylib_paths, expected_lines = _make_pylib_paths()
@@ -48,6 +55,7 @@ def test_sitecustomize() -> None:
     assert expected_lines in sc_text
     assert "add_dll_directory(" not in sc_text
     assert compile(sc_text, "_sitecustomize.py", "exec") is not None
+
 
 def test_sitecustomize_with_dynlib() -> None:
     pylib_paths, expected_pylib_lines = _make_pylib_paths()

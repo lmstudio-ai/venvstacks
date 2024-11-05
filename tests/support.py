@@ -202,24 +202,19 @@ def make_mock_index_config(reference_config: PackageIndexConfig | None = None) -
 # Running commands in a deployed environment
 ##############################################
 
+
 def get_sys_path(env_python: Path) -> list[str]:
     command = [
         str(env_python),
         "-X",
         "utf8",
         "-Ic",
-        "import json, sys; print(json.dumps(sys.path))"
+        "import json, sys; print(json.dumps(sys.path))",
     ]
     result = capture_python_output(command)
     return cast(list[str], json.loads(result.stdout))
 
 
 def run_module(env_python: Path, module_name: str) -> subprocess.CompletedProcess[str]:
-    command = [
-        str(env_python),
-        "-X",
-        "utf8",
-        "-Im",
-        module_name
-    ]
+    command = [str(env_python), "-X", "utf8", "-Im", module_name]
     return capture_python_output(command)

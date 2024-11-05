@@ -485,13 +485,9 @@ class TestMinimalBuild(unittest.TestCase):
         if postinstall_script.exists():
             # Post-installation scripts are required to work even when they're
             # executed with an entirely unrelated Python installation
-            capture_python_output([
-                sys.executable,
-                "-X",
-                "utf8",
-                "-I",
-                str(postinstall_script)
-            ])
+            capture_python_output(
+                [sys.executable, "-X", "utf8", "-I", str(postinstall_script)]
+            )
 
     def check_archive_deployment(self, published_paths: PublishedArchivePaths) -> None:
         metadata_path, snippet_paths, archive_paths = published_paths
