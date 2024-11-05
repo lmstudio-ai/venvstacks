@@ -34,14 +34,14 @@ def test_sitecustomize_empty() -> None:
 
 
 def _make_pylib_paths() -> tuple[list[Path], str]:
-    pylib_dirs = [f"pylib{n}" for n in range(5)]
+    pylib_dirs = [f"/pylib{n}" for n in range(5)]
     pylib_paths = [Path(d) for d in pylib_dirs]
     expected_lines = "\n".join(f"addsitedir({d!r})" for d in pylib_dirs)
     return pylib_paths, expected_lines
 
 
 def _make_dynlib_paths() -> tuple[list[Path], str]:
-    dynlib_dirs = [f"dynlib{n}" for n in range(5)]
+    dynlib_dirs = [f"/dynlib{n}" for n in range(5)]
     dynlib_paths = [Path(d) for d in dynlib_dirs]
     expected_lines = "\n".join(f"add_dll_directory({d!r})" for d in dynlib_dirs)
     return dynlib_paths, expected_lines

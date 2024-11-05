@@ -1528,8 +1528,11 @@ class _VirtualEnvironment(_PythonEnvironment):
 
     def _link_build_environment(self) -> None:
         # Create sitecustomize file for the build environment
+        env_path = self.env_path
+        build_pylib_paths = [env_path / p for p in self.linked_pylib_paths]
+        build_dynlib_paths = [env_path / p for p in self.linked_dynlib_paths]
         sc_contents = postinstall.generate_sitecustomize(
-            self.linked_pylib_paths, self.linked_dynlib_paths
+            build_pylib_paths, build_dynlib_paths
         )
         if sc_contents is None:
             self._fail_build(

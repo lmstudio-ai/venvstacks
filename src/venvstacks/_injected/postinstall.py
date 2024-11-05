@@ -12,7 +12,7 @@ import json
 import os
 
 from compileall import compile_dir
-from os.path import abspath
+from os.path import abspath, join as joinpath
 from pathlib import Path
 from typing import cast, NotRequired, Sequence, TypedDict
 
@@ -77,6 +77,8 @@ def load_layer_config(layer_path: Path) -> ResolvedLayerConfig:
 
 def generate_pyvenv_cfg(base_python_path: Path, py_version: str) -> str:
     """Generate `pyvenv.cfg` contents for given base Python path and version"""
+    if not base_python_path.is_absolute():
+        raise RuntimeError("Post-installation must use absolute environment paths")
     venv_config_lines = [
         f"home = {base_python_path.parent}",
         "include-system-site-packages = false",
@@ -113,6 +115,8 @@ def generate_sitecustomize(
             "from site import addsitedir",
         ]
         for path_entry in pylib_paths:
+            if not path_entry.is_absolute():
+                raise RuntimeError("Post-installation must use absolute environment paths")
             pylib_contents.append(f"addsitedir({str(path_entry)!r})")
         pylib_contents.append("")
         sc_contents.extend(pylib_contents)
@@ -122,6 +126,8 @@ def generate_sitecustomize(
             "from os import add_dll_directory",
         ]
         for dynlib_path in dynlib_paths:
+            if not dynlib_path.is_absolute():
+                raise RuntimeError("Post-installation must use absolute environment paths")
             if skip_missing_dynlib_paths and not dynlib_path.exists():
                 # Nothing added DLLs to this folder at build time, so skip it
                 # (add_dll_directory fails if the specified folder doesn't exist)
