@@ -47,6 +47,15 @@ def _make_dynlib_paths() -> tuple[list[Path], str]:
     return dynlib_paths, expected_lines
 
 
+def _make_missing_dynlib_paths() -> tuple[list[Path], str]:
+    dynlib_dirs = [f"dynlib{n}" for n in range(5)]
+    dynlib_paths = [Path(d) for d in dynlib_dirs]
+    expected_lines = "\n".join(
+        f"# Skipping {d!r} (no such directory)" for d in dynlib_dirs
+    )
+    return dynlib_paths, expected_lines
+
+
 def test_sitecustomize() -> None:
     pylib_paths, expected_lines = _make_pylib_paths()
     sc_text = postinstall.generate_sitecustomize(pylib_paths, [])
@@ -54,12 +63,30 @@ def test_sitecustomize() -> None:
     assert sc_text.startswith(postinstall._SITE_CUSTOMIZE_HEADER)
     assert expected_lines in sc_text
     assert "add_dll_directory(" not in sc_text
+    assert "# Skipping" not in sc_text
     assert compile(sc_text, "_sitecustomize.py", "exec") is not None
 
 
 def test_sitecustomize_with_dynlib() -> None:
     pylib_paths, expected_pylib_lines = _make_pylib_paths()
     dynlib_paths, expected_dynlib_lines = _make_dynlib_paths()
+    sc_text = postinstall.generate_sitecustomize(
+        pylib_paths, dynlib_paths, skip_missing_dynlib_paths=False
+    )
+    assert sc_text is not None
+    assert sc_text.startswith(postinstall._SITE_CUSTOMIZE_HEADER)
+    assert expected_pylib_lines in sc_text
+    if hasattr(os, "add_dll_directory"):
+        assert expected_dynlib_lines in sc_text
+    else:
+        assert "add_dll_directory(" not in sc_text
+        assert "# Skipping" not in sc_text
+    assert compile(sc_text, "_sitecustomize.py", "exec") is not None
+
+
+def test_sitecustomize_with_missing_dynlib() -> None:
+    pylib_paths, expected_pylib_lines = _make_pylib_paths()
+    dynlib_paths, expected_dynlib_lines = _make_missing_dynlib_paths()
     sc_text = postinstall.generate_sitecustomize(pylib_paths, dynlib_paths)
     assert sc_text is not None
     assert sc_text.startswith(postinstall._SITE_CUSTOMIZE_HEADER)
@@ -68,4 +95,5 @@ def test_sitecustomize_with_dynlib() -> None:
         assert expected_dynlib_lines in sc_text
     else:
         assert "add_dll_directory(" not in sc_text
+        assert "# Skipping" not in sc_text
     assert compile(sc_text, "_sitecustomize.py", "exec") is not None
