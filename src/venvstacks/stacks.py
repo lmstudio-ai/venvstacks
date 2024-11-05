@@ -1041,13 +1041,13 @@ class _PythonEnvironment(ABC):
 
     def _get_deployed_config(
         self,
-        pylib_paths: Iterable[Path] | None,
-        dynlib_paths: Iterable[Path] | None,
+        pylib_paths: Iterable[Path],
+        dynlib_paths: Iterable[Path],
         link_external_base: bool = True,
     ) -> postinstall.LayerConfig:
         # Helper for subclass get_deployed_config implementations
         base_python_path = self.base_python_path
-        if base_python_path is None or pylib_paths is None or dynlib_paths is None:
+        if base_python_path is None:
             self._fail_build("Cannot get deployment config for unlinked layer")
         build_env_path = self.env_path
 
