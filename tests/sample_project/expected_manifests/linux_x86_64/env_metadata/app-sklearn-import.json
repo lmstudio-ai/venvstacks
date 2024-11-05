@@ -3,10 +3,10 @@
   "app_launch_module_hash": "sha256:f66c01bbcca47cd31d79d2fb5377de0de18631ffc3c904629d46f6cad2918694",
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "ba0b38bb3c8539b9882bdfd752f1407961f26fe8a2c1af3d1bed62d83478b8e7"
+    "sha256": "154522617cc2599a0f3758f44496bc3f29d9000c8dcae07f5fa3b5611508a003"
   },
   "archive_name": "app-sklearn-import.tar.xz",
-  "archive_size": 1420,
+  "archive_size": 40248268,
   "install_target": "app-sklearn-import",
   "layer_name": "app-sklearn-import",
   "lock_version": 1,

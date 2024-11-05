@@ -1,10 +1,10 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "f3e6749b5c07afde8468ca03457e1ea4bdda2adab8e510f1d353f21ee0f71981"
+    "sha256": "230ff9948b22bb688bcad9fe4d676ba967cb6c9f739b4e941ebcfc2e9e01c6e8"
   },
   "archive_name": "cpython@3.12.tar.xz",
-  "archive_size": 13599424,
+  "archive_size": 13600936,
   "install_target": "cpython@3.12",
   "layer_name": "cpython@3.12",
   "lock_version": 1,
