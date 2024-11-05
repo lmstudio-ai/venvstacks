@@ -12,7 +12,7 @@ import json
 import os
 
 from compileall import compile_dir
-from os.path import abspath, join as joinpath
+from os.path import abspath
 from pathlib import Path
 from typing import cast, NotRequired, Sequence, TypedDict
 
@@ -116,7 +116,9 @@ def generate_sitecustomize(
         ]
         for path_entry in pylib_paths:
             if not path_entry.is_absolute():
-                raise RuntimeError("Post-installation must use absolute environment paths")
+                raise RuntimeError(
+                    "Post-installation must use absolute environment paths"
+                )
             pylib_contents.append(f"addsitedir({str(path_entry)!r})")
         pylib_contents.append("")
         sc_contents.extend(pylib_contents)
@@ -127,7 +129,9 @@ def generate_sitecustomize(
         ]
         for dynlib_path in dynlib_paths:
             if not dynlib_path.is_absolute():
-                raise RuntimeError("Post-installation must use absolute environment paths")
+                raise RuntimeError(
+                    "Post-installation must use absolute environment paths"
+                )
             if skip_missing_dynlib_paths and not dynlib_path.exists():
                 # Nothing added DLLs to this folder at build time, so skip it
                 # (add_dll_directory fails if the specified folder doesn't exist)
