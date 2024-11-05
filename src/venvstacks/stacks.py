@@ -1083,9 +1083,7 @@ class _PythonEnvironment(ABC):
         )
 
     def _write_deployed_config(self) -> None:
-        # Subclasses call this when they have enough info to
-        # populate it correctly (on creation for base runtime
-        # environments, when linked for layered environments)
+        # This is written as part of creating/updating the build environments
         config_path = self.env_path / postinstall.DEPLOYED_LAYER_CONFIG
         print(f"Generating {config_path!r}...")
         config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1131,6 +1129,7 @@ class _PythonEnvironment(ABC):
             create_env = False
         if create_env:
             self._create_new_environment(lock_only=lock_only)
+        self._write_deployed_config()
         self.was_created = create_env
         self.was_built = create_env or env_updated
 
@@ -1143,6 +1142,8 @@ class _PythonEnvironment(ABC):
         print(f"Reporting environment details for {str(self.env_path)!r}")
         command = [
             str(self.python_path),
+            "-X",
+            "utf8",
             "-Im",
             "site",
         ]
@@ -1447,8 +1448,6 @@ class RuntimeEnv(_PythonEnvironment):
         # and we don't want to ship it unless explicitly requested to do so
         # as a declared dependency of an included component
         self._remove_pip()
-        # No layer linking details needed for base runtime environments
-        self._write_deployed_config()
         fs_sync()
         if not lock_only:
             print(
@@ -1528,9 +1527,6 @@ class _VirtualEnvironment(_PythonEnvironment):
         return result
 
     def _link_build_environment(self) -> None:
-        # Linking the build environments indicates all the required
-        # deployment config settings have been populated
-        self._write_deployed_config()
         # Create sitecustomize file for the build environment
         sc_contents = postinstall.generate_sitecustomize(
             self.linked_pylib_paths, self.linked_dynlib_paths
