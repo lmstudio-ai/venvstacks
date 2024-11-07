@@ -647,7 +647,6 @@ class ArchiveBuildRequest:
         self,
         env_path: Path,
         previous_metadata: ArchiveMetadata | None = None,
-        sitecustomize_source_path: Path | None = None,
         work_path: Path | None = None,
     ) -> tuple[ArchiveMetadata, Path]:
         if env_path.name != self.env_name:
@@ -672,7 +671,6 @@ class ArchiveBuildRequest:
             pack_venv.create_archive(
                 env_path,
                 archive_base_path,
-                sitecustomize_source_path,
                 clamp_mtime=last_locked,
                 work_dir=work_path,
                 install_target=build_metadata["install_target"],
@@ -788,7 +786,6 @@ class EnvironmentExportRequest:
         self,
         env_path: Path,
         previous_metadata: ExportMetadata | None = None,
-        sitecustomize_source_path: Path | None = None,
     ) -> tuple[ExportMetadata, Path]:
         if env_path.name != self.env_name:
             err_msg = (
@@ -813,7 +810,6 @@ class EnvironmentExportRequest:
         exported_path = pack_venv.export_venv(
             env_path,
             export_path,
-            sitecustomize_source_path,
             _run_postinstall,
         )
         assert self.export_path == exported_path  # pack_venv ensures this is true
@@ -982,7 +978,6 @@ class _PythonEnvironment(ABC):
     base_python_path: Path | None = field(init=False, repr=False)
     tools_python_path: Path | None = field(init=False, repr=False)
     py_version: str = field(init=False, repr=False)
-    sitecustomize_source_path: Path | None = field(default=None, init=False, repr=False)
 
     # Operation flags allow for requested commands to be applied only to selected layers
     # Notes:
@@ -1387,7 +1382,7 @@ class _PythonEnvironment(ABC):
         )
         work_path = self.build_path  # /tmp is likely too small for ML environments
         return build_request.create_archive(
-            env_path, previous_metadata, self.sitecustomize_source_path, work_path
+            env_path, previous_metadata, work_path
         )
 
     def request_export(
@@ -1415,7 +1410,7 @@ class _PythonEnvironment(ABC):
         # Define the input metadata that gets published in the export manifest
         export_request = self.request_export(output_path, previous_metadata, force)
         return export_request.export_environment(
-            env_path, previous_metadata, self.sitecustomize_source_path
+            env_path, previous_metadata,
         )
 
 
@@ -1632,7 +1627,6 @@ class ApplicationEnv(_VirtualEnvironment):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.sitecustomize_source_path = self.pylib_path / "_deployed_sitecustomize.py"
         self.launch_module_name = self.env_spec.launch_module_path.stem
         self.linked_frameworks = []
 
