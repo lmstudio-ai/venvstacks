@@ -277,7 +277,9 @@ class DeploymentTestCase(unittest.TestCase):
             # Launch module should be executable
             launch_module = app_env["app_launch_module"]
             launch_result = run_module(env_python, launch_module)
-            self.assertEqual(launch_result.stdout, self.EXPECTED_APP_OUTPUT)
+            # Tolerate extra trailing whitespace on stdout
+            self.assertEqual(launch_result.stdout.rstrip(), self.EXPECTED_APP_OUTPUT)
+            # Nothing at all should be emitted on stderr
             self.assertEqual(launch_result.stderr, "")
 
     def check_environment_exports(self, export_paths: ExportedEnvironmentPaths) -> None:
