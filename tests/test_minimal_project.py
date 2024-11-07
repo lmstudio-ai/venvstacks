@@ -479,16 +479,16 @@ class TestMinimalBuild(DeploymentTestCase):
                     continue
                 self._run_postinstall(env_path)
 
-            def get_exported_python(
+            def get_deployed_env_details(
                 env: ArchiveMetadata,
             ) -> tuple[EnvNameDeploy, Path, list[str]]:
                 env_name = env["install_target"]
                 env_path = env_name_to_path[env_name]
                 env_python = get_env_python(env_path)
                 env_sys_path = get_sys_path(env_python)
-                return env_name, env_python, env_sys_path
+                return env_name, env_path, env_sys_path
 
-            self.check_deployed_environments(layered_metadata, get_exported_python)
+            self.check_deployed_environments(layered_metadata, get_deployed_env_details)
 
     @pytest.mark.slow
     def test_locking_and_publishing(self) -> None:
