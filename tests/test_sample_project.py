@@ -247,6 +247,7 @@ class TestStackSpec(unittest.TestCase):
 
 class TestBuildEnvironment(DeploymentTestCase):
     # Test cases that need the full build environment to exist
+    EXPECTED_APP_OUTPUT = "Environment launch module executed successfully"
 
     working_path: Path
     build_env: BuildEnvironment

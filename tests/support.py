@@ -229,6 +229,7 @@ def run_module(env_python: Path, module_name: str) -> subprocess.CompletedProces
 
 class DeploymentTestCase(unittest.TestCase):
     """Native unittest test case with additional deployment validation checks"""
+    EXPECTED_APP_OUTPUT = ""
 
     def assertSysPathEntry(self, expected: str, env_sys_path: Sequence[str]) -> None:
         self.assertTrue(
@@ -276,7 +277,7 @@ class DeploymentTestCase(unittest.TestCase):
             # Launch module should be executable
             launch_module = app_env["app_launch_module"]
             launch_result = run_module(env_python, launch_module)
-            self.assertEqual(launch_result.stdout, "")
+            self.assertEqual(launch_result.stdout, self.EXPECTED_APP_OUTPUT)
             self.assertEqual(launch_result.stderr, "")
 
     def check_environment_exports(self, export_paths: ExportedEnvironmentPaths) -> None:
