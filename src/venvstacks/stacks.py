@@ -1050,19 +1050,34 @@ class _PythonEnvironment(ABC):
         if base_python_path is None:
             self._fail_build("Cannot get deployment config for unlinked layer")
         build_env_path = self.env_path
+        build_env_name = build_env_path.name
+        build_path = build_env_path.parent
 
-        def from_internal_path(build_path: Path) -> str:
-            # Absolute path, inside the environment
-            return str(build_path.relative_to(build_env_path))
-
-        def from_external_path(build_path: Path) -> str:
-            # Absolute path, potentially outside the environment
-            return str(build_path.relative_to(build_env_path, walk_up=True))
+        def from_internal_path(target_build_path: Path) -> str:
+            # Input path is an absolute path inside the environment
+            # Output path is relative to the base of the environment
+            return str(target_build_path.relative_to(build_env_path))
 
         def from_relative_path(relative_build_path: Path) -> str:
-            # Path relative to the base of the build directory
-            build_path = self.build_path / relative_build_path
-            return str(build_path.relative_to(build_env_path, walk_up=True))
+            # Input path is relative to the base of the build directory
+            # Output path is relative to the base of the environment
+            # Note: we avoid `walk_up=True` here, firstly to maintain
+            #       Python 3.11 compatibility, but also to limit the
+            #       the relative paths to *peer* environments, rather
+            #       than all potentially value relative path calculations
+            if relative_build_path.is_absolute():
+                self._fail_build(f"{relative_build_path} is not a relative path")
+            if relative_build_path.parts[0] == build_env_name:
+                # Emit internally relative path
+                return str(Path(*relative_build_path.parts[1:]))
+            # Emit relative reference to peer environment
+            return str(Path("..", *relative_build_path.parts))
+
+        def from_external_path(target_build_path: Path) -> str:
+            # Input path is an absolute path, potentially from a peer environment
+            # Output path is relative to the base of the environment
+            relative_build_path = target_build_path.relative_to(build_path)
+            return from_relative_path(relative_build_path)
 
         layer_python = from_internal_path(self.python_path)
         if link_external_base:
