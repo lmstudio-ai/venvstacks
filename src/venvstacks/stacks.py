@@ -1482,6 +1482,8 @@ class RuntimeEnv(_PythonEnvironment):
 
 class _VirtualEnvironment(_PythonEnvironment):
     linked_constraints_paths: list[Path] = field(init=False, repr=False)
+    linked_pylib_paths: list[Path] = field(init=False, repr=False)
+    linked_dynlib_paths: list[Path] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         self.py_version = self.env_spec.runtime.py_version

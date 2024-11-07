@@ -249,34 +249,44 @@ class DeploymentTestCase(unittest.TestCase):
             f"No entry containing {expected!r} found in {env_sys_path}",
         )
 
-    def assertEnvIsSelfContained(self, env_path: Path, env_sys_path: list[str]) -> None:
-        # Env is self-contained if all sys.path entries are inside the environment
-        self.assertTrue(
-            all(
-                Path(path_entry).is_relative_to(env_path) for path_entry in env_sys_path
-            ),
-            f"Path outside deployed {env_path} in {env_sys_path}",
-        )
-
-    def assertEnvReferencesPeerEnv(
-        self, env_path: Path, env_sys_path: list[str]
+    def check_env_sys_path(
+        self,
+        env_path: Path,
+        env_sys_path: Sequence[str],
+        *,
+        self_contained: bool = False,
     ) -> None:
-        # Env references a peer env if all sys.path entries are inside the environment's parent,
-        # and at least one sys.path entry is from outside the environment
-        deployment_path = env_path.parent
+        sys_path_entries = [Path(path_entry) for path_entry in env_sys_path]
+        # Regardless of env type, sys.path entries must be absolute
         self.assertTrue(
-            all(
-                Path(path_entry).is_relative_to(deployment_path)
-                for path_entry in env_sys_path
-            ),
-            f"Path outside deployed {deployment_path} in {env_sys_path}",
+            all(p.is_absolute() for p in sys_path_entries),
+            f"Relative path entry found in {env_sys_path}",
         )
-        self.assertFalse(
-            all(
-                Path(path_entry).is_relative_to(env_path) for path_entry in env_sys_path
-            ),
-            f"No path outside deployed {env_path} in {env_sys_path}",
-        )
+        # Regardless of env type, sys.path entries must exist
+        # (except the stdlib's optional zip archive entry)
+        for path_entry in sys_path_entries:
+            if path_entry.suffix:
+                continue
+            self.assertPathExists(path_entry)
+        # Check for sys.path references outside this environment
+        if self_contained:
+            # All sys.path entries should be inside the environment
+            self.assertTrue(
+                all(p.is_relative_to(env_path) for p in sys_path_entries),
+                f"Path outside deployed {env_path} in {env_sys_path}",
+            )
+        else:
+            # All sys.path entries should be inside the environment's parent,
+            # but at least one sys.path entry should refer to a peer environment
+            peer_env_path = env_path.parent
+            self.assertTrue(
+                all(p.is_relative_to(peer_env_path) for p in sys_path_entries),
+                f"Path outside deployed {peer_env_path} in {env_sys_path}",
+            )
+            self.assertFalse(
+                all(p.is_relative_to(env_path) for p in sys_path_entries),
+                f"No path outside deployed {env_path} in {env_sys_path}",
+            )
 
     def check_build_environments(
         self, build_envs: Iterable[_PythonEnvironment]
@@ -290,14 +300,11 @@ class DeploymentTestCase(unittest.TestCase):
             expected_python_path = env.python_path
             self.assertEqual(str(env_python), str(expected_python_path))
             base_python_path = env_path / layer_config["base_python"]
-            if env.kind == LayerVariants.RUNTIME:
-                # Base runtime environments are expected to be self-contained
-                env_status_check = self.assertEnvIsSelfContained
+            is_runtime_env = env.kind == LayerVariants.RUNTIME
+            if is_runtime_env:
                 # base_python should refer to the runtime layer itself
                 expected_base_python_path = expected_python_path
             else:
-                # Layered environment should *at least* refer to their base runtime
-                env_status_check = self.assertEnvReferencesPeerEnv
                 # base_python should refer to the venv's base Python runtime
                 self.assertIsNotNone(env.base_python_path)
                 assert env.base_python_path is not None
@@ -305,7 +312,10 @@ class DeploymentTestCase(unittest.TestCase):
                 expected_base_python_path = env.base_python_path
             self.assertEqual(str(base_python_path), str(expected_base_python_path))
             env_sys_path = get_sys_path(env_python)
-            env_status_check(env_path, env_sys_path)
+            # Base runtime environments are expected to be self-contained
+            self.check_env_sys_path(
+                env_path, env_sys_path, self_contained=is_runtime_env
+            )
 
     def check_deployed_environments(
         self,
@@ -316,12 +326,12 @@ class DeploymentTestCase(unittest.TestCase):
             env_name, env_path, env_sys_path = get_env_details(rt_env)
             self.assertTrue(env_sys_path)  # Environment should have sys.path entries
             # Runtime environment layer should be completely self-contained
-            self.assertEnvIsSelfContained(env_path, env_sys_path)
+            self.check_env_sys_path(env_path, env_sys_path, self_contained=True)
         for fw_env in layered_metadata["frameworks"]:
             env_name, env_path, env_sys_path = get_env_details(fw_env)
             self.assertTrue(env_sys_path)  # Environment should have sys.path entries
             # Frameworks are expected to reference *at least* their base runtime environment
-            self.assertEnvReferencesPeerEnv(env_path, env_sys_path)
+            self.check_env_sys_path(env_path, env_sys_path)
             # Framework and runtime should both appear in sys.path
             runtime_name = fw_env["runtime_name"]
             short_runtime_name = ".".join(runtime_name.split(".")[:2])
@@ -331,7 +341,7 @@ class DeploymentTestCase(unittest.TestCase):
             env_name, env_path, env_sys_path = get_env_details(app_env)
             self.assertTrue(env_sys_path)  # Environment should have sys.path entries
             # Applications are expected to reference *at least* their base runtime environment
-            self.assertEnvReferencesPeerEnv(env_path, env_sys_path)
+            self.check_env_sys_path(env_path, env_sys_path)
             # Application, frameworks and runtime should all appear in sys.path
             runtime_name = app_env["runtime_name"]
             short_runtime_name = ".".join(runtime_name.split(".")[:2])
