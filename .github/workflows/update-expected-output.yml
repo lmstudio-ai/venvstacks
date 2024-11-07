@@ -10,6 +10,9 @@ on:
     paths:
       # Run for changes to *this* workflow file, but not for other workflows
       - ".github/workflows/update-expected-output.yml"
+      # Check PRs that update the files injected into deployed environments
+      # (the layer config metadata format is also specified in these files)
+      - "src/venvstacks/_injected/**/*.py"
       # Check PRs that update the expected test suite output results
       - "tests/expected-output-config.toml"
       - "tests/sample_project/venvstacks.toml"

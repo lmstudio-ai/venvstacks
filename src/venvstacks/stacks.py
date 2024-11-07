@@ -33,6 +33,7 @@ from typing import (
     MutableMapping,
     NamedTuple,
     NewType,
+    NoReturn,
     NotRequired,
     Self,
     Sequence,
@@ -41,12 +42,12 @@ from typing import (
 )
 
 from . import pack_venv
+from ._injected import postinstall
 from ._util import (
     as_normalized_path,
+    capture_python_output,
     default_tarfile_filter,
-    get_env_python,
     run_python_command,
-    run_python_command_unchecked,
     StrPath,
     WINDOWS_BUILD as _WINDOWS_BUILD,
 )
@@ -208,10 +209,14 @@ class EnvironmentLock:
             return EnvNameDeploy(f"{env_name}@{self.lock_version}")
         return EnvNameDeploy(env_name)
 
-    @staticmethod
-    def _raise_if_none(value: _T | None) -> _T:
+    def _fail_lock(self, message: str) -> NoReturn:
+        missing = self.requirements_path.name
+        msg = f"Environment has not been locked ({missing} not found)"
+        raise BuildEnvError(msg)
+
+    def _raise_if_none(self, value: _T | None) -> _T:
         if value is None:
-            raise BuildEnvError("Environment has not been locked")
+            self._fail_lock("Environment has not been locked")
         return value
 
     @property
@@ -304,9 +309,7 @@ class EnvironmentLock:
     def _write_lock_metadata(self) -> None:
         requirements_hash = self._requirements_hash
         if requirements_hash is None:
-            raise BuildEnvError(
-                "Environment must be locked before writing lock metadata"
-            )
+            self._fail_lock("Environment must be locked before writing lock metadata")
         last_version = self._lock_version
         if last_version is None:
             lock_version = 1
@@ -325,9 +328,7 @@ class EnvironmentLock:
         # Calculate current requirements hash
         requirements_hash = self._hash_requirements()
         if requirements_hash is None:
-            raise BuildEnvError(
-                "Environment must be locked before updating lock metadata"
-            )
+            self._fail_lock("Environment must be locked before updating lock metadata")
         self._requirements_hash = requirements_hash
         # Only update and save the last locked time if
         # the lockfile contents have changed or if
@@ -777,25 +778,11 @@ class EnvironmentExportRequest:
         return cls(env_name, env_lock, export_path, export_metadata, needs_export)
 
     @staticmethod
-    def _run_postinstall(
-        src_path: Path, export_path: Path, postinstall_path: Path
-    ) -> None:
-        exported_env_python_path = get_env_python(export_path)
-        command = [str(exported_env_python_path), "-I", str(postinstall_path)]
-        result = run_python_command_unchecked(command)
-        if result.returncode == 0:
-            # All good, nothing else to check
-            return
-        # Running with the Python inside the exported environment didn't work
-        # This can happen on Windows when "pyvenv.cfg" doesn't exist yet
-        # If that is what has happened, the reported return code will be 106
-        if result.returncode != 106:
-            result.check_returncode()
-        # Self-generating the venv config failed, retry with the build venv
-        # rather than finding and using the exported base runtime environment
-        src_env_python_path = get_env_python(src_path)
-        command[0] = str(src_env_python_path)
-        run_python_command(command)
+    def _run_postinstall(postinstall_path: Path) -> None:
+        # Post-installation scripts are required to work even when they're
+        # executed with an entirely unrelated Python installation
+        command = [sys.executable, "-X", "utf8", "-I", str(postinstall_path)]
+        capture_python_output(command)
 
     def export_environment(
         self,
@@ -820,8 +807,8 @@ class EnvironmentExportRequest:
             export_path.unlink()
         print(f"Exporting {str(env_path)!r} to {str(export_path)!r}")
 
-        def _run_postinstall(export_path: Path, postinstall_path: Path) -> None:
-            self._run_postinstall(env_path, export_path, postinstall_path)
+        def _run_postinstall(_export_path: Path, postinstall_path: Path) -> None:
+            self._run_postinstall(postinstall_path)
 
         exported_path = pack_venv.export_venv(
             env_path,
@@ -1058,6 +1045,80 @@ class _PythonEnvironment(ABC):
         # Define property to allow covariance of the declared type of `env_spec`
         return self._env_spec
 
+    @abstractmethod
+    def get_deployed_config(self) -> postinstall.LayerConfig:
+        """Layer config to be published in `venvstacks_layer.json`"""
+        raise NotImplementedError
+
+    def _get_deployed_config(
+        self,
+        pylib_paths: Iterable[Path],
+        dynlib_paths: Iterable[Path],
+        link_external_base: bool = True,
+    ) -> postinstall.LayerConfig:
+        # Helper for subclass get_deployed_config implementations
+        base_python_path = self.base_python_path
+        if base_python_path is None:
+            self._fail_build("Cannot get deployment config for unlinked layer")
+        build_env_path = self.env_path
+        build_env_name = build_env_path.name
+        build_path = build_env_path.parent
+
+        def from_internal_path(target_build_path: Path) -> str:
+            # Input path is an absolute path inside the environment
+            # Output path is relative to the base of the environment
+            return str(target_build_path.relative_to(build_env_path))
+
+        def from_relative_path(relative_build_path: Path) -> str:
+            # Input path is relative to the base of the build directory
+            # Output path is relative to the base of the environment
+            # Note: we avoid `walk_up=True` here, firstly to maintain
+            #       Python 3.11 compatibility, but also to limit the
+            #       the relative paths to *peer* environments, rather
+            #       than all potentially value relative path calculations
+            if relative_build_path.is_absolute():
+                self._fail_build(f"{relative_build_path} is not a relative path")
+            if relative_build_path.parts[0] == build_env_name:
+                # Emit internally relative path
+                return str(Path(*relative_build_path.parts[1:]))
+            # Emit relative reference to peer environment
+            return str(Path("..", *relative_build_path.parts))
+
+        def from_external_path(target_build_path: Path) -> str:
+            # Input path is an absolute path, potentially from a peer environment
+            # Output path is relative to the base of the environment
+            relative_build_path = target_build_path.relative_to(build_path)
+            return from_relative_path(relative_build_path)
+
+        layer_python = from_internal_path(self.python_path)
+        if link_external_base:
+            base_python = from_external_path(base_python_path)
+        else:
+            # "base_python" in the runtime layer refers solely to
+            # the external environment used to set up the base
+            # runtime layer, rather than being a linked environment
+            base_python = layer_python
+
+        return postinstall.LayerConfig(
+            python=layer_python,
+            py_version=self.py_version,
+            base_python=base_python,
+            site_dir=from_internal_path(self.pylib_path),
+            pylib_dirs=[from_relative_path(p) for p in pylib_paths],
+            dynlib_dirs=[from_relative_path(p) for p in dynlib_paths],
+        )
+
+    def _write_deployed_config(self) -> None:
+        # This is written as part of creating/updating the build environments
+        config_path = self.env_path / postinstall.DEPLOYED_LAYER_CONFIG
+        print(f"Generating {str(config_path)!r}...")
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        _write_json(config_path, self.get_deployed_config())
+
+    def _fail_build(self, message: str) -> NoReturn:
+        attributed_message = f"Layer {self.env_name}: {message}"
+        raise BuildEnvError(attributed_message)
+
     def select_operations(
         self,
         lock: bool | None = False,
@@ -1094,6 +1155,7 @@ class _PythonEnvironment(ABC):
             create_env = False
         if create_env:
             self._create_new_environment(lock_only=lock_only)
+        self._write_deployed_config()
         self.was_created = create_env
         self.was_built = create_env or env_updated
 
@@ -1233,7 +1295,7 @@ class _PythonEnvironment(ABC):
             requirements_path, requirements_input_path, constraints
         )
         if not requirements_path.exists():
-            raise BuildEnvError(f"Failed to generate {str(requirements_path)!r}")
+            self._fail_build(f"Failed to generate {str(requirements_path)!r}")
         if self.env_lock.update_lock_metadata():
             print(f"  Environment lock time set: {self.env_lock.locked_at!r}")
         return self.env_lock
@@ -1241,7 +1303,7 @@ class _PythonEnvironment(ABC):
     def install_requirements(self) -> subprocess.CompletedProcess[str]:
         # Run a pip dependency upgrade inside the target environment
         if not self.env_lock.is_locked:
-            raise BuildEnvError(
+            self._fail_build(
                 "Environment must be locked before installing dependencies"
             )
         return self._run_pip_install(
@@ -1391,6 +1453,10 @@ class RuntimeEnv(_PythonEnvironment):
         assert isinstance(self._env_spec, RuntimeSpec)
         return self._env_spec
 
+    def get_deployed_config(self) -> postinstall.LayerConfig:
+        """Layer config to be published in `venvstacks_layer.json`"""
+        return self._get_deployed_config([], [], link_external_base=False)
+
     def _remove_pip(self) -> subprocess.CompletedProcess[str] | None:
         to_be_checked = ["pip", "wheel", "setuptools"]
         to_be_removed = []
@@ -1406,7 +1472,7 @@ class RuntimeEnv(_PythonEnvironment):
         python_runtime = self.env_spec.fully_versioned_name
         install_path = _pdm_python_install(self.build_path, python_runtime)
         if install_path is None:
-            raise BuildEnvError(f"Failed to install {python_runtime}")
+            self._fail_build(f"Failed to install {python_runtime}")
         shutil.move(install_path, self.env_path)
         # No build step needs `pip` to be installed in the target environment,
         # and we don't want to ship it unless explicitly requested to do so
@@ -1430,8 +1496,6 @@ class RuntimeEnv(_PythonEnvironment):
 
 
 class _VirtualEnvironment(_PythonEnvironment):
-    _include_system_site_packages = False
-
     base_runtime: RuntimeEnv | None = field(init=False, repr=False)
     linked_constraints_paths: list[Path] = field(init=False, repr=False)
 
@@ -1447,6 +1511,8 @@ class _VirtualEnvironment(_PythonEnvironment):
         assert isinstance(self._env_spec, _VirtualEnvironmentSpec)
         return self._env_spec
 
+    # TODO: define interfaces for get_linked_pylib_paths and get_linked_dynlib_paths
+
     def link_base_runtime(self, runtime: RuntimeEnv) -> None:
         if self.base_runtime is not None:
             raise BuildEnvError(
@@ -1458,8 +1524,16 @@ class _VirtualEnvironment(_PythonEnvironment):
         self.base_python_path = runtime.python_path
         self.tools_python_path = runtime.tools_python_path
         # Link runtime layer dependency constraints
+        if self.linked_constraints_paths:
+            self._fail_build("Layered environment base runtime already linked")
         self.linked_constraints_paths[:] = [runtime.requirements_path]
         print(f"Linked {self}")
+
+    def get_deployed_config(self) -> postinstall.LayerConfig:
+        """Layer config to be published in `venvstacks_layer.json`"""
+        return self._get_deployed_config(
+            self.get_linked_pylib_paths(), self.get_linked_dynlib_paths()
+        )
 
     def get_constraint_paths(self) -> list[Path]:
         return self.linked_constraints_paths
@@ -1467,10 +1541,8 @@ class _VirtualEnvironment(_PythonEnvironment):
     def _ensure_virtual_environment(self) -> subprocess.CompletedProcess[str]:
         # Use the base Python installation to create a new virtual environment
         if self.base_python_path is None:
-            raise RuntimeError("Base Python path not set in {self!r}")
+            self._fail_build("Base Python path not set")
         options = ["--without-pip"]
-        if self._include_system_site_packages:
-            options.append("--system-site-packages")
         if self.env_path.exists():
             options.append("--upgrade")
         if _WINDOWS_BUILD:
@@ -1487,13 +1559,26 @@ class _VirtualEnvironment(_PythonEnvironment):
             str(self.env_path),
         ]
         result = run_python_command(command)
-        self._generate_sitecustomize()
+        self._link_build_environment()
         fs_sync()
         print(f"Virtual environment configured in {str(self.env_path)!r}")
         return result
 
-    def _generate_sitecustomize(self) -> None:
-        pass  # Nothing to do by default, subclasses override if necessary
+    def _link_build_environment(self) -> None:
+        # Create sitecustomize file for the build environment
+        build_path = self.build_path
+        build_pylib_paths = [build_path / p for p in self.get_linked_pylib_paths()]
+        build_dynlib_paths = [build_path / p for p in self.get_linked_dynlib_paths()]
+        sc_contents = postinstall.generate_sitecustomize(
+            build_pylib_paths, build_dynlib_paths
+        )
+        if sc_contents is None:
+            self._fail_build(
+                "Layered environments must at least link a base runtime environment"
+            )
+        sc_path = self.pylib_path / "sitecustomize.py"
+        print(f"Generating {str(sc_path)!r}...")
+        sc_path.write_text(sc_contents, encoding="utf-8")
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         if lock_only:
@@ -1522,7 +1607,6 @@ class FrameworkEnv(_VirtualEnvironment):
 
     kind = LayerVariants.FRAMEWORK
     category = LayerCategories.FRAMEWORKS
-    _include_system_site_packages = True
 
     @property
     def env_spec(self) -> FrameworkSpec:
@@ -1585,89 +1669,16 @@ class ApplicationEnv(_VirtualEnvironment):
         self.link_base_runtime(runtime)
         constraints_paths = self.linked_constraints_paths
         if not constraints_paths:
-            raise BuildEnvError("Failed to add base environment constraints path")
+            self._fail_build("Failed to add base environment constraints path")
         # The runtime site-packages folder is added here rather than via pyvenv.cfg
         # to ensure it appears in sys.path after the framework site-packages folders
         fw_envs = self.linked_frameworks
         if fw_envs:
-            raise BuildEnvError("Layered application environment already linked")
-        for fw_env_spec in self.env_spec.frameworks:
-            fw_env = frameworks[fw_env_spec.name]
-            fw_envs.append(fw_env)
-            constraints_paths.append(fw_env.requirements_path)
-
-    @staticmethod
-    def _render_sitecustomize(
-        relative_prefix: Path,
-        pylib_paths: Iterable[Path],
-        dynlib_paths: Iterable[Path],
-    ) -> str:
-        sc_contents = [
-            "# Automatically generated by venvstacks",
-            "import site",
-            "import os",
-            "from os.path import abspath, dirname, join as joinpath",
-            "# Allow loading modules and packages from linked environments",
-            "this_dir = dirname(abspath(__file__))",
-        ]
-        for pylib_path in pylib_paths:
-            relative_path = relative_prefix / pylib_path
-            sc_contents.extend(
-                [
-                    f"path_entry = abspath(joinpath(this_dir, {str(relative_path)!r}))",
-                    "site.addsitedir(path_entry)",
-                ]
-            )
-        dynlib_entries: list[str] = []
-        for dynlib_path in dynlib_paths:
-            if not dynlib_path.exists():
-                # Nothing added DLLs to this folder at build time, so skip it
-                continue
-            relative_path = relative_prefix / dynlib_path
-            dynlib_entries.extend(
-                [
-                    f"dll_dir = abspath(joinpath(this_dir, {str(relative_path)!r}))",
-                    "os.add_dll_directory(dll_dir)",
-                ]
-            )
-        if dynlib_entries:
-            sc_contents.extend(
-                [
-                    "",
-                    "# Allow loading misplaced DLLs on Windows",
-                    *dynlib_entries,
-                ]
-            )
-        sc_contents.append("")
-        return "\n".join(sc_contents)
-
-    def _generate_sitecustomize(self) -> None:
-        # Create build & deployment sitecustomize files
-        sc_dir_path = self.pylib_path
-        # Add framework and runtime folders to sys.path
-        parent_path = self.env_path.parent
-        relative_prefix = Path(
-            os.path.relpath(str(parent_path), start=str(sc_dir_path))
-        )
-        sc_contents = self._render_sitecustomize(
-            relative_prefix,
-            self._linked_pylib_build_paths(),
-            self._linked_dynlib_build_paths(),
-        )
-        deployed_sc_contents = self._render_sitecustomize(
-            relative_prefix,
-            self._linked_pylib_deployed_paths(),
-            self._linked_dynlib_deployed_paths(),
-        )
-        sc_path = self.pylib_path / "sitecustomize.py"
-        print(f"Generating {sc_path!r}...")
-        sc_path.write_text(sc_contents, encoding="utf-8", newline="\n")
-        deployed_sc_path = self.sitecustomize_source_path
-        assert deployed_sc_path is not None
-        print(f"Generating {deployed_sc_path!r}...")
-        deployed_sc_path.write_text(
-            deployed_sc_contents, encoding="utf-8", newline="\n"
-        )
+            self._fail_build("Layered application environment already linked")
+        for env_spec in self.env_spec.frameworks:
+            env = frameworks[env_spec.name]
+            fw_envs.append(env)
+            constraints_paths.append(env.requirements_path)
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         super()._update_existing_environment(lock_only=lock_only)
