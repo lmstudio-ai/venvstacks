@@ -265,6 +265,13 @@ class TestBuildEnvironment(DeploymentTestCase):
         self.artifact_export_path = get_artifact_export_path()
         self.export_on_success = force_artifact_export()
 
+    def test_create_environments(self) -> None:
+        # Fast test to check the links between build envs are set up correctly
+        # (if this fails, there's no point even trying to full slow test case)
+        build_env = self.build_env
+        build_env.create_environments()
+        self.check_build_environments(self.build_env.all_environments())
+
     @pytest.mark.slow
     @pytest.mark.expected_output
     def test_build_is_reproducible(self) -> None:
