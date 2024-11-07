@@ -5,18 +5,22 @@ import os
 import subprocess
 import sys
 import tomllib
+import unittest
 
 from dataclasses import dataclass, fields
 from pathlib import Path
-from typing import Any, cast, Mapping
+from typing import Any, Callable, cast, Mapping, Sequence, TypeVar
 from unittest.mock import create_autospec
 
 import pytest
 
-from venvstacks._util import run_python_command
+from venvstacks._util import get_env_python, run_python_command
+
 from venvstacks.stacks import (
     BuildEnvironment,
     EnvNameDeploy,
+    ExportedEnvironmentPaths,
+    ExportMetadata,
     LayerBaseName,
     PackageIndexConfig,
 )
@@ -216,3 +220,84 @@ def get_sys_path(env_python: Path) -> list[str]:
 def run_module(env_python: Path, module_name: str) -> subprocess.CompletedProcess[str]:
     command = [str(env_python), "-Im", module_name]
     return capture_python_output(command)
+
+
+###########################################################
+# Checking deployed environments for the expected details
+###########################################################
+
+
+class DeploymentTestCase(unittest.TestCase):
+    """Native unittest test case with additional deployment validation checks"""
+
+    def assertSysPathEntry(self, expected: str, env_sys_path: Sequence[str]) -> None:
+        self.assertTrue(
+            any(expected in path_entry for path_entry in env_sys_path),
+            f"No entry containing {expected!r} found in {env_sys_path}",
+        )
+
+    T = TypeVar("T", bound=Mapping[str, Any])
+
+    def check_deployed_environments(
+        self,
+        layered_metadata: dict[str, Sequence[T]],
+        get_exported_python: Callable[[T], tuple[str, Path, list[str]]],
+    ) -> None:
+        for rt_env in layered_metadata["runtimes"]:
+            env_name, _, env_sys_path = get_exported_python(rt_env)
+            self.assertTrue(env_sys_path)  # Environment should have sys.path entries
+            # Runtime environment layer should be completely self-contained
+            self.assertTrue(
+                all(env_name in path_entry for path_entry in env_sys_path),
+                f"Path outside {env_name} in {env_sys_path}",
+            )
+        for fw_env in layered_metadata["frameworks"]:
+            env_name, _, env_sys_path = get_exported_python(fw_env)
+            self.assertTrue(env_sys_path)  # Environment should have sys.path entries
+            # Framework and runtime should both appear in sys.path
+            runtime_name = fw_env["runtime_name"]
+            short_runtime_name = ".".join(runtime_name.split(".")[:2])
+            self.assertSysPathEntry(env_name, env_sys_path)
+            self.assertSysPathEntry(short_runtime_name, env_sys_path)
+        for app_env in layered_metadata["applications"]:
+            env_name, env_python, env_sys_path = get_exported_python(app_env)
+            self.assertTrue(env_sys_path)  # Environment should have sys.path entries
+            # Application, frameworks and runtime should all appear in sys.path
+            runtime_name = app_env["runtime_name"]
+            short_runtime_name = ".".join(runtime_name.split(".")[:2])
+            self.assertSysPathEntry(env_name, env_sys_path)
+            self.assertTrue(
+                any(env_name in path_entry for path_entry in env_sys_path),
+                f"No entry containing {env_name} found in {env_sys_path}",
+            )
+            for fw_env_name in app_env["required_layers"]:
+                self.assertSysPathEntry(fw_env_name, env_sys_path)
+            self.assertSysPathEntry(short_runtime_name, env_sys_path)
+            # Launch module should be executable
+            launch_module = app_env["app_launch_module"]
+            launch_result = run_module(env_python, launch_module)
+            self.assertEqual(launch_result.stdout, "")
+            self.assertEqual(launch_result.stderr, "")
+
+    def check_environment_exports(self, export_paths: ExportedEnvironmentPaths) -> None:
+        metadata_path, snippet_paths, env_paths = export_paths
+        exported_manifests = ManifestData(metadata_path, snippet_paths)
+        env_name_to_path: dict[str, Path] = {}
+        for env_metadata, env_path in zip(exported_manifests.snippet_data, env_paths):
+            # TODO: Check more details regarding expected metadata contents
+            self.assertTrue(env_path.exists())
+            env_name = EnvNameDeploy(env_metadata["install_target"])
+            self.assertEqual(env_path.name, env_name)
+            env_name_to_path[env_name] = env_path
+        layered_metadata = exported_manifests.combined_data["layers"]
+
+        def get_exported_python(
+            env: ExportMetadata,
+        ) -> tuple[EnvNameDeploy, Path, list[str]]:
+            env_name = env["install_target"]
+            env_path = env_name_to_path[env_name]
+            env_python = get_env_python(env_path)
+            env_sys_path = get_sys_path(env_python)
+            return env_name, env_python, env_sys_path
+
+        self.check_deployed_environments(layered_metadata, get_exported_python)
