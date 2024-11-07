@@ -433,7 +433,10 @@ class TestMinimalBuild(DeploymentTestCase):
         published_manifests = ManifestData(metadata_path, snippet_paths)
         # TODO: read the base Python path for each environment from the metadata
         #       https://github.com/lmstudio-ai/venvstacks/issues/19
-        with tempfile.TemporaryDirectory() as deployment_dir:
+        # TODO: figure out a more robust way of handling Windows potentially still
+        #       having the Python executables in the environment open when the
+        #       parent process tries to clean up the deployment directory.
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as deployment_dir:
             # Extract archives
             deployment_path = Path(deployment_dir)
             env_name_to_path: dict[EnvNameDeploy, Path] = {}
