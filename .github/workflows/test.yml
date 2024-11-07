@@ -162,7 +162,7 @@ jobs:
           pattern: coverage-data-*
           merge-multiple: true
 
-      - name: Combine coverage & fail if it's <100%
+      - name: Combine coverage & fail if it goes down
         run: |
           uv tool install 'coverage[toml]'
 
@@ -172,9 +172,11 @@ jobs:
           # Report and write to summary.
           coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
 
-          # Report again and fail if under 92%.
-          # (threshold is based on 0.1.0rc1 CI statement coverage)
-          coverage report --fail-under=92
+          # Report again and fail if under 91%.
+          # Highest historical coverage: 92%
+          # Subsequent proportional coverage reductions:
+          # - de-duplicated the deployment checking code
+          coverage report --fail-under=91
 
       - name: Upload HTML report if check failed
         uses: actions/upload-artifact@v4
