@@ -504,18 +504,16 @@ class TestMinimalBuild(DeploymentTestCase):
         )
         expected_dry_run_result = EXPECTED_MANIFEST
         expected_tagged_dry_run_result = _tag_manifest(EXPECTED_MANIFEST, versioned_tag)
+        minimum_lock_time = datetime.now(timezone.utc)
         # Ensure the locking and publication steps always run for all environments
         build_env.select_operations(lock=True, build=True, publish=True)
         # Handle running this test case repeatedly in a local checkout
         for env in build_env.all_environments():
             env.env_lock._purge_lock()
-        # Test stage: create and link build environments
-        minimum_lock_time = datetime.now(timezone.utc)
+        # Create and link the layer build environments
         build_env.create_environments()
-        subtests_started += 1
-        with self.subTest("Check build environments have been linked"):
-            self.check_build_environments(self.build_env.all_environments())
-            subtests_passed += 1
+        # Don't even try to continue if the environments aren't properly linked
+        self.check_build_environments(self.build_env.all_environments())
         # Test stage: check dry run metadata results are as expected
         subtests_started += 1
         with self.subTest("Check untagged dry run"):

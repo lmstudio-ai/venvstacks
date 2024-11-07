@@ -284,13 +284,11 @@ class TestBuildEnvironment(DeploymentTestCase):
         expected_tagged_dry_run_result = _get_expected_dry_run_result(
             build_env, expect_tagged_outputs=True
         )
-        # Test stage: create and link build environments
         committed_locked_requirements = _collect_locked_requirements(build_env)
+        # Create and link the layer build environments
         build_env.create_environments(lock=True)
-        subtests_started += 1
-        with self.subTest("Check build environments have been linked"):
-            self.check_build_environments(self.build_env.all_environments())
-            subtests_passed += 1
+        # Don't even try to continue if the environments aren't properly linked
+        self.check_build_environments(self.build_env.all_environments())
         # Test stage: ensure lock files can be regenerated without alteration
         generated_locked_requirements = _collect_locked_requirements(build_env)
         export_locked_requirements = True
