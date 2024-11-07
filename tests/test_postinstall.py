@@ -15,7 +15,7 @@ executable = {python_bin}
 
 
 def test_pyvenv_cfg() -> None:
-    example_path = Path("/example/python/bin/python")
+    example_path = Path("/example/python/bin/python").absolute()
     example_version = "6.28"
     expected_pyvenv_cfg = _EXPECTED_PYVENV_CFG.format(
         python_home=str(example_path.parent),
@@ -33,31 +33,26 @@ def test_sitecustomize_empty() -> None:
     assert postinstall.generate_sitecustomize([], []) is None
 
 
-def _make_fake_paths(prefix: str, expected_call: str) -> tuple[list[Path], str]:
+def _make_fake_paths(prefix: str, expected_line_fmt: str) -> tuple[list[Path], str]:
     # Ensure fake paths are absolute (regardless of platform)
     anchor = Path.cwd().anchor
     fake_dirs = [f"{anchor}{prefix}{n}" for n in range(5)]
     fake_paths = [Path(d) for d in fake_dirs]
     # Also report the corresponding block of expected `sitecustomize.py` lines
-    expected_lines = "\n".join(f"{expected_call}({d!r})" for d in fake_dirs)
+    expected_lines = "\n".join(expected_line_fmt.format(d) for d in fake_dirs)
     return fake_paths, expected_lines
 
 
 def _make_pylib_paths() -> tuple[list[Path], str]:
-    return _make_fake_paths("pylib", "addsitedir")
+    return _make_fake_paths("pylib", "addsitedir({!r})")
 
 
 def _make_dynlib_paths() -> tuple[list[Path], str]:
-    return _make_fake_paths("dynlib", "add_dll_directory")
+    return _make_fake_paths("dynlib", "add_dll_directory({!r})")
 
 
 def _make_missing_dynlib_paths() -> tuple[list[Path], str]:
-    dynlib_dirs = [f"dynlib{n}" for n in range(5)]
-    dynlib_paths = [Path(d) for d in dynlib_dirs]
-    expected_lines = "\n".join(
-        f"# Skipping {d!r} (no such directory)" for d in dynlib_dirs
-    )
-    return dynlib_paths, expected_lines
+    return _make_fake_paths("dynlib", "# Skipping {!r} (no such directory)")
 
 
 def test_sitecustomize() -> None:
