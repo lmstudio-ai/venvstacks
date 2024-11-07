@@ -1100,7 +1100,7 @@ class _PythonEnvironment(ABC):
     def _write_deployed_config(self) -> None:
         # This is written as part of creating/updating the build environments
         config_path = self.env_path / postinstall.DEPLOYED_LAYER_CONFIG
-        print(f"Generating {config_path!r}...")
+        print(f"Generating {str(config_path)!r}...")
         config_path.parent.mkdir(parents=True, exist_ok=True)
         _write_json(config_path, self.get_deployed_config())
 
@@ -1482,8 +1482,6 @@ class RuntimeEnv(_PythonEnvironment):
 
 class _VirtualEnvironment(_PythonEnvironment):
     linked_constraints_paths: list[Path] = field(init=False, repr=False)
-    linked_pylib_paths: list[Path] = field(init=False, repr=False)
-    linked_dynlib_paths: list[Path] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         self.py_version = self.env_spec.runtime.py_version
@@ -1554,7 +1552,7 @@ class _VirtualEnvironment(_PythonEnvironment):
                 "Layered environments must at least link a base runtime environment"
             )
         sc_path = self.pylib_path / "sitecustomize.py"
-        print(f"Generating {sc_path!r}...")
+        print(f"Generating {str(sc_path)!r}...")
         sc_path.write_text(sc_contents, encoding="utf-8")
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
