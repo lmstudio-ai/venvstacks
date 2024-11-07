@@ -3,10 +3,10 @@
   "app_launch_module_hash": "sha256:d806d778921ad216c1f950886d27b4b77e5561fe3467046fec258805980cc6d1",
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "5034f1fa0a0731af9e88699519a508e72662b003c30e14814ce72e00ef8a6223"
+    "sha256": "3ab7e8458a233e96790809ad0437209bcbf1823d7883220a44554b1c3fd51afa"
   },
   "archive_name": "app-scipy-import.tar.xz",
-  "archive_size": 1392,
+  "archive_size": 2896,
   "install_target": "app-scipy-import",
   "layer_name": "app-scipy-import",
   "lock_version": 1,

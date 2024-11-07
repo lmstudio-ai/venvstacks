@@ -6,10 +6,10 @@
         "app_launch_module_hash": "sha256:d806d778921ad216c1f950886d27b4b77e5561fe3467046fec258805980cc6d1",
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "1907700fc74c6a0bc62d851dce87bfed6a0ad52d0fec5863c9eadd1e26c029ff"
+          "sha256": "3f4e2a19a1611db1139f9e68a268a963dd30139690ee6d8325896265007bf823"
         },
         "archive_name": "app-scipy-import.zip",
-        "archive_size": 254658,
+        "archive_size": 256621,
         "install_target": "app-scipy-import",
         "layer_name": "app-scipy-import",
         "lock_version": 1,
@@ -26,10 +26,10 @@
         "app_launch_module_hash": "sha256/bbe4da6de13a8f13a05cdd2bb3b90884861a6636b1450248d03aea799a7fc828",
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "69060c0e0a74290723c5e65a343e463112a249da960d8bf29997933cd1565787"
+          "sha256": "9f3de2bf483797a9a93629feca94756de57d82e62b157a4836b96fa14a289180"
         },
         "archive_name": "app-scipy-client.zip",
-        "archive_size": 255147,
+        "archive_size": 257112,
         "install_target": "app-scipy-client",
         "layer_name": "app-scipy-client",
         "lock_version": 1,
@@ -47,10 +47,10 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "132cd5e29dae8d082c453b276e5e207e5f82f29458db62d6c7df2a01b8225f92"
+          "sha256": "71146182f2bcf36ed9af674ac146ee32228e8d0a2890fb9c51ebd87e7fe58b45"
         },
         "archive_name": "framework-scipy.zip",
-        "archive_size": 45078361,
+        "archive_size": 45080726,
         "install_target": "framework-scipy",
         "layer_name": "framework-scipy",
         "lock_version": 1,
@@ -62,10 +62,10 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "eaaa57b8f636eb0258bf4b4ac11a7a76a4691b1659d9a14bd8b908129f75e936"
+          "sha256": "74549eb9c5252b7f91cf573811b71d8d703b6cd840932f7dbdddb9e3d03ccaee"
         },
         "archive_name": "framework-sklearn.zip",
-        "archive_size": 56185753,
+        "archive_size": 56188134,
         "install_target": "framework-sklearn",
         "layer_name": "framework-sklearn",
         "lock_version": 1,
@@ -77,10 +77,10 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "b0193afc9d1f4a51b9fcb60903d335696804d2b35115986c68e4ebf5aaf1b621"
+          "sha256": "8b5f396783d7c583cb2202a7bf791b46257b59473be4f12b1583907f4bf931b2"
         },
         "archive_name": "framework-http-client.zip",
-        "archive_size": 817522,
+        "archive_size": 819935,
         "install_target": "framework-http-client",
         "layer_name": "framework-http-client",
         "lock_version": 1,
@@ -94,10 +94,10 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "70a00f1e469d6c4ab82e0d74946ca6da0fb97ee480b294d93e6b217d8a9f3cd0"
+          "sha256": "66095910a186e59d023ca357ccd0fbe7c464722f191786f6d090af6769bb5dd9"
         },
         "archive_name": "cpython@3.11.zip",
-        "archive_size": 46592259,
+        "archive_size": 46594787,
         "install_target": "cpython@3.11",
         "layer_name": "cpython@3.11",
         "lock_version": 1,
@@ -109,10 +109,10 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "ab8860e56b834ff4b9eacd11e8a0c705c83edac6b1627990f5317e1514314d76"
+          "sha256": "85017932199a87b59bf17432f21c9ddf08361663a1cdf363c5d014146c3c754c"
         },
         "archive_name": "cpython@3.12.zip",
-        "archive_size": 45864491,
+        "archive_size": 45867018,
         "install_target": "cpython@3.12",
         "layer_name": "cpython@3.12",
         "lock_version": 1,

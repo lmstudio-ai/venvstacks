@@ -2,6 +2,7 @@
 
 import json
 import shutil
+import sys
 import tempfile
 
 from datetime import datetime, timezone
@@ -35,7 +36,7 @@ from venvstacks.stacks import (
     PublishedArchivePaths,
     get_build_platform,
 )
-from venvstacks._util import get_env_python, run_python_command, WINDOWS_BUILD
+from venvstacks._util import get_env_python, capture_python_output, WINDOWS_BUILD
 
 ##################################
 # Minimal project test helpers
@@ -423,10 +424,14 @@ class TestMinimalBuild(DeploymentTestCase):
         self.assertEqual(sorted(archive_paths), expected_archive_paths)
 
     @staticmethod
-    def _run_postinstall(base_python_path: Path, env_path: Path) -> None:
+    def _run_postinstall(env_path: Path) -> None:
         postinstall_script = env_path / "postinstall.py"
         if postinstall_script.exists():
-            run_python_command([str(base_python_path), str(postinstall_script)])
+            # Post-installation scripts are required to work even when they're
+            # executed with an entirely unrelated Python installation
+            capture_python_output(
+                [sys.executable, "-X", "utf8", "-I", str(postinstall_script)]
+            )
 
     def check_archive_deployment(self, published_paths: PublishedArchivePaths) -> None:
         metadata_path, snippet_paths, archive_paths = published_paths
@@ -463,25 +468,31 @@ class TestMinimalBuild(DeploymentTestCase):
             self.assertTrue(published_manifests.combined_data)
             layered_metadata = published_manifests.combined_data["layers"]
             base_runtime_env_name = layered_metadata["runtimes"][0]["install_target"]
-            base_runtime_env_path = env_name_to_path[base_runtime_env_name]
-            base_python_path = get_env_python(base_runtime_env_path)
-            self._run_postinstall(base_python_path, env_path)
+            env_path = env_name_to_path[base_runtime_env_name]
+            self._run_postinstall(env_path)
             for env_name, env_path in env_name_to_path.items():
                 if env_name == base_runtime_env_name:
                     # Already configured
                     continue
-                self._run_postinstall(base_python_path, env_path)
+                self._run_postinstall(env_path)
 
-            def get_exported_python(
+            def get_deployed_env_details(
                 env: ArchiveMetadata,
             ) -> tuple[EnvNameDeploy, Path, list[str]]:
                 env_name = env["install_target"]
                 env_path = env_name_to_path[env_name]
                 env_python = get_env_python(env_path)
                 env_sys_path = get_sys_path(env_python)
-                return env_name, env_python, env_sys_path
+                return env_name, env_path, env_sys_path
 
-            self.check_deployed_environments(layered_metadata, get_exported_python)
+            self.check_deployed_environments(layered_metadata, get_deployed_env_details)
+
+    def test_create_environments(self) -> None:
+        # Fast test to check the links between build envs are set up correctly
+        # (if this fails, there's no point even trying to full slow test case)
+        build_env = self.build_env
+        build_env.create_environments()
+        self.check_build_environments(self.build_env.all_environments())
 
     @pytest.mark.slow
     def test_locking_and_publishing(self) -> None:
@@ -500,14 +511,17 @@ class TestMinimalBuild(DeploymentTestCase):
         )
         expected_dry_run_result = EXPECTED_MANIFEST
         expected_tagged_dry_run_result = _tag_manifest(EXPECTED_MANIFEST, versioned_tag)
+        minimum_lock_time = datetime.now(timezone.utc)
         # Ensure the locking and publication steps always run for all environments
         build_env.select_operations(lock=True, build=True, publish=True)
         # Handle running this test case repeatedly in a local checkout
         for env in build_env.all_environments():
             env.env_lock._purge_lock()
-        # Test stage: check dry run metadata results are as expected
-        minimum_lock_time = datetime.now(timezone.utc)
+        # Create and link the layer build environments
         build_env.create_environments()
+        # Don't even try to continue if the environments aren't properly linked
+        self.check_build_environments(self.build_env.all_environments())
+        # Test stage: check dry run metadata results are as expected
         subtests_started += 1
         with self.subTest("Check untagged dry run"):
             dry_run_result, dry_run_last_locked_times = _filter_manifest(

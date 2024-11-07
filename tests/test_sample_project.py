@@ -265,6 +265,13 @@ class TestBuildEnvironment(DeploymentTestCase):
         self.artifact_export_path = get_artifact_export_path()
         self.export_on_success = force_artifact_export()
 
+    def test_create_environments(self) -> None:
+        # Fast test to check the links between build envs are set up correctly
+        # (if this fails, there's no point even trying to full slow test case)
+        build_env = self.build_env
+        build_env.create_environments()
+        self.check_build_environments(self.build_env.all_environments())
+
     @pytest.mark.slow
     @pytest.mark.expected_output
     def test_build_is_reproducible(self) -> None:
@@ -284,9 +291,12 @@ class TestBuildEnvironment(DeploymentTestCase):
         expected_tagged_dry_run_result = _get_expected_dry_run_result(
             build_env, expect_tagged_outputs=True
         )
-        # Test stage 1: ensure lock files can be regenerated without alteration
         committed_locked_requirements = _collect_locked_requirements(build_env)
+        # Create and link the layer build environments
         build_env.create_environments(lock=True)
+        # Don't even try to continue if the environments aren't properly linked
+        self.check_build_environments(self.build_env.all_environments())
+        # Test stage: ensure lock files can be regenerated without alteration
         generated_locked_requirements = _collect_locked_requirements(build_env)
         export_locked_requirements = True
         subtests_started += 1
@@ -304,7 +314,7 @@ class TestBuildEnvironment(DeploymentTestCase):
                 build_env,
                 list(generated_locked_requirements.keys()),
             )
-        # Test stage 2: ensure environments can be populated without building the artifacts
+        # Test stage: ensure environments can be populated without building the artifacts
         build_env.create_environments()  # Use committed lock files
         subtests_started += 1
         with self.subTest("Ensure archive publication requests are reproducible"):
@@ -329,7 +339,7 @@ class TestBuildEnvironment(DeploymentTestCase):
                 post_rebuild_locked_requirements, generated_locked_requirements
             )
             subtests_passed += 1
-        # Test stage 3: ensure built artifacts have the expected manifest contents
+        # Test stage: ensure built artifacts have the expected manifest contents
         manifest_path, snippet_paths, archive_paths = build_env.publish_artifacts()
         export_published_archives = True
         subtests_started += 1
