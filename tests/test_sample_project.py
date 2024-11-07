@@ -1,6 +1,5 @@
 """Test building the sample project produces the expected results"""
 
-import json
 import os.path
 import shutil
 import tempfile
@@ -34,9 +33,7 @@ from venvstacks.stacks import (
     BuildEnvironment,
     StackSpec,
     LayerCategories,
-    LayerVariants,
 )
-from venvstacks._injected.postinstall import DEPLOYED_LAYER_CONFIG
 
 ##################################
 # Sample project test helpers
@@ -292,24 +289,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         build_env.create_environments(lock=True)
         subtests_started += 1
         with self.subTest("Check build environments have been linked"):
-            for env in self.build_env.all_environments():
-                config_path = env.env_path / DEPLOYED_LAYER_CONFIG
-                self.assertPathExists(config_path)
-                layer_config = json.loads(config_path.read_text(encoding="utf-8"))
-                python_path = env.env_path / layer_config["python"]
-                expected_python_path = env.python_path
-                self.assertEqual(str(python_path), str(expected_python_path))
-                base_python_path = env.env_path / layer_config["base_python"]
-                if env.kind == LayerVariants.RUNTIME:
-                    # base_python should refer to the runtime layer itself
-                    expected_base_python_path = expected_python_path
-                else:
-                    # base_python should refer to the venv's base Python runtime
-                    self.assertIsNotNone(env.base_python_path)
-                    assert env.base_python_path is not None
-                    base_python_path = Path(os.path.normpath(base_python_path))
-                    expected_base_python_path = env.base_python_path
-                self.assertEqual(str(base_python_path), str(expected_base_python_path))
+            self.check_build_environments(self.build_env.all_environments())
             subtests_passed += 1
         # Test stage: ensure lock files can be regenerated without alteration
         generated_locked_requirements = _collect_locked_requirements(build_env)

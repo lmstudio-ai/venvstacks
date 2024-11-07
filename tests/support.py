@@ -9,7 +9,7 @@ import unittest
 
 from dataclasses import dataclass, fields
 from pathlib import Path
-from typing import Any, Callable, cast, Mapping, Sequence, TypeVar
+from typing import Any, Callable, cast, Iterable, Mapping, Sequence, TypeVar
 from unittest.mock import create_autospec
 
 import pytest
@@ -23,7 +23,9 @@ from venvstacks.stacks import (
     ExportedEnvironmentPaths,
     ExportMetadata,
     LayerBaseName,
+    LayerVariants,
     PackageIndexConfig,
+    _PythonEnvironment,
 )
 
 _THIS_DIR = Path(__file__).parent
@@ -275,6 +277,35 @@ class DeploymentTestCase(unittest.TestCase):
             ),
             f"No path outside deployed {env_path} in {env_sys_path}",
         )
+
+    def check_build_environments(
+        self, build_envs: Iterable[_PythonEnvironment]
+    ) -> None:
+        for env in build_envs:
+            env_path = env.env_path
+            config_path = env_path / DEPLOYED_LAYER_CONFIG
+            self.assertPathExists(config_path)
+            layer_config = json.loads(config_path.read_text(encoding="utf-8"))
+            env_python = env_path / layer_config["python"]
+            expected_python_path = env.python_path
+            self.assertEqual(str(env_python), str(expected_python_path))
+            base_python_path = env_path / layer_config["base_python"]
+            if env.kind == LayerVariants.RUNTIME:
+                # Base runtime environments are expected to be self-contained
+                env_status_check = self.assertEnvIsSelfContained
+                # base_python should refer to the runtime layer itself
+                expected_base_python_path = expected_python_path
+            else:
+                # Layered environment should *at least* refer to their base runtime
+                env_status_check = self.assertEnvReferencesPeerEnv
+                # base_python should refer to the venv's base Python runtime
+                self.assertIsNotNone(env.base_python_path)
+                assert env.base_python_path is not None
+                base_python_path = Path(os.path.normpath(base_python_path))
+                expected_base_python_path = env.base_python_path
+            self.assertEqual(str(base_python_path), str(expected_base_python_path))
+            env_sys_path = get_sys_path(env_python)
+            env_status_check(env_path, env_sys_path)
 
     def check_deployed_environments(
         self,
