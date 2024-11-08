@@ -1584,8 +1584,8 @@ class _VirtualEnvironment(_PythonEnvironment):
     def _link_build_environment(self) -> None:
         # Create sitecustomize file for the build environment
         build_path = self.build_path
-        build_pylib_paths = [build_path / p for p in self._iter_build_pylib_dirs()]
-        build_dynlib_paths = [build_path / p for p in self._iter_build_dynlib_dirs()]
+        build_pylib_paths = [build_path / d for d in self._iter_build_pylib_dirs()]
+        build_dynlib_paths = [build_path / d for d in self._iter_build_dynlib_dirs()]
         sc_contents = postinstall.generate_sitecustomize(
             build_pylib_paths, build_dynlib_paths
         )
@@ -1653,6 +1653,7 @@ class ApplicationEnv(_VirtualEnvironment):
         self.linked_frameworks = []
 
     def _linked_environments(self) -> Iterator[_PythonEnvironment]:
+        # Linked frameworks are emitted before the base runtime layer
         for fw_env in self.linked_frameworks:
             yield fw_env
         yield from super()._linked_environments()
