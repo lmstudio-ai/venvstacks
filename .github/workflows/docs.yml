@@ -46,6 +46,6 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         folder: docs/_build/
         branch: gh-pages
-        # CNAME and .no-jekyll are left alone by default
+        # CNAME and .nojekyll are left alone by default
         clean-exclude: pr-preview
         force: false

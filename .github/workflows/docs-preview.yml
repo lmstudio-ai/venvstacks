@@ -54,3 +54,4 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         source-dir: docs/_build/
         preview-branch: gh-pages
+        custom-url: venvstacks.lmstudio.ai
