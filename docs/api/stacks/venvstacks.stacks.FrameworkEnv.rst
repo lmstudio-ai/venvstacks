@@ -16,7 +16,7 @@ venvstacks.stacks.FrameworkEnv
       ~FrameworkEnv.export_environment
       ~FrameworkEnv.get_constraint_paths
       ~FrameworkEnv.install_requirements
-      ~FrameworkEnv.link_base_runtime_paths
+      ~FrameworkEnv.link_base_runtime
       ~FrameworkEnv.lock_requirements
       ~FrameworkEnv.report_python_site_details
       ~FrameworkEnv.request_export
@@ -26,6 +26,7 @@ venvstacks.stacks.FrameworkEnv
 
    .. autosummary::
 
+      ~FrameworkEnv.base_runtime
       ~FrameworkEnv.category
       ~FrameworkEnv.env_name
       ~FrameworkEnv.env_spec

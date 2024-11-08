@@ -243,6 +243,12 @@ class DeploymentTestCase(unittest.TestCase):
     def assertPathExists(self, expected_path: Path) -> None:
         self.assertTrue(expected_path.exists(), f"No such path: {str(expected_path)}")
 
+    def assertPathContains(self, containing_path: Path, contained_path: Path) -> None:
+        self.assertTrue(
+            contained_path.is_relative_to(containing_path),
+            f"{str(containing_path)!r} is not a parent folder of {str(contained_path)!r}",
+        )
+
     def assertSysPathEntry(self, expected: str, env_sys_path: Sequence[str]) -> None:
         self.assertTrue(
             any(expected in path_entry for path_entry in env_sys_path),
@@ -364,13 +370,16 @@ class DeploymentTestCase(unittest.TestCase):
             # Nothing at all should be emitted on stderr
             self.assertEqual(launch_result.stderr, "")
 
-    def check_environment_exports(self, export_paths: ExportedEnvironmentPaths) -> None:
+    def check_environment_exports(
+        self, export_path: Path, export_paths: ExportedEnvironmentPaths
+    ) -> None:
         metadata_path, snippet_paths, env_paths = export_paths
         exported_manifests = ManifestData(metadata_path, snippet_paths)
         env_name_to_path: dict[str, Path] = {}
         for env_metadata, env_path in zip(exported_manifests.snippet_data, env_paths):
             # TODO: Check more details regarding expected metadata contents
-            self.assertTrue(env_path.exists())
+            self.assertPathExists(env_path)
+            self.assertPathContains(export_path, env_path)
             env_name = EnvNameDeploy(env_metadata["install_target"])
             self.assertEqual(env_path.name, env_name)
             env_name_to_path[env_name] = env_path

@@ -267,7 +267,7 @@ class TestBuildEnvironment(DeploymentTestCase):
 
     def test_create_environments(self) -> None:
         # Fast test to check the links between build envs are set up correctly
-        # (if this fails, there's no point even trying to full slow test case)
+        # (if this fails, there's no point even trying the full slow test case)
         build_env = self.build_env
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
@@ -381,7 +381,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         with self.subTest("Check environment export"):
             export_path = self.working_path / "_export🦎"
             export_result = build_env.export_environments(export_path)
-            self.check_environment_exports(export_result)
+            self.check_environment_exports(export_path, export_result)
             subtests_passed += 1
 
         # Work aroung pytest-subtests not failing the test case when subtests fail

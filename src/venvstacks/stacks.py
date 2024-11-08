@@ -27,6 +27,7 @@ from typing import (
     Any,
     ClassVar,
     Iterable,
+    Iterator,
     Literal,
     Mapping,
     MutableMapping,
@@ -955,6 +956,9 @@ def get_build_platform() -> TargetPlatform:
 
 @dataclass
 class _PythonEnvironment(ABC):
+    # Python environment used to run tools like `uv` and `pip`
+    tools_python_path: ClassVar[Path] = Path(sys.executable)
+
     # Specified in concrete subclasses
     kind: ClassVar[LayerVariants]
     category: ClassVar[LayerCategories]
@@ -973,10 +977,11 @@ class _PythonEnvironment(ABC):
     python_path: Path = field(init=False, repr=False)
     env_lock: EnvironmentLock = field(init=False)
 
-    # Set in subclass or externally after creation
-    base_python_path: Path | None = field(init=False, repr=False)
-    tools_python_path: Path | None = field(init=False, repr=False)
+    # Derived from layer spec in subclass __post_init__
     py_version: str = field(init=False, repr=False)
+
+    # Set in subclass __post_init__, or when build environments are created
+    base_python_path: Path | None = field(init=False, repr=False)
 
     # Operation flags allow for requested commands to be applied only to selected layers
     # Notes:
@@ -1010,7 +1015,16 @@ class _PythonEnvironment(ABC):
     def install_target(self) -> EnvNameDeploy:
         return self.env_lock.get_deployed_name(self.env_spec.env_name)
 
+    def get_deployed_path(self, build_path: Path) -> str:
+        """Get relative deployment location for a build env path"""
+        env_deployed_path = Path(self.install_target)
+        relative_path = build_path.relative_to(self.env_path)
+        return str(env_deployed_path / relative_path)
+
     def __post_init__(self) -> None:
+        # Concrete subclasses must set the version before finishing the base initialisation
+        # Assert its existence here to make failures to do so easier to diagnose
+        assert self.py_version is not None, "Subclass failed to set 'py_version'"
         self.env_path = self.build_path / self.env_name
         self.pylib_path = self._get_py_scheme_path("purelib")
         self.executables_path = self._get_py_scheme_path("scripts")
@@ -1041,8 +1055,8 @@ class _PythonEnvironment(ABC):
 
     def _get_deployed_config(
         self,
-        pylib_paths: Iterable[Path],
-        dynlib_paths: Iterable[Path],
+        pylib_dirs: Iterable[str],
+        dynlib_dirs: Iterable[str],
         link_external_base: bool = True,
     ) -> postinstall.LayerConfig:
         # Helper for subclass get_deployed_config implementations
@@ -1053,18 +1067,13 @@ class _PythonEnvironment(ABC):
         build_env_name = build_env_path.name
         build_path = build_env_path.parent
 
-        def from_internal_path(target_build_path: Path) -> str:
-            # Input path is an absolute path inside the environment
-            # Output path is relative to the base of the environment
-            return str(target_build_path.relative_to(build_env_path))
-
-        def from_relative_path(relative_build_path: Path) -> str:
+        def relative_to_env(relative_build_path: Path) -> str:
             # Input path is relative to the base of the build directory
             # Output path is relative to the base of the environment
             # Note: we avoid `walk_up=True` here, firstly to maintain
             #       Python 3.11 compatibility, but also to limit the
             #       the relative paths to *peer* environments, rather
-            #       than all potentially value relative path calculations
+            #       than all potentially valid relative path calculations
             if relative_build_path.is_absolute():
                 self._fail_build(f"{relative_build_path} is not a relative path")
             if relative_build_path.parts[0] == build_env_name:
@@ -1073,19 +1082,23 @@ class _PythonEnvironment(ABC):
             # Emit relative reference to peer environment
             return str(Path("..", *relative_build_path.parts))
 
+        def from_internal_path(target_build_path: Path) -> str:
+            # Input path is an absolute path inside the environment
+            # Output path is relative to the base of the environment
+            return str(target_build_path.relative_to(build_env_path))
+
         def from_external_path(target_build_path: Path) -> str:
             # Input path is an absolute path, potentially from a peer environment
             # Output path is relative to the base of the environment
             relative_build_path = target_build_path.relative_to(build_path)
-            return from_relative_path(relative_build_path)
+            return relative_to_env(relative_build_path)
 
         layer_python = from_internal_path(self.python_path)
         if link_external_base:
             base_python = from_external_path(base_python_path)
         else:
-            # "base_python" in the runtime layer refers solely to
-            # the external environment used to set up the base
-            # runtime layer, rather than being a linked environment
+            # "base_python" in a runtime layer refers to the layer itself
+            assert layer_python == from_internal_path(base_python_path)
             base_python = layer_python
 
         return postinstall.LayerConfig(
@@ -1093,8 +1106,8 @@ class _PythonEnvironment(ABC):
             py_version=self.py_version,
             base_python=base_python,
             site_dir=from_internal_path(self.pylib_path),
-            pylib_dirs=[from_relative_path(p) for p in pylib_paths],
-            dynlib_dirs=[from_relative_path(p) for p in dynlib_paths],
+            pylib_dirs=[relative_to_env(Path(d)) for d in pylib_dirs],
+            dynlib_dirs=[relative_to_env(Path(d)) for d in dynlib_dirs],
         )
 
     def _write_deployed_config(self) -> None:
@@ -1401,7 +1414,10 @@ class _PythonEnvironment(ABC):
 
         # Define the input metadata that gets published in the export manifest
         export_request = self.request_export(output_path, previous_metadata, force)
-        return export_request.export_environment(env_path, previous_metadata)
+        return export_request.export_environment(
+            env_path,
+            previous_metadata,
+        )
 
 
 class RuntimeEnv(_PythonEnvironment):
@@ -1417,20 +1433,11 @@ class RuntimeEnv(_PythonEnvironment):
         return super()._get_python_dir_path()
 
     def __post_init__(self) -> None:
-        self.py_version = py_version = self.env_spec.py_version
+        # Ensure Python version is set before finishing base class initialisation
+        self.py_version = self.env_spec.py_version
         super().__post_init__()
-        tools_env_path = self.build_path / "build-tools"
-        if tools_env_path.exists():
-            tools_bin_path = Path(
-                _get_py_scheme_path("scripts", tools_env_path, py_version)
-            )
-            tools_python_path = tools_bin_path / _binary_with_extension("python")
-        else:
-            # No build tools environment created by wrapper script, so use the running Python
-            tools_python_path = Path(sys.executable)
-        # Runtimes have no base Python other than the build tools Python
-        self.base_python_path = tools_python_path
-        self.tools_python_path = tools_python_path
+        # Runtimes are their own base Python
+        self.base_python_path = self.python_path
 
     @property
     def env_spec(self) -> RuntimeSpec:
@@ -1481,16 +1488,16 @@ class RuntimeEnv(_PythonEnvironment):
 
 
 class _VirtualEnvironment(_PythonEnvironment):
+    base_runtime: RuntimeEnv | None = field(init=False, repr=False)
     linked_constraints_paths: list[Path] = field(init=False, repr=False)
-    linked_pylib_paths: list[Path] = field(init=False, repr=False)
-    linked_dynlib_paths: list[Path] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        # Ensure Python version is set before finishing base class initialisation
         self.py_version = self.env_spec.runtime.py_version
         super().__post_init__()
+        # Base runtime env will be linked when creating the build environments
+        self.base_runtime = None
         self.linked_constraints_paths = []
-        self.linked_pylib_paths = []
-        self.linked_dynlib_paths = []
 
     @property
     def env_spec(self) -> _VirtualEnvironmentSpec:
@@ -1498,18 +1505,51 @@ class _VirtualEnvironment(_PythonEnvironment):
         assert isinstance(self._env_spec, _VirtualEnvironmentSpec)
         return self._env_spec
 
-    def link_base_runtime_paths(self, runtime: RuntimeEnv) -> None:
+    def _linked_environments(self) -> Iterator[_PythonEnvironment]:
+        runtime_env = self.base_runtime
+        # This is only ever invoked *after* the environment has been linked
+        assert runtime_env is not None
+        yield runtime_env
+
+    def _iter_build_pylib_dirs(self) -> Iterator[str]:
+        for env in self._linked_environments():
+            yield str(env.pylib_path.relative_to(self.build_path))
+
+    def _iter_build_dynlib_dirs(self) -> Iterator[str]:
+        for env in self._linked_environments():
+            dynlib_path = env.dynlib_path
+            if dynlib_path is not None:
+                yield str(dynlib_path.relative_to(self.build_path))
+
+    def _iter_deployed_pylib_dirs(self) -> Iterator[str]:
+        for env in self._linked_environments():
+            yield env.get_deployed_path(env.pylib_path)
+
+    def _iter_deployed_dynlib_dirs(self) -> Iterator[str]:
+        for env in self._linked_environments():
+            dynlib_path = env.dynlib_path
+            if dynlib_path is not None:
+                yield env.get_deployed_path(dynlib_path)
+
+    def link_base_runtime(self, runtime: RuntimeEnv) -> None:
+        if self.base_runtime is not None:
+            raise BuildEnvError(
+                f"Layered environment base runtime already linked {self}"
+            )
+        # Link the runtime environment
+        self.base_runtime = runtime
         # Link executable paths
         self.base_python_path = runtime.python_path
-        self.tools_python_path = runtime.tools_python_path
+        # Link runtime layer dependency constraints
         if self.linked_constraints_paths:
             self._fail_build("Layered environment base runtime already linked")
         self.linked_constraints_paths[:] = [runtime.requirements_path]
+        print(f"Linked {self}")
 
     def get_deployed_config(self) -> postinstall.LayerConfig:
         """Layer config to be published in `venvstacks_layer.json`"""
         return self._get_deployed_config(
-            self.linked_pylib_paths, self.linked_dynlib_paths
+            self._iter_deployed_pylib_dirs(), self._iter_deployed_dynlib_dirs()
         )
 
     def get_constraint_paths(self) -> list[Path]:
@@ -1544,8 +1584,8 @@ class _VirtualEnvironment(_PythonEnvironment):
     def _link_build_environment(self) -> None:
         # Create sitecustomize file for the build environment
         build_path = self.build_path
-        build_pylib_paths = [build_path / p for p in self.linked_pylib_paths]
-        build_dynlib_paths = [build_path / p for p in self.linked_dynlib_paths]
+        build_pylib_paths = [build_path / d for d in self._iter_build_pylib_dirs()]
+        build_dynlib_paths = [build_path / d for d in self._iter_build_dynlib_dirs()]
         sc_contents = postinstall.generate_sitecustomize(
             build_pylib_paths, build_dynlib_paths
         )
@@ -1591,21 +1631,6 @@ class FrameworkEnv(_VirtualEnvironment):
         assert isinstance(self._env_spec, FrameworkSpec)
         return self._env_spec
 
-    def link_base_runtime_paths(self, runtime: RuntimeEnv) -> None:
-        super().link_base_runtime_paths(runtime)
-        # TODO: Reduce code duplication with ApplicationEnv
-        runtime_target_path = Path(runtime.install_target)
-
-        def _runtime_path(build_path: Path) -> Path:
-            relative_path = build_path.relative_to(runtime.env_path)
-            return runtime_target_path / relative_path
-
-        pylib_paths = self.linked_pylib_paths
-        dynlib_paths = self.linked_dynlib_paths
-        pylib_paths.append(_runtime_path(runtime.pylib_path))
-        if runtime.dynlib_path is not None:
-            dynlib_paths.append(_runtime_path(runtime.dynlib_path))
-
 
 class ApplicationEnv(_VirtualEnvironment):
     """Application layer build environment"""
@@ -1627,42 +1652,28 @@ class ApplicationEnv(_VirtualEnvironment):
         self.launch_module_name = self.env_spec.launch_module_path.stem
         self.linked_frameworks = []
 
+    def _linked_environments(self) -> Iterator[_PythonEnvironment]:
+        # Linked frameworks are emitted before the base runtime layer
+        for fw_env in self.linked_frameworks:
+            yield fw_env
+        yield from super()._linked_environments()
+
     def link_layered_environments(
         self, runtime: RuntimeEnv, frameworks: Mapping[LayerBaseName, FrameworkEnv]
     ) -> None:
-        self.link_base_runtime_paths(runtime)
+        self.link_base_runtime(runtime)
         constraints_paths = self.linked_constraints_paths
         if not constraints_paths:
             self._fail_build("Failed to add base environment constraints path")
         # The runtime site-packages folder is added here rather than via pyvenv.cfg
         # to ensure it appears in sys.path after the framework site-packages folders
-        pylib_paths = self.linked_pylib_paths
-        dynlib_paths = self.linked_dynlib_paths
         fw_envs = self.linked_frameworks
-        if pylib_paths or dynlib_paths or fw_envs:
+        if fw_envs:
             self._fail_build("Layered application environment already linked")
         for env_spec in self.env_spec.frameworks:
             env = frameworks[env_spec.name]
             fw_envs.append(env)
             constraints_paths.append(env.requirements_path)
-            install_target_path = Path(env.install_target)
-
-            def _fw_env_path(build_path: Path) -> Path:
-                relative_path = build_path.relative_to(env.env_path)
-                return install_target_path / relative_path
-
-            pylib_paths.append(_fw_env_path(env.pylib_path))
-            if env.dynlib_path is not None:
-                dynlib_paths.append(_fw_env_path(env.pylib_path))
-        runtime_target_path = Path(runtime.install_target)
-
-        def _runtime_path(build_path: Path) -> Path:
-            relative_path = build_path.relative_to(runtime.env_path)
-            return runtime_target_path / relative_path
-
-        pylib_paths.append(_runtime_path(runtime.pylib_path))
-        if runtime.dynlib_path is not None:
-            dynlib_paths.append(_runtime_path(runtime.dynlib_path))
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         super()._update_existing_environment(lock_only=lock_only)
@@ -1850,7 +1861,7 @@ class StackSpec:
         )
         for fw_env in frameworks.values():
             runtime = runtimes[fw_env.env_spec.runtime.name]
-            fw_env.link_base_runtime_paths(runtime)
+            fw_env.link_base_runtime(runtime)
         print("Defining application environments:")
         applications = self._define_envs(
             build_path, index_config, ApplicationEnv, self.applications
