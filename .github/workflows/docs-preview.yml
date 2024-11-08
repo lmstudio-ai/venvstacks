@@ -50,4 +50,5 @@ jobs:
       uses: rossjrw/pr-preview-action@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        source-dir: ./build/
+        source-dir: docs/_build/
+        preview-branch: gh-pages
