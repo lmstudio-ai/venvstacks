@@ -15,7 +15,7 @@ venvstacks.stacks.ApplicationEnv
       ~ApplicationEnv.export_environment
       ~ApplicationEnv.get_constraint_paths
       ~ApplicationEnv.install_requirements
-      ~ApplicationEnv.link_base_runtime_paths
+      ~ApplicationEnv.link_base_runtime
       ~ApplicationEnv.link_layered_environments
       ~ApplicationEnv.lock_requirements
       ~ApplicationEnv.report_python_site_details
@@ -26,6 +26,7 @@ venvstacks.stacks.ApplicationEnv
 
    .. autosummary::
 
+      ~FrameworkEnv.base_runtime
       ~ApplicationEnv.category
       ~ApplicationEnv.env_name
       ~ApplicationEnv.env_spec
@@ -33,9 +34,7 @@ venvstacks.stacks.ApplicationEnv
       ~ApplicationEnv.kind
       ~ApplicationEnv.launch_module_name
       ~ApplicationEnv.linked_constraints_paths
-      ~ApplicationEnv.linked_dynlib_paths
       ~ApplicationEnv.linked_frameworks
-      ~ApplicationEnv.linked_pylib_paths
       ~ApplicationEnv.want_build
       ~ApplicationEnv.want_lock
       ~ApplicationEnv.want_publish
