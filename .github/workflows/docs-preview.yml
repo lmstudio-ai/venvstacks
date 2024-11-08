@@ -30,6 +30,8 @@ jobs:
     permissions:
       # Allow updating the gh-pages branch
       contents: write
+      # Allow posting a PR comment with a preview link
+      pull-requests: write
 
     # Check https://github.com/actions/action-versions/tree/main/config/actions
     # for latest versions if the standard actions start emitting warnings
