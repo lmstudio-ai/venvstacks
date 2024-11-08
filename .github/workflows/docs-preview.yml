@@ -1,16 +1,22 @@
-name: "Sphinx: Publish docs"
+name: "Sphinx: Preview docs"
 
 on:
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
     branches:
       - "**"
     paths:
-      # Only run for changes to this workflow file
-      # (docs-preview workflow covers actual docs changes)
-      - ".github/workflows/docs.yml"
-  push:
-    branches:
-      - main
+      # Run for changes to *this* workflow file, but not for other workflows
+      - ".github/workflows/docs-preview.yml"
+      # Trigger off docs and Python source code changes
+      - "docs/**"
+      - "src/**.py"
+
+concurrency: preview-${{ github.ref }}
 
 jobs:
   build:
@@ -34,18 +40,14 @@ jobs:
 
     - name: Build HTML
       uses: ammaraskar/sphinx-action@8.0.2
+      if: github.event.action != 'closed'
       with:
         docs-folder: "docs/"
         pre-build-command: "sphinx-build -b linkcheck . _build"
         build-command: "sphinx-build -b dirhtml . _build"
 
-    - name: Deploy main docs
-      uses: JamesIves/github-pages-deploy-action@v4
-      if: github.ref == 'refs/heads/main'
+    - name: Deploy preview
+      uses: rossjrw/pr-preview-action@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        folder: docs/_build/
-        branch: gh-pages
-        # CNAME and .no-jekyll are left alone by default
-        clean-exclude: pr-preview
-        force: false
+        source-dir: ./build/
