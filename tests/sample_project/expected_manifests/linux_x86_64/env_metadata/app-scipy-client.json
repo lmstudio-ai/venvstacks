@@ -1,9 +1,9 @@
 {
   "app_launch_module": "scipy_client",
-  "app_launch_module_hash": "sha256/bbe4da6de13a8f13a05cdd2bb3b90884861a6636b1450248d03aea799a7fc828",
+  "app_launch_module_hash": "sha256/76d203dd6d3bb1fdb1117053c81590d42ef3f62b4b92b8d316b31f08334fbca6",
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "d932e554c35c9ce2cd1d594cb20e8a37c0195a5b82ffcb50627a96fc122e79a2"
+    "sha256": "e114727c3657844ea74de25009748a0c90b7ccf1279a787a9c8f5dd9cdd4e020"
   },
   "archive_name": "app-scipy-client.tar.xz",
   "archive_size": 3008,
