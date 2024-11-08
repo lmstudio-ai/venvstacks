@@ -1,4 +1,4 @@
-"""Test cases for CLI invocation"""
+"""Test cases for CLI invocation."""
 
 import subprocess
 import sys
@@ -87,7 +87,7 @@ class MockedRunner:
     @classmethod
     @contextmanager
     def cli_patch_installed(cls, cli_module: ModuleType) -> Iterator[Self]:
-        """Patch the given CLI module to invoke a mocked StackSpec instance"""
+        """Patch the given CLI module to invoke a mocked StackSpec instance."""
         app = cli_module._cli
         patch_cm = patch.object(cli_module, "StackSpec", autospec=True, spec_set=True)
         with patch_cm as mocked_stack_spec:
@@ -99,7 +99,7 @@ class MockedRunner:
     def assert_build_config(
         self, expected_build_dir: str, expected_index_config: PackageIndexConfig
     ) -> None:
-        """Check environment build path and index configuration details"""
+        """Check environment build path and index configuration details."""
         env_definition = self.mocked_stack_spec.define_build_environment
         env_definition.assert_called_with(expected_build_dir, expected_index_config)
 
@@ -110,7 +110,7 @@ class MockedRunner:
     }
 
     def get_output_method(self, command: str) -> MagicMock:
-        """Return the Mock expected to be called for the given output command"""
+        """Return the Mock expected to be called for the given output command."""
         output_method_name = self._OUTPUT_METHODS[command]
         return cast(MagicMock, getattr(self.mocked_build_env, output_method_name))
 
@@ -121,7 +121,7 @@ class MockedRunner:
     }
 
     def get_default_output_dir(self, command: str) -> str:
-        """Return the Mock expected to be called for the given output command"""
+        """Return the Mock expected to be called for the given output command."""
         return self._DEFAULT_OUTPUT_DIRS[command]
 
 

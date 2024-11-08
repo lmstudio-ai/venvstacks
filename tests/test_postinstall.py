@@ -1,4 +1,4 @@
-"""Tests for venvstacks post-install script generation"""
+"""Tests for venvstacks post-install script generation."""
 
 import os
 

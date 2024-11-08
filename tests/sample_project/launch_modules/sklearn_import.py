@@ -1,4 +1,4 @@
-"""Sample launch module importing sklearn"""
+"""Sample launch module importing sklearn."""
 
 import numpy
 import scipy

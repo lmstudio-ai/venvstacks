@@ -1,4 +1,4 @@
-"""Test for package index access configuration"""
+"""Test for package index access configuration."""
 
 import os
 

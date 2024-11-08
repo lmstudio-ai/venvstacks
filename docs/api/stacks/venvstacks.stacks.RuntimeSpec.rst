@@ -5,14 +5,6 @@ venvstacks.stacks.RuntimeSpec
 
 .. autoclass:: RuntimeSpec
 
-
-   .. rubric:: Methods
-
-   .. autosummary::
-
-      ~RuntimeSpec.get_requirements_fname
-      ~RuntimeSpec.get_requirements_path
-
    .. rubric:: Attributes
 
    .. autosummary::

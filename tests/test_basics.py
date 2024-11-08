@@ -1,4 +1,4 @@
-"""Basic tests for venvstacks package components"""
+"""Basic tests for venvstacks package components."""
 
 from importlib.metadata import version as pkg_version
 

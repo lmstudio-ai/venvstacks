@@ -1,4 +1,4 @@
-"""Sample CLI helper module importing scipy and httpx"""
+"""Sample CLI helper module importing scipy and httpx."""
 
 import numpy
 import scipy

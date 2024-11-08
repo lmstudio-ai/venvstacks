@@ -5,14 +5,6 @@ venvstacks.stacks.ApplicationSpec
 
 .. autoclass:: ApplicationSpec
 
-
-   .. rubric:: Methods
-
-   .. autosummary::
-
-      ~ApplicationSpec.get_requirements_fname
-      ~ApplicationSpec.get_requirements_path
-
    .. rubric:: Attributes
 
    .. autosummary::

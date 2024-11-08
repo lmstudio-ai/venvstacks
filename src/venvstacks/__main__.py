@@ -1,4 +1,4 @@
-"""Allow execution of the package as a script"""
+"""Allow execution of the package as a script."""
 
 from .cli import main
 

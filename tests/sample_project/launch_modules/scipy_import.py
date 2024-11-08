@@ -1,4 +1,4 @@
-"""Sample launch module importing scipy"""
+"""Sample launch module importing scipy."""
 
 import numpy
 import scipy
