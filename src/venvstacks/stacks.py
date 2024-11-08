@@ -956,7 +956,6 @@ def get_build_platform() -> TargetPlatform:
 
 @dataclass
 class _PythonEnvironment(ABC):
-
     # Python environment used to run tools like `uv` and `pip`
     tools_python_path: ClassVar[Path] = Path(sys.executable)
 
@@ -1016,10 +1015,11 @@ class _PythonEnvironment(ABC):
     def install_target(self) -> EnvNameDeploy:
         return self.env_lock.get_deployed_name(self.env_spec.env_name)
 
-    def get_deployed_path(self, build_path: Path) -> Path:
+    def get_deployed_path(self, build_path: Path) -> str:
+        """Get relative deployment location for a build env path"""
         env_deployed_path = Path(self.install_target)
         relative_path = build_path.relative_to(self.env_path)
-        return env_deployed_path / relative_path
+        return str(env_deployed_path / relative_path)
 
     def __post_init__(self) -> None:
         # Concrete subclasses must set the version before finishing the base initialisation
@@ -1055,8 +1055,8 @@ class _PythonEnvironment(ABC):
 
     def _get_deployed_config(
         self,
-        pylib_paths: Iterable[Path],
-        dynlib_paths: Iterable[Path],
+        pylib_dirs: Iterable[str],
+        dynlib_dirs: Iterable[str],
         link_external_base: bool = True,
     ) -> postinstall.LayerConfig:
         # Helper for subclass get_deployed_config implementations
@@ -1067,18 +1067,13 @@ class _PythonEnvironment(ABC):
         build_env_name = build_env_path.name
         build_path = build_env_path.parent
 
-        def from_internal_path(target_build_path: Path) -> str:
-            # Input path is an absolute path inside the environment
-            # Output path is relative to the base of the environment
-            return str(target_build_path.relative_to(build_env_path))
-
-        def from_relative_path(relative_build_path: Path) -> str:
+        def relative_to_env(relative_build_path: Path) -> str:
             # Input path is relative to the base of the build directory
             # Output path is relative to the base of the environment
             # Note: we avoid `walk_up=True` here, firstly to maintain
             #       Python 3.11 compatibility, but also to limit the
             #       the relative paths to *peer* environments, rather
-            #       than all potentially value relative path calculations
+            #       than all potentially valid relative path calculations
             if relative_build_path.is_absolute():
                 self._fail_build(f"{relative_build_path} is not a relative path")
             if relative_build_path.parts[0] == build_env_name:
@@ -1087,11 +1082,16 @@ class _PythonEnvironment(ABC):
             # Emit relative reference to peer environment
             return str(Path("..", *relative_build_path.parts))
 
+        def from_internal_path(target_build_path: Path) -> str:
+            # Input path is an absolute path inside the environment
+            # Output path is relative to the base of the environment
+            return str(target_build_path.relative_to(build_env_path))
+
         def from_external_path(target_build_path: Path) -> str:
             # Input path is an absolute path, potentially from a peer environment
             # Output path is relative to the base of the environment
             relative_build_path = target_build_path.relative_to(build_path)
-            return from_relative_path(relative_build_path)
+            return relative_to_env(relative_build_path)
 
         layer_python = from_internal_path(self.python_path)
         if link_external_base:
@@ -1106,8 +1106,8 @@ class _PythonEnvironment(ABC):
             py_version=self.py_version,
             base_python=base_python,
             site_dir=from_internal_path(self.pylib_path),
-            pylib_dirs=[from_relative_path(p) for p in pylib_paths],
-            dynlib_dirs=[from_relative_path(p) for p in dynlib_paths],
+            pylib_dirs=[relative_to_env(Path(d)) for d in pylib_dirs],
+            dynlib_dirs=[relative_to_env(Path(d)) for d in dynlib_dirs],
         )
 
     def _write_deployed_config(self) -> None:
@@ -1388,9 +1388,7 @@ class _PythonEnvironment(ABC):
             output_path, target_platform, tag_output, previous_metadata, force
         )
         work_path = self.build_path  # /tmp is likely too small for ML environments
-        return build_request.create_archive(
-            env_path, previous_metadata, work_path
-        )
+        return build_request.create_archive(env_path, previous_metadata, work_path)
 
     def request_export(
         self,
@@ -1417,7 +1415,8 @@ class _PythonEnvironment(ABC):
         # Define the input metadata that gets published in the export manifest
         export_request = self.request_export(output_path, previous_metadata, force)
         return export_request.export_environment(
-            env_path, previous_metadata,
+            env_path,
+            previous_metadata,
         )
 
 
@@ -1506,7 +1505,31 @@ class _VirtualEnvironment(_PythonEnvironment):
         assert isinstance(self._env_spec, _VirtualEnvironmentSpec)
         return self._env_spec
 
-    # TODO: define interfaces for get_linked_pylib_paths and get_linked_dynlib_paths
+    def _linked_environments(self) -> Iterator[_PythonEnvironment]:
+        runtime_env = self.base_runtime
+        # This is only ever invoked *after* the environment has been linked
+        assert runtime_env is not None
+        yield runtime_env
+
+    def _iter_build_pylib_dirs(self) -> Iterator[str]:
+        for env in self._linked_environments():
+            yield str(env.pylib_path.relative_to(self.build_path))
+
+    def _iter_build_dynlib_dirs(self) -> Iterator[str]:
+        for env in self._linked_environments():
+            dynlib_path = env.dynlib_path
+            if dynlib_path is not None:
+                yield str(dynlib_path.relative_to(self.build_path))
+
+    def _iter_deployed_pylib_dirs(self) -> Iterator[str]:
+        for env in self._linked_environments():
+            yield env.get_deployed_path(env.pylib_path)
+
+    def _iter_deployed_dynlib_dirs(self) -> Iterator[str]:
+        for env in self._linked_environments():
+            dynlib_path = env.dynlib_path
+            if dynlib_path is not None:
+                yield env.get_deployed_path(dynlib_path)
 
     def link_base_runtime(self, runtime: RuntimeEnv) -> None:
         if self.base_runtime is not None:
@@ -1526,7 +1549,7 @@ class _VirtualEnvironment(_PythonEnvironment):
     def get_deployed_config(self) -> postinstall.LayerConfig:
         """Layer config to be published in `venvstacks_layer.json`"""
         return self._get_deployed_config(
-            self.get_linked_pylib_paths(), self.get_linked_dynlib_paths()
+            self._iter_deployed_pylib_dirs(), self._iter_deployed_dynlib_dirs()
         )
 
     def get_constraint_paths(self) -> list[Path]:
@@ -1561,8 +1584,8 @@ class _VirtualEnvironment(_PythonEnvironment):
     def _link_build_environment(self) -> None:
         # Create sitecustomize file for the build environment
         build_path = self.build_path
-        build_pylib_paths = [build_path / p for p in self.get_linked_pylib_paths()]
-        build_dynlib_paths = [build_path / p for p in self.get_linked_dynlib_paths()]
+        build_pylib_paths = [build_path / p for p in self._iter_build_pylib_dirs()]
+        build_dynlib_paths = [build_path / p for p in self._iter_build_dynlib_dirs()]
         sc_contents = postinstall.generate_sitecustomize(
             build_pylib_paths, build_dynlib_paths
         )
@@ -1632,29 +1655,7 @@ class ApplicationEnv(_VirtualEnvironment):
     def _linked_environments(self) -> Iterator[_PythonEnvironment]:
         for fw_env in self.linked_frameworks:
             yield fw_env
-        runtime_env = self.base_runtime
-        assert runtime_env is not None
-        yield runtime_env
-
-    def _linked_pylib_build_paths(self) -> Iterator[Path]:
-        for env in self._linked_environments():
-            yield env.pylib_path
-
-    def _linked_dynlib_build_paths(self) -> Iterator[Path]:
-        for env in self._linked_environments():
-            dynlib_path = env.dynlib_path
-            if dynlib_path is not None:
-                yield dynlib_path
-
-    def _linked_pylib_deployed_paths(self) -> Iterator[Path]:
-        for env in self._linked_environments():
-            yield env.get_deployed_path(env.pylib_path)
-
-    def _linked_dynlib_deployed_paths(self) -> Iterator[Path]:
-        for env in self._linked_environments():
-            dynlib_path = env.dynlib_path
-            if dynlib_path is not None:
-                yield env.get_deployed_path(dynlib_path)
+        yield from super()._linked_environments()
 
     def link_layered_environments(
         self, runtime: RuntimeEnv, frameworks: Mapping[LayerBaseName, FrameworkEnv]
