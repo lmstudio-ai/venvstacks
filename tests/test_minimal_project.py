@@ -34,7 +34,7 @@ from venvstacks.stacks import (
     StackSpec,
     PackageIndexConfig,
     PublishedArchivePaths,
-    _get_build_platform,
+    get_build_platform,
 )
 from venvstacks._util import get_env_python, capture_python_output, WINDOWS_BUILD
 
@@ -92,7 +92,7 @@ ArchiveSummary = dict[str, Any]
 ArchiveSummaries = dict[str, list[ArchiveSummary]]
 BuildManifest = dict[str, ArchiveSummaries]
 ARCHIVE_SUFFIX = ".zip" if WINDOWS_BUILD else ".tar.xz"
-BUILD_PLATFORM = str(_get_build_platform())
+BUILD_PLATFORM = str(get_build_platform())
 EXPECTED_MANIFEST: BuildManifest = {
     "layers": {
         "applications": [
