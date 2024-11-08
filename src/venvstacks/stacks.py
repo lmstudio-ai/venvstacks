@@ -956,6 +956,10 @@ def get_build_platform() -> TargetPlatform:
 
 @dataclass
 class _PythonEnvironment(ABC):
+
+    # Python environment used to run tools like `uv` and `pip`
+    tools_python_path: ClassVar[Path] = Path(sys.executable)
+
     # Specified in concrete subclasses
     kind: ClassVar[LayerVariants]
     category: ClassVar[LayerCategories]
@@ -974,10 +978,11 @@ class _PythonEnvironment(ABC):
     python_path: Path = field(init=False, repr=False)
     env_lock: EnvironmentLock = field(init=False)
 
-    # Set in subclass or externally after creation
-    base_python_path: Path | None = field(init=False, repr=False)
-    tools_python_path: Path | None = field(init=False, repr=False)
+    # Derived from layer spec in subclass __post_init__
     py_version: str = field(init=False, repr=False)
+
+    # Set in subclass __post_init__, or when build environments are created
+    base_python_path: Path | None = field(init=False, repr=False)
 
     # Operation flags allow for requested commands to be applied only to selected layers
     # Notes:
@@ -1017,6 +1022,9 @@ class _PythonEnvironment(ABC):
         return env_deployed_path / relative_path
 
     def __post_init__(self) -> None:
+        # Concrete subclasses must set the version before finishing the base initialisation
+        # Assert its existence here to make failures to do so easier to diagnose
+        assert self.py_version is not None, "Subclass failed to set 'py_version'"
         self.env_path = self.build_path / self.env_name
         self.pylib_path = self._get_py_scheme_path("purelib")
         self.executables_path = self._get_py_scheme_path("scripts")
@@ -1089,9 +1097,8 @@ class _PythonEnvironment(ABC):
         if link_external_base:
             base_python = from_external_path(base_python_path)
         else:
-            # "base_python" in the runtime layer refers solely to
-            # the external environment used to set up the base
-            # runtime layer, rather than being a linked environment
+            # "base_python" in a runtime layer refers to the layer itself
+            assert layer_python == from_internal_path(base_python_path)
             base_python = layer_python
 
         return postinstall.LayerConfig(
@@ -1427,20 +1434,11 @@ class RuntimeEnv(_PythonEnvironment):
         return super()._get_python_dir_path()
 
     def __post_init__(self) -> None:
-        self.py_version = py_version = self.env_spec.py_version
+        # Ensure Python version is set before finishing base class initialisation
+        self.py_version = self.env_spec.py_version
         super().__post_init__()
-        tools_env_path = self.build_path / "build-tools"
-        if tools_env_path.exists():
-            tools_bin_path = Path(
-                _get_py_scheme_path("scripts", tools_env_path, py_version)
-            )
-            tools_python_path = tools_bin_path / _binary_with_extension("python")
-        else:
-            # No build tools environment created by wrapper script, so use the running Python
-            tools_python_path = Path(sys.executable)
-        # Runtimes have no base Python other than the build tools Python
-        self.base_python_path = tools_python_path
-        self.tools_python_path = tools_python_path
+        # Runtimes are their own base Python
+        self.base_python_path = self.python_path
 
     @property
     def env_spec(self) -> RuntimeSpec:
@@ -1495,8 +1493,10 @@ class _VirtualEnvironment(_PythonEnvironment):
     linked_constraints_paths: list[Path] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        # Ensure Python version is set before finishing base class initialisation
         self.py_version = self.env_spec.runtime.py_version
         super().__post_init__()
+        # Base runtime env will be linked when creating the build environments
         self.base_runtime = None
         self.linked_constraints_paths = []
 
@@ -1517,7 +1517,6 @@ class _VirtualEnvironment(_PythonEnvironment):
         self.base_runtime = runtime
         # Link executable paths
         self.base_python_path = runtime.python_path
-        self.tools_python_path = runtime.tools_python_path
         # Link runtime layer dependency constraints
         if self.linked_constraints_paths:
             self._fail_build("Layered environment base runtime already linked")
