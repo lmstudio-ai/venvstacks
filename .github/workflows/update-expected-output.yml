@@ -2,9 +2,10 @@ name: Update expected output
 
 on:
   pull_request:
-    # Don't update PRs on every push. PRs can be closed and
-    # reopened if the update action should be run again.
-    types: [opened, reopened]
+    # Don't update PRs on every push. PRs can be switched
+    # to draft status and back (or closed and reopened),
+    # if the update action should be run again.
+    types: [opened, reopened, ready_for_review]
     branches:
       - "**"
     paths:
