@@ -1,11 +1,11 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "e8ef68225cfa6a016539a4db3c5dc1b984f53de0df51181eefeb0e9449771ea9"
+    "sha256": "622e3056ccf54d8723bf983c92f35bf4138d2fee5da3cdd56d25391f18906aab"
   },
-  "archive_name": "framework-scipy.tar.xz",
-  "archive_size": 23957800,
-  "install_target": "framework-scipy",
+  "archive_name": "framework-scipy@1.tar.xz",
+  "archive_size": 23961760,
+  "install_target": "framework-scipy@1",
   "layer_name": "framework-scipy",
   "lock_version": 1,
   "locked_at": "2024-10-15T10:23:42.825586+00:00",
