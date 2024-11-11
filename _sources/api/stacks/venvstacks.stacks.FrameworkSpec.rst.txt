@@ -5,14 +5,6 @@ venvstacks.stacks.FrameworkSpec
 
 .. autoclass:: FrameworkSpec
 
-
-   .. rubric:: Methods
-
-   .. autosummary::
-
-      ~FrameworkSpec.get_requirements_fname
-      ~FrameworkSpec.get_requirements_path
-
    .. rubric:: Attributes
 
    .. autosummary::

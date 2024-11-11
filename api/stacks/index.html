@@ -221,16 +221,20 @@
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.PublishedArchivePaths/">venvstacks.stacks.PublishedArchivePaths</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.StackPublishingRequest/">venvstacks.stacks.StackPublishingRequest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.StackPublishingResult/">venvstacks.stacks.StackPublishingResult</a></li>
-<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.EnvironmentExportRequest/">venvstacks.stacks.EnvironmentExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.LayerExportRequest/">venvstacks.stacks.LayerExportRequest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.ExportMetadata/">venvstacks.stacks.ExportMetadata</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.ExportedEnvironmentPaths/">venvstacks.stacks.ExportedEnvironmentPaths</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.StackExportRequest/">venvstacks.stacks.StackExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.LayerSpecBase/">venvstacks.stacks.LayerSpecBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.RuntimeSpec/">venvstacks.stacks.RuntimeSpec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.LayeredSpecBase/">venvstacks.stacks.LayeredSpecBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.FrameworkSpec/">venvstacks.stacks.FrameworkSpec</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.ApplicationSpec/">venvstacks.stacks.ApplicationSpec</a></li>
-<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.LayerEnvBase/">venvstacks.stacks.LayerEnvBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.RuntimeEnv/">venvstacks.stacks.RuntimeEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.LayeredEnvBase/">venvstacks.stacks.LayeredEnvBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.EnvironmentLock/">venvstacks.stacks.EnvironmentLock</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.EnvironmentLockMetadata/">venvstacks.stacks.EnvironmentLockMetadata</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.PackageIndexConfig/">venvstacks.stacks.PackageIndexConfig</a></li>
@@ -291,17 +295,17 @@
 Function, class, and method names may change between releases
 without any deprecation period.</p>
 </div>
-<p id="module-venvstacks.stacks">Portable Python environment stacks</p>
+<p id="module-venvstacks.stacks">Portable Python environment stacks.</p>
 <p>Creates Python runtime, framework, and app environments based on venvstacks.toml</p>
 <p class="rubric">High Level Interface</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.StackSpec/#venvstacks.stacks.StackSpec" title="venvstacks.stacks.StackSpec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StackSpec</span></code></a></p></td>
-<td><p>Layered environment stack specification</p></td>
+<td><p>Layered environment stack specification.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.BuildEnvironment/#venvstacks.stacks.BuildEnvironment" title="venvstacks.stacks.BuildEnvironment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BuildEnvironment</span></code></a></p></td>
-<td><p>Interface to build specified layered environment stacks</p></td>
+<td><p>Interface to build specified layered environment stacks.</p></td>
 </tr>
 </tbody>
 </table>
@@ -311,19 +315,19 @@ without any deprecation period.</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.LayerCategories/#venvstacks.stacks.LayerCategories" title="venvstacks.stacks.LayerCategories"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerCategories</span></code></a></p></td>
-<td><p>Enum for defined layer categories (collections of each variant)</p></td>
+<td><p>Enum for defined layer categories (collections of each variant).</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.LayerSpecMetadata/#venvstacks.stacks.LayerSpecMetadata" title="venvstacks.stacks.LayerSpecMetadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerSpecMetadata</span></code></a></p></td>
-<td><p>Details of a defined environment layer</p></td>
+<td><p>Details of a defined environment layer.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.LayerVariants/#venvstacks.stacks.LayerVariants" title="venvstacks.stacks.LayerVariants"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerVariants</span></code></a></p></td>
-<td><p>Enum for defined layer variants</p></td>
+<td><p>Enum for defined layer variants.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.TargetPlatform/#venvstacks.stacks.TargetPlatform" title="venvstacks.stacks.TargetPlatform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TargetPlatform</span></code></a></p></td>
 <td><p>alias of <a class="reference internal" href="venvstacks.stacks.TargetPlatforms/#venvstacks.stacks.TargetPlatforms" title="venvstacks.stacks.TargetPlatforms"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetPlatforms</span></code></a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.TargetPlatforms/#venvstacks.stacks.TargetPlatforms" title="venvstacks.stacks.TargetPlatforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TargetPlatforms</span></code></a></p></td>
-<td><p>Enum for support target deployment platforms</p></td>
+<td><p>Enum for support target deployment platforms.</p></td>
 </tr>
 </tbody>
 </table>
@@ -333,25 +337,25 @@ without any deprecation period.</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.ArchiveBuildMetadata/#venvstacks.stacks.ArchiveBuildMetadata" title="venvstacks.stacks.ArchiveBuildMetadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArchiveBuildMetadata</span></code></a></p></td>
-<td><p>Inputs to an archive build request for a single environment</p></td>
+<td><p>Inputs to an archive build request for a single environment.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.ArchiveBuildRequest/#venvstacks.stacks.ArchiveBuildRequest" title="venvstacks.stacks.ArchiveBuildRequest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArchiveBuildRequest</span></code></a></p></td>
-<td><p>Structured request to build a named output archive</p></td>
+<td><p>Structured request to build a named output archive.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.ArchiveHashes/#venvstacks.stacks.ArchiveHashes" title="venvstacks.stacks.ArchiveHashes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArchiveHashes</span></code></a></p></td>
-<td><p>Hash details of a built archive</p></td>
+<td><p>Hash details of a built archive.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.ArchiveMetadata/#venvstacks.stacks.ArchiveMetadata" title="venvstacks.stacks.ArchiveMetadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArchiveMetadata</span></code></a></p></td>
-<td><p>Archive details for a single environment (includes build request details)</p></td>
+<td><p>Archive details for a single environment (includes build request details).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.PublishedArchivePaths/#venvstacks.stacks.PublishedArchivePaths" title="venvstacks.stacks.PublishedArchivePaths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PublishedArchivePaths</span></code></a></p></td>
-<td><p>Locations of published metadata and archive files</p></td>
+<td><p>Locations of published metadata and archive files.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.StackPublishingRequest/#venvstacks.stacks.StackPublishingRequest" title="venvstacks.stacks.StackPublishingRequest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StackPublishingRequest</span></code></a></p></td>
-<td><p>Inputs to an archive build request for a full stack specification</p></td>
+<td><p>Inputs to an archive build request for a full stack specification.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.StackPublishingResult/#venvstacks.stacks.StackPublishingResult" title="venvstacks.stacks.StackPublishingResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StackPublishingResult</span></code></a></p></td>
-<td><p>Archive details for built stack specification (includes build request details)</p></td>
+<td><p>Archive details for built stack specification (includes build request details).</p></td>
 </tr>
 </tbody>
 </table>
@@ -360,17 +364,17 @@ without any deprecation period.</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.EnvironmentExportRequest/#venvstacks.stacks.EnvironmentExportRequest" title="venvstacks.stacks.EnvironmentExportRequest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EnvironmentExportRequest</span></code></a></p></td>
-<td><p>Structured request to locally export an environment</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.LayerExportRequest/#venvstacks.stacks.LayerExportRequest" title="venvstacks.stacks.LayerExportRequest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerExportRequest</span></code></a></p></td>
+<td><p>Structured request to locally export an environment.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.ExportMetadata/#venvstacks.stacks.ExportMetadata" title="venvstacks.stacks.ExportMetadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ExportMetadata</span></code></a></p></td>
-<td><p>Metadata for a locally exported environment</p></td>
+<td><p>Metadata for a locally exported environment.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.ExportedEnvironmentPaths/#venvstacks.stacks.ExportedEnvironmentPaths" title="venvstacks.stacks.ExportedEnvironmentPaths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ExportedEnvironmentPaths</span></code></a></p></td>
-<td><p>Locations of exported metadata files and deployed environments</p></td>
+<td><p>Locations of exported metadata files and deployed environments.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.StackExportRequest/#venvstacks.stacks.StackExportRequest" title="venvstacks.stacks.StackExportRequest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StackExportRequest</span></code></a></p></td>
-<td><p>Inputs to an environment export request for a full stack specification</p></td>
+<td><p>Inputs to an environment export request for a full stack specification.</p></td>
 </tr>
 </tbody>
 </table>
@@ -379,14 +383,20 @@ without any deprecation period.</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.RuntimeSpec/#venvstacks.stacks.RuntimeSpec" title="venvstacks.stacks.RuntimeSpec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RuntimeSpec</span></code></a></p></td>
-<td><p>Base runtime layer specification</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.LayerSpecBase/#venvstacks.stacks.LayerSpecBase" title="venvstacks.stacks.LayerSpecBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerSpecBase</span></code></a></p></td>
+<td><p>Common base class for layer environment specifications.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.RuntimeSpec/#venvstacks.stacks.RuntimeSpec" title="venvstacks.stacks.RuntimeSpec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RuntimeSpec</span></code></a></p></td>
+<td><p>Base runtime layer specification.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.LayeredSpecBase/#venvstacks.stacks.LayeredSpecBase" title="venvstacks.stacks.LayeredSpecBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayeredSpecBase</span></code></a></p></td>
+<td><p>Common base class for framework and application layer specifications.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.FrameworkSpec/#venvstacks.stacks.FrameworkSpec" title="venvstacks.stacks.FrameworkSpec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FrameworkSpec</span></code></a></p></td>
-<td><p>Framework layer specification</p></td>
+<td><p>Framework layer specification.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.ApplicationSpec/#venvstacks.stacks.ApplicationSpec" title="venvstacks.stacks.ApplicationSpec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ApplicationSpec</span></code></a></p></td>
-<td><p>Application layer specification</p></td>
+<td><p>Application layer specification.</p></td>
 </tr>
 </tbody>
 </table>
@@ -395,20 +405,26 @@ without any deprecation period.</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.ApplicationEnv/#venvstacks.stacks.ApplicationEnv" title="venvstacks.stacks.ApplicationEnv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ApplicationEnv</span></code></a></p></td>
-<td><p>Application layer build environment</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.LayerEnvBase/#venvstacks.stacks.LayerEnvBase" title="venvstacks.stacks.LayerEnvBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerEnvBase</span></code></a></p></td>
+<td><p>Common base class for layer build environment implementations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.RuntimeEnv/#venvstacks.stacks.RuntimeEnv" title="venvstacks.stacks.RuntimeEnv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RuntimeEnv</span></code></a></p></td>
+<td><p>Base runtime layer build environment.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.LayeredEnvBase/#venvstacks.stacks.LayeredEnvBase" title="venvstacks.stacks.LayeredEnvBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayeredEnvBase</span></code></a></p></td>
+<td><p>Common base class for framework and application layer build environments.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.FrameworkEnv/#venvstacks.stacks.FrameworkEnv" title="venvstacks.stacks.FrameworkEnv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FrameworkEnv</span></code></a></p></td>
-<td><p>Framework layer build environment</p></td>
+<td><p>Framework layer build environment.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.RuntimeEnv/#venvstacks.stacks.RuntimeEnv" title="venvstacks.stacks.RuntimeEnv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RuntimeEnv</span></code></a></p></td>
-<td><p>Base runtime layer build environment</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.ApplicationEnv/#venvstacks.stacks.ApplicationEnv" title="venvstacks.stacks.ApplicationEnv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ApplicationEnv</span></code></a></p></td>
+<td><p>Application layer build environment.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.EnvironmentLock/#venvstacks.stacks.EnvironmentLock" title="venvstacks.stacks.EnvironmentLock"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EnvironmentLock</span></code></a></p></td>
-<td><p>Layered environment dependency locking management</p></td>
+<td><p>Layered environment dependency locking management.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.EnvironmentLockMetadata/#venvstacks.stacks.EnvironmentLockMetadata" title="venvstacks.stacks.EnvironmentLockMetadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EnvironmentLockMetadata</span></code></a></p></td>
-<td><p>Details of the last time this environment was locked</p></td>
+<td><p>Details of the last time this environment was locked.</p></td>
 </tr>
 </tbody>
 </table>
@@ -418,7 +434,7 @@ without any deprecation period.</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.PackageIndexConfig/#venvstacks.stacks.PackageIndexConfig" title="venvstacks.stacks.PackageIndexConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PackageIndexConfig</span></code></a></p></td>
-<td><p>Python package index access configuration</p></td>
+<td><p>Python package index access configuration.</p></td>
 </tr>
 </tbody>
 </table>
@@ -428,13 +444,13 @@ without any deprecation period.</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.BuildEnvError/#venvstacks.stacks.BuildEnvError" title="venvstacks.stacks.BuildEnvError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BuildEnvError</span></code></a></p></td>
-<td><p>Raised when a build environment doesn't comply with process restrictions</p></td>
+<td><p>Raised when a build environment doesn't comply with process restrictions.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.EnvStackError/#venvstacks.stacks.EnvStackError" title="venvstacks.stacks.EnvStackError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EnvStackError</span></code></a></p></td>
-<td><p>Common base class for all errors specific to managing environment stacks</p></td>
+<td><p>Common base class for all errors specific to managing environment stacks.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.LayerSpecError/#venvstacks.stacks.LayerSpecError" title="venvstacks.stacks.LayerSpecError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerSpecError</span></code></a></p></td>
-<td><p>Raised when an internal inconsistency is found in a layer specification</p></td>
+<td><p>Raised when an internal inconsistency is found in a layer specification.</p></td>
 </tr>
 </tbody>
 </table>

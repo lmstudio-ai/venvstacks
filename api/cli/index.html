@@ -221,16 +221,20 @@
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.PublishedArchivePaths/">venvstacks.stacks.PublishedArchivePaths</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.StackPublishingRequest/">venvstacks.stacks.StackPublishingRequest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.StackPublishingResult/">venvstacks.stacks.StackPublishingResult</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.EnvironmentExportRequest/">venvstacks.stacks.EnvironmentExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.LayerExportRequest/">venvstacks.stacks.LayerExportRequest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.ExportMetadata/">venvstacks.stacks.ExportMetadata</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.ExportedEnvironmentPaths/">venvstacks.stacks.ExportedEnvironmentPaths</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.StackExportRequest/">venvstacks.stacks.StackExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.LayerSpecBase/">venvstacks.stacks.LayerSpecBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.RuntimeSpec/">venvstacks.stacks.RuntimeSpec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.LayeredSpecBase/">venvstacks.stacks.LayeredSpecBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.FrameworkSpec/">venvstacks.stacks.FrameworkSpec</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.ApplicationSpec/">venvstacks.stacks.ApplicationSpec</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.LayerEnvBase/">venvstacks.stacks.LayerEnvBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.RuntimeEnv/">venvstacks.stacks.RuntimeEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.LayeredEnvBase/">venvstacks.stacks.LayeredEnvBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.EnvironmentLock/">venvstacks.stacks.EnvironmentLock</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.EnvironmentLockMetadata/">venvstacks.stacks.EnvironmentLockMetadata</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stacks/venvstacks.stacks.PackageIndexConfig/">venvstacks.stacks.PackageIndexConfig</a></li>
@@ -291,11 +295,13 @@
 Function, class, and method names may change between releases
 without any deprecation period.</p>
 </div>
-<p id="module-venvstacks.cli">Command line interface implementation</p>
+<p id="module-venvstacks.cli">Command line interface implementation.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="venvstacks.cli.main">
 <span class="sig-prename descclassname"><span class="pre">venvstacks.cli.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#venvstacks.cli.main" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Run the <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> CLI.</p>
+<p>If <em>args</em> is not given, defaults to using <code class="docutils literal notranslate"><span class="pre">sys.argv</span></code>.</p>
+</dd></dl>
 
 </section>
 

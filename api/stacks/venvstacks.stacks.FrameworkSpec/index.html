@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="search" title="Search" href="../../../search/" /><link rel="next" title="venvstacks.stacks.ApplicationSpec" href="../venvstacks.stacks.ApplicationSpec/" /><link rel="prev" title="venvstacks.stacks.RuntimeSpec" href="../venvstacks.stacks.RuntimeSpec/" />
+<link rel="search" title="Search" href="../../../search/" /><link rel="next" title="venvstacks.stacks.ApplicationSpec" href="../venvstacks.stacks.ApplicationSpec/" /><link rel="prev" title="venvstacks.stacks.LayeredSpecBase" href="../venvstacks.stacks.LayeredSpecBase/" />
         <link rel="canonical" href="https://venvstacks.lmstudio.ai/api/stacks/venvstacks.stacks.FrameworkSpec/" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
@@ -221,16 +221,20 @@
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.PublishedArchivePaths/">venvstacks.stacks.PublishedArchivePaths</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.StackPublishingRequest/">venvstacks.stacks.StackPublishingRequest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.StackPublishingResult/">venvstacks.stacks.StackPublishingResult</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.EnvironmentExportRequest/">venvstacks.stacks.EnvironmentExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayerExportRequest/">venvstacks.stacks.LayerExportRequest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.ExportMetadata/">venvstacks.stacks.ExportMetadata</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.ExportedEnvironmentPaths/">venvstacks.stacks.ExportedEnvironmentPaths</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.StackExportRequest/">venvstacks.stacks.StackExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayerSpecBase/">venvstacks.stacks.LayerSpecBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.RuntimeSpec/">venvstacks.stacks.RuntimeSpec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayeredSpecBase/">venvstacks.stacks.LayeredSpecBase</a></li>
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">venvstacks.stacks.FrameworkSpec</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.ApplicationSpec/">venvstacks.stacks.ApplicationSpec</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayerEnvBase/">venvstacks.stacks.LayerEnvBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.RuntimeEnv/">venvstacks.stacks.RuntimeEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayeredEnvBase/">venvstacks.stacks.LayeredEnvBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.EnvironmentLock/">venvstacks.stacks.EnvironmentLock</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.EnvironmentLockMetadata/">venvstacks.stacks.EnvironmentLockMetadata</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.PackageIndexConfig/">venvstacks.stacks.PackageIndexConfig</a></li>
@@ -288,20 +292,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="venvstacks.stacks.FrameworkSpec">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">venvstacks.stacks.</span></span><span class="sig-name descname"><span class="pre">FrameworkSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LayerBaseName</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">versioned</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">requirements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_requirements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platforms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../venvstacks.stacks.TargetPlatforms/#venvstacks.stacks.TargetPlatforms" title="venvstacks.stacks.TargetPlatforms"><span class="pre">TargetPlatforms</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runtime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../venvstacks.stacks.RuntimeSpec/#venvstacks.stacks.RuntimeSpec" title="venvstacks.stacks.RuntimeSpec"><span class="pre">RuntimeSpec</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#venvstacks.stacks.FrameworkSpec" title="Link to this definition">¶</a></dt>
-<dd><p>Framework layer specification</p>
-<p class="rubric">Methods</p>
-<div class="table-wrapper autosummary longtable docutils container">
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_requirements_fname</span></code>(platform)</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_requirements_path</span></code>(platform, requirements_dir)</p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
-</div>
+<dd><p>Framework layer specification.</p>
 <p class="rubric">Attributes</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
@@ -313,7 +304,7 @@
 <td><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">env_name</span></code></p></td>
-<td><p></p></td>
+<td><p>Build environment name for this layer specification.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">kind</span></code></p></td>
 <td><p></p></td>
@@ -357,14 +348,14 @@
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../venvstacks.stacks.RuntimeSpec/">
+          <a class="prev-page" href="../venvstacks.stacks.LayeredSpecBase/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">venvstacks.stacks.RuntimeSpec</div>
+                <div class="title">venvstacks.stacks.LayeredSpecBase</div>
                 
               </div>
             </a>

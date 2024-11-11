@@ -221,16 +221,20 @@
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.PublishedArchivePaths/">venvstacks.stacks.PublishedArchivePaths</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.StackPublishingRequest/">venvstacks.stacks.StackPublishingRequest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.StackPublishingResult/">venvstacks.stacks.StackPublishingResult</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.EnvironmentExportRequest/">venvstacks.stacks.EnvironmentExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayerExportRequest/">venvstacks.stacks.LayerExportRequest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.ExportMetadata/">venvstacks.stacks.ExportMetadata</a></li>
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">venvstacks.stacks.ExportedEnvironmentPaths</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.StackExportRequest/">venvstacks.stacks.StackExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayerSpecBase/">venvstacks.stacks.LayerSpecBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.RuntimeSpec/">venvstacks.stacks.RuntimeSpec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayeredSpecBase/">venvstacks.stacks.LayeredSpecBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.FrameworkSpec/">venvstacks.stacks.FrameworkSpec</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.ApplicationSpec/">venvstacks.stacks.ApplicationSpec</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayerEnvBase/">venvstacks.stacks.LayerEnvBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.RuntimeEnv/">venvstacks.stacks.RuntimeEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayeredEnvBase/">venvstacks.stacks.LayeredEnvBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.EnvironmentLock/">venvstacks.stacks.EnvironmentLock</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.EnvironmentLockMetadata/">venvstacks.stacks.EnvironmentLockMetadata</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.PackageIndexConfig/">venvstacks.stacks.PackageIndexConfig</a></li>
@@ -288,7 +292,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="venvstacks.stacks.ExportedEnvironmentPaths">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">venvstacks.stacks.</span></span><span class="sig-name descname"><span class="pre">ExportedEnvironmentPaths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">snippet_paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env_paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#venvstacks.stacks.ExportedEnvironmentPaths" title="Link to this definition">¶</a></dt>
-<dd><p>Locations of exported metadata files and deployed environments</p>
+<dd><p>Locations of exported metadata files and deployed environments.</p>
 <p class="rubric">Attributes</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">

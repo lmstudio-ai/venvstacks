@@ -221,16 +221,20 @@
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.PublishedArchivePaths/">venvstacks.stacks.PublishedArchivePaths</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.StackPublishingRequest/">venvstacks.stacks.StackPublishingRequest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.StackPublishingResult/">venvstacks.stacks.StackPublishingResult</a></li>
-<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.EnvironmentExportRequest/">venvstacks.stacks.EnvironmentExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.LayerExportRequest/">venvstacks.stacks.LayerExportRequest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.ExportMetadata/">venvstacks.stacks.ExportMetadata</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.ExportedEnvironmentPaths/">venvstacks.stacks.ExportedEnvironmentPaths</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.StackExportRequest/">venvstacks.stacks.StackExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.LayerSpecBase/">venvstacks.stacks.LayerSpecBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.RuntimeSpec/">venvstacks.stacks.RuntimeSpec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.LayeredSpecBase/">venvstacks.stacks.LayeredSpecBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.FrameworkSpec/">venvstacks.stacks.FrameworkSpec</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.ApplicationSpec/">venvstacks.stacks.ApplicationSpec</a></li>
-<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.LayerEnvBase/">venvstacks.stacks.LayerEnvBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.RuntimeEnv/">venvstacks.stacks.RuntimeEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.LayeredEnvBase/">venvstacks.stacks.LayeredEnvBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.EnvironmentLock/">venvstacks.stacks.EnvironmentLock</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.EnvironmentLockMetadata/">venvstacks.stacks.EnvironmentLockMetadata</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.PackageIndexConfig/">venvstacks.stacks.PackageIndexConfig</a></li>
@@ -291,7 +295,9 @@
 Function, class, and method names may change between releases
 without any deprecation period.</p>
 </div>
-<p class="rubric" id="module-venvstacks">Modules</p>
+<p id="module-venvstacks">Layered virtual environments stacks.</p>
+<p>Note: Python API is <em>NOT YET STABLE</em></p>
+<p class="rubric">Modules</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="cli/">venvstacks.cli</a><ul>
@@ -362,8 +368,8 @@ without any deprecation period.</p>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.StackPublishingResult/#venvstacks.stacks.StackPublishingResult"><code class="docutils literal notranslate"><span class="pre">StackPublishingResult</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.EnvironmentExportRequest/">venvstacks.stacks.EnvironmentExportRequest</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.EnvironmentExportRequest/#venvstacks.stacks.EnvironmentExportRequest"><code class="docutils literal notranslate"><span class="pre">EnvironmentExportRequest</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.LayerExportRequest/">venvstacks.stacks.LayerExportRequest</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.LayerExportRequest/#venvstacks.stacks.LayerExportRequest"><code class="docutils literal notranslate"><span class="pre">LayerExportRequest</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.ExportMetadata/">venvstacks.stacks.ExportMetadata</a><ul>
@@ -378,8 +384,16 @@ without any deprecation period.</p>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.StackExportRequest/#venvstacks.stacks.StackExportRequest"><code class="docutils literal notranslate"><span class="pre">StackExportRequest</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.LayerSpecBase/">venvstacks.stacks.LayerSpecBase</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.LayerSpecBase/#venvstacks.stacks.LayerSpecBase"><code class="docutils literal notranslate"><span class="pre">LayerSpecBase</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.RuntimeSpec/">venvstacks.stacks.RuntimeSpec</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.RuntimeSpec/#venvstacks.stacks.RuntimeSpec"><code class="docutils literal notranslate"><span class="pre">RuntimeSpec</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.LayeredSpecBase/">venvstacks.stacks.LayeredSpecBase</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.LayeredSpecBase/#venvstacks.stacks.LayeredSpecBase"><code class="docutils literal notranslate"><span class="pre">LayeredSpecBase</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.FrameworkSpec/">venvstacks.stacks.FrameworkSpec</a><ul>
@@ -390,16 +404,24 @@ without any deprecation period.</p>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.ApplicationSpec/#venvstacks.stacks.ApplicationSpec"><code class="docutils literal notranslate"><span class="pre">ApplicationSpec</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.ApplicationEnv/#venvstacks.stacks.ApplicationEnv"><code class="docutils literal notranslate"><span class="pre">ApplicationEnv</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.LayerEnvBase/">venvstacks.stacks.LayerEnvBase</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.LayerEnvBase/#venvstacks.stacks.LayerEnvBase"><code class="docutils literal notranslate"><span class="pre">LayerEnvBase</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.RuntimeEnv/">venvstacks.stacks.RuntimeEnv</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.RuntimeEnv/#venvstacks.stacks.RuntimeEnv"><code class="docutils literal notranslate"><span class="pre">RuntimeEnv</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.LayeredEnvBase/">venvstacks.stacks.LayeredEnvBase</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.LayeredEnvBase/#venvstacks.stacks.LayeredEnvBase"><code class="docutils literal notranslate"><span class="pre">LayeredEnvBase</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.FrameworkEnv/#venvstacks.stacks.FrameworkEnv"><code class="docutils literal notranslate"><span class="pre">FrameworkEnv</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.RuntimeEnv/">venvstacks.stacks.RuntimeEnv</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.RuntimeEnv/#venvstacks.stacks.RuntimeEnv"><code class="docutils literal notranslate"><span class="pre">RuntimeEnv</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stacks/venvstacks.stacks.ApplicationEnv/#venvstacks.stacks.ApplicationEnv"><code class="docutils literal notranslate"><span class="pre">ApplicationEnv</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="stacks/venvstacks.stacks.EnvironmentLock/">venvstacks.stacks.EnvironmentLock</a><ul>
