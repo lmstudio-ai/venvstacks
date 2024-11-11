@@ -319,7 +319,7 @@ available on <a class="reference external" href="https://github.com/lmstudio-ai/
 <section id="development-environment">
 <h3>Development Environment<a class="headerlink" href="#development-environment" title="Link to this heading">¶</a></h3>
 <p>In order to work on venvstacks, you need to install
-<a class="extlink-pypi reference external" href="https://pypi.org/project/pdm/">``pdm``</a>, <a class="extlink-pypi reference external" href="https://pypi.org/project/tox/">``tox``</a>, <a class="extlink-pypi reference external" href="https://pypi.org/project/tox-pdm/">``tox-pdm``</a>, and <a class="extlink-pypi reference external" href="https://pypi.org/project/scriv/">``scriv``</a>
+<a class="extlink-pypi reference external" href="https://pypi.org/project/pdm/">pdm</a>, <a class="extlink-pypi reference external" href="https://pypi.org/project/tox/">tox</a>, <a class="extlink-pypi reference external" href="https://pypi.org/project/tox-pdm/">tox-pdm</a>, and <a class="extlink-pypi reference external" href="https://pypi.org/project/scriv/">scriv</a>
 (everything else can be executed via <code class="docutils literal notranslate"><span class="pre">tox</span></code> environments).</p>
 <p>Given these tools, the default development environment can be set up
 and other commands executed as described below.</p>
@@ -352,7 +352,7 @@ to set up an editable install in the default venv:</p>
 </section>
 <section id="building-documentation">
 <h3>Building Documentation<a class="headerlink" href="#building-documentation" title="Link to this heading">¶</a></h3>
-<p>pip’s documentation is built using <a class="extlink-pypi reference external" href="https://pypi.org/project/Sphinx/">``Sphinx``</a>. The documentation is written
+<p>pip’s documentation is built using <a class="extlink-pypi reference external" href="https://pypi.org/project/Sphinx/">Sphinx</a>. The documentation is written
 in reStructuredText.</p>
 <p>To build it locally, run:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tox<span class="w"> </span>-e<span class="w"> </span>docs
@@ -362,7 +362,7 @@ in reStructuredText.</p>
 </section>
 <section id="changelog-entries">
 <h3>Changelog Entries<a class="headerlink" href="#changelog-entries" title="Link to this heading">¶</a></h3>
-<p>The <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> changelog is managed with <a class="extlink-pypi reference external" href="https://pypi.org/project/scriv/">``scriv``</a>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> changelog is managed with <a class="extlink-pypi reference external" href="https://pypi.org/project/scriv/">scriv</a>.</p>
 <p>All changes which may affect <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> users should be
 given a user facing changelog entry with <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">create</span></code>.</p>
 <p>Entries are written in <code class="docutils literal notranslate"><span class="pre">.rst</span></code> format by default, so they
@@ -382,8 +382,8 @@ settings)</p>
 <h2>Automated Testing<a class="headerlink" href="#automated-testing" title="Link to this heading">¶</a></h2>
 <section id="code-consistency-checks">
 <h3>Code consistency checks<a class="headerlink" href="#code-consistency-checks" title="Link to this heading">¶</a></h3>
-<p>The project source code is autoformatted and linted using <a class="extlink-pypi reference external" href="https://pypi.org/project/ruff/">``ruff``</a>.
-It also uses <a class="extlink-pypi reference external" href="https://pypi.org/project/mypy/">``mypy``</a> in strict mode to statically check that Python APIs
+<p>The project source code is autoformatted and linted using <a class="extlink-pypi reference external" href="https://pypi.org/project/ruff/">ruff</a>.
+It also uses <a class="extlink-pypi reference external" href="https://pypi.org/project/mypy/">mypy</a> in strict mode to statically check that Python APIs
 are being accessed as expected.</p>
 <p>All of these commands can be invoked via tox:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tox<span class="w"> </span>-e<span class="w"> </span>format
@@ -410,8 +410,8 @@ cover multiple lines, or breaking alignment of end-of-line comments).</p>
 </section>
 <section id="running-tests-locally">
 <h3>Running tests locally<a class="headerlink" href="#running-tests-locally" title="Link to this heading">¶</a></h3>
-<p>The project’s tests are written using the <a class="extlink-pypi reference external" href="https://pypi.org/project/pytest/">``pytest``</a> test framework and the
-standard library’s <a class="reference external" href="https://docs.python.org/3/library/unittest.html#module-unittest" title="(in Python v3.13)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">unittest</span></code></a> module. <a class="extlink-pypi reference external" href="https://pypi.org/project/tox/">``tox``</a> is used to automate the
+<p>The project’s tests are written using the <a class="extlink-pypi reference external" href="https://pypi.org/project/pytest/">pytest</a> test framework and the
+standard library’s <a class="reference external" href="https://docs.python.org/3/library/unittest.html#module-unittest" title="(in Python v3.13)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">unittest</span></code></a> module. <a class="extlink-pypi reference external" href="https://pypi.org/project/tox/">tox</a> is used to automate the
 setup and execution of these tests across multiple Python versions.</p>
 <p>Some of the tests build and deploy full environment stacks, which makes them
 take a long time to run (5+ minutes for the sample project build and export,

@@ -315,8 +315,8 @@ landscape, and invested in building something new to fill that need.</p>
 <p>There were two primary existing projects considered as potential
 solutions:</p>
 <ul class="simple">
-<li><p><a class="extlink-pypi reference external" href="https://pypi.org/project/wagon/">``wagon``</a></p></li>
-<li><p><a class="extlink-pypi reference external" href="https://pypi.org/project/conda-pack/">``conda-pack``</a></p></li>
+<li><p><a class="extlink-pypi reference external" href="https://pypi.org/project/wagon/">wagon</a></p></li>
+<li><p><a class="extlink-pypi reference external" href="https://pypi.org/project/conda-pack/">conda-pack</a></p></li>
 </ul>
 <p>Similar to <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code>, <code class="docutils literal notranslate"><span class="pre">wagon</span></code> aims to avoid needing to download
 Python packages on the target deployment system. However, it does
@@ -347,13 +347,13 @@ heavily in the Python AI ecosystem across different applications.</p>
 <h2>Technical<a class="headerlink" href="#technical" title="Link to this heading">¶</a></h2>
 <section id="why-use-python-build-standalone-for-the-base-runtimes">
 <h3>Why use <code class="docutils literal notranslate"><span class="pre">python-build-standalone</span></code> for the base runtimes?<a class="headerlink" href="#why-use-python-build-standalone-for-the-base-runtimes" title="Link to this heading">¶</a></h3>
-<p>The short answer to this question is “Because that’s what <a class="extlink-pypi reference external" href="https://pypi.org/project/pdm/">``pdm``</a> uses,
+<p>The short answer to this question is “Because that’s what <a class="extlink-pypi reference external" href="https://pypi.org/project/pdm/">pdm</a> uses,
 and <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> was already using <code class="docutils literal notranslate"><span class="pre">pdm</span></code> as its project management tool”.</p>
 <p>The longer answer is that there’s a genuinely strong alignment between the
 properties that the <code class="docutils literal notranslate"><span class="pre">python-build-standalone</span></code> maintainers aim to provide
 in their published binaries, and the characteristics that <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code>
 needs in its base runtime layers.</p>
-<p>Supporting additional base runtime layer providers (such as <a class="extlink-pypi reference external" href="https://pypi.org/project/conda/">``conda``</a>)
+<p>Supporting additional base runtime layer providers (such as <a class="extlink-pypi reference external" href="https://pypi.org/project/conda/">conda</a>)
 could be a genuinely interesting capability, but there are no current
 plans to implement such a mechanism.</p>
 </section>
