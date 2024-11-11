@@ -3,15 +3,15 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta content="venvstacks Spec Format - venvstacks Documentation" name="og:title" />
+<meta content="venvstacks File Formats - venvstacks Documentation" name="og:title" />
 <meta content="website" name="og:type" />
 <meta content="https://venvstacks.lmstudio.ai/stack-format/" name="og:url" />
-<meta content="venvstacks Stack Specification Format - venvstacks Documentation" name="og:description" />
+<meta content="venvstacks Specification and Metadata File Formats - venvstacks Documentation" name="og:description" />
 <link rel="search" title="Search" href="../search/" /><link rel="next" title="Design Discussion" href="../design/" /><link rel="prev" title="Essential Terms and Concepts" href="../glossary/" />
-        <link rel="canonical" href="https://venvstacks.lmstudio.ai/stack-format/" />
+        <link rel="canonical" href="https://venvstacks.lmstudio.ai/file-formats/" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
-        <title>Stack Specification Format - venvstacks documentation</title>
+        <title>Environment Stack File Formats - venvstacks documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
@@ -206,7 +206,7 @@
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../overview/">Project Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../glossary/">Essential Terms and Concepts</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Stack Specification Format</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Environment Stack File Formats</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/">Design Discussion</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/">Python API</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Python API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/cli/">venvstacks.cli</a></li>
@@ -278,7 +278,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../_sources/stack-format.rst.txt" title="View this page">
+  <a class="muted-link" href="../_sources/file-formats.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -298,10 +298,10 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="stack-specification-format">
-<span id="id1"></span><h1>Stack Specification Format<a class="headerlink" href="#stack-specification-format" title="Link to this heading">¶</a></h1>
+          <section id="environment-stack-file-formats">
+<h1>Environment Stack File Formats<a class="headerlink" href="#environment-stack-file-formats" title="Link to this heading">¶</a></h1>
 <section id="file-naming-and-formats">
-<h2>File naming and formats<a class="headerlink" href="#file-naming-and-formats" title="Link to this heading">¶</a></h2>
+<span id="stack-specification-format"></span><h2>File naming and formats<a class="headerlink" href="#file-naming-and-formats" title="Link to this heading">¶</a></h2>
 <p>By convention, virtual environment stacks are specified in a file named <code class="docutils literal notranslate"><span class="pre">venvstacks.toml</span></code>.</p>
 <p>The default output folder for layer metadata when publishing artifacts and locally exporting
 environments is called <code class="docutils literal notranslate"><span class="pre">__venvstacks__</span></code>. The platform-specific layer summary metadata
@@ -328,12 +328,6 @@ syntax used to define <code class="docutils literal notranslate"><span class="pr
 <li><p><code class="docutils literal notranslate"><span class="pre">[[frameworks]]</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">[[applications]]</span></code></p></li>
 </ul>
-<p># Permitted entries in the <code class="docutils literal notranslate"><span class="pre">platforms</span></code> list are:
-#
-# * “win_amd64”: Windows on x86-64
-# * “linux_x86_64”: Linux on x86_64
-# * “macosx_arm64”: macOS on Apple silicon
-# * “macosx_x86_64”: macOS on Intel silicon (not currently tested in CI)</p>
 <section id="common-layer-specification-fields">
 <h3>Common layer specification fields<a class="headerlink" href="#common-layer-specification-fields" title="Link to this heading">¶</a></h3>
 <p>All layer specifications must contain the following two fields:</p>
@@ -573,7 +567,7 @@ the effects of the <code class="docutils literal notranslate"><span class="pre">
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Stack Specification Format</a><ul>
+<li><a class="reference internal" href="#">Environment Stack File Formats</a><ul>
 <li><a class="reference internal" href="#file-naming-and-formats">File naming and formats</a></li>
 <li><a class="reference internal" href="#defining-virtual-environment-stacks">Defining virtual environment stacks</a><ul>
 <li><a class="reference internal" href="#common-layer-specification-fields">Common layer specification fields</a></li>

@@ -54,7 +54,7 @@ make future Python version upgrades more irritating):
 
    overview
    glossary
-   stack-format
+   file-formats
    design
    api/index
    development/index
