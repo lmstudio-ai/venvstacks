@@ -1,4 +1,4 @@
-"""Test cases for hashing utility functions"""
+"""Test cases for hashing utility functions."""
 
 import hashlib
 import shutil

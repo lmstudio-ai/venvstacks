@@ -1,4 +1,4 @@
-"""Command line interface implementation"""
+"""Command line interface implementation."""
 
 import os.path
 import sys
@@ -174,7 +174,7 @@ def _define_build_environment(
     index: bool,
     local_wheels: list[str] | None,
 ) -> BuildEnvironment:
-    """Load given stack specification and define a build environment"""
+    """Load given stack specification and define a build environment."""
     stack_spec = StackSpec.load(spec_path)
     index_config = PackageIndexConfig(
         query_default_index=index,
@@ -548,6 +548,10 @@ def local_export(
 
 
 def main(args: list[str] | None = None) -> None:
+    """Run the ``venvstacks`` CLI.
+
+    If *args* is not given, defaults to using ``sys.argv``.
+    """
     # Indirectly calls the relevant click.Command variant's `main` method
     # See https://click.palletsprojects.com/en/8.1.x/api/#click.BaseCommand.main
     _cli(args)

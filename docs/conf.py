@@ -22,6 +22,7 @@ extensions = [
     "sphinx.ext.duration",
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.napoleon",
 ]
 
 templates_path = ["_templates"]
@@ -49,13 +50,6 @@ html_use_index = False
 # (still using autodoc, but no generated stub files)
 autosummary_generate = False
 
-# -- Options for intersphinx ----------------------------------------------------------
-
-intersphinx_mapping = {
-    "py": ("https://docs.python.org/3", None),
-    "packaging": ("https://packaging.python.org/en/latest/", None),
-}
-
 
 # -- Options for extlinks -------------------------------------------------------------
 
@@ -64,3 +58,16 @@ extlinks = {
     "pr": ("https://github.com/lmstudio-ai/venvstacks/pull/%s", "PR #%s"),
     "pypi": ("https://pypi.org/project/%s/", "%s"),
 }
+
+# -- Options for intersphinx ----------------------------------------------------------
+
+intersphinx_mapping = {
+    "py": ("https://docs.python.org/3", None),
+    "packaging": ("https://packaging.python.org/en/latest/", None),
+}
+
+
+# -- Options for napoleon ------------------------------------------------------------
+
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False

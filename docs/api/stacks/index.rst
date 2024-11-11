@@ -50,7 +50,7 @@
       :toctree:
       :nosignatures:
 
-      EnvironmentExportRequest
+      LayerExportRequest
       ExportMetadata
       ExportedEnvironmentPaths
       StackExportRequest
@@ -61,7 +61,9 @@
       :toctree:
       :nosignatures:
 
+      LayerSpecBase
       RuntimeSpec
+      LayeredSpecBase
       FrameworkSpec
       ApplicationSpec
 
@@ -71,9 +73,11 @@
       :toctree:
       :nosignatures:
 
-      ApplicationEnv
-      FrameworkEnv
+      LayerEnvBase
       RuntimeEnv
+      LayeredEnvBase
+      FrameworkEnv
+      ApplicationEnv
       EnvironmentLock
       EnvironmentLockMetadata
 

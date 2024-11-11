@@ -1,4 +1,4 @@
-"""Test building the minimal project produces the expected results"""
+"""Test building the minimal project produces the expected results."""
 
 import json
 import shutil
@@ -52,7 +52,7 @@ MINIMAL_PROJECT_PATHS = (
 
 
 def _define_build_env(working_path: Path) -> BuildEnvironment:
-    """Define a build environment for the sample project in a temporary folder"""
+    """Define a build environment for the sample project in a temporary folder."""
     # To avoid side effects from lock file creation, copy input files to the working path
     for src_path in MINIMAL_PROJECT_PATHS:
         dest_path = working_path / src_path.name
@@ -131,7 +131,7 @@ _CHECKED_KEYS = frozenset(EXPECTED_MANIFEST["layers"]["applications"][0])
 
 
 def _filter_archive_manifest(archive_manifest: ArchiveBuildMetadata) -> ArchiveSummary:
-    """Drop archive manifest fields that aren't covered by this set of test cases"""
+    """Drop archive manifest fields that aren't covered by this set of test cases."""
     summary: ArchiveSummary = {}
     for key in _CHECKED_KEYS:
         value = archive_manifest.get(key)
@@ -143,7 +143,7 @@ def _filter_archive_manifest(archive_manifest: ArchiveBuildMetadata) -> ArchiveS
 def _filter_manifest(
     manifest: StackPublishingRequest,
 ) -> tuple[BuildManifest, LastLockedTimes]:
-    """Extract manifest fields that are relevant to this set of test cases"""
+    """Extract manifest fields that are relevant to this set of test cases."""
     filtered_summaries: ArchiveSummaries = {}
     last_locked_times: LastLockedTimes = {}
     for kind, archive_manifests in manifest["layers"].items():
@@ -157,7 +157,7 @@ def _filter_manifest(
 
 
 def _tag_manifest(manifest: BuildManifest, expected_tag: str) -> BuildManifest:
-    """Add expected build tag to fields that are expected to include the build tag"""
+    """Add expected build tag to fields that are expected to include the build tag."""
     tagged_summaries: ArchiveSummaries = {}
     for kind, summaries in manifest["layers"].items():
         tagged_summaries[kind] = new_summaries = []

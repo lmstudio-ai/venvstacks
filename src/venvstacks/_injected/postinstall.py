@@ -1,4 +1,4 @@
-"""venvstacks layer post-installation script
+"""venvstacks layer post-installation script.
 
 * Loads `./share/venv/metadata/venvstacks_layer.json`
 * Generates `pyvenv.cfg` for layered environments
@@ -20,7 +20,7 @@ DEPLOYED_LAYER_CONFIG = "share/venv/metadata/venvstacks_layer.json"
 
 
 class LayerConfig(TypedDict):
-    """Additional details needed to fully configure deployed environments"""
+    """Additional details needed to fully configure deployed environments."""
 
     # fmt: off
     python: str                      # Relative path to this layer's Python executable
@@ -38,7 +38,7 @@ class LayerConfig(TypedDict):
 
 
 class ResolvedLayerConfig(TypedDict):
-    """LayerConfig with relative paths resolved for a specific layer location"""
+    """LayerConfig with relative paths resolved for a specific layer location."""
 
     # fmt: off
     layer_path: Path                 # Absolute path to layer environment
@@ -53,10 +53,10 @@ class ResolvedLayerConfig(TypedDict):
 
 
 def load_layer_config(layer_path: Path) -> ResolvedLayerConfig:
-    """Read and resolve config for the specified layer environment"""
+    """Read and resolve config for the specified layer environment."""
 
     def deployed_path(relative_path: str) -> Path:
-        """Normalize path and make it absolute, *without* resolving symlinks"""
+        """Normalize path and make it absolute, *without* resolving symlinks."""
         return Path(abspath(layer_path / relative_path))
 
     config_path = layer_path / DEPLOYED_LAYER_CONFIG
@@ -76,7 +76,7 @@ def load_layer_config(layer_path: Path) -> ResolvedLayerConfig:
 
 
 def generate_pyvenv_cfg(base_python_path: Path, py_version: str) -> str:
-    """Generate `pyvenv.cfg` contents for given base Python path and version"""
+    """Generate `pyvenv.cfg` contents for given base Python path and version."""
     if not base_python_path.is_absolute():
         raise RuntimeError("Post-installation must use absolute environment paths")
     venv_config_lines = [
@@ -107,7 +107,7 @@ def generate_sitecustomize(
     *,
     skip_missing_dynlib_paths: bool = True,
 ) -> str | None:
-    """Generate `sitecustomize.py` contents for given linked environment directories"""
+    """Generate `sitecustomize.py` contents for given linked environment directories."""
     sc_contents = [_SITE_CUSTOMIZE_HEADER]
     if pylib_paths:
         pylib_contents = [
@@ -148,8 +148,7 @@ def generate_sitecustomize(
 
 
 def _run_postinstall(layer_path: Path) -> None:
-    """Run the required post-installation steps in a deployed environment"""
-
+    """Run the required post-installation steps in a deployed environment."""
     # Read the layer config file
     config = load_layer_config(layer_path)
 

@@ -1,4 +1,4 @@
-"""Test building the sample project produces the expected results"""
+"""Test building the sample project produces the expected results."""
 
 import os.path
 import shutil
@@ -48,7 +48,7 @@ SAMPLE_PROJECT_MANIFESTS_PATH = SAMPLE_PROJECT_PATH / "expected_manifests"
 
 
 def _define_build_env(working_path: Path) -> BuildEnvironment:
-    """Define a build environment for the sample project in a temporary folder"""
+    """Define a build environment for the sample project in a temporary folder."""
     # To simplify regeneration of committed lockfiles and metadata,
     # use the spec file directly from its checked out location
     stack_spec = StackSpec.load(SAMPLE_PROJECT_STACK_SPEC_PATH)
@@ -57,7 +57,7 @@ def _define_build_env(working_path: Path) -> BuildEnvironment:
 
 
 def _get_expected_metadata(build_env: BuildEnvironment) -> ManifestData:
-    """Path to the expected sample project archive metadata for the current platform"""
+    """Path to the expected sample project archive metadata for the current platform."""
     return ManifestData(SAMPLE_PROJECT_MANIFESTS_PATH / build_env.build_platform)
 
 

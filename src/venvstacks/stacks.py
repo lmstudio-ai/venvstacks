@@ -1,5 +1,5 @@
 #!/bin/python3
-"""Portable Python environment stacks
+"""Portable Python environment stacks.
 
 Creates Python runtime, framework, and app environments based on venvstacks.toml
 """
@@ -54,15 +54,15 @@ from ._util import (
 
 
 class EnvStackError(ValueError):
-    """Common base class for all errors specific to managing environment stacks"""
+    """Common base class for all errors specific to managing environment stacks."""
 
 
 class LayerSpecError(EnvStackError):
-    """Raised when an internal inconsistency is found in a layer specification"""
+    """Raised when an internal inconsistency is found in a layer specification."""
 
 
 class BuildEnvError(EnvStackError):
-    """Raised when a build environment doesn't comply with process restrictions"""
+    """Raised when a build environment doesn't comply with process restrictions."""
 
 
 ######################################################
@@ -70,21 +70,21 @@ class BuildEnvError(EnvStackError):
 ######################################################
 
 try:
-    fs_sync = os.sync  # type: ignore[attr-defined,unused-ignore]
+    _fs_sync = os.sync  # type: ignore[attr-defined,unused-ignore]
 except AttributeError:
     # No os.sync on Windows
-    def fs_sync() -> None:
+    def _fs_sync() -> None:
         pass
 
 
-def get_path_mtime(fspath: StrPath) -> datetime | None:
+def _get_path_mtime(fspath: StrPath) -> datetime | None:
     path = Path(fspath)
     if not path.exists():
         return None
     return datetime.fromtimestamp(path.lstat().st_mtime).astimezone()
 
 
-def format_as_utc(dt: datetime) -> str:
+def _format_as_utc(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat()
 
 
@@ -116,7 +116,7 @@ def _resolve_lexical_path(path: StrPath, base_path: Path, /) -> Path:
 
 @dataclass
 class PackageIndexConfig:
-    """Python package index access configuration"""
+    """Python package index access configuration."""
 
     query_default_index: bool = field(default=True)
     local_wheel_dirs: InitVar[Sequence[StrPath] | None] = None
@@ -133,14 +133,14 @@ class PackageIndexConfig:
 
     @classmethod
     def disabled(cls) -> Self:
-        """Package index configuration that disallows package installation"""
+        """Package index configuration that disallows package installation."""
         return cls(
             query_default_index=False,
             local_wheel_dirs=None,
         )
 
     def resolve_lexical_paths(self, base_path: StrPath) -> None:
-        """Lexically resolve paths in config relative to the given base path"""
+        """Lexically resolve paths in config relative to the given base path."""
         base_path = Path(base_path)
         self.local_wheel_paths[:] = [
             _resolve_lexical_path(path, base_path) for path in self.local_wheel_paths
@@ -175,7 +175,7 @@ EnvNameDeploy = NewType("EnvNameDeploy", str)
 
 
 class EnvironmentLockMetadata(TypedDict):
-    """Details of the last time this environment was locked"""
+    """Details of the last time this environment was locked."""
 
     # fmt: off
     locked_at: str          # ISO formatted date/time value
@@ -189,7 +189,7 @@ _T = TypeVar("_T")
 
 @dataclass
 class EnvironmentLock:
-    """Layered environment dependency locking management"""
+    """Layered environment dependency locking management."""
 
     requirements_path: Path
     versioned: bool
@@ -205,6 +205,10 @@ class EnvironmentLock:
         self._lock_version = self._get_last_locked_version(requirements_hash)
 
     def get_deployed_name(self, env_name: EnvNameBuild) -> EnvNameDeploy:
+        """Report layer name with lock version (if any) appended.
+
+        Deployed name matches the build name if automatic lock versioning is disabled.
+        """
         if self.versioned:
             return EnvNameDeploy(f"{env_name}@{self.lock_version}")
         return EnvNameDeploy(env_name)
@@ -221,14 +225,20 @@ class EnvironmentLock:
 
     @property
     def requirements_hash(self) -> str:
+        """Hash of the last locked set of layer requirements."""
         return self._raise_if_none(self._requirements_hash)
 
     @property
     def last_locked(self) -> datetime:
+        """Date and time when the layer requirements were last locked."""
         return self._raise_if_none(self._last_locked)
 
     @property
     def lock_version(self) -> int:
+        """Last recorded version of the layer requirements.
+
+        Always reports ``1`` if automatic lock versioning is disabled.
+        """
         if not self.versioned:
             # Unversioned specs are always considered version 1
             return 1
@@ -236,11 +246,13 @@ class EnvironmentLock:
 
     @property
     def is_locked(self) -> bool:
+        """``True`` if layer requirements have been locked."""
         return self._last_locked is not None
 
     @property
     def locked_at(self) -> str:
-        return format_as_utc(self.last_locked)
+        """ISO-formated UTC string reporting the last locked date/time."""
+        return _format_as_utc(self.last_locked)
 
     def _hash_requirements(self) -> str | None:
         requirements_path = self.requirements_path
@@ -249,7 +261,7 @@ class EnvironmentLock:
         return _hash_file(self.requirements_path)
 
     def _load_saved_metadata(self) -> EnvironmentLockMetadata | None:
-        """Loads last locked metadata from disk (if it exists)"""
+        """Loads last locked metadata from disk (if it exists)."""
         lock_metadata_path = self.lock_metadata_path
         if not lock_metadata_path.exists():
             return None
@@ -263,7 +275,7 @@ class EnvironmentLock:
     def load_valid_metadata(
         self, requirements_hash: str
     ) -> EnvironmentLockMetadata | None:
-        """Loads last locked metadata only if the requirements hash matches"""
+        """Loads last locked metadata only if the requirements hash matches."""
         lock_metadata = self._load_saved_metadata()
         if lock_metadata and requirements_hash == lock_metadata["requirements_hash"]:
             return lock_metadata
@@ -276,7 +288,7 @@ class EnvironmentLock:
         return None
 
     def _get_path_mtime(self) -> datetime | None:
-        return get_path_mtime(self.requirements_path)
+        return _get_path_mtime(self.requirements_path)
 
     def _get_last_locked_time(self, requirements_hash: str | None) -> datetime | None:
         # Prefer the lock timestamp from an adjacent (still valid) lock metadata file
@@ -325,6 +337,7 @@ class EnvironmentLock:
         _write_json(self.lock_metadata_path, lock_metadata)
 
     def update_lock_metadata(self) -> bool:
+        """Update the recorded lock metadata for this environment lock."""
         # Calculate current requirements hash
         requirements_hash = self._hash_requirements()
         if requirements_hash is None:
@@ -348,7 +361,7 @@ class EnvironmentLock:
 # https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
 # macOS target system API version info is omitted (as that will be set universally for macOS builds)
 class TargetPlatforms(StrEnum):
-    """Enum for support target deployment platforms"""
+    """Enum for support target deployment platforms."""
 
     WINDOWS = "win_amd64"
     LINUX = "linux_x86_64"
@@ -357,10 +370,15 @@ class TargetPlatforms(StrEnum):
 
     @classmethod
     def get_all_target_platforms(cls) -> list[Self]:
+        """Sorted list of all defined target platforms."""
         return sorted(set(cls.__members__.values()))
 
     @classmethod
     def ensure_platform_list(cls, metadata: MutableMapping[str, Any]) -> None:
+        """Ensure given metadata mapping includes a ``"platforms`` field.
+
+        If the field is not already present, it is set to all defined platforms.
+        """
         platform_list = metadata.get("platforms")
         if platform_list is not None:
             platform_list = [cls(target) for target in platform_list]
@@ -375,7 +393,7 @@ TargetPlatform = (
 
 
 class LayerVariants(StrEnum):
-    """Enum for defined layer variants"""
+    """Enum for defined layer variants."""
 
     RUNTIME = "runtime"
     FRAMEWORK = "framework"
@@ -383,7 +401,7 @@ class LayerVariants(StrEnum):
 
 
 class LayerCategories(StrEnum):
-    """Enum for defined layer categories (collections of each variant)"""
+    """Enum for defined layer categories (collections of each variant)."""
 
     RUNTIMES = "runtimes"
     FRAMEWORKS = "frameworks"
@@ -391,15 +409,15 @@ class LayerCategories(StrEnum):
 
 
 def ensure_optional_env_spec_fields(env_metadata: MutableMapping[str, Any]) -> None:
-    """Populate missing environment spec fields that are optional in the TOML file"""
+    """Populate missing environment spec fields that are optional in the TOML file."""
     TargetPlatforms.ensure_platform_list(env_metadata)
     env_metadata.setdefault("build_requirements", [])
     env_metadata.setdefault("versioned", False)
 
 
 @dataclass
-class _PythonEnvironmentSpec(ABC):
-    "Common base class for Python environment specifications"
+class LayerSpecBase(ABC):
+    """Common base class for layer environment specifications."""
 
     # Optionally overridden in concrete subclasses
     ENV_PREFIX = ""
@@ -420,7 +438,7 @@ class _PythonEnvironmentSpec(ABC):
         # they're not allowed to use prefixes that *are* defined
         if not self.ENV_PREFIX:
             spec_name = self.name
-            for spec_type in _PythonEnvironmentSpec.__subclasses__():
+            for spec_type in LayerSpecBase.__subclasses__():
                 reserved_prefix = spec_type.ENV_PREFIX
                 if not reserved_prefix:
                     continue
@@ -430,22 +448,25 @@ class _PythonEnvironmentSpec(ABC):
 
     @property
     def env_name(self) -> EnvNameBuild:
+        """Build environment name for this layer specification."""
         prefix = self.ENV_PREFIX
         if prefix:
             return EnvNameBuild(f"{prefix}-{self.name}")
         return EnvNameBuild(self.name)
 
     def get_requirements_fname(self, platform: str) -> str:
+        """Locked requirements file name for this layer specification."""
         return f"requirements-{self.env_name}-{platform}.txt"
 
     def get_requirements_path(self, platform: str, requirements_dir: StrPath) -> Path:
+        """Locked requirements path for this layer specification."""
         requirements_fname = self.get_requirements_fname(platform)
         return Path(requirements_dir) / self.env_name / requirements_fname
 
 
 @dataclass
-class RuntimeSpec(_PythonEnvironmentSpec):
-    """Base runtime layer specification"""
+class RuntimeSpec(LayerSpecBase):
+    """Base runtime layer specification."""
 
     kind = LayerVariants.RUNTIME
     category = LayerCategories.RUNTIMES
@@ -453,20 +474,22 @@ class RuntimeSpec(_PythonEnvironmentSpec):
 
     @property
     def py_version(self) -> str:
+        """Extract just the Python version string from the base runtime identifier."""
         # fully_versioned_name should be of the form "implementation@X.Y.Z"
         # (this may need adjusting if runtimes other than CPython are ever used...)
         return self.fully_versioned_name.partition("@")[2]
 
 
 @dataclass
-class _VirtualEnvironmentSpec(_PythonEnvironmentSpec):
+class LayeredSpecBase(LayerSpecBase):
+    """Common base class for framework and application layer specifications."""
     # Intermediate class for covariant property typing (never instantiated)
     runtime: RuntimeSpec = field(repr=False)
 
 
 @dataclass
-class FrameworkSpec(_VirtualEnvironmentSpec):
-    """Framework layer specification"""
+class FrameworkSpec(LayeredSpecBase):
+    """Framework layer specification."""
 
     ENV_PREFIX = "framework"
     kind = LayerVariants.FRAMEWORK
@@ -474,8 +497,8 @@ class FrameworkSpec(_VirtualEnvironmentSpec):
 
 
 @dataclass
-class ApplicationSpec(_VirtualEnvironmentSpec):
-    """Application layer specification"""
+class ApplicationSpec(LayeredSpecBase):
+    """Application layer specification."""
 
     ENV_PREFIX = "app"
     kind = LayerVariants.APPLICATION
@@ -485,7 +508,7 @@ class ApplicationSpec(_VirtualEnvironmentSpec):
 
 
 class LayerSpecMetadata(TypedDict):
-    """Details of a defined environment layer"""
+    """Details of a defined environment layer."""
 
     # fmt: off
     # Common fields defined for all layers, whether archived or exported
@@ -520,7 +543,7 @@ class LayerSpecMetadata(TypedDict):
 
 
 class ArchiveHashes(TypedDict):
-    """Hash details of a built archive"""
+    """Hash details of a built archive."""
 
     sha256: str
     # Only SHA256 hashes for now. Mark both old and new hash fields with `typing.NotRequired`
@@ -528,7 +551,7 @@ class ArchiveHashes(TypedDict):
 
 
 class ArchiveBuildMetadata(LayerSpecMetadata):
-    """Inputs to an archive build request for a single environment"""
+    """Inputs to an archive build request for a single environment."""
 
     # fmt: off
     archive_build: int    # Auto-incremented from previous build metadata
@@ -538,7 +561,7 @@ class ArchiveBuildMetadata(LayerSpecMetadata):
 
 
 class ArchiveMetadata(ArchiveBuildMetadata):
-    """Archive details for a single environment (includes build request details)"""
+    """Archive details for a single environment (includes build request details)."""
 
     archive_size: int
     archive_hashes: ArchiveHashes
@@ -546,7 +569,7 @@ class ArchiveMetadata(ArchiveBuildMetadata):
 
 @dataclass
 class ArchiveBuildRequest:
-    """Structured request to build a named output archive"""
+    """Structured request to build a named output archive."""
 
     env_name: EnvNameBuild
     env_lock: EnvironmentLock
@@ -556,7 +579,7 @@ class ArchiveBuildRequest:
     # TODO: Save full previous metadata for use when build is skipped
 
     @staticmethod
-    def needs_archive_build(
+    def _needs_archive_build(
         archive_path: Path,
         metadata: ArchiveBuildMetadata,
         previous_metadata: ArchiveMetadata | None,
@@ -586,6 +609,7 @@ class ArchiveBuildRequest:
         previous_metadata: ArchiveMetadata | None = None,
         force: bool = False,
     ) -> Self:
+        """Define a new archive build request for the given environment."""
         # Bump or set the archive build version
         lock_version = env_lock.lock_version
         if previous_metadata is None:
@@ -622,7 +646,7 @@ class ArchiveBuildRequest:
             requirements_hash=env_lock.requirements_hash,
             target_platform=str(target_platform),  # Convert enums to plain strings
         )
-        needs_build = force or cls.needs_archive_build(
+        needs_build = force or cls._needs_archive_build(
             built_archive_path, build_metadata, previous_metadata
         )
         if needs_build:
@@ -649,6 +673,7 @@ class ArchiveBuildRequest:
         previous_metadata: ArchiveMetadata | None = None,
         work_path: Path | None = None,
     ) -> tuple[ArchiveMetadata, Path]:
+        """Create the layer archive specified in this build request."""
         if env_path.name != self.env_name:
             err_msg = (
                 f"Build mismatch (expected {self.env_name!r}, got {env_path.name!r})"
@@ -688,7 +713,7 @@ class ArchiveBuildRequest:
 
 
 class StackPublishingRequest(TypedDict):
-    """Inputs to an archive build request for a full stack specification"""
+    """Inputs to an archive build request for a full stack specification."""
 
     layers: Mapping[LayerCategories, Sequence[ArchiveBuildMetadata]]
 
@@ -697,13 +722,13 @@ LayeredArchiveMetadata = Mapping[LayerCategories, Sequence[ArchiveMetadata]]
 
 
 class StackPublishingResult(TypedDict):
-    """Archive details for built stack specification (includes build request details)"""
+    """Archive details for built stack specification (includes build request details)."""
 
     layers: LayeredArchiveMetadata
 
 
 class PublishedArchivePaths(NamedTuple):
-    """Locations of published metadata and archive files"""
+    """Locations of published metadata and archive files."""
 
     metadata_path: Path
     snippet_paths: list[Path]
@@ -716,14 +741,14 @@ class PublishedArchivePaths(NamedTuple):
 
 
 class ExportMetadata(LayerSpecMetadata):
-    """Metadata for a locally exported environment"""
+    """Metadata for a locally exported environment."""
 
     # Exports currently include only the common metadata
 
 
 @dataclass
-class EnvironmentExportRequest:
-    """Structured request to locally export an environment"""
+class LayerExportRequest:
+    """Structured request to locally export an environment."""
 
     env_name: EnvNameBuild
     env_lock: EnvironmentLock
@@ -733,7 +758,7 @@ class EnvironmentExportRequest:
     # TODO: Save full previous metadata for use when export is skipped
 
     @staticmethod
-    def needs_new_export(
+    def _needs_new_export(
         export_path: Path,
         metadata: ExportMetadata,
         previous_metadata: ExportMetadata | None,
@@ -760,6 +785,7 @@ class EnvironmentExportRequest:
         previous_metadata: ExportMetadata | None = None,
         force: bool = False,
     ) -> Self:
+        """Define a new layer export request for the given environment."""
         # Work out the details of the export request
         deployed_name = env_lock.get_deployed_name(env_name)
         export_path = output_path / deployed_name
@@ -770,7 +796,7 @@ class EnvironmentExportRequest:
             locked_at=env_lock.locked_at,
             requirements_hash=env_lock.requirements_hash,
         )
-        needs_export = force or cls.needs_new_export(
+        needs_export = force or cls._needs_new_export(
             export_path, export_metadata, previous_metadata
         )
         return cls(env_name, env_lock, export_path, export_metadata, needs_export)
@@ -787,6 +813,7 @@ class EnvironmentExportRequest:
         env_path: Path,
         previous_metadata: ExportMetadata | None = None,
     ) -> tuple[ExportMetadata, Path]:
+        """Locally export the layer environment specified in this export request."""
         if env_path.name != self.env_name:
             err_msg = (
                 f"Export mismatch (expected {self.env_name!r}, got {env_path.name!r})"
@@ -821,13 +848,13 @@ LayeredExportMetadata = Mapping[LayerCategories, Sequence[ExportMetadata]]
 
 
 class StackExportRequest(TypedDict):
-    """Inputs to an environment export request for a full stack specification"""
+    """Inputs to an environment export request for a full stack specification."""
 
     layers: LayeredExportMetadata
 
 
 class ExportedEnvironmentPaths(NamedTuple):
-    """Locations of exported metadata files and deployed environments"""
+    """Locations of exported metadata files and deployed environments."""
 
     metadata_path: Path
     snippet_paths: list[Path]
@@ -940,6 +967,7 @@ def _hash_directory(
 
 
 def get_build_platform() -> TargetPlatform:
+    """Report target platform that matches the currently running system."""
     # Currently no need for cross-build support, so always query the running system
     # Examples: win_amd64, linux_x86_64, macosx_10_12_x86_64, macosx_10_12_arm64
     platform_name = sysconfig.get_platform()
@@ -955,7 +983,8 @@ def get_build_platform() -> TargetPlatform:
 
 
 @dataclass
-class _PythonEnvironment(ABC):
+class LayerEnvBase(ABC):
+    """Common base class for layer build environment implementations."""
     # Python environment used to run tools like `uv` and `pip`
     tools_python_path: ClassVar[Path] = Path(sys.executable)
 
@@ -964,7 +993,7 @@ class _PythonEnvironment(ABC):
     category: ClassVar[LayerCategories]
 
     # Specified on creation
-    _env_spec: _PythonEnvironmentSpec = field(repr=False)
+    _env_spec: LayerSpecBase = field(repr=False)
     build_path: Path = field(repr=False)
     requirements_path: Path = field(repr=False)
     index_config: PackageIndexConfig = field(repr=False)
@@ -1009,14 +1038,16 @@ class _PythonEnvironment(ABC):
 
     @property
     def env_name(self) -> EnvNameBuild:
+        """The name of this environment in the build folder."""
         return self.env_spec.env_name
 
     @property
     def install_target(self) -> EnvNameDeploy:
+        """The environment name used for this layer when deployed."""
         return self.env_lock.get_deployed_name(self.env_spec.env_name)
 
     def get_deployed_path(self, build_path: Path) -> str:
-        """Get relative deployment location for a build env path"""
+        """Get relative deployment location for a build env path."""
         env_deployed_path = Path(self.install_target)
         relative_path = build_path.relative_to(self.env_path)
         return str(env_deployed_path / relative_path)
@@ -1044,13 +1075,14 @@ class _PythonEnvironment(ABC):
         )
 
     @property
-    def env_spec(self) -> _PythonEnvironmentSpec:
+    def env_spec(self) -> LayerSpecBase:
+        """Layer specification for this environment."""
         # Define property to allow covariance of the declared type of `env_spec`
         return self._env_spec
 
     @abstractmethod
     def get_deployed_config(self) -> postinstall.LayerConfig:
-        """Layer config to be published in `venvstacks_layer.json`"""
+        """Layer config to be published in `venvstacks_layer.json`."""
         raise NotImplementedError
 
     def _get_deployed_config(
@@ -1127,7 +1159,7 @@ class _PythonEnvironment(ABC):
         build: bool | None = True,
         publish: bool = True,
     ) -> None:
-        """Enable the selected operations for this environment"""
+        """Enable the selected operations for this environment."""
         self.want_lock = lock
         self.want_build = build
         self.want_publish = publish
@@ -1167,6 +1199,7 @@ class _PythonEnvironment(ABC):
         self._ensure_portability()
 
     def report_python_site_details(self) -> subprocess.CompletedProcess[str]:
+        """Print the results of running ``python -m site`` in this environment."""
         print(f"Reporting environment details for {str(self.env_path)!r}")
         command = [
             str(self.python_path),
@@ -1272,10 +1305,12 @@ class _PythonEnvironment(ABC):
         return result
 
     def get_constraint_paths(self) -> list[Path]:
+        """Get the lower level layer constraints imposed on this environment."""
         # No constraints files by default, subclasses override as necessary
         return []
 
     def lock_requirements(self) -> EnvironmentLock:
+        """Transitively lock the requirements for this environment."""
         spec = self.env_spec
         requirements_path = self.requirements_path
         if not self.want_lock and requirements_path.exists():
@@ -1303,6 +1338,10 @@ class _PythonEnvironment(ABC):
         return self.env_lock
 
     def install_requirements(self) -> subprocess.CompletedProcess[str]:
+        """Install the locked layer requirements into this environment.
+
+        Note: assumes dependencies have already been installed into linked layers.
+        """
         # Run a pip dependency upgrade inside the target environment
         if not self.env_lock.is_locked:
             self._fail_build(
@@ -1357,6 +1396,7 @@ class _PythonEnvironment(ABC):
         previous_metadata: ArchiveMetadata | None = None,
         force: bool = False,
     ) -> ArchiveBuildRequest:
+        """Define an archive build request for this environment."""
         request = ArchiveBuildRequest.define_build(
             self.env_name,
             self.env_lock,
@@ -1377,6 +1417,7 @@ class _PythonEnvironment(ABC):
         previous_metadata: ArchiveMetadata | None = None,
         force: bool = False,
     ) -> tuple[ArchiveMetadata, Path]:
+        """Create a layer archive for this environment."""
         env_path = self.env_path
         if not env_path.exists():
             raise RuntimeError(
@@ -1395,8 +1436,9 @@ class _PythonEnvironment(ABC):
         output_path: Path,
         previous_metadata: ExportMetadata | None = None,
         force: bool = False,
-    ) -> EnvironmentExportRequest:
-        request = EnvironmentExportRequest.define_export(
+    ) -> LayerExportRequest:
+        """Define a local export request for this environment."""
+        request = LayerExportRequest.define_export(
             self.env_name, self.env_lock, output_path, previous_metadata, force
         )
         self._update_output_metadata(request.export_metadata)
@@ -1408,6 +1450,7 @@ class _PythonEnvironment(ABC):
         previous_metadata: ExportMetadata | None = None,
         force: bool = False,
     ) -> tuple[ExportMetadata, Path]:
+        """Locally export this environment."""
         env_path = self.env_path
         if not env_path.exists():
             raise RuntimeError("Must create environment before attempting to export it")
@@ -1420,8 +1463,8 @@ class _PythonEnvironment(ABC):
         )
 
 
-class RuntimeEnv(_PythonEnvironment):
-    """Base runtime layer build environment"""
+class RuntimeEnv(LayerEnvBase):
+    """Base runtime layer build environment."""
 
     kind = LayerVariants.RUNTIME
     category = LayerCategories.RUNTIMES
@@ -1441,12 +1484,13 @@ class RuntimeEnv(_PythonEnvironment):
 
     @property
     def env_spec(self) -> RuntimeSpec:
+        """Layer specification for this runtime build environment."""
         # Define property to allow covariance of the declared type of `env_spec`
         assert isinstance(self._env_spec, RuntimeSpec)
         return self._env_spec
 
     def get_deployed_config(self) -> postinstall.LayerConfig:
-        """Layer config to be published in `venvstacks_layer.json`"""
+        """Layer config to be published in `venvstacks_layer.json`."""
         return self._get_deployed_config([], [], link_external_base=False)
 
     def _remove_pip(self) -> subprocess.CompletedProcess[str] | None:
@@ -1470,7 +1514,7 @@ class RuntimeEnv(_PythonEnvironment):
         # and we don't want to ship it unless explicitly requested to do so
         # as a declared dependency of an included component
         self._remove_pip()
-        fs_sync()
+        _fs_sync()
         if not lock_only:
             print(
                 f"Using {str(self.python_path)!r} as runtime environment layer in {self}"
@@ -1487,7 +1531,8 @@ class RuntimeEnv(_PythonEnvironment):
         super()._create_environment(clean=clean, lock_only=True)
 
 
-class _VirtualEnvironment(_PythonEnvironment):
+class LayeredEnvBase(LayerEnvBase):
+    """Common base class for framework and application layer build environments."""
     base_runtime: RuntimeEnv | None = field(init=False, repr=False)
     linked_constraints_paths: list[Path] = field(init=False, repr=False)
 
@@ -1500,12 +1545,13 @@ class _VirtualEnvironment(_PythonEnvironment):
         self.linked_constraints_paths = []
 
     @property
-    def env_spec(self) -> _VirtualEnvironmentSpec:
+    def env_spec(self) -> LayeredSpecBase:
+        """Layer specification for this environment."""
         # Define property to allow covariance of the declared type of `env_spec`
-        assert isinstance(self._env_spec, _VirtualEnvironmentSpec)
+        assert isinstance(self._env_spec, LayeredSpecBase)
         return self._env_spec
 
-    def _linked_environments(self) -> Iterator[_PythonEnvironment]:
+    def _linked_environments(self) -> Iterator[LayerEnvBase]:
         runtime_env = self.base_runtime
         # This is only ever invoked *after* the environment has been linked
         assert runtime_env is not None
@@ -1532,6 +1578,7 @@ class _VirtualEnvironment(_PythonEnvironment):
                 yield env.get_deployed_path(dynlib_path)
 
     def link_base_runtime(self, runtime: RuntimeEnv) -> None:
+        """Link this layered environment to its base runtime environment."""
         if self.base_runtime is not None:
             raise BuildEnvError(
                 f"Layered environment base runtime already linked {self}"
@@ -1547,12 +1594,13 @@ class _VirtualEnvironment(_PythonEnvironment):
         print(f"Linked {self}")
 
     def get_deployed_config(self) -> postinstall.LayerConfig:
-        """Layer config to be published in `venvstacks_layer.json`"""
+        """Layer config to be published in `venvstacks_layer.json`."""
         return self._get_deployed_config(
             self._iter_deployed_pylib_dirs(), self._iter_deployed_dynlib_dirs()
         )
 
     def get_constraint_paths(self) -> list[Path]:
+        """Get the lower level layer constraints imposed on this environment."""
         return self.linked_constraints_paths
 
     def _ensure_virtual_environment(self) -> subprocess.CompletedProcess[str]:
@@ -1577,7 +1625,7 @@ class _VirtualEnvironment(_PythonEnvironment):
         ]
         result = run_python_command(command)
         self._link_build_environment()
-        fs_sync()
+        _fs_sync()
         print(f"Virtual environment configured in {str(self.env_path)!r}")
         return result
 
@@ -1619,21 +1667,22 @@ class _VirtualEnvironment(_PythonEnvironment):
         metadata["runtime_name"] = runtime_update_trigger
 
 
-class FrameworkEnv(_VirtualEnvironment):
-    """Framework layer build environment"""
+class FrameworkEnv(LayeredEnvBase):
+    """Framework layer build environment."""
 
     kind = LayerVariants.FRAMEWORK
     category = LayerCategories.FRAMEWORKS
 
     @property
     def env_spec(self) -> FrameworkSpec:
+        """Layer specification for this framework build environment."""
         # Define property to allow covariance of the declared type of `env_spec`
         assert isinstance(self._env_spec, FrameworkSpec)
         return self._env_spec
 
 
-class ApplicationEnv(_VirtualEnvironment):
-    """Application layer build environment"""
+class ApplicationEnv(LayeredEnvBase):
+    """Application layer build environment."""
 
     kind = LayerVariants.APPLICATION
     category = LayerCategories.APPLICATIONS
@@ -1643,6 +1692,7 @@ class ApplicationEnv(_VirtualEnvironment):
 
     @property
     def env_spec(self) -> ApplicationSpec:
+        """Layer specification for this application build environment."""
         # Define property to allow covariance of the declared type of `env_spec`
         assert isinstance(self._env_spec, ApplicationSpec)
         return self._env_spec
@@ -1652,7 +1702,7 @@ class ApplicationEnv(_VirtualEnvironment):
         self.launch_module_name = self.env_spec.launch_module_path.stem
         self.linked_frameworks = []
 
-    def _linked_environments(self) -> Iterator[_PythonEnvironment]:
+    def _linked_environments(self) -> Iterator[LayerEnvBase]:
         # Linked frameworks are emitted before the base runtime layer
         for fw_env in self.linked_frameworks:
             yield fw_env
@@ -1661,6 +1711,7 @@ class ApplicationEnv(_VirtualEnvironment):
     def link_layered_environments(
         self, runtime: RuntimeEnv, frameworks: Mapping[LayerBaseName, FrameworkEnv]
     ) -> None:
+        """Link this application build environment with its runtime and framework layers."""
         self.link_base_runtime(runtime)
         constraints_paths = self.linked_constraints_paths
         if not constraints_paths:
@@ -1707,12 +1758,12 @@ class ApplicationEnv(_VirtualEnvironment):
 # Building layered environments based on a TOML file
 ######################################################
 
-BuildEnv = TypeVar("BuildEnv", bound=_PythonEnvironment)
+BuildEnv = TypeVar("BuildEnv", bound=LayerEnvBase)
 
 
 @dataclass
 class StackSpec:
-    """Layered environment stack specification"""
+    """Layered environment stack specification."""
 
     # Specified on creation
     spec_path: Path
@@ -1734,8 +1785,7 @@ class StackSpec:
 
     @classmethod
     def load(cls, fname: StrPath) -> Self:
-        """Load stack specification from given TOML file"""
-
+        """Load stack specification from given TOML file."""
         stack_spec_path = as_normalized_path(fname)
         with open(stack_spec_path, "rb") as f:
             data = tomllib.load(f)
@@ -1805,7 +1855,7 @@ class StackSpec:
             stack_spec_path, runtimes, frameworks, applications, requirements_dir_path
         )
 
-    def all_environment_specs(self) -> Iterable[_PythonEnvironmentSpec]:
+    def all_environment_specs(self) -> Iterable[LayerSpecBase]:
         """Iterate over the specifications for all defined environments.
 
         All runtimes are produced first, then frameworks, then applications.
@@ -1819,7 +1869,7 @@ class StackSpec:
         build_path: Path,
         index_config: PackageIndexConfig,
         env_class: type[BuildEnv],
-        specs: Mapping[LayerBaseName, _PythonEnvironmentSpec],
+        specs: Mapping[LayerBaseName, LayerSpecBase],
     ) -> MutableMapping[LayerBaseName, BuildEnv]:
         requirements_dir = self.requirements_dir_path
         build_environments: dict[LayerBaseName, BuildEnv] = {}
@@ -1837,7 +1887,7 @@ class StackSpec:
         return build_environments
 
     def resolve_lexical_path(self, related_location: StrPath, /) -> Path:
-        """Resolve a path relative to the location of the stack specification"""
+        """Resolve a path relative to the location of the stack specification."""
         return _resolve_lexical_path(related_location, self.spec_path.parent)
 
     def define_build_environment(
@@ -1845,8 +1895,7 @@ class StackSpec:
         build_dir: StrPath = "",
         index_config: PackageIndexConfig | None = None,
     ) -> "BuildEnvironment":
-        """Define layer build environments for this specification"""
-
+        """Define layer build environments for this specification."""
         build_path = self.resolve_lexical_path(build_dir)
         if index_config is None:
             index_config = PackageIndexConfig()
@@ -1880,7 +1929,7 @@ class StackSpec:
 
 @dataclass
 class BuildEnvironment:
-    """Interface to build specified layered environment stacks"""
+    """Interface to build specified layered environment stacks."""
 
     METADATA_DIR = "__venvstacks__"  # Output subdirectory for the build metadata
     METADATA_MANIFEST = "venvstacks.json"  # File with full metadata for this build
@@ -1903,14 +1952,16 @@ class BuildEnvironment:
     # Provide more convenient access to selected stack_spec attributes
     @property
     def requirements_dir_path(self) -> Path:
+        """Parent path containing the locked layer requirements."""
         return self.stack_spec.requirements_dir_path
 
     @property
     def build_platform(self) -> str:
+        """Target platform for this environment."""
         return self.stack_spec.build_platform
 
     # Iterators over various categories of included environments
-    def all_environments(self) -> Iterable[_PythonEnvironment]:
+    def all_environments(self) -> Iterable[LayerEnvBase]:
         """Iterate over all defined environments.
 
         All runtimes are produced first, then frameworks, then applications.
@@ -1919,7 +1970,7 @@ class BuildEnvironment:
             self.runtimes.values(), self.frameworks.values(), self.applications.values()
         )
 
-    def environments_to_lock(self) -> Iterable[_PythonEnvironment]:
+    def environments_to_lock(self) -> Iterable[LayerEnvBase]:
         """Iterate over all environments where locking is requested or allowed.
 
         Runtimes are produced first, then frameworks, then applications.
@@ -1934,7 +1985,7 @@ class BuildEnvironment:
             if env.want_lock is not False:  # Accepts `None` as meaning "lock if needed"
                 yield env
 
-    def environments_to_build(self) -> Iterable[_PythonEnvironment]:
+    def environments_to_build(self) -> Iterable[LayerEnvBase]:
         """Iterate over all environments where building is requested or allowed.
 
         Runtimes are produced first, then frameworks, then applications.
@@ -1953,7 +2004,7 @@ class BuildEnvironment:
             ):  # Accepts `None` as meaning "build if needed"
                 yield env
 
-    def venvstacks_to_build(self) -> Iterable[_VirtualEnvironment]:
+    def venvstacks_to_build(self) -> Iterable[LayeredEnvBase]:
         """Iterate over non-runtime environments where building is requested or allowed.
 
         Frameworks are produced first, then applications.
@@ -1964,7 +2015,7 @@ class BuildEnvironment:
             ):  # Accepts `None` as meaning "build if needed"
                 yield env
 
-    def built_environments(self) -> Iterable[_PythonEnvironment]:
+    def built_environments(self) -> Iterable[LayerEnvBase]:
         """Iterate over all environments that were built by this build process.
 
         Runtimes are produced first, then frameworks, then applications.
@@ -1973,7 +2024,7 @@ class BuildEnvironment:
             if env.was_built:
                 yield env
 
-    def environments_to_publish(self) -> Iterable[_PythonEnvironment]:
+    def environments_to_publish(self) -> Iterable[LayerEnvBase]:
         """Iterate over all environments where publication is requested or allowed.
 
         Runtimes are produced first, then frameworks, then applications.
@@ -1989,12 +2040,12 @@ class BuildEnvironment:
         build: bool | None = True,
         publish: bool = True,
     ) -> None:
-        """Configure the selected operations on all defined environments"""
+        """Configure the selected operations on all defined environments."""
         for env in self.all_environments():
             env.select_operations(lock=lock, build=build, publish=publish)
 
     def get_unmatched_patterns(self, patterns: Iterable[str]) -> list[str]:
-        """Returns a list of the given patterns which do not match any environments"""
+        """Returns a list of the given patterns which do not match any environments."""
         env_names = [env.env_name for env in self.all_environments()]
         return [
             pattern
@@ -2014,7 +2065,7 @@ class BuildEnvironment:
         build_derived: bool = True,
         publish_derived: bool = True,
     ) -> None:
-        """Selectively configure operations only on the specified environments"""
+        """Selectively configure operations only on the specified environments."""
         # Ensure later pipeline stages are skipped when earlier ones are skipped
         # Also update the related layer handling based on the enabled pipeline stages
         if lock:
@@ -2039,7 +2090,7 @@ class BuildEnvironment:
             # If the included layers aren't being published, don't publish anything else
             publish_derived = publish_dependencies = False
         # Identify explicitly included environments
-        envs_by_name: dict[EnvNameBuild, _PythonEnvironment] = {
+        envs_by_name: dict[EnvNameBuild, LayerEnvBase] = {
             env.env_name: env for env in self.all_environments()
         }
         inclusion_patterns = list(include)
@@ -2126,14 +2177,13 @@ class BuildEnvironment:
         spec_dir = self.requirements_dir_path
         build_platform = self.build_platform
 
-        def lock_exists(spec: _PythonEnvironmentSpec) -> bool:
+        def lock_exists(spec: LayerSpecBase) -> bool:
             return spec.get_requirements_path(build_platform, spec_dir).exists()
 
         return not all(lock_exists(env.env_spec) for env in self.environments_to_lock())
 
     def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
-        """Lock build environments for specified layers"""
-
+        """Lock build environments for specified layers."""
         # Lock environments without fully building them
         # Necessarily creates the runtime environments and
         # installs any declared build dependencies
@@ -2143,8 +2193,7 @@ class BuildEnvironment:
         return [env.lock_requirements() for env in self.environments_to_lock()]
 
     def create_environments(self, *, clean: bool = False, lock: bool = False) -> None:
-        """Create build environments for specified layers"""
-
+        """Create build environments for specified layers."""
         # Base runtime environments need to exist before dependencies can be locked
         self.build_path.mkdir(parents=True, exist_ok=True)
         clean_runtime_envs = clean
@@ -2166,7 +2215,7 @@ class BuildEnvironment:
         return env_metadata_dir / f"{env_name}{platform_tag}.json"
 
     def _load_env_metadata(
-        self, env_metadata_dir: Path, env: _PythonEnvironment, platform_tag: str
+        self, env_metadata_dir: Path, env: LayerEnvBase, platform_tag: str
     ) -> Any:
         metadata_path = self._env_metadata_path(
             env_metadata_dir, env.env_name, platform_tag
@@ -2177,10 +2226,9 @@ class BuildEnvironment:
             return json.load(f)
 
     def load_archive_metadata(
-        self, env_metadata_dir: Path, env: _PythonEnvironment, platform_tag: str = ""
+        self, env_metadata_dir: Path, env: LayerEnvBase, platform_tag: str = ""
     ) -> ArchiveMetadata | None:
-        """Load previously published archive metadata"""
-
+        """Load previously published archive metadata."""
         # mypy is right to complain that the JSON hasn't been validated to conform
         # to the ArchiveMetadata interface, but we're OK with letting the runtime
         # errors happen in that scenario. Longer term, explicit JSON schemas should be
@@ -2189,10 +2237,9 @@ class BuildEnvironment:
         return cast(ArchiveMetadata, metadata)
 
     def load_export_metadata(
-        self, env_metadata_dir: Path, env: _PythonEnvironment
+        self, env_metadata_dir: Path, env: LayerEnvBase
     ) -> ExportMetadata | None:
-        """Load previously exported environment metadata"""
-
+        """Load previously exported environment metadata."""
         # mypy is right to complain that the JSON hasn't been validated to conform
         # to the ExportMetadata interface, but we're OK with letting the runtime
         # errors happen in that scenario. Longer term, explicit JSON schemas should be
@@ -2226,8 +2273,7 @@ class BuildEnvironment:
         tag_outputs: bool = False,
         dry_run: bool = False,
     ) -> PublishedArchivePaths | tuple[Path, StackPublishingRequest]:
-        """Publish metadata and archives for specified layers"""
-
+        """Publish metadata and archives for specified layers."""
         layer_data: dict[
             LayerCategories, list[ArchiveMetadata | ArchiveBuildMetadata]
         ] = {
@@ -2349,8 +2395,7 @@ class BuildEnvironment:
         force: bool = False,
         dry_run: bool = False,
     ) -> ExportedEnvironmentPaths | tuple[Path, StackExportRequest]:
-        """Locally export environments for specified layers"""
-
+        """Locally export environments for specified layers."""
         export_data: dict[LayerCategories, list[ExportMetadata]] = {
             RuntimeEnv.category: [],
             FrameworkEnv.category: [],

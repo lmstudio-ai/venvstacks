@@ -12,7 +12,6 @@ venvstacks.stacks.ArchiveBuildRequest
 
       ~ArchiveBuildRequest.create_archive
       ~ArchiveBuildRequest.define_build
-      ~ArchiveBuildRequest.needs_archive_build
 
    .. rubric:: Attributes
 

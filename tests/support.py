@@ -1,4 +1,4 @@
-"""Test support for venvstacks testing"""
+"""Test support for venvstacks testing."""
 
 import json
 import os
@@ -25,7 +25,7 @@ from venvstacks.stacks import (
     LayerBaseName,
     LayerVariants,
     PackageIndexConfig,
-    _PythonEnvironment,
+    LayerEnvBase,
 )
 
 _THIS_DIR = Path(__file__).parent
@@ -39,7 +39,7 @@ _THIS_DIR = Path(__file__).parent
 
 
 def requires_venv(description: str) -> pytest.MarkDecorator:
-    """Skip test case when running tests outside a virtual environment"""
+    """Skip test case when running tests outside a virtual environment."""
     return pytest.mark.skipif(
         sys.prefix == sys.base_prefix,
         reason=f"{description} requires test execution in venv",
@@ -57,7 +57,7 @@ FORCED_EXPORT_ENV_VAR = "VENVSTACKS_FORCE_TEST_EXPORT"  # Force export if non-em
 
 
 def get_artifact_export_path() -> Path | None:
-    """Location to export notable artifacts generated during test execution"""
+    """Location to export notable artifacts generated during test execution."""
     export_dir = os.environ.get(TEST_EXPORT_ENV_VAR)
     if not export_dir:
         return None
@@ -68,7 +68,7 @@ def get_artifact_export_path() -> Path | None:
 
 
 def force_artifact_export() -> bool:
-    """Indicate artifacts should be exported even if a test case passes"""
+    """Indicate artifacts should be exported even if a test case passes."""
     # Export is forced if the environment var is defined and non-empty
     return bool(os.environ.get(FORCED_EXPORT_ENV_VAR))
 
@@ -236,7 +236,7 @@ _T = TypeVar("_T", bound=Mapping[str, Any])
 
 
 class DeploymentTestCase(unittest.TestCase):
-    """Native unittest test case with additional deployment validation checks"""
+    """Native unittest test case with additional deployment validation checks."""
 
     EXPECTED_APP_OUTPUT = ""
 
@@ -295,7 +295,7 @@ class DeploymentTestCase(unittest.TestCase):
             )
 
     def check_build_environments(
-        self, build_envs: Iterable[_PythonEnvironment]
+        self, build_envs: Iterable[LayerEnvBase]
     ) -> None:
         for env in build_envs:
             env_path = env.env_path

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Proof of concept for finding non-Python-module shared modules"""
+"""Proof of concept for finding non-Python-module shared modules."""
 
 # Concept demonstrator for the cross-environment shared library loading support
 # described in https://github.com/lmstudio-ai/venvstacks/issues/1
@@ -26,6 +26,7 @@ _IGNORED_SUFFIXES = frozenset(
 
 
 def main() -> None:
+    """Find non-extension-module shared libraries in specified folder."""
     _dir_to_search = sys.argv[1]
     _paths_to_link = []
     for this_dir, _, files in os.walk(_dir_to_search):

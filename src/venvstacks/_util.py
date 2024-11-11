@@ -1,4 +1,4 @@
-"""Common utilities for stack creation and venv publication"""
+"""Common utilities for stack creation and venv publication."""
 
 import os
 import os.path
@@ -16,7 +16,7 @@ StrPath = str | os.PathLike[str]
 
 
 def as_normalized_path(path: StrPath, /) -> Path:
-    """Normalize given path and make it absolute, *without* resolving symlinks
+    """Normalize given path and make it absolute, *without* resolving symlinks.
 
     Expands user directory references, but *not* environment variable references.
     """
@@ -27,7 +27,7 @@ def as_normalized_path(path: StrPath, /) -> Path:
 
 @contextmanager
 def default_tarfile_filter(filter: str) -> Generator[None, None, None]:
-    """Temporarily set a global tarfile filter (useful for 3rd party API warnings)"""
+    """Temporarily set a global tarfile filter (useful for 3rd party API warnings)."""
     if sys.version_info < (3, 12):
         # Python 3.11 or earlier, can't set a default extraction filter
         yield
@@ -46,7 +46,7 @@ def default_tarfile_filter(filter: str) -> Generator[None, None, None]:
 
 
 def get_env_python(env_path: Path) -> Path:
-    """Return the main Python binary in the given Python environment"""
+    """Return the main Python binary in the given Python environment."""
     if WINDOWS_BUILD:
         env_python = env_path / "Scripts" / "python.exe"
         if not env_python.exists():
