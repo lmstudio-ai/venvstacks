@@ -150,9 +150,9 @@ runtime layer in (for
 example, to update to new OpenSSL versions or CPython maintenance releases),
 without needing to republish the upper layers that use that base runtime.
 
-.. _warning: The current handling of the ``runtime_name`` field in the layer
-   metadata is highly questionable, and hence subject to change in future
-   releases without a deprecation period.
+.. warning:: The current handling of the ``runtime_name`` field in the layer
+             metadata is highly questionable, and hence subject to change in
+             future releases without a deprecation period.
 
 
 Application layer specification fields
@@ -182,7 +182,7 @@ base runtime also becomes the base runtime for the application layer using those
 .. _layer-names:
 
 Layer names and versioning
-==========================
+--------------------------
 
 Regardless of how a layer is versioned, the layer name is used directly
 (with no additional prefix or suffix) when referring to the layer as a

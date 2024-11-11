@@ -426,6 +426,12 @@ metadata. This still allows for transparent security updates of the base
 runtime layer in (for
 example, to update to new OpenSSL versions or CPython maintenance releases),
 without needing to republish the upper layers that use that base runtime.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The current handling of the <code class="docutils literal notranslate"><span class="pre">runtime_name</span></code> field in the layer
+metadata is highly questionable, and hence subject to change in
+future releases without a deprecation period.</p>
+</div>
 </section>
 <section id="application-layer-specification-fields">
 <h3>Application layer specification fields<a class="headerlink" href="#application-layer-specification-fields" title="Link to this heading">¶</a></h3>
@@ -450,9 +456,8 @@ for implicitly versioned environments (but it does update the <code class="docut
 field for published artifacts).</p>
 </div>
 </section>
-</section>
 <section id="layer-names-and-versioning">
-<span id="layer-names"></span><h2>Layer names and versioning<a class="headerlink" href="#layer-names-and-versioning" title="Link to this heading">¶</a></h2>
+<span id="layer-names"></span><h3>Layer names and versioning<a class="headerlink" href="#layer-names-and-versioning" title="Link to this heading">¶</a></h3>
 <p>Regardless of how a layer is versioned, the layer name is used directly
 (with no additional prefix or suffix) when referring to the layer as a
 dependency in another layer specification.</p>
@@ -486,6 +491,7 @@ for these deployment related purposes.</p>
 <p>A future documentation update will provide additional guidance on the trade-offs
 between explicit versioning, implicit versioning, and leaving layers unversioned.</p>
 </div>
+</section>
 </section>
 <section id="locked-layer-requirements">
 <span id="layer-requirements"></span><h2>Locked layer requirements<a class="headerlink" href="#locked-layer-requirements" title="Link to this heading">¶</a></h2>
@@ -574,9 +580,9 @@ the effects of the <code class="docutils literal notranslate"><span class="pre">
 <li><a class="reference internal" href="#runtime-layer-specification-fields">Runtime layer specification fields</a></li>
 <li><a class="reference internal" href="#framework-layer-specification-fields">Framework layer specification fields</a></li>
 <li><a class="reference internal" href="#application-layer-specification-fields">Application layer specification fields</a></li>
+<li><a class="reference internal" href="#layer-names-and-versioning">Layer names and versioning</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#layer-names-and-versioning">Layer names and versioning</a></li>
 <li><a class="reference internal" href="#locked-layer-requirements">Locked layer requirements</a></li>
 <li><a class="reference internal" href="#deployed-layer-configuration">Deployed layer configuration</a></li>
 <li><a class="reference internal" href="#published-layer-metadata">Published layer metadata</a></li>
