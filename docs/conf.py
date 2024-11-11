@@ -62,7 +62,7 @@ autosummary_generate = False
 extlinks = {
     "issue": ("https://github.com/lmstudio-ai/venvstacks/issues/%s", "#%s"),
     "pr": ("https://github.com/lmstudio-ai/venvstacks/pull/%s", "PR #%s"),
-    "pypi": ("https://pypi.org/project/%s/", "``%s``"),
+    "pypi": ("https://pypi.org/project/%s/", "%s"),
     "toml": ("https://toml.io/en/v1.0.0#%s", "%s"),
 }
 extlinks_detect_hardcoded_links = True
