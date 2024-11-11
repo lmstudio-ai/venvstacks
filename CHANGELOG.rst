@@ -1,17 +1,4 @@
-.. _changelog:
-
----------
-Changelog
----------
-
-.. note::
-
-   Until the Python API has stabilised, ``venvstacks`` is using
-   `ZeroVer <https://0ver.org/>`__ (starting from 0.1.0).
-
-   Refer to :ref:`version-numbering` for additional details
-   on the way releases are versioned.
-
+.. Included in published docs via docs/changelog.rst
 
 Unreleased
 ==========
@@ -19,7 +6,6 @@ Unreleased
 See the fragment files in the `changelog.d directory`_.
 
 .. _changelog.d directory: https://github.com/lmstudio-ai/venvstacks/tree/main/changelog.d
-
 
 .. scriv-insert-here
 
@@ -31,7 +17,8 @@ See the fragment files in the `changelog.d directory`_.
 Changed
 -------
 
-- Update docs URL to `https://venvstacks.lmstudio.ai`__
+- Update docs URL to
+  `https://venvstacks.lmstudio.ai <https://venvstacks.lmstudio.ai>`__
 
 - Add OpenGraph metadata to docs landing page
 
@@ -75,6 +62,6 @@ Changed
 Added
 -----
 
-- Initial export of `venvstacks` from Project Amphibian.
+- Initial export of ``venvstacks`` from Project Amphibian.
 
 - Adopted ``scriv`` for ``CHANGELOG`` management.

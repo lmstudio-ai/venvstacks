@@ -4,6 +4,12 @@
 Development
 -----------
 
+.. meta::
+   :og:title: venvstacks Development - venvstacks Documentation
+   :og:type: website
+   :og:url: https://venvstacks.lmstudio.ai/development/
+   :og:description: venvstacks Developer Guide - venvstacks Documentation
+
 
 Getting Started
 ===============
@@ -12,7 +18,8 @@ Getting Started
 
 This document aims to get you setup to work on venvstacks and to act as a guide
 and reference to the development setup. If you face any issues during this
-process, please `open an issue`_ about it on the issue tracker.
+process, please :issue:`open an issue <new?title=Trouble+with+development+environment>`
+about it on the issue tracker.
 
 
 Get the source code
@@ -279,7 +286,6 @@ After release:
 * Bump the version in ``pyproject.toml`` and add a ``.dev0`` suffix
 
 .. _`Getting Started`: https://pip.pypa.io/en/stable/development/getting-started/
-.. _`open an issue`: https://github.com/lmstudio-ai/venvstacks/issues/new?title=Trouble+with+development+environment
 .. _`rich CLI`: https://docs.pytest.org/en/stable/how-to/usage.html#specifying-which-tests-to-run
 .. _`GitHub`: https://github.com/lmstudio-ai/venvstacks
 .. _`testing README file`: https://github.com/lmstudio-ai/venvstacks/blob/main/tests/README.md

@@ -1,7 +1,7 @@
 #!/bin/python3
 """Portable Python environment stacks.
 
-Creates Python runtime, framework, and app environments based on venvstacks.toml
+Creates Python runtime, framework, and app environments based on ``venvstacks.toml``
 """
 
 import hashlib

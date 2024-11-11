@@ -24,7 +24,7 @@ to chain together three layers of Python virtual environments:
 * "Application" layers: environments containing components to be launched directly
 
 Application layer environments may include additional unpackaged Python launch modules or
-packages for invocation with ``python``'s :py:option:`-m` switch.
+packages for invocation with ``python``'s :option:`-m` switch.
 
 While the layers are archived and published separately, their dependency locking is integrated,
 allowing the application layers to share dependencies installed in the framework layers,
@@ -54,6 +54,7 @@ make future Python version upgrades more irritating):
 
    overview
    glossary
+   stack-format
    design
    api/index
    development/index
