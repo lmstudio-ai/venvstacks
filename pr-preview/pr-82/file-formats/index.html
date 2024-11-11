@@ -332,8 +332,8 @@ syntax used to define <code class="docutils literal notranslate"><span class="pr
 <h3>Common layer specification fields<a class="headerlink" href="#common-layer-specification-fields" title="Link to this heading">¶</a></h3>
 <p>All layer specifications must contain the following two fields:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">TOML string</a>): the name of the layer being specified</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">requirements</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">TOML array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the name of the layer being specified</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">requirements</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
 the top-level Python distribution packages to be installed as part of this layer.
 Dependencies are declared using the standard Python
 <a class="reference external" href="https://packaging.python.org/en/latest/specifications/dependency-specifiers/#dependency-specifiers" title="(in Python Packaging User Guide)"><span class="xref std std-ref">dependency specifier</span></a> format.
@@ -342,7 +342,7 @@ The list of requirements must be present, but is permitted to be empty.</p></li>
 </ul>
 <p>All layer specifications may also contain the following optional fields:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">platforms</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">TOML array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
+<li><p><code class="docutils literal notranslate"><span class="pre">platforms</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
 by default, all layers are built for all target platforms. Setting this field
 allows the layer build to be narrowed to a subset of the supported targets.
 Setting this field to an empty list also allows a layer build to be disabled
@@ -355,7 +355,7 @@ Permitted entries in the <code class="docutils literal notranslate"><span class=
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;macosx_x86_64&quot;</span></code>: macOS on Intel silicon (not currently tested in CI)</p></li>
 </ul>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">versioned</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#boolean">TOML boolean</a>): by default, and when this setting is <code class="docutils literal notranslate"><span class="pre">False</span></code>,
+<li><p><code class="docutils literal notranslate"><span class="pre">versioned</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#boolean">boolean</a>): by default, and when this setting is <code class="docutils literal notranslate"><span class="pre">False</span></code>,
 the layer is considered either unversioned or explicitly versioned
 (depending on whether or not a version number is included in the layer name).
 The layer metadata will always report the lock version for these layers as
@@ -402,7 +402,7 @@ choosing between unversioned, explicitly versioned, and implicitly versioned lay
 <h3>Runtime layer specification fields<a class="headerlink" href="#runtime-layer-specification-fields" title="Link to this heading">¶</a></h3>
 <p>Runtime layer specifications must contain the following additional field:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">fully_versioned_name</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">TOML string</a>): the <a class="extlink-pypi reference external" href="https://pypi.org/project/pbs-installer/">``pbs-installer``</a> name
+<li><p><code class="docutils literal notranslate"><span class="pre">fully_versioned_name</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the <a class="extlink-pypi reference external" href="https://pypi.org/project/pbs-installer/">``pbs-installer``</a> name
 of the Python runtime to be installed as the base runtime for this layer
 (and any upper layers that depend on this layer).</p></li>
 </ul>
@@ -411,7 +411,7 @@ of the Python runtime to be installed as the base runtime for this layer
 <h3>Framework layer specification fields<a class="headerlink" href="#framework-layer-specification-fields" title="Link to this heading">¶</a></h3>
 <p>Framework layer specifications must contain the following additional field:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">runtime</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">TOML string</a>): the name of the runtime layer that this framework layer uses.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the name of the runtime layer that this framework layer uses.</p></li>
 </ul>
 <p>On platforms which use symlinks between layered environments and their base
 environments (any platform other than Windows), the runtime layer name will
@@ -431,12 +431,12 @@ without needing to republish the upper layers that use that base runtime.</p>
 <h3>Application layer specification fields<a class="headerlink" href="#application-layer-specification-fields" title="Link to this heading">¶</a></h3>
 <p>Application layer specifications must contain the following additional field:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">frameworks</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">TOML array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
+<li><p><code class="docutils literal notranslate"><span class="pre">frameworks</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
 the names of the framework layers that this application layer uses.</p></li>
 </ul>
 <p>Application layer specifications may also contain the following additional field:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">launch_module</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">TOML string</a>): a relative path (starting from the folder containing
+<li><p><code class="docutils literal notranslate"><span class="pre">launch_module</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): a relative path (starting from the folder containing
 the stack specification file) that specifies a Python module or import package that should
 be included in the built environment for execution with the <a class="reference external" href="https://docs.python.org/3/using/cmdline.html#cmdoption-m" title="(in Python v3.13)"><code class="xref std std-option docutils literal notranslate"><span class="pre">-m</span></code></a> switch.</p></li>
 </ul>
