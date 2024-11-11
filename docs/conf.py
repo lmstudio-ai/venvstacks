@@ -1,3 +1,5 @@
+"""Sphinx configuration for venvstacks documentation."""
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -61,7 +63,7 @@ extlinks = {
     "issue": ("https://github.com/lmstudio-ai/venvstacks/issues/%s", "#%s"),
     "pr": ("https://github.com/lmstudio-ai/venvstacks/pull/%s", "PR #%s"),
     "pypi": ("https://pypi.org/project/%s/", "``%s``"),
-    "toml": ("https://toml.io/en/v1.0.0#%s", "TOML %s"),
+    "toml": ("https://toml.io/en/v1.0.0#%s", "%s"),
 }
 extlinks_detect_hardcoded_links = True
 
