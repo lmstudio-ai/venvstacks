@@ -1,10 +1,10 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "f25ec03bd96d2668091f52d4ece6d3834b07552f567277813b1d23fbc523c1d8"
+    "sha256": "8a9b481ce1f2abbff96b205c77765ee8ec7e7c233293719ae1c5b776cd5b5914"
   },
   "archive_name": "framework-sklearn.tar.xz",
-  "archive_size": 20689032,
+  "archive_size": 20689040,
   "install_target": "framework-sklearn",
   "layer_name": "framework-sklearn",
   "lock_version": 1,
