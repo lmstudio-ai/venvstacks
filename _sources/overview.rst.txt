@@ -4,6 +4,12 @@
 Project Overview
 ----------------
 
+.. meta::
+   :og:title: venvstacks Overview - venvstacks Documentation
+   :og:type: website
+   :og:url: https://venvstacks.lmstudio.ai/overview/
+   :og:description: venvstacks Project Overview - venvstacks Documentation
+
 Command line interface
 ======================
 

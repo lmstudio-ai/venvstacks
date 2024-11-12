@@ -2,6 +2,12 @@
 Design Discussion
 -----------------
 
+.. meta::
+   :og:title: venvstacks Design - venvstacks Documentation
+   :og:type: website
+   :og:url: https://venvstacks.lmstudio.ai/design/
+   :og:description: venvstacks Design Discussion - venvstacks Documentation
+
 Project
 =======
 

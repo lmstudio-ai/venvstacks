@@ -2,6 +2,12 @@
 Python API
 ----------
 
+.. meta::
+   :og:title: venvstacks API - venvstacks Documentation
+   :og:type: website
+   :og:url: https://venvstacks.lmstudio.ai/api/
+   :og:description: venvstacks Python API - venvstacks Documentation
+
 .. warning::
 
    The Python API is *NOT YET STABLE*.
