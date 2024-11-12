@@ -18,7 +18,7 @@
           "framework-scipy@1"
         ],
         "requirements_hash": "sha256:36b0dbfec94b7de6507f348f0823cd02fdca2ea79eeafe92d571c26ae347d150",
-        "runtime_name": "cpython@3.11",
+        "runtime_name": "cpython-3.11",
         "target_platform": "macosx_arm64"
       },
       {
@@ -39,7 +39,7 @@
           "framework-http-client"
         ],
         "requirements_hash": "sha256:fb8a843c694d03d7ee74b457cdac2bd82b6b439de0ed308d72fe698c6c9c6cf4",
-        "runtime_name": "cpython@3.11",
+        "runtime_name": "cpython-3.11",
         "target_platform": "macosx_arm64"
       }
     ],
@@ -56,7 +56,7 @@
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:32.960668+00:00",
         "requirements_hash": "sha256:36b0dbfec94b7de6507f348f0823cd02fdca2ea79eeafe92d571c26ae347d150",
-        "runtime_name": "cpython@3.11",
+        "runtime_name": "cpython-3.11",
         "target_platform": "macosx_arm64"
       },
       {
@@ -71,7 +71,7 @@
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:33.041734+00:00",
         "requirements_hash": "sha256:600b3bc658d940b756d5917e6fb7dec3431c5ce4ebc878f5d031e74f3ebdb7a9",
-        "runtime_name": "cpython@3.12",
+        "runtime_name": "cpython-3.12",
         "target_platform": "macosx_arm64"
       },
       {
@@ -86,7 +86,7 @@
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:33.094515+00:00",
         "requirements_hash": "sha256:c9668bc44dcd9728f98686cb7d72b4cdfc3c3ed44512d29b279a484723c9525a",
-        "runtime_name": "cpython@3.11",
+        "runtime_name": "cpython-3.11",
         "target_platform": "macosx_arm64"
       }
     ],
@@ -96,14 +96,14 @@
         "archive_hashes": {
           "sha256": "f4cd8563d8571ce0a6023082e12cfb0983e5b1b91e62e9c609801b44c848c4b4"
         },
-        "archive_name": "cpython@3.11.tar.xz",
+        "archive_name": "cpython-3.11.tar.xz",
         "archive_size": 14967244,
-        "install_target": "cpython@3.11",
-        "layer_name": "cpython@3.11",
+        "install_target": "cpython-3.11",
+        "layer_name": "cpython-3.11",
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:32.798085+00:00",
         "requirements_hash": "sha256:8a2182bfe08ff2478e3fe614e4769fce8fa5fa2ea010a2976c8f74d5396fa706",
-        "runtime_name": "cpython@3.11.10",
+        "runtime_name": "cpython-3.11.10",
         "target_platform": "macosx_arm64"
       },
       {
@@ -111,14 +111,14 @@
         "archive_hashes": {
           "sha256": "50c5fa0e90d1d7d66f2c4fa8b7bd242497543f9b80d2a1415fedbbbc80511969"
         },
-        "archive_name": "cpython@3.12.tar.xz",
+        "archive_name": "cpython-3.12.tar.xz",
         "archive_size": 13600980,
-        "install_target": "cpython@3.12",
-        "layer_name": "cpython@3.12",
+        "install_target": "cpython-3.12",
+        "layer_name": "cpython-3.12",
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:32.881474+00:00",
         "requirements_hash": "sha256:8a2182bfe08ff2478e3fe614e4769fce8fa5fa2ea010a2976c8f74d5396fa706",
-        "runtime_name": "cpython@3.12.7",
+        "runtime_name": "cpython-3.12.7",
         "target_platform": "macosx_arm64"
       }
     ]

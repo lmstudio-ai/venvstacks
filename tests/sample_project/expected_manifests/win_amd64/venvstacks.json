@@ -18,7 +18,7 @@
           "framework-scipy@1"
         ],
         "requirements_hash": "sha256:9aba38b5efe287f35d58825dce6b1c47ed556b930056e6edc00ca9e1a165796b",
-        "runtime_name": "cpython@3.11.10",
+        "runtime_name": "cpython-3.11.10",
         "target_platform": "win_amd64"
       },
       {
@@ -39,7 +39,7 @@
           "framework-http-client"
         ],
         "requirements_hash": "sha256:3bff0428616a2f1724732e78e7788e753dd5f1aa10aa5d3b87707b8dbde121de",
-        "runtime_name": "cpython@3.11.10",
+        "runtime_name": "cpython-3.11.10",
         "target_platform": "win_amd64"
       }
     ],
@@ -56,7 +56,7 @@
         "lock_version": 1,
         "locked_at": "2024-10-15T10:24:35.999197+00:00",
         "requirements_hash": "sha256:9aba38b5efe287f35d58825dce6b1c47ed556b930056e6edc00ca9e1a165796b",
-        "runtime_name": "cpython@3.11.10",
+        "runtime_name": "cpython-3.11.10",
         "target_platform": "win_amd64"
       },
       {
@@ -71,7 +71,7 @@
         "lock_version": 1,
         "locked_at": "2024-10-15T10:24:36.193328+00:00",
         "requirements_hash": "sha256:52d03445e70ccc0f6f3fe8523185f9f4b0b2795b83927d8703fba35fdc82bf62",
-        "runtime_name": "cpython@3.12.7",
+        "runtime_name": "cpython-3.12.7",
         "target_platform": "win_amd64"
       },
       {
@@ -86,7 +86,7 @@
         "lock_version": 1,
         "locked_at": "2024-10-15T10:24:36.316012+00:00",
         "requirements_hash": "sha256:71ba32717956dcf9c0d4e18b69061efbe53816f4b591ceb50553d6d3d12e1960",
-        "runtime_name": "cpython@3.11.10",
+        "runtime_name": "cpython-3.11.10",
         "target_platform": "win_amd64"
       }
     ],
@@ -96,14 +96,14 @@
         "archive_hashes": {
           "sha256": "75a349c5d90cede0ad9de3da4f5320974fd6b4b13d9f1f1d033fb76a1877e0b0"
         },
-        "archive_name": "cpython@3.11.zip",
+        "archive_name": "cpython-3.11.zip",
         "archive_size": 46594794,
-        "install_target": "cpython@3.11",
-        "layer_name": "cpython@3.11",
+        "install_target": "cpython-3.11",
+        "layer_name": "cpython-3.11",
         "lock_version": 1,
         "locked_at": "2024-10-15T10:24:35.734694+00:00",
         "requirements_hash": "sha256:5df8a095e5cc8c181fd46278ab782f5ae09ab0cba19b74f1aaa25f9fe5a9f100",
-        "runtime_name": "cpython@3.11.10",
+        "runtime_name": "cpython-3.11.10",
         "target_platform": "win_amd64"
       },
       {
@@ -111,14 +111,14 @@
         "archive_hashes": {
           "sha256": "c97d552563b64316f496cfbcba0465762a7ec5333b5b1fcb8c7a90bdb84d062a"
         },
-        "archive_name": "cpython@3.12.zip",
+        "archive_name": "cpython-3.12.zip",
         "archive_size": 45867025,
-        "install_target": "cpython@3.12",
-        "layer_name": "cpython@3.12",
+        "install_target": "cpython-3.12",
+        "layer_name": "cpython-3.12",
         "lock_version": 1,
         "locked_at": "2024-10-15T10:24:35.816641+00:00",
         "requirements_hash": "sha256:49df6762bcf65e93f7202af1527f129bb55dbd06ff5dff17e5b4949d3fba98de",
-        "runtime_name": "cpython@3.12.7",
+        "runtime_name": "cpython-3.12.7",
         "target_platform": "win_amd64"
       }
     ]

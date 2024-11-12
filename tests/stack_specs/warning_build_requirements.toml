@@ -1,0 +1,20 @@
+# Check future warning for the legacy "build_requirements" field
+
+[[runtimes]]
+name = "runtime"
+implementation_name = "cpython@3.11.10"
+requirements = []
+build_requirements = []
+
+[[frameworks]]
+name = "fw"
+runtime = "runtime"
+requirements = []
+build_requirements = []
+
+[[applications]]
+name = "app"
+frameworks = ["fw"]
+requirements = []
+build_requirements = []
+launch_module = "../minimal_project/empty.py"

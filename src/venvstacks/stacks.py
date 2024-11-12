@@ -13,6 +13,7 @@ import sys
 import sysconfig
 import tempfile
 import tomllib
+import warnings
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, InitVar
@@ -411,7 +412,6 @@ class LayerCategories(StrEnum):
 def ensure_optional_env_spec_fields(env_metadata: MutableMapping[str, Any]) -> None:
     """Populate missing environment spec fields that are optional in the TOML file."""
     TargetPlatforms.ensure_platform_list(env_metadata)
-    env_metadata.setdefault("build_requirements", [])
     env_metadata.setdefault("versioned", False)
 
 
@@ -430,7 +430,6 @@ class LayerSpecBase(ABC):
     name: LayerBaseName
     versioned: bool
     requirements: list[str] = field(repr=False)
-    build_requirements: list[str] = field(repr=False)
     platforms: list[TargetPlatforms] = field(repr=False)
 
     def __post_init__(self) -> None:
@@ -470,19 +469,20 @@ class RuntimeSpec(LayerSpecBase):
 
     kind = LayerVariants.RUNTIME
     category = LayerCategories.RUNTIMES
-    fully_versioned_name: str = field(repr=False)
+    implementation_name: str = field(repr=False)
 
     @property
     def py_version(self) -> str:
         """Extract just the Python version string from the base runtime identifier."""
-        # fully_versioned_name should be of the form "implementation@X.Y.Z"
+        # implementation_name should be of the form "implementation@X.Y.Z"
         # (this may need adjusting if runtimes other than CPython are ever used...)
-        return self.fully_versioned_name.partition("@")[2]
+        return self.implementation_name.partition("@")[2]
 
 
 @dataclass
 class LayeredSpecBase(LayerSpecBase):
     """Common base class for framework and application layer specifications."""
+
     # Intermediate class for covariant property typing (never instantiated)
     runtime: RuntimeSpec = field(repr=False)
 
@@ -518,15 +518,23 @@ class LayerSpecMetadata(TypedDict):
     lock_version: int              # Monotonically increasing version identifier
     locked_at: str                 # ISO formatted date/time value
 
-    # Extra fields only defined for framework and application environments
-    # runtime_name is set to fully_versioned_name if maintenance updates trigger a rebuild,
-    # otherwise set to runtime's layer spec name so only feature releases force a rebuild
+    # Fields that are populated after the layer metadata has initially been defined
+    # "runtime_name" is set to the underlying runtime's deployed environment name
+    # "implementation_name" is set to the underlying runtime's implementation name
+    # "bound_to_implementation" means that the layered environment includes
+    # copies of some files from the runtime implementation, and hence will
+    # need updating even for runtime maintenance releases
     runtime_name: NotRequired[str]
+    implementation_name: NotRequired[str]
+    bound_to_implementation: NotRequired[bool]
+
+    # Extra fields only defined for framework and application environments
     required_layers: NotRequired[Sequence[EnvNameDeploy]]
 
     # Extra fields only defined for application environments
     app_launch_module: NotRequired[str]
     app_launch_module_hash: NotRequired[str]
+    # fmt: on
 
     # Note: hashes of layered environment dependencies are intentionally NOT incorporated
     # into the published metadata. This allows an "only if needed" approach to
@@ -534,7 +542,6 @@ class LayerSpecMetadata(TypedDict):
     # updated (app layers will usually only depend on some of the components in the
     # underlying environment, and such dependencies are picked up as version changes
     # when regenerating the transitive dependency specifications for each environment)
-    # fmt: on
 
 
 ######################################################
@@ -902,7 +909,8 @@ def _pdm_python_install(target_path: Path, request: str) -> Path | None:
         destination.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile() as tf:
             tf.close()
-            original_filename = download(python_file, tf.name, env.session)
+            with env.session:
+                original_filename = download(python_file, tf.name, env.session)
             # Use "tar_filter" if stdlib tar extraction filters are available
             # (they were only added in Python 3.12, so no filtering on 3.11)
             with default_tarfile_filter("tar_filter"):
@@ -985,6 +993,7 @@ def get_build_platform() -> TargetPlatform:
 @dataclass
 class LayerEnvBase(ABC):
     """Common base class for layer build environment implementations."""
+
     # Python environment used to run tools like `uv` and `pip`
     tools_python_path: ClassVar[Path] = Path(sys.executable)
 
@@ -1505,7 +1514,7 @@ class RuntimeEnv(LayerEnvBase):
         return self._run_pip(pip_args)
 
     def _create_new_environment(self, *, lock_only: bool = False) -> None:
-        python_runtime = self.env_spec.fully_versioned_name
+        python_runtime = self.env_spec.implementation_name
         install_path = _pdm_python_install(self.build_path, python_runtime)
         if install_path is None:
             self._fail_build(f"Failed to install {python_runtime}")
@@ -1524,7 +1533,9 @@ class RuntimeEnv(LayerEnvBase):
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
         super()._update_output_metadata(metadata)
         # This *is* a runtime layer, so it needs to be updated on maintenance releases
-        metadata["runtime_name"] = self.env_spec.fully_versioned_name
+        metadata["runtime_name"] = self.install_target
+        metadata["implementation_name"] = self.env_spec.implementation_name
+        metadata["bound_to_implementation"] = True
 
     def create_build_environment(self, *, clean: bool = False) -> None:
         """Create or update runtime build environment. Returns True if env is new or updated."""
@@ -1533,6 +1544,7 @@ class RuntimeEnv(LayerEnvBase):
 
 class LayeredEnvBase(LayerEnvBase):
     """Common base class for framework and application layer build environments."""
+
     base_runtime: RuntimeEnv | None = field(init=False, repr=False)
     linked_constraints_paths: list[Path] = field(init=False, repr=False)
 
@@ -1660,11 +1672,11 @@ class LayeredEnvBase(LayerEnvBase):
         super()._update_output_metadata(metadata)
         # Non-windows platforms use symlinks, so only need updates on feature releases
         # Windows copies the main Python binary and support libary, so always needs updates
-        if _WINDOWS_BUILD:
-            runtime_update_trigger = self.env_spec.runtime.fully_versioned_name
-        else:
-            runtime_update_trigger = self.env_spec.runtime.name
-        metadata["runtime_name"] = runtime_update_trigger
+        runtime = self.base_runtime
+        assert runtime is not None
+        metadata["runtime_name"] = runtime.install_target
+        metadata["implementation_name"] = runtime.env_spec.implementation_name
+        metadata["bound_to_implementation"] = bool(_WINDOWS_BUILD)
 
 
 class FrameworkEnv(LayeredEnvBase):
@@ -1783,6 +1795,69 @@ class StackSpec:
             self.requirements_dir_path
         )
 
+    @staticmethod
+    def _get_layer_name(data: Mapping[str, Any]) -> Any:
+        try:
+            return data["name"]
+        except KeyError:
+            pass  # This error context is not interesting
+        raise LayerSpecError("Layer specifications must include 'name'")
+
+    @classmethod
+    def _delete_field(cls, data: MutableMapping[str, Any], legacy_name: str) -> bool:
+        """Ignore removed legacy field. Returns True if field needs to be removed."""
+        legacy_field_value = data.pop(legacy_name, None)
+        if legacy_field_value is not None:
+            layer_name = cls._get_layer_name(data)
+            msg = f"Dropping legacy field {legacy_name!r} for layer {layer_name!r}"
+            warnings.warn(msg, FutureWarning)
+            return True
+        return False
+
+    @classmethod
+    def _update_field_name(
+        cls, data: MutableMapping[str, Any], legacy_name: str, name: str
+    ) -> bool:
+        """Convert legacy field to current field. Returns True if conversion is needed."""
+        legacy_field_value = data.pop(legacy_name, None)
+        if legacy_field_value is not None:
+            layer_name = cls._get_layer_name(data)
+            if name in data:
+                msg = f"Layer {layer_name!r} sets both {name!r} and the obsolete {legacy_name!r}"
+                raise LayerSpecError(msg)
+            data[name] = legacy_field_value
+            msg = f"Converting legacy field name {legacy_name!r} to {name!r} for layer {layer_name!r}"
+            warnings.warn(msg, FutureWarning)
+            return True
+        return False
+
+    @classmethod
+    def _update_legacy_fields(
+        cls,
+        data: MutableMapping[str, Any],
+        conversions: Mapping[str, str | None],
+    ) -> bool:
+        modified = False
+        for legacy_name, name in conversions.items():
+            if name is None:
+                field_modified = cls._delete_field(data, legacy_name)
+            else:
+                field_modified = cls._update_field_name(data, legacy_name, name)
+            if field_modified:
+                modified = True
+        return modified
+
+    _RUNTIME_LEGACY_CONVERSIONS: ClassVar[Mapping[str, str | None]] = {
+        "fully_versioned_name": "implementation_name",
+        "build_requirements": None,
+    }
+    _FRAMEWORK_LEGACY_CONVERSIONS: ClassVar[Mapping[str, str | None]] = {
+        "build_requirements": None,
+    }
+    _APPLICATION_LEGACY_CONVERSIONS: ClassVar[Mapping[str, str | None]] = {
+        "build_requirements": None,
+    }
+
     @classmethod
     def load(cls, fname: StrPath) -> Self:
         """Load stack specification from given TOML file."""
@@ -1793,9 +1868,11 @@ class StackSpec:
         requirements_dir_path = spec_dir_path / "requirements"
         # Collect the list of runtime specs
         runtimes = {}
-        for rt in data["runtimes"]:
-            # No conversions needed for the runtime environment specs
-            name = rt["name"]
+        for rt in data.get("runtimes", ()):
+            name = cls._get_layer_name(rt)
+            # Handle backwards compatibility fixes and warnings
+            cls._update_legacy_fields(rt, cls._RUNTIME_LEGACY_CONVERSIONS)
+            # Consistency checks (no field value conversions necessary)
             if name in runtimes:
                 msg = f"Runtime names must be distinct ({name!r} already defined)"
                 raise LayerSpecError(msg)
@@ -1803,8 +1880,11 @@ class StackSpec:
             runtimes[name] = RuntimeSpec(**rt)
         # Collect the list of framework specs
         frameworks = {}
-        for fw in data["frameworks"]:
-            name = fw["name"]
+        for fw in data.get("frameworks", ()):
+            name = cls._get_layer_name(fw)
+            # Handle backwards compatibility fixes and warnings
+            cls._update_legacy_fields(fw, cls._FRAMEWORK_LEGACY_CONVERSIONS)
+            # Consistency checks and field value conversions
             if name in frameworks:
                 msg = f"Framework names must be distinct ({name!r} already defined)"
                 raise LayerSpecError(msg)
@@ -1818,8 +1898,11 @@ class StackSpec:
             frameworks[name] = FrameworkSpec(**fw)
         # Collect the list of application specs
         applications = {}
-        for app in data["applications"]:
-            name = app["name"]
+        for app in data.get("applications", ()):
+            name = cls._get_layer_name(app)
+            # Handle backwards compatibility fixes and warnings
+            cls._update_legacy_fields(app, cls._APPLICATION_LEGACY_CONVERSIONS)
+            # Consistency checks and field value conversions
             if name in applications:
                 msg = f"Application names must be distinct ({name!r} already defined)"
                 raise LayerSpecError(msg)

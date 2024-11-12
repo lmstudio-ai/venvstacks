@@ -24,6 +24,5 @@ venvstacks.stacks.LayerSpecBase
       ~LayerSpecBase.name
       ~LayerSpecBase.versioned
       ~LayerSpecBase.requirements
-      ~LayerSpecBase.build_requirements
       ~LayerSpecBase.platforms
 

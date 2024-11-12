@@ -178,28 +178,28 @@ def _export_archives(
 ##################################
 
 EXPECTED_RUNTIMES = [
-    EnvSummary("cpython@3.11", ""),
-    EnvSummary("cpython@3.12", ""),
+    EnvSummary("cpython-3.11", ""),
+    EnvSummary("cpython-3.12", ""),
 ]
 
 EXPECTED_FRAMEWORKS = [
-    LayeredEnvSummary("scipy", "framework-", "cpython@3.11"),
-    LayeredEnvSummary("sklearn", "framework-", "cpython@3.12"),
-    LayeredEnvSummary("http-client", "framework-", "cpython@3.11"),
+    LayeredEnvSummary("scipy", "framework-", "cpython-3.11"),
+    LayeredEnvSummary("sklearn", "framework-", "cpython-3.12"),
+    LayeredEnvSummary("http-client", "framework-", "cpython-3.11"),
 ]
 
 EXPECTED_APPLICATIONS = [
-    ApplicationEnvSummary("scipy-import", "app-", "cpython@3.11", ("scipy",)),
+    ApplicationEnvSummary("scipy-import", "app-", "cpython-3.11", ("scipy",)),
     ApplicationEnvSummary(
         "scipy-client",
         "app-",
-        "cpython@3.11",
+        "cpython-3.11",
         (
             "scipy",
             "http-client",
         ),
     ),
-    ApplicationEnvSummary("sklearn-import", "app-", "cpython@3.12", ("sklearn",)),
+    ApplicationEnvSummary("sklearn-import", "app-", "cpython-3.12", ("sklearn",)),
 ]
 
 EXPECTED_ENVIRONMENTS = EXPECTED_RUNTIMES.copy()
@@ -434,7 +434,7 @@ class TestBuildEnvironment(DeploymentTestCase):
 
     def test_get_unmatched_patterns(self) -> None:
         build_env = self.build_env
-        matching = ["app-*", "*@*", "framework-*", "app-scipy-import"]
+        matching = ["app-*", "*-3.*", "framework-*", "app-scipy-import"]
         self.assertEqual(build_env.get_unmatched_patterns(matching), [])
         unknown = ["unknown", "app-?", "*-app"]
         self.assertEqual(build_env.get_unmatched_patterns(unknown), unknown)
@@ -444,7 +444,7 @@ class TestBuildEnvironment(DeploymentTestCase):
     def test_layer_selection(self) -> None:
         subtests_started = subtests_passed = 0  # Track subtest failures
         included = ["framework-sklearn"]
-        dependencies = ["cpython@3.12"]
+        dependencies = ["cpython-3.12"]
         derived = ["app-sklearn-import"]
         build_env = self.build_env
 

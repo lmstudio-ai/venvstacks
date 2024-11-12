@@ -19,6 +19,5 @@ venvstacks.stacks.ApplicationSpec
       ~ApplicationSpec.name
       ~ApplicationSpec.versioned
       ~ApplicationSpec.requirements
-      ~ApplicationSpec.build_requirements
       ~ApplicationSpec.platforms
 

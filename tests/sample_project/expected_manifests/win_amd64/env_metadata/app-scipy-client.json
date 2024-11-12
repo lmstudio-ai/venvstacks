@@ -16,6 +16,6 @@
     "framework-http-client"
   ],
   "requirements_hash": "sha256:3bff0428616a2f1724732e78e7788e753dd5f1aa10aa5d3b87707b8dbde121de",
-  "runtime_name": "cpython@3.11.10",
+  "runtime_name": "cpython-3.11.10",
   "target_platform": "win_amd64"
 }

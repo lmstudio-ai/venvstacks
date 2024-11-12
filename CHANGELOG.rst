@@ -1,5 +1,8 @@
 .. Included in published docs via docs/changelog.rst
 
+.. Temporary link target for next release
+.. _changelog-0.2.0:
+
 Unreleased
 ==========
 

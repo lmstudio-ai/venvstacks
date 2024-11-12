@@ -294,9 +294,7 @@ class DeploymentTestCase(unittest.TestCase):
                 f"No path outside deployed {env_path} in {env_sys_path}",
             )
 
-    def check_build_environments(
-        self, build_envs: Iterable[LayerEnvBase]
-    ) -> None:
+    def check_build_environments(self, build_envs: Iterable[LayerEnvBase]) -> None:
         for env in build_envs:
             env_path = env.env_path
             config_path = env_path / DEPLOYED_LAYER_CONFIG

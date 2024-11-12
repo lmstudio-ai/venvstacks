@@ -17,6 +17,5 @@ venvstacks.stacks.FrameworkSpec
       ~FrameworkSpec.name
       ~FrameworkSpec.versioned
       ~FrameworkSpec.requirements
-      ~FrameworkSpec.build_requirements
       ~FrameworkSpec.platforms
 

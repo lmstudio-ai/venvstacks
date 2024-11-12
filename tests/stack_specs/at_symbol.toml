@@ -1,0 +1,12 @@
+# Check layer names are permitted to contain `@`
+
+[[runtimes]]
+name = "cpython@3.11"
+implementation_name = "cpython@3.11.10"
+requirements = []
+
+[[runtimes]]
+name = "cpython@3.12"
+versioned = true
+implementation_name = "cpython@3.12.7"
+requirements = []
