@@ -1,6 +1,14 @@
+.. _glossary:
+
 ----------------------------
 Essential Terms and Concepts
 ----------------------------
+
+.. meta::
+   :og:title: venvstacks Glossary - venvstacks Documentation
+   :og:type: website
+   :og:url: https://venvstacks.lmstudio.ai/glossary/
+   :og:description: venvstacks Glossary - venvstacks Documentation
 
 .. glossary::
 
@@ -59,6 +67,17 @@ Essential Terms and Concepts
       * *application layers*: these layers specify the actual deployed Python
         applications which embedding applications will invoke. Applications
         depend on one or more framework layers
+
+   layer category
+   layer kind
+   layer type
+     These terms all refer to the different categories of :term:`layer` that
+     ``venvstacks`` defines. In the code, ``kind`` refers to the singular
+     forms (``runtime``, ``framework``, ``application``), while ``category``
+     refers to the plural forms (``runtimes``, ``frameworks``, ``applications``).
+     The documentation will generally refer to layer types rather than layer
+     kinds (the code avoids this usage due to the potential confusion with
+     Python object types).
 
    stack
    environment stack

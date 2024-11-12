@@ -1,3 +1,5 @@
+"""Sphinx configuration for venvstacks documentation."""
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -28,12 +30,16 @@ extensions = [
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# Allow Markdown-style single backtick syntax for inline literals
+default_role = "literal"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "furo"
 html_static_path = ["_static"]
+pygments_style = "sphinx"
+pygments_dark_style = "monokai"
 
 # Docs are published directly to GitHub pages, consider them to be unversioned
 html_title = "venvstacks documentation"
@@ -57,12 +63,14 @@ extlinks = {
     "issue": ("https://github.com/lmstudio-ai/venvstacks/issues/%s", "#%s"),
     "pr": ("https://github.com/lmstudio-ai/venvstacks/pull/%s", "PR #%s"),
     "pypi": ("https://pypi.org/project/%s/", "%s"),
+    "toml": ("https://toml.io/en/v1.0.0#%s", "%s"),
 }
+extlinks_detect_hardcoded_links = True
 
 # -- Options for intersphinx ----------------------------------------------------------
 
 intersphinx_mapping = {
-    "py": ("https://docs.python.org/3", None),
+    "pystd": ("https://docs.python.org/3", None),
     "packaging": ("https://packaging.python.org/en/latest/", None),
 }
 
