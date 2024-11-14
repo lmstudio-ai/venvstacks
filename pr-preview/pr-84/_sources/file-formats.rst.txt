@@ -82,7 +82,7 @@ All layer specifications may also contain the following optional fields:
 * ``versioned`` (:toml:`boolean`): by default, and when this setting is ``false``,
   the layer is considered unversioned (even if an ``@`` symbol appears in the
   layer name). The layer metadata will always report the lock version for these
-  layers as ``1`` and this value is never implicitly included when deriving
+  layers as ``1`` and the lock version is never implicitly included when deriving
   other names from the layer name.
   When this setting is ``true``, the layer is implicitly versioned.
   For implicitly versioned layers, a lock version number is stored as part of
@@ -96,7 +96,7 @@ This means the following layer versioning styles are supported:
 
 * *unversioned*: layer name uses a format like ``my-app`` with ``versioned``
   omitted or set to ``false``. Dependencies from other layers (if any) refer to
-  the unversioned layer name. Only the latest version of an implicitly versioned
+  the unversioned layer name. Only the latest version of an unversioned
   layer can be built and published, and only one version can be installed
   on any given target system. :ref:`Artifact tagging <layer-metadata>` allows
   multiple versions of unversioned layers to still be distributed in parallel.
@@ -141,10 +141,9 @@ Runtime layer specifications must contain the following additional field:
 
 * ``python_implementation`` (:toml:`string`): the :pypi:`pbs-installer` name
   of the Python runtime to be installed as the base runtime for this layer
-  (and any upper layers that depend on this layer).
-* ``implementation_version`` (:toml:`string`): the :pypi:`pbs-installer` name
-  of the Python runtime to be installed as the base runtime for this layer
-  (and any upper layers that depend on this layer).
+  (and any upper layers that depend on this layer). Implementation names
+  use the format ``{implementation_name}@{implementation_version}``
+  (for example, ``cpython@3.12.7``).
 
 
 Framework layer specification fields

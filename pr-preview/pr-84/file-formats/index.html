@@ -365,7 +365,7 @@ Permitted entries in the <code class="docutils literal notranslate"><span class=
 <li><p><code class="docutils literal notranslate"><span class="pre">versioned</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#boolean">boolean</a>): by default, and when this setting is <code class="docutils literal notranslate"><span class="pre">false</span></code>,
 the layer is considered unversioned (even if an <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> symbol appears in the
 layer name). The layer metadata will always report the lock version for these
-layers as <code class="docutils literal notranslate"><span class="pre">1</span></code> and this value is never implicitly included when deriving
+layers as <code class="docutils literal notranslate"><span class="pre">1</span></code> and the lock version is never implicitly included when deriving
 other names from the layer name.
 When this setting is <code class="docutils literal notranslate"><span class="pre">true</span></code>, the layer is implicitly versioned.
 For implicitly versioned layers, a lock version number is stored as part of
@@ -379,7 +379,7 @@ from the layer name.</p></li>
 <ul class="simple">
 <li><p><em>unversioned</em>: layer name uses a format like <code class="docutils literal notranslate"><span class="pre">my-app</span></code> with <code class="docutils literal notranslate"><span class="pre">versioned</span></code>
 omitted or set to <code class="docutils literal notranslate"><span class="pre">false</span></code>. Dependencies from other layers (if any) refer to
-the unversioned layer name. Only the latest version of an implicitly versioned
+the unversioned layer name. Only the latest version of an unversioned
 layer can be built and published, and only one version can be installed
 on any given target system. <a class="reference internal" href="#layer-metadata"><span class="std std-ref">Artifact tagging</span></a> allows
 multiple versions of unversioned layers to still be distributed in parallel.
@@ -420,10 +420,9 @@ when building virtual environment stacks.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">python_implementation</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the <a class="extlink-pypi reference external" href="https://pypi.org/project/pbs-installer/">pbs-installer</a> name
 of the Python runtime to be installed as the base runtime for this layer
-(and any upper layers that depend on this layer).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">implementation_version</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the <a class="extlink-pypi reference external" href="https://pypi.org/project/pbs-installer/">pbs-installer</a> name
-of the Python runtime to be installed as the base runtime for this layer
-(and any upper layers that depend on this layer).</p></li>
+(and any upper layers that depend on this layer). Implementation names
+use the format <code class="docutils literal notranslate"><span class="pre">{implementation_name}&#64;{implementation_version}</span></code>
+(for example, <code class="docutils literal notranslate"><span class="pre">cpython&#64;3.12.7</span></code>).</p></li>
 </ul>
 </section>
 <section id="framework-layer-specification-fields">
