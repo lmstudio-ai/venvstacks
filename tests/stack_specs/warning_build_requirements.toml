@@ -2,7 +2,7 @@
 
 [[runtimes]]
 name = "runtime"
-implementation_name = "cpython@3.11.10"
+python_implementation = "cpython@3.11.10"
 requirements = []
 build_requirements = []
 

@@ -6,7 +6,7 @@
   "archive_name": "framework-sklearn.tar.xz",
   "archive_size": 30371692,
   "bound_to_implementation": false,
-  "implementation_name": "cpython@3.12.7",
+  "python_implementation": "cpython@3.12.7",
   "install_target": "framework-sklearn",
   "layer_name": "framework-sklearn",
   "lock_version": 1,

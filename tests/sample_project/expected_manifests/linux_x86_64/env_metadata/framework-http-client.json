@@ -6,7 +6,7 @@
   "archive_name": "framework-http-client.tar.xz",
   "archive_size": 364152,
   "bound_to_implementation": false,
-  "implementation_name": "cpython@3.11.10",
+  "python_implementation": "cpython@3.11.10",
   "install_target": "framework-http-client",
   "layer_name": "framework-http-client",
   "lock_version": 1,

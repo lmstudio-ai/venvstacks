@@ -6,7 +6,7 @@
   "archive_name": "cpython-3.12.zip",
   "archive_size": 45867025,
   "bound_to_implementation": true,
-  "implementation_name": "cpython@3.12.7",
+  "python_implementation": "cpython@3.12.7",
   "install_target": "cpython-3.12",
   "layer_name": "cpython-3.12",
   "lock_version": 1,

@@ -41,7 +41,7 @@ def test_at_symbol_in_layer_names() -> None:
 
 def test_future_warning_for_fully_versioned_name() -> None:
     expected_msg = (
-        "Converting legacy.*'fully_versioned_name'.*'implementation_name'.*'runtime'"
+        "Converting legacy.*'fully_versioned_name'.*'python_implementation'.*'runtime'"
     )
     with pytest.warns(FutureWarning, match=expected_msg):
         stack_spec = _load_stack_spec("warning_fully_versioned.toml")

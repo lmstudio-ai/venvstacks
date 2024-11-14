@@ -469,14 +469,14 @@ class RuntimeSpec(LayerSpecBase):
 
     kind = LayerVariants.RUNTIME
     category = LayerCategories.RUNTIMES
-    implementation_name: str = field(repr=False)
+    python_implementation: str = field(repr=False)
 
     @property
     def py_version(self) -> str:
         """Extract just the Python version string from the base runtime identifier."""
-        # implementation_name should be of the form "implementation@X.Y.Z"
+        # python_implementation should be of the form "implementation@X.Y.Z"
         # (this may need adjusting if runtimes other than CPython are ever used...)
-        return self.implementation_name.partition("@")[2]
+        return self.python_implementation.partition("@")[2]
 
 
 @dataclass
@@ -519,13 +519,13 @@ class LayerSpecMetadata(TypedDict):
     locked_at: str                 # ISO formatted date/time value
 
     # Fields that are populated after the layer metadata has initially been defined
-    # "runtime_name" is set to the underlying runtime's deployed environment name
-    # "implementation_name" is set to the underlying runtime's implementation name
+    # "runtime_layer" is set to the underlying runtime's deployed environment name
+    # "python_implementation" is set to the underlying runtime's implementation name
     # "bound_to_implementation" means that the layered environment includes
     # copies of some files from the runtime implementation, and hence will
     # need updating even for runtime maintenance releases
-    runtime_name: NotRequired[str]
-    implementation_name: NotRequired[str]
+    runtime_layer: NotRequired[str]
+    python_implementation: NotRequired[str]
     bound_to_implementation: NotRequired[bool]
 
     # Extra fields only defined for framework and application environments
@@ -1514,7 +1514,7 @@ class RuntimeEnv(LayerEnvBase):
         return self._run_pip(pip_args)
 
     def _create_new_environment(self, *, lock_only: bool = False) -> None:
-        python_runtime = self.env_spec.implementation_name
+        python_runtime = self.env_spec.python_implementation
         install_path = _pdm_python_install(self.build_path, python_runtime)
         if install_path is None:
             self._fail_build(f"Failed to install {python_runtime}")
@@ -1533,8 +1533,8 @@ class RuntimeEnv(LayerEnvBase):
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
         super()._update_output_metadata(metadata)
         # This *is* a runtime layer, so it needs to be updated on maintenance releases
-        metadata["runtime_name"] = self.install_target
-        metadata["implementation_name"] = self.env_spec.implementation_name
+        metadata["runtime_layer"] = self.install_target
+        metadata["python_implementation"] = self.env_spec.python_implementation
         metadata["bound_to_implementation"] = True
 
     def create_build_environment(self, *, clean: bool = False) -> None:
@@ -1674,8 +1674,8 @@ class LayeredEnvBase(LayerEnvBase):
         # Windows copies the main Python binary and support libary, so always needs updates
         runtime = self.base_runtime
         assert runtime is not None
-        metadata["runtime_name"] = runtime.install_target
-        metadata["implementation_name"] = runtime.env_spec.implementation_name
+        metadata["runtime_layer"] = runtime.install_target
+        metadata["python_implementation"] = runtime.env_spec.python_implementation
         metadata["bound_to_implementation"] = bool(_WINDOWS_BUILD)
 
 
@@ -1848,7 +1848,7 @@ class StackSpec:
         return modified
 
     _RUNTIME_LEGACY_CONVERSIONS: ClassVar[Mapping[str, str | None]] = {
-        "fully_versioned_name": "implementation_name",
+        "fully_versioned_name": "python_implementation",
         "build_requirements": None,
     }
     _FRAMEWORK_LEGACY_CONVERSIONS: ClassVar[Mapping[str, str | None]] = {

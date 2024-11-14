@@ -52,7 +52,7 @@ all running in a controlled Python 3.11 base runtime:
 
    [[runtimes]]
    name = "cpython-3.11"
-   implementation_name = "cpython@3.11.10"
+   python_implementation = "cpython@3.11.10"
    requirements = [
        "numpy",
    ]

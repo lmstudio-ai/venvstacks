@@ -6,7 +6,7 @@
   "archive_name": "framework-scipy@1.tar.xz",
   "archive_size": 15076180,
   "bound_to_implementation": false,
-  "implementation_name": "cpython@3.11.10",
+  "python_implementation": "cpython@3.11.10",
   "install_target": "framework-scipy@1",
   "layer_name": "framework-scipy",
   "lock_version": 1,

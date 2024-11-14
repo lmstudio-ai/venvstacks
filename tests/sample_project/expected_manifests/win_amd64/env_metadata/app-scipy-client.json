@@ -8,7 +8,7 @@
   "archive_name": "app-scipy-client.zip",
   "archive_size": 257126,
   "bound_to_implementation": true,
-  "implementation_name": "cpython@3.11.10",
+  "python_implementation": "cpython@3.11.10",
   "install_target": "app-scipy-client",
   "layer_name": "app-scipy-client",
   "lock_version": 1,
