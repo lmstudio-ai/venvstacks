@@ -155,7 +155,7 @@ Framework layer specifications must contain the following additional field:
 * ``runtime`` (:toml:`string`): the name of the runtime layer that this framework layer uses.
 
 The ``install_target`` and ``python_implementation`` attributes of the specified
-runtime are respectively recorded in the ``runtime_name`` 
+runtime are respectively recorded in the ``runtime_layer``
 and ``python_implementation`` fields of the layer output metadata.
 
 ``bound_to_implementation`` is an additional boolean field in the frame layer
@@ -192,7 +192,7 @@ Application layer specifications must contain the following additional field:
 The ``runtime`` dependency for application layers is not specified directly. Instead, all
 of the declared framework dependencies *must* depend on the same runtime layer, and that
 base runtime also becomes the base runtime for the application layer using those frameworks.
-``runtime_name``, ``python_implementation``, and ``bound_to_implementation`` in the layer
+``runtime_layer``, ``python_implementation``, and ``bound_to_implementation`` in the layer
 output metadata are set to the same values as they are for the underlying frameworks.
 
 
@@ -309,12 +309,12 @@ layer archives or locally exporting layer environments:
     locked_at: str                 # ISO formatted date/time value
 
     # Fields that are populated after the layer metadata has initially been defined
-    # "runtime_name" is set to the underlying runtime's deployed environment name
+    # "runtime_layer" is set to the underlying runtime's deployed environment name
     # "python_implementation" is set to the underlying runtime's implementation name
     # "bound_to_implementation" means that the layered environment includes
     # copies of some files from the runtime implementation, and hence will
     # need updating even for runtime maintenance releases
-    runtime_name: NotRequired[str]
+    runtime_layer: NotRequired[str]
     python_implementation: NotRequired[str]
     bound_to_implementation: NotRequired[bool]
 

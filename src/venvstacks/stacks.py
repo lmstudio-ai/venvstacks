@@ -1888,10 +1888,10 @@ class StackSpec:
             if name in frameworks:
                 msg = f"Framework names must be distinct ({name!r} already defined)"
                 raise LayerSpecError(msg)
-            runtime_name = fw["runtime"]
-            runtime = runtimes.get(runtime_name)
+            runtime_layer_spec_name = fw["runtime"]
+            runtime = runtimes.get(runtime_layer_spec_name)
             if runtime is None:
-                msg = f"Framework {name!r} references unknown runtime {runtime_name!r}"
+                msg = f"Framework {name!r} references unknown runtime {runtime_layer_spec_name!r}"
                 raise LayerSpecError(msg)
             fw["runtime"] = runtime
             ensure_optional_env_spec_fields(fw)

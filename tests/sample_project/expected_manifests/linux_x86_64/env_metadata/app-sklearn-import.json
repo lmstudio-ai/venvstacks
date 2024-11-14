@@ -17,6 +17,6 @@
     "framework-sklearn"
   ],
   "requirements_hash": "sha256:600b3bc658d940b756d5917e6fb7dec3431c5ce4ebc878f5d031e74f3ebdb7a9",
-  "runtime_name": "cpython-3.12",
+  "runtime_layer": "cpython-3.12",
   "target_platform": "linux_x86_64"
 }

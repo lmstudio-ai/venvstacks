@@ -18,6 +18,6 @@
     "framework-http-client"
   ],
   "requirements_hash": "sha256:fb8a843c694d03d7ee74b457cdac2bd82b6b439de0ed308d72fe698c6c9c6cf4",
-  "runtime_name": "cpython-3.11",
+  "runtime_layer": "cpython-3.11",
   "target_platform": "macosx_arm64"
 }

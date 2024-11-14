@@ -14,7 +14,7 @@ venvstacks.stacks.LayerSpecMetadata
       ~LayerSpecMetadata.requirements_hash
       ~LayerSpecMetadata.lock_version
       ~LayerSpecMetadata.locked_at
-      ~LayerSpecMetadata.runtime_name
+      ~LayerSpecMetadata.runtime_layer
       ~LayerSpecMetadata.required_layers
       ~LayerSpecMetadata.app_launch_module
       ~LayerSpecMetadata.app_launch_module_hash

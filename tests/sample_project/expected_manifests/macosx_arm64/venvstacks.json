@@ -20,7 +20,7 @@
           "framework-scipy@1"
         ],
         "requirements_hash": "sha256:36b0dbfec94b7de6507f348f0823cd02fdca2ea79eeafe92d571c26ae347d150",
-        "runtime_name": "cpython-3.11",
+        "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       },
       {
@@ -43,7 +43,7 @@
           "framework-http-client"
         ],
         "requirements_hash": "sha256:fb8a843c694d03d7ee74b457cdac2bd82b6b439de0ed308d72fe698c6c9c6cf4",
-        "runtime_name": "cpython-3.11",
+        "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       }
     ],
@@ -62,7 +62,7 @@
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:32.960668+00:00",
         "requirements_hash": "sha256:36b0dbfec94b7de6507f348f0823cd02fdca2ea79eeafe92d571c26ae347d150",
-        "runtime_name": "cpython-3.11",
+        "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       },
       {
@@ -79,7 +79,7 @@
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:33.041734+00:00",
         "requirements_hash": "sha256:600b3bc658d940b756d5917e6fb7dec3431c5ce4ebc878f5d031e74f3ebdb7a9",
-        "runtime_name": "cpython-3.12",
+        "runtime_layer": "cpython-3.12",
         "target_platform": "macosx_arm64"
       },
       {
@@ -96,7 +96,7 @@
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:33.094515+00:00",
         "requirements_hash": "sha256:c9668bc44dcd9728f98686cb7d72b4cdfc3c3ed44512d29b279a484723c9525a",
-        "runtime_name": "cpython-3.11",
+        "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       }
     ],
@@ -115,7 +115,7 @@
         "lock_version": 1,
         "locked_at": "2024-11-12T07:31:21.515343+00:00",
         "requirements_hash": "sha256:212b342db7bea93548f01f93e4c91b870e9f7218cbec61e55c16c82fa50f1cd4",
-        "runtime_name": "cpython-3.11",
+        "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       },
       {
@@ -132,7 +132,7 @@
         "lock_version": 1,
         "locked_at": "2024-11-12T07:31:21.594574+00:00",
         "requirements_hash": "sha256:212b342db7bea93548f01f93e4c91b870e9f7218cbec61e55c16c82fa50f1cd4",
-        "runtime_name": "cpython-3.12",
+        "runtime_layer": "cpython-3.12",
         "target_platform": "macosx_arm64"
       }
     ]

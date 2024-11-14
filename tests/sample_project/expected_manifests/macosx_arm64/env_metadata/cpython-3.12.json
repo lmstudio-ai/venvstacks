@@ -12,6 +12,6 @@
   "lock_version": 1,
   "locked_at": "2024-11-12T07:31:21.594574+00:00",
   "requirements_hash": "sha256:212b342db7bea93548f01f93e4c91b870e9f7218cbec61e55c16c82fa50f1cd4",
-  "runtime_name": "cpython-3.12",
+  "runtime_layer": "cpython-3.12",
   "target_platform": "macosx_arm64"
 }

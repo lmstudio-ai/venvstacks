@@ -17,6 +17,6 @@
     "framework-scipy@1"
   ],
   "requirements_hash": "sha256:36b0dbfec94b7de6507f348f0823cd02fdca2ea79eeafe92d571c26ae347d150",
-  "runtime_name": "cpython-3.11",
+  "runtime_layer": "cpython-3.11",
   "target_platform": "linux_x86_64"
 }

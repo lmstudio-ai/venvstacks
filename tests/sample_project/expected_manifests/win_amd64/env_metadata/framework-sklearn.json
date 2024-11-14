@@ -12,6 +12,6 @@
   "lock_version": 1,
   "locked_at": "2024-10-15T10:24:36.193328+00:00",
   "requirements_hash": "sha256:52d03445e70ccc0f6f3fe8523185f9f4b0b2795b83927d8703fba35fdc82bf62",
-  "runtime_name": "cpython-3.12",
+  "runtime_layer": "cpython-3.12",
   "target_platform": "win_amd64"
 }
