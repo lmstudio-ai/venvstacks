@@ -418,7 +418,10 @@ when building virtual environment stacks.</p>
 <h3>Runtime layer specification fields<a class="headerlink" href="#runtime-layer-specification-fields" title="Link to this heading">¶</a></h3>
 <p>Runtime layer specifications must contain the following additional field:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">implementation_name</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the <a class="extlink-pypi reference external" href="https://pypi.org/project/pbs-installer/">pbs-installer</a> name
+<li><p><code class="docutils literal notranslate"><span class="pre">python_implementation</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the <a class="extlink-pypi reference external" href="https://pypi.org/project/pbs-installer/">pbs-installer</a> name
+of the Python runtime to be installed as the base runtime for this layer
+(and any upper layers that depend on this layer).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">implementation_version</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the <a class="extlink-pypi reference external" href="https://pypi.org/project/pbs-installer/">pbs-installer</a> name
 of the Python runtime to be installed as the base runtime for this layer
 (and any upper layers that depend on this layer).</p></li>
 </ul>
@@ -429,9 +432,9 @@ of the Python runtime to be installed as the base runtime for this layer
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">runtime</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the name of the runtime layer that this framework layer uses.</p></li>
 </ul>
-<p>The <code class="docutils literal notranslate"><span class="pre">install_target</span></code> and <code class="docutils literal notranslate"><span class="pre">implementation_name</span></code> attributes of the specified
-are runtime are respectively recorded in the <code class="docutils literal notranslate"><span class="pre">runtime_name</span></code>
-and <code class="docutils literal notranslate"><span class="pre">implementation_name</span></code> fields of the layer output metadata.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">install_target</span></code> and <code class="docutils literal notranslate"><span class="pre">python_implementation</span></code> attributes of the specified
+runtime are respectively recorded in the <code class="docutils literal notranslate"><span class="pre">runtime_layer</span></code>
+and <code class="docutils literal notranslate"><span class="pre">python_implementation</span></code> fields of the layer output metadata.</p>
 <p><code class="docutils literal notranslate"><span class="pre">bound_to_implementation</span></code> is an additional boolean field in the frame layer
 output metadata that indicates how tightly coupled the framework layer is
 to the underlying implementation layer.</p>
@@ -462,7 +465,7 @@ be included in the built environment for execution with the <a class="reference 
 <p>The <code class="docutils literal notranslate"><span class="pre">runtime</span></code> dependency for application layers is not specified directly. Instead, all
 of the declared framework dependencies <em>must</em> depend on the same runtime layer, and that
 base runtime also becomes the base runtime for the application layer using those frameworks.
-<code class="docutils literal notranslate"><span class="pre">runtime_name</span></code>, <code class="docutils literal notranslate"><span class="pre">implementation_name</span></code>, and <code class="docutils literal notranslate"><span class="pre">bound_to_implementation</span></code> in the layer
+<code class="docutils literal notranslate"><span class="pre">runtime_layer</span></code>, <code class="docutils literal notranslate"><span class="pre">python_implementation</span></code>, and <code class="docutils literal notranslate"><span class="pre">bound_to_implementation</span></code> in the layer
 output metadata are set to the same values as they are for the underlying frameworks.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -507,7 +510,7 @@ when used in a loaded stack specification:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">build_requirements</span></code>: no longer has any effect (rendered non-functional before
 <a class="reference internal" href="../changelog/#changelog-0-1-0rc1"><span class="std std-ref">0.1.0rc1</span></a>, warning emitted from <a class="reference internal" href="../changelog/#changelog-0-2-0"><span class="std std-ref">0.2.0</span></a>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">fully_versioned_name</span></code>: renamed to <code class="docutils literal notranslate"><span class="pre">implementation_name</span></code> in <a class="reference internal" href="../changelog/#changelog-0-2-0"><span class="std std-ref">0.2.0</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fully_versioned_name</span></code>: renamed to <code class="docutils literal notranslate"><span class="pre">python_implementation</span></code> in <a class="reference internal" href="../changelog/#changelog-0-2-0"><span class="std std-ref">0.2.0</span></a></p></li>
 </ul>
 </section>
 </section>
@@ -553,13 +556,13 @@ layer archives or locally exporting layer environments:</p>
 <span class="n">locked_at</span><span class="p">:</span> <span class="nb">str</span>                 <span class="c1"># ISO formatted date/time value</span>
 
 <span class="c1"># Fields that are populated after the layer metadata has initially been defined</span>
-<span class="c1"># &quot;runtime_name&quot; is set to the underlying runtime&#39;s deployed environment name</span>
-<span class="c1"># &quot;implementation_name&quot; is set to the underlying runtime&#39;s implementation name</span>
+<span class="c1"># &quot;runtime_layer&quot; is set to the underlying runtime&#39;s deployed environment name</span>
+<span class="c1"># &quot;python_implementation&quot; is set to the underlying runtime&#39;s implementation name</span>
 <span class="c1"># &quot;bound_to_implementation&quot; means that the layered environment includes</span>
 <span class="c1"># copies of some files from the runtime implementation, and hence will</span>
 <span class="c1"># need updating even for runtime maintenance releases</span>
-<span class="n">runtime_name</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-<span class="n">implementation_name</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<span class="n">runtime_layer</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<span class="n">python_implementation</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 <span class="n">bound_to_implementation</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span>
 
 <span class="c1"># Extra fields only defined for framework and application environments</span>

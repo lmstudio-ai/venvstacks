@@ -139,7 +139,10 @@ Runtime layer specification fields
 
 Runtime layer specifications must contain the following additional field:
 
-* ``implementation_name`` (:toml:`string`): the :pypi:`pbs-installer` name
+* ``python_implementation`` (:toml:`string`): the :pypi:`pbs-installer` name
+  of the Python runtime to be installed as the base runtime for this layer
+  (and any upper layers that depend on this layer).
+* ``implementation_version`` (:toml:`string`): the :pypi:`pbs-installer` name
   of the Python runtime to be installed as the base runtime for this layer
   (and any upper layers that depend on this layer).
 
@@ -151,9 +154,9 @@ Framework layer specifications must contain the following additional field:
 
 * ``runtime`` (:toml:`string`): the name of the runtime layer that this framework layer uses.
 
-The ``install_target`` and ``implementation_name`` attributes of the specified
-are runtime are respectively recorded in the ``runtime_name`` 
-and ``implementation_name`` fields of the layer output metadata.
+The ``install_target`` and ``python_implementation`` attributes of the specified
+runtime are respectively recorded in the ``runtime_layer``
+and ``python_implementation`` fields of the layer output metadata.
 
 ``bound_to_implementation`` is an additional boolean field in the frame layer
 output metadata that indicates how tightly coupled the framework layer is
@@ -189,7 +192,7 @@ Application layer specifications must contain the following additional field:
 The ``runtime`` dependency for application layers is not specified directly. Instead, all
 of the declared framework dependencies *must* depend on the same runtime layer, and that
 base runtime also becomes the base runtime for the application layer using those frameworks.
-``runtime_name``, ``implementation_name``, and ``bound_to_implementation`` in the layer
+``runtime_layer``, ``python_implementation``, and ``bound_to_implementation`` in the layer
 output metadata are set to the same values as they are for the underlying frameworks.
 
 
@@ -241,7 +244,7 @@ when used in a loaded stack specification:
 
 * ``build_requirements``: no longer has any effect (rendered non-functional before
   :ref:`0.1.0rc1 <changelog-0.1.0rc1>`, warning emitted from :ref:`0.2.0 <changelog-0.2.0>`)
-* ``fully_versioned_name``: renamed to ``implementation_name`` in :ref:`0.2.0 <changelog-0.2.0>`
+* ``fully_versioned_name``: renamed to ``python_implementation`` in :ref:`0.2.0 <changelog-0.2.0>`
 
 
 .. _layer-requirements:
@@ -306,13 +309,13 @@ layer archives or locally exporting layer environments:
     locked_at: str                 # ISO formatted date/time value
 
     # Fields that are populated after the layer metadata has initially been defined
-    # "runtime_name" is set to the underlying runtime's deployed environment name
-    # "implementation_name" is set to the underlying runtime's implementation name
+    # "runtime_layer" is set to the underlying runtime's deployed environment name
+    # "python_implementation" is set to the underlying runtime's implementation name
     # "bound_to_implementation" means that the layered environment includes
     # copies of some files from the runtime implementation, and hence will
     # need updating even for runtime maintenance releases
-    runtime_name: NotRequired[str]
-    implementation_name: NotRequired[str]
+    runtime_layer: NotRequired[str]
+    python_implementation: NotRequired[str]
     bound_to_implementation: NotRequired[bool]
 
     # Extra fields only defined for framework and application environments
