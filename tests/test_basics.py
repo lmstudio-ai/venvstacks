@@ -23,8 +23,3 @@ def test_pinned_dev_packages(pkg_name: str, version: str) -> None:
 
 # TODO: The assorted utility classes and functions added to stacks.py when it was
 #       a mostly standalone script should be separated out and unit tested
-
-# TODO: the sample project is intentionally well-formed, there should be test cases for the
-#       assorted incorrect layer specs that the stack builder detects and rejects (e.g.
-#       missing launch modules, applications depending on frameworks with inconsistent
-#       runtime requirements)

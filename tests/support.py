@@ -294,9 +294,7 @@ class DeploymentTestCase(unittest.TestCase):
                 f"No path outside deployed {env_path} in {env_sys_path}",
             )
 
-    def check_build_environments(
-        self, build_envs: Iterable[LayerEnvBase]
-    ) -> None:
+    def check_build_environments(self, build_envs: Iterable[LayerEnvBase]) -> None:
         for env in build_envs:
             env_path = env.env_path
             config_path = env_path / DEPLOYED_LAYER_CONFIG
@@ -339,8 +337,8 @@ class DeploymentTestCase(unittest.TestCase):
             # Frameworks are expected to reference *at least* their base runtime environment
             self.check_env_sys_path(env_path, env_sys_path)
             # Framework and runtime should both appear in sys.path
-            runtime_name = fw_env["runtime_name"]
-            short_runtime_name = ".".join(runtime_name.split(".")[:2])
+            runtime_layer = fw_env["runtime_layer"]
+            short_runtime_name = ".".join(runtime_layer.split(".")[:2])
             self.assertSysPathEntry(env_name, env_sys_path)
             self.assertSysPathEntry(short_runtime_name, env_sys_path)
         for app_env in layered_metadata["applications"]:
@@ -349,8 +347,8 @@ class DeploymentTestCase(unittest.TestCase):
             # Applications are expected to reference *at least* their base runtime environment
             self.check_env_sys_path(env_path, env_sys_path)
             # Application, frameworks and runtime should all appear in sys.path
-            runtime_name = app_env["runtime_name"]
-            short_runtime_name = ".".join(runtime_name.split(".")[:2])
+            runtime_layer = app_env["runtime_layer"]
+            short_runtime_name = ".".join(runtime_layer.split(".")[:2])
             self.assertSysPathEntry(env_name, env_sys_path)
             self.assertTrue(
                 any(env_name in path_entry for path_entry in env_sys_path),

@@ -71,15 +71,15 @@ def _define_build_env(working_path: Path) -> BuildEnvironment:
 ##################################
 
 EXPECTED_RUNTIMES = [
-    EnvSummary("cpython@3.11", ""),
+    EnvSummary("cpython-3.11", ""),
 ]
 
 EXPECTED_FRAMEWORKS = [
-    LayeredEnvSummary("layer", "framework-", "cpython@3.11"),
+    LayeredEnvSummary("layer", "framework-", "cpython-3.11"),
 ]
 
 EXPECTED_APPLICATIONS = [
-    ApplicationEnvSummary("empty", "app-", "cpython@3.11", ("layer",)),
+    ApplicationEnvSummary("empty", "app-", "cpython-3.11", ("layer",)),
 ]
 
 EXPECTED_ENVIRONMENTS = EXPECTED_RUNTIMES.copy()
@@ -118,8 +118,8 @@ EXPECTED_MANIFEST: BuildManifest = {
         "runtimes": [
             {
                 "archive_build": 1,
-                "install_target": "cpython@3.11",
-                "archive_name": f"cpython@3.11{ARCHIVE_SUFFIX}",
+                "install_target": "cpython-3.11",
+                "archive_name": f"cpython-3.11{ARCHIVE_SUFFIX}",
                 "target_platform": BUILD_PLATFORM,
             },
         ],

@@ -5,14 +5,13 @@
 # actual content of the layers doesn't matter, the environments just need to exist.
 
 [[runtimes]]
-name = "cpython@3.11"
-fully_versioned_name = "cpython@3.11.10"
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.10"
 requirements = []
-build_requirements = []
 
 [[frameworks]]
 name = "layer"
-runtime = "cpython@3.11"
+runtime = "cpython-3.11"
 requirements = []
 
 [[applications]]

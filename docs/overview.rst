@@ -51,15 +51,15 @@ all running in a controlled Python 3.11 base runtime:
 .. code-block:: toml
 
    [[runtimes]]
-   name = "cpython@3.11"
-   fully_versioned_name = "cpython@3.11.10"
+   name = "cpython-3.11"
+   python_implementation = "cpython@3.11.10"
    requirements = [
        "numpy",
    ]
 
    [[frameworks]]
    name = "sklearn"
-   runtime = "cpython@3.11"
+   runtime = "cpython-3.11"
    requirements = [
        "scikit-learn",
    ]

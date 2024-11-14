@@ -14,7 +14,7 @@ venvstacks.stacks.ArchiveMetadata
       ~ArchiveMetadata.requirements_hash
       ~ArchiveMetadata.lock_version
       ~ArchiveMetadata.locked_at
-      ~ArchiveMetadata.runtime_name
+      ~ArchiveMetadata.runtime_layer
       ~ArchiveMetadata.required_layers
       ~ArchiveMetadata.app_launch_module
       ~ArchiveMetadata.app_launch_module_hash

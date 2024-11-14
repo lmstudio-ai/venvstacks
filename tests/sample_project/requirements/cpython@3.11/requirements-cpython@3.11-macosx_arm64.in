@@ -1,4 +1,0 @@
-# DO NOT EDIT. Auto-generated as part of deployment bundle build.
-#              Relock bundle dependencies to update.
-numpy
-dlltracer; sys_platform == 'win32'

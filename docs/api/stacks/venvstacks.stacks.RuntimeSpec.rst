@@ -14,10 +14,9 @@ venvstacks.stacks.RuntimeSpec
       ~RuntimeSpec.env_name
       ~RuntimeSpec.kind
       ~RuntimeSpec.py_version
-      ~RuntimeSpec.fully_versioned_name
+      ~RuntimeSpec.python_implementation
       ~RuntimeSpec.name
       ~RuntimeSpec.versioned
       ~RuntimeSpec.requirements
-      ~RuntimeSpec.build_requirements
       ~RuntimeSpec.platforms
 

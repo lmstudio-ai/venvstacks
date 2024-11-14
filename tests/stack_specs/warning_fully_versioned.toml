@@ -1,0 +1,6 @@
+# Check future warning for the legacy "fully_versioned_name" field
+
+[[runtimes]]
+name = "runtime"
+fully_versioned_name = "cpython@3.11.10"
+requirements = []

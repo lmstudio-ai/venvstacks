@@ -58,6 +58,13 @@ All layer specifications must contain the following two fields:
   These declared dependencies will be transitively locked when locking the layer.
   The list of requirements must be present, but is permitted to be empty.
 
+While there are no formal restrictions on the symbols permitted in layer names,
+the ``@`` symbol is used to separate the layer name from the lock version for
+implicitly versioned layers, so using it as part of a layer name may cause
+confusion when attempting to determine whether a published artifact or
+exported environment is using implicit lock versioning or is referring
+to an external version number.
+
 All layer specifications may also contain the following optional fields:
 
 * ``platforms`` (:toml:`array` of :toml:`strings <string>`):
@@ -72,13 +79,12 @@ All layer specifications may also contain the following optional fields:
   * ``"macosx_arm64"``: macOS on Apple silicon
   * ``"macosx_x86_64"``: macOS on Intel silicon (not currently tested in CI)
 
-* ``versioned`` (:toml:`boolean`): by default, and when this setting is ``False``,
-  the layer is considered either unversioned or explicitly versioned
-  (depending on whether or not a version number is included in the layer name).
-  The layer metadata will always report the lock version for these layers as
-  ``1`` and this value is never implicitly included when deriving other names
-  from the layer name.
-  When this setting is ``True``, the layer is considered implicitly versioned.
+* ``versioned`` (:toml:`boolean`): by default, and when this setting is ``false``,
+  the layer is considered unversioned (even if an ``@`` symbol appears in the
+  layer name). The layer metadata will always report the lock version for these
+  layers as ``1`` and the lock version is never implicitly included when deriving
+  other names from the layer name.
+  When this setting is ``true``, the layer is implicitly versioned.
   For implicitly versioned layers, a lock version number is stored as part of
   the environment lock metadata, and automatically incremented when the
   environment lock file changes as the result of a layer locking request.
@@ -86,36 +92,46 @@ All layer specifications may also contain the following optional fields:
   layers and this value is automatically included when deriving some other names
   from the layer name.
 
-The following layer versioning styles are supported:
+This means the following layer versioning styles are supported:
 
-* *explicitly versioned*: layer name uses a format like ``cpython@3.12``, where
-  the layer "version" is considered part of the layer name. Dependencies from
-  other layers must refer to the specific version. The ``versioned`` field should be
-  omitted or explicitly set to ``False``. Explicit versioning allows upper layers
-  to depend on different versions of the "same" lower layer, but also requires
-  those layers to be explicitly migrated to new versions of the lower layer.
-  Explicit versioning also allows multiple versions of the "same" layer to be
-  built and published in parallel.
+* *unversioned*: layer name uses a format like ``my-app`` with ``versioned``
+  omitted or set to ``false``. Dependencies from other layers (if any) refer to
+  the unversioned layer name. Only the latest version of an unversioned
+  layer can be built and published, and only one version can be installed
+  on any given target system. :ref:`Artifact tagging <layer-metadata>` allows
+  multiple versions of unversioned layers to still be distributed in parallel.
+  The advantage of unversioned layers is that they allow for low impact security
+  updates, where upper layers only need to be rebuilt if they actually depended
+  on an updated component.
 
 * *implicitly versioned*: layer name uses a format like ``scipy`` with ``versioned``
-  set to ``True``. Dependencies from other layers refer to the unversioned layer name,
+  set to ``true``. Dependencies from other layers refer to the unversioned layer name,
   and are automatically updated to depend on the new version of the lower layer when
   the locked requirements change. Some component names derived from the layer name
   will be implicitly rewritten to use ``"{layer_name}@{lock_version}"`` rather than
   using the layer name on its own. Only the latest version of an implicitly versioned
-  layer can be built and published, but different versions can still be installed
-  in parallel on target systems.
+  layer can be built and published, but different versions can be installed in
+  parallel on target systems.
+  Implicitly versioned layers lose support for low impact security updates (all
+  upper layers must be rebuilt for any change to the implicitly versioned lower
+  layer), but gain support for parallel installation of multiple versions on
+  target systems.
 
-* *unversioned*: layer name uses a format like ``my-app`` with ``versioned``
-  omitted or set to ``False``. Dependencies from other layers refer to the
-  unversioned layer name. Only the latest version of an implicitly versioned
-  layer can be built and published, and only one versioned can be installed
-  on any given target system. :ref:`Artifact tagging <layer-metadata>` allows multiple versions
-  of unversioned layers to still be distributed in parallel.
+* *externally versioned*: layer name uses a format like ``cpython-3.12``, where
+  the external layer "version" is considered part of the layer name.
+  Dependencies from other layers must refer to the specific version.
+  External versioning allows upper layers to depend on different versions of
+  the "same" lower layer, but also requires those layers to be explicitly
+  migrated to new versions of the lower layer.
+  External versioning always allows multiple versions of the "same" layer to be
+  built and published in parallel.
+  By default, externally versioned layers are handled in the same way as
+  unversioned layers, but external versioning in the layer name may also be
+  freely combined with implicit lock versioning in the derived names by
+  setting ``versioned`` to ``true``.
 
 Refer to :ref:`layer-names` for additional details on how layer names are used
-when building virtual environment stacks, as well as aspects to consider when
-choosing between unversioned, explicitly versioned, and implicitly versioned layers.
+when building virtual environment stacks.
 
 
 Runtime layer specification fields
@@ -123,9 +139,11 @@ Runtime layer specification fields
 
 Runtime layer specifications must contain the following additional field:
 
-* ``fully_versioned_name`` (:toml:`string`): the :pypi:`pbs-installer` name
+* ``python_implementation`` (:toml:`string`): the :pypi:`pbs-installer` name
   of the Python runtime to be installed as the base runtime for this layer
-  (and any upper layers that depend on this layer).
+  (and any upper layers that depend on this layer). Implementation names
+  use the format ``{implementation_name}@{implementation_version}``
+  (for example, ``cpython@3.12.7``).
 
 
 Framework layer specification fields
@@ -135,24 +153,28 @@ Framework layer specifications must contain the following additional field:
 
 * ``runtime`` (:toml:`string`): the name of the runtime layer that this framework layer uses.
 
+The ``install_target`` and ``python_implementation`` attributes of the specified
+runtime are respectively recorded in the ``runtime_layer``
+and ``python_implementation`` fields of the layer output metadata.
+
+``bound_to_implementation`` is an additional boolean field in the frame layer
+output metadata that indicates how tightly coupled the framework layer is
+to the underlying implementation layer.
+
 On platforms which use symlinks between layered environments and their base
-environments (any platform other than Windows), the runtime layer name will
-be recorded in the ``runtime_name`` field of the framework layer metadata.
+environments (any platform other than Windows), ``bound_to_implementation``
+will be ``false``.
 This allows for transparent security updates of the base runtime layer (for
 example, to update to new OpenSSL versions or CPython maintenance releases),
 without needing to republish the upper layers that use that base runtime.
 
 On Windows, where some elements of the base runtime are copied into each
-layered environment that depends on it, the runtime ``fully_versioned_name``
-field will be recorded in the ``runtime_name`` field of the framework layer
-metadata. This still allows for transparent security updates of the base
-runtime layer in (for
-example, to update to new OpenSSL versions or CPython maintenance releases),
-without needing to republish the upper layers that use that base runtime.
-
-.. warning:: The current handling of the ``runtime_name`` field in the layer
-             metadata is highly questionable, and hence subject to change in
-             future releases without a deprecation period.
+layered environment that depends on it, ``bound_to_implementation`` will
+be ``true``.
+This still allows for transparent security updates of the base runtime layer
+in some cases (for example, to update to new OpenSSL versions), but indicates
+the upper layers will need to be rebuilt and republished for new CPython
+maintenance releases.
 
 
 Application layer specification fields
@@ -162,16 +184,15 @@ Application layer specifications must contain the following additional field:
 
 * ``frameworks`` (:toml:`array` of :toml:`strings <string>`):
   the names of the framework layers that this application layer uses.
-
-Application layer specifications may also contain the following additional field:
-
 * ``launch_module`` (:toml:`string`): a relative path (starting from the folder containing
-  the stack specification file) that specifies a Python module or import package that should
+  the stack specification file) that specifies a Python module or import package that will
   be included in the built environment for execution with the :option:`-m` switch.
 
 The ``runtime`` dependency for application layers is not specified directly. Instead, all
 of the declared framework dependencies *must* depend on the same runtime layer, and that
 base runtime also becomes the base runtime for the application layer using those frameworks.
+``runtime_layer``, ``python_implementation``, and ``bound_to_implementation`` in the layer
+output metadata are set to the same values as they are for the underlying frameworks.
 
 
 .. note:: updating the launch module contents does *not* implicitly update the lock version
@@ -201,8 +222,8 @@ prefix) for the following purposes:
 Runtime layers do not have a layer type prefix, while framework and application
 layers use ``app-*`` and ``framework-*`` respectively.
 
-Explicitly versioned and unversioned layers use their layer name directly
- (in combination with their :term:`layer type` prefix) for the following purposes:
+Layers with implicit lock versioning disabled use their layer name directly
+(in combination with their :term:`layer type` prefix) for the following purposes:
 
 * the name of the deployed layer environment when publishing artifacts or
   locally exporting environments
@@ -210,12 +231,19 @@ Explicitly versioned and unversioned layers use their layer name directly
 * when referring to the layer as a dependency in another layer's deployment
   configuration and output metadata
 
-Implicitly versioned layers will instead use ``"{layer_name}@{lock_version}"``
-for these deployment related purposes.
+Layers with implicit lock versioning enabled will instead use
+``"{layer_name}@{lock_version}"`` for these deployment related purposes.
 
 
-.. note:: A future documentation update will provide additional guidance on the trade-offs
-          between explicit versioning, implicit versioning, and leaving layers unversioned.
+Deprecated fields
+-----------------
+
+The following field names were previously supported and now emit :exc:`FutureWarning`
+when used in a loaded stack specification:
+
+* ``build_requirements``: no longer has any effect (rendered non-functional before
+  :ref:`0.1.0rc1 <changelog-0.1.0rc1>`, warning emitted from :ref:`0.2.0 <changelog-0.2.0>`)
+* ``fully_versioned_name``: renamed to ``python_implementation`` in :ref:`0.2.0 <changelog-0.2.0>`
 
 
 .. _layer-requirements:
@@ -223,20 +251,97 @@ for these deployment related purposes.
 Locked layer requirements
 =========================
 
-.. note:: A future documentation update will cover the ``venvstacks lock`` output files here.
+Environment lock metadata files saved alongside the layer's transitively locked requirements file:
+
+.. code-block:: python
+
+   locked_at: str          # ISO formatted date/time value
+   requirements_hash: str  # Uses "algorithm:hexdigest" format
+   lock_version: int       # Auto-incremented from previous lock metadata
+
+Note: A future documentation update will cover these ``venvstacks lock`` output files in additional detail.
+
 
 .. _deployed-layer-config:
 
 Deployed layer configuration
 ============================
 
-.. note:: A future documentation update will cover the ``share/venv/metadata/venvstacks_layer.json`` files here.
+Deployed layer configuration files saved as ``share/venv/metadata/venvstacks_layer.json`` in the layer
+environments:
+
+.. code-block:: python
+
+   python: str                      # Relative path to this layer's Python executable
+   py_version: str                  # Expected X.Y.Z Python version for this environment
+   base_python: str                 # Relative path from layer dir to base Python executable
+   site_dir: str                    # Relative path to site-packages within this layer
+   pylib_dirs: Sequence[str]        # Relative paths to additional sys.path entries
+   dynlib_dirs: Sequence[str]       # Relative paths to additional Windows DLL directories
+   launch_module: NotRequired[str]  # Module to run with `-m` to launch the application
+
+Primarily used by the post-installation script to finish setting up the environment after deployment.
+May also be used by the containing application to find the Python executable location for that platform.
+
+All relative paths are relative to the layer folder (and may refer to peer folders).
+Base runtime layers will have ``python`` and ``base_python`` set to the same value.
+Application layers will have ``launch_module`` set.
+
+Note: A future documentation update will cover these ``venvstacks build`` output files in additional detail.
+
 
 .. _layer-metadata:
 
 Published layer metadata
 ========================
 
-.. note:: A future documentation update will cover the ``venvstacks publish``
-          and ``venvstacks local-export`` output metadata files here, including
-          the effects of the ``--tag-outputs`` command line option when publishing.
+Layer output metadata files saved to the ``__venvstacks__`` metadata folder when publishing
+layer archives or locally exporting layer environments:
+
+.. code-block:: python
+
+    # Common fields defined for all layers, whether archived or exported
+    layer_name: EnvNameBuild       # Prefixed layer name without lock version info
+    install_target: EnvNameDeploy  # Target installation folder when unpacked
+    requirements_hash: str         # Uses "algorithm:hexdigest" format
+    lock_version: int              # Monotonically increasing version identifier
+    locked_at: str                 # ISO formatted date/time value
+
+    # Fields that are populated after the layer metadata has initially been defined
+    # "runtime_layer" is set to the underlying runtime's deployed environment name
+    # "python_implementation" is set to the underlying runtime's implementation name
+    # "bound_to_implementation" means that the layered environment includes
+    # copies of some files from the runtime implementation, and hence will
+    # need updating even for runtime maintenance releases
+    runtime_layer: NotRequired[str]
+    python_implementation: NotRequired[str]
+    bound_to_implementation: NotRequired[bool]
+
+    # Extra fields only defined for framework and application environments
+    required_layers: NotRequired[Sequence[EnvNameDeploy]]
+
+    # Extra fields only defined for application environments
+    app_launch_module: NotRequired[str]
+    app_launch_module_hash: NotRequired[str]
+
+Additional metadata fields only included when publishing layer archives:
+
+.. code-block:: python
+
+    archive_build: int    # Auto-incremented from previous build metadata
+    archive_name: str     # Adds archive file extension to layer name
+    target_platform: str  # Target platform identifier
+    archive_size: int
+    archive_hashes: ArchiveHashes # Mapping from hash algorithm names to hashes
+
+
+Hashes of layered environment dependencies are intentionally NOT incorporated
+into the published metadata. This allows an "only if needed" approach to
+rebuilding app and framework layers when the layers they depend on are
+updated (app layers will usually only depend on some of the components in the
+underlying environment, and such dependencies are picked up as version changes
+when regenerating the transitive dependency specifications for each environment).
+
+Note: A future documentation update will cover the ``venvstacks publish`` and
+      ``venvstacks local-export`` output metadata files in additional detail,
+      including the effects of the ``--tag-outputs`` option when publishing.

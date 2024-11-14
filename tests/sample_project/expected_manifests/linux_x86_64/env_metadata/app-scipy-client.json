@@ -3,10 +3,12 @@
   "app_launch_module_hash": "sha256/76d203dd6d3bb1fdb1117053c81590d42ef3f62b4b92b8d316b31f08334fbca6",
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "e114727c3657844ea74de25009748a0c90b7ccf1279a787a9c8f5dd9cdd4e020"
+    "sha256": "45c0540c1b4e9a9afbf2c7f5ade7a301ada4861b189a80c5933d96e07fe6cd1f"
   },
   "archive_name": "app-scipy-client.tar.xz",
   "archive_size": 3008,
+  "bound_to_implementation": false,
+  "python_implementation": "cpython@3.11.10",
   "install_target": "app-scipy-client",
   "layer_name": "app-scipy-client",
   "lock_version": 1,
@@ -16,6 +18,6 @@
     "framework-http-client"
   ],
   "requirements_hash": "sha256:fb8a843c694d03d7ee74b457cdac2bd82b6b439de0ed308d72fe698c6c9c6cf4",
-  "runtime_name": "cpython@3.11",
+  "runtime_layer": "cpython-3.11",
   "target_platform": "linux_x86_64"
 }

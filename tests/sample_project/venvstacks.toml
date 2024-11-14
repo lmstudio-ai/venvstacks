@@ -37,10 +37,10 @@
 ######################################
 
 [[runtimes]]
-# Runtime naming convention is inspired by the approach used in the PDM project
-# It is relaxed slightly to allow lower impact runtime security and maintenance updates
-name = "cpython@3.11"
-fully_versioned_name = "cpython@3.11.10"
+# Runtime naming convention avoids `@` to avoid ambiguity with layer lock versioning
+# Implementation name refers to the name used to retrieve the runtime for installation
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.10"
 requirements = [
     "numpy",
     # `dlltracer` helps to debug any binary wheel DLL import failures on Windows.
@@ -50,8 +50,8 @@ requirements = [
 
 [[runtimes]]
 # Same spec as the Python 3.11 runtime, just for a newer Python version
-name = "cpython@3.12"
-fully_versioned_name = "cpython@3.12.7"
+name = "cpython-3.12"
+python_implementation = "cpython@3.12.7"
 requirements = [
     # Omit dlltracer, as it doesn't publish 3.12 binaries (as of 2024-10-15)
     "numpy",
@@ -66,21 +66,21 @@ requirements = [
 [[frameworks]]
 name = "scipy"
 versioned = true
-runtime = "cpython@3.11"
+runtime = "cpython-3.11"
 requirements = [
     "scipy",
 ]
 
 [[frameworks]]
 name = "sklearn"
-runtime = "cpython@3.12"
+runtime = "cpython-3.12"
 requirements = [
     "scikit-learn",
 ]
 
 [[frameworks]]
 name = "http-client"
-runtime = "cpython@3.11"
+runtime = "cpython-3.11"
 requirements = [
     # Framework layer for non-ML app layers that just do HTTP requests
     "httpx",

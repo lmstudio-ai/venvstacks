@@ -11,6 +11,10 @@ from typing import Generator, Mapping
 
 from venvstacks.stacks import _hash_directory, _hash_file
 
+##################################
+# Hash testing helpers
+##################################
+
 _THIS_PATH = Path(__file__)
 HASH_FODDER_PATH = _THIS_PATH.parent / "hash_fodder"
 
@@ -46,6 +50,11 @@ def _all_expected_file_hashes() -> Generator[tuple[str, str, str], None, None]:
 
 
 EXPECTED_FILE_HASHES = [*_all_expected_file_hashes()]
+
+
+##########################
+# Test cases
+##########################
 
 
 class TestFileHashing:
