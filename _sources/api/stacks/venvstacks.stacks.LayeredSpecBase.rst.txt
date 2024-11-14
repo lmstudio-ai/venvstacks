@@ -17,6 +17,5 @@ venvstacks.stacks.LayeredSpecBase
       ~LayeredSpecBase.name
       ~LayeredSpecBase.versioned
       ~LayeredSpecBase.requirements
-      ~LayeredSpecBase.build_requirements
       ~LayeredSpecBase.platforms
 

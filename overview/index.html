@@ -256,6 +256,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../changelog.d/20241108_162952_ncoghlan_fix_automatic_layer_versioning/">Added</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../changelog.d/20241108_215625_ncoghlan_enable_docstring_style_checks/">Changed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../changelog.d/20241111_104113_ncoghlan_add_stack_format_docs/">Added</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../changelog.d/20241112_134636_ncoghlan_discourage_at_symbol_in_layer_names/">Changed</a></li>
 </ul>
 </li>
 </ul>
@@ -332,15 +333,15 @@ with a separate array of tables for each kind of layer definition.</p>
 <a class="reference external" href="https://numpy.org/">numpy</a> preinstalled in the runtime layer,
 all running in a controlled Python 3.11 base runtime:</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[[runtimes]]</span>
-<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython@3.11&quot;</span>
-<span class="n">fully_versioned_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython@3.11.10&quot;</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython-3.11&quot;</span>
+<span class="n">python_implementation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython@3.11.10&quot;</span>
 <span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="s2">&quot;numpy&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="k">[[frameworks]]</span>
 <span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;sklearn&quot;</span>
-<span class="n">runtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython@3.11&quot;</span>
+<span class="n">runtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython-3.11&quot;</span>
 <span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="s2">&quot;scikit-learn&quot;</span><span class="p">,</span>
 <span class="p">]</span>
