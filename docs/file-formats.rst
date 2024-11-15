@@ -1,3 +1,6 @@
+
+.. _stack-specification-format:
+
 ------------------------------
 Environment Stack File Formats
 ------------------------------
@@ -7,9 +10,6 @@ Environment Stack File Formats
    :og:type: website
    :og:url: https://venvstacks.lmstudio.ai/stack-format/
    :og:description: venvstacks Specification and Metadata File Formats - venvstacks Documentation
-
-
-.. _stack-specification-format:
 
 File naming and formats
 =======================
