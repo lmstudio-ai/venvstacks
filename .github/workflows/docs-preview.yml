@@ -45,8 +45,8 @@ jobs:
       if: github.event.action != 'closed'
       with:
         docs-folder: "docs/"
-        pre-build-command: "sphinx-build -b linkcheck . _build"
-        build-command: "sphinx-build -b dirhtml . _build"
+        pre-build-command: "sphinx-build -W -b linkcheck . _build"
+        build-command: "sphinx-build -W -b dirhtml . _build"
 
     - name: Deploy preview
       uses: rossjrw/pr-preview-action@v1
