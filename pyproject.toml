@@ -128,7 +128,7 @@ target-version = "py311"
 [tool.ruff.lint]
 # Enable all `pydocstyle` rules, limiting to those that adhere to the
 # Google convention via `convention = "google"`, below.
-select = ["D"]
+extend-select = ["D"]
 
 # Disable `D105` (it's OK to skip writing docstrings for every magic method)
 # Disable `D417` (not yet requiring documentation for every function parameter)
