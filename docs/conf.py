@@ -37,7 +37,7 @@ default_role = "literal"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "furo"
-html_static_path = ["_static"]
+html_static_path: list[str] = []
 pygments_style = "sphinx"
 pygments_dark_style = "monokai"
 
