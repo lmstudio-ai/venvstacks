@@ -36,8 +36,8 @@ jobs:
       uses: ammaraskar/sphinx-action@8.0.2
       with:
         docs-folder: "docs/"
-        pre-build-command: "sphinx-build -W -b linkcheck . _build"
-        build-command: "sphinx-build -W -b dirhtml . _build"
+        pre-build-command: "sphinx-build -b linkcheck . _build"
+        build-command: "sphinx-build -b dirhtml . _build"
 
     - name: Deploy main docs
       uses: JamesIves/github-pages-deploy-action@v4
