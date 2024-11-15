@@ -8,7 +8,7 @@ Unreleased
 
 See the fragment files in the `changelog.d directory`_.
 
-.. _changelog.d directory: https://github.com/lmstudio-ai/venvstacks/tree/main/changelog.d
+.. _changelog.d directory: https://github.com/lmstudio-ai/venvstacks/tree/main/docs/changelog.d
 
 .. scriv-insert-here
 
