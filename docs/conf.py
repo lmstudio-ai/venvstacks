@@ -49,6 +49,12 @@ html_baseurl = "https://venvstacks.lmstudio.ai/"
 html_use_modindex = False
 html_use_index = False
 
+# Show GitHub source icons
+html_theme_options = {
+    "source_repository": "https://github.com/lmstudio-ai/venvstacks/",
+    "source_branch": "main",
+    "source_directory": "docs/",
+}
 
 # -- Options for autosummary ----------------------------------------------------------
 
