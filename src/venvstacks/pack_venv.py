@@ -40,8 +40,9 @@ import tempfile
 import time
 
 from datetime import datetime, timedelta, timezone, tzinfo
+from enum import StrEnum
 from pathlib import Path
-from typing import cast, Any, Callable, TextIO
+from typing import Any, Callable, cast, Self, TextIO
 
 from ._injected import postinstall as _default_postinstall
 from ._util import as_normalized_path, StrPath, WINDOWS_BUILD as _WINDOWS_BUILD
@@ -186,6 +187,68 @@ def export_venv(
     return target_path
 
 
+if _WINDOWS_BUILD:
+    # No tar unpacking by default on windows, so use zipfile instead
+    _DEFAULT_ARCHIVE_FORMAT = "zip"
+else:
+    # Everywhere else, create XZ compressed tar archives
+    _DEFAULT_ARCHIVE_FORMAT = "xz"
+
+_COMPRESSION_FORMATS = {
+    "tar": "",
+    "tar.bz2": "bzip2",
+    "tar.gz": "gzip",
+    "tar.xz": "xz",
+}
+
+ProgressCallback = Callable[[str], None]
+
+
+class CompressionFormat(StrEnum):
+    """Compression format for published environment."""
+
+    UNCOMPRESSED = ""
+    BZIP2 = "bzip2"
+    GZIP = "gzip"
+    XZ = "xz"
+    ZIP = "zip"
+
+    @classmethod
+    def get_format(cls, format: str | None) -> Self:
+        """Get compression format for given value."""
+        if format is None:
+            return cls(_DEFAULT_ARCHIVE_FORMAT)
+        return cls(_COMPRESSION_FORMATS.get(format, format))
+
+    @property
+    def is_tar_format(self) -> bool:
+        """Whether this compression format is for a tar archive."""
+        return self is not self.ZIP
+
+    def make_archive(
+        self,
+        base_name: StrPath,
+        root_dir: StrPath,
+        base_dir: StrPath,
+        max_mtime: float | None = None,
+        progress_callback: ProgressCallback | None = None,
+    ) -> str:
+        """Create layer archive using this archive format."""
+        if self.is_tar_format:
+            return _make_tar_archive(
+                base_name,
+                root_dir,
+                base_dir,
+                max_mtime,
+                progress_callback,
+                compress=str(self),
+            )
+        # Not a tar compression format -> emit a zipfile instead
+        return _make_zipfile(
+            base_name, root_dir, base_dir, max_mtime, progress_callback
+        )
+
+
 def create_archive(
     source_dir: StrPath,
     archive_base_name: StrPath,
@@ -194,6 +257,7 @@ def create_archive(
     clamp_mtime: datetime | None = None,
     work_dir: StrPath | None = None,
     show_progress: bool = True,
+    format: CompressionFormat | None = None,
 ) -> Path:
     """shutil.make_archive replacement, tailored for Python virtual environments.
 
@@ -241,7 +305,9 @@ def create_archive(
             # To avoid filesystem time resolution quirks without relying on the resolution
             # details of the various archive formats, truncate mtime to exact seconds
             max_mtime = int(clamp_mtime.astimezone(timezone.utc).timestamp())
-        archive_with_extension = _make_archive(
+        if format is None:
+            format = CompressionFormat.get_format(None)
+        archive_with_extension = format.make_archive(
             archive_path, env_path.parent, env_path.name, max_mtime, report_progress
         )
         if show_progress:
@@ -259,7 +325,6 @@ def create_archive(
 # to work around the limitations mentioned in https://github.com/python/cpython/issues/120036
 # Puts this utility module under the Python License, but the runtime layers already include
 # CPython, so also using it in the build utility doesn't introduce any new licensing concerns
-ProgressCallback = Callable[[str], None]
 
 
 def _make_tar_archive(
@@ -294,7 +359,7 @@ def _make_tar_archive(
         compress_ext = ".gz"
     elif compress == "bzip2":
         tar_mode = "w:bz2"
-        compress_ext = ".gz"
+        compress_ext = ".bz2"
     elif compress == "xz":
         tar_mode = "w:xz"
         compress_ext = ".xz"
@@ -472,13 +537,6 @@ def _make_zipfile(
         zip_filename = os.path.abspath(zip_filename)
     return zip_filename
 
-
-if _WINDOWS_BUILD:
-    # No tar unpacking by default on windows, so use zipfile instead
-    _make_archive = _make_zipfile
-else:
-    # Everywhere else, create XZ compressed tar archives
-    _make_archive = _make_tar_archive
 
 # Basic progress bar support, taken from ncoghlan's SO answer at
 # https://stackoverflow.com/questions/3160699/python-progress-bar/78590319#78590319
