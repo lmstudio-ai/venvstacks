@@ -12,7 +12,6 @@ venvstacks.stacks.LayerEnvBase
 
       ~LayerEnvBase.create_environment
       ~LayerEnvBase.define_archive_build
-      ~LayerEnvBase.export_environment
       ~LayerEnvBase.get_constraint_paths
       ~LayerEnvBase.install_requirements
       ~LayerEnvBase.lock_requirements
