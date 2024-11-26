@@ -582,6 +582,7 @@ class ArchiveBuildRequest:
     env_lock: EnvironmentLock
     env_path: Path
     archive_base_path: Path
+    archive_format: pack_venv.ArchiveFormat
     build_metadata: ArchiveBuildMetadata = field(repr=False)
     needs_build: bool = field(repr=False)
     # Previously built metadata when a new build is not needed
@@ -615,6 +616,7 @@ class ArchiveBuildRequest:
         source_path: Path,
         output_path: Path,
         target_platform: str,
+        archive_format: pack_venv.ArchiveFormat | None = None,
         tag_output: bool = False,
         previous_metadata: ArchiveMetadata | None = None,
         force: bool = False,
@@ -635,6 +637,8 @@ class ArchiveBuildRequest:
         # Work out the basic details of the build request (assuming no rebuild is needed)
         deployed_name = env_lock.get_deployed_name(env_name)
         build_iteration = last_build_iteration
+        if archive_format is None:
+            archive_format = pack_venv.DEFAULT_ARCHIVE_FORMAT
 
         def update_archive_name() -> tuple[Path, Path]:
             if tag_output:
@@ -642,7 +646,7 @@ class ArchiveBuildRequest:
             else:
                 base_name = deployed_name
             archive_base_path = output_path / base_name
-            built_archive_path = pack_venv.get_archive_path(archive_base_path)
+            built_archive_path = archive_format.get_archive_path(archive_base_path)
             return archive_base_path, built_archive_path
 
         archive_base_path, built_archive_path = update_archive_name()
@@ -677,6 +681,7 @@ class ArchiveBuildRequest:
             env_lock,
             env_path,
             archive_base_path,
+            archive_format,
             build_metadata,
             needs_build,
             archive_metadata,
@@ -1420,6 +1425,7 @@ class LayerEnvBase(ABC):
         tag_output: bool = False,
         previous_metadata: ArchiveMetadata | None = None,
         force: bool = False,
+        format: str | None = None,
     ) -> ArchiveBuildRequest:
         """Define an archive build request for this environment."""
         request = ArchiveBuildRequest.define_build(
@@ -1428,6 +1434,7 @@ class LayerEnvBase(ABC):
             self.build_path,
             output_path,
             target_platform,
+            pack_venv.ArchiveFormat.get_archive_format(format),
             tag_output,
             previous_metadata,
             force,
@@ -2320,6 +2327,7 @@ class BuildEnvironment:
         force: bool = ...,
         tag_outputs: bool = ...,
         dry_run: Literal[False] = ...,
+        format: str | None = ...,
     ) -> PublishedArchivePaths: ...
     @overload
     def publish_artifacts(
@@ -2329,6 +2337,7 @@ class BuildEnvironment:
         force: bool = ...,
         tag_outputs: bool = ...,
         dry_run: Literal[True] = ...,
+        format: str | None = ...,
     ) -> tuple[Path, StackPublishingRequest]: ...
     def publish_artifacts(
         self,
@@ -2337,6 +2346,7 @@ class BuildEnvironment:
         force: bool = False,
         tag_outputs: bool = False,
         dry_run: bool = False,
+        format: str | None = None,
     ) -> PublishedArchivePaths | tuple[Path, StackPublishingRequest]:
         """Publish metadata and archives for specified layers."""
         layer_data: dict[
@@ -2368,6 +2378,7 @@ class BuildEnvironment:
                         tag_output=tag_outputs,
                         previous_metadata=previous_metadata,
                         force=force and not dry_run,
+                        format=format,
                     ),
                 )
             )
