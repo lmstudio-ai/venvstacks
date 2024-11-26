@@ -10,7 +10,6 @@ venvstacks.stacks.FrameworkEnv
 
    .. autosummary::
 
-      ~FrameworkEnv.create_archive
       ~FrameworkEnv.create_environment
       ~FrameworkEnv.define_archive_build
       ~FrameworkEnv.export_environment

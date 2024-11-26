@@ -266,7 +266,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         self.export_on_success = force_artifact_export()
 
     def test_create_environments(self) -> None:
-        # Fast test to check the links between build envs are set up correctly
+        # Faster test to check the links between build envs are set up correctly
         # (if this fails, there's no point even trying the full slow test case)
         build_env = self.build_env
         build_env.create_environments()

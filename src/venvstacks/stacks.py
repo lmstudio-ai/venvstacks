@@ -580,10 +580,12 @@ class ArchiveBuildRequest:
 
     env_name: EnvNameBuild
     env_lock: EnvironmentLock
+    env_path: Path
     archive_base_path: Path
     build_metadata: ArchiveBuildMetadata = field(repr=False)
     needs_build: bool = field(repr=False)
-    # TODO: Save full previous metadata for use when build is skipped
+    # Previously built metadata when a new build is not needed
+    archive_metadata: ArchiveMetadata | None = None
 
     @staticmethod
     def _needs_archive_build(
@@ -610,6 +612,7 @@ class ArchiveBuildRequest:
         cls,
         env_name: EnvNameBuild,
         env_lock: EnvironmentLock,
+        source_path: Path,
         output_path: Path,
         target_platform: str,
         tag_output: bool = False,
@@ -663,7 +666,21 @@ class ArchiveBuildRequest:
             archive_base_path, built_archive_path = update_archive_name()
             build_metadata["archive_build"] = build_iteration
             build_metadata["archive_name"] = built_archive_path.name
-        return cls(env_name, env_lock, archive_base_path, build_metadata, needs_build)
+            archive_metadata = None
+        else:
+            # The build input metadata hasn't changed,
+            # so the expected output metadata is also unchanged
+            archive_metadata = previous_metadata
+        env_path = source_path / env_name
+        return cls(
+            env_name,
+            env_lock,
+            env_path,
+            archive_base_path,
+            build_metadata,
+            needs_build,
+            archive_metadata,
+        )
 
     @staticmethod
     def _hash_archive(archive_path: Path) -> ArchiveHashes:
@@ -676,22 +693,21 @@ class ArchiveBuildRequest:
 
     def create_archive(
         self,
-        env_path: Path,
-        previous_metadata: ArchiveMetadata | None = None,
         work_path: Path | None = None,
     ) -> tuple[ArchiveMetadata, Path]:
         """Create the layer archive specified in this build request."""
-        if env_path.name != self.env_name:
-            err_msg = (
-                f"Build mismatch (expected {self.env_name!r}, got {env_path.name!r})"
+        env_path = self.env_path
+        if not env_path.exists():
+            raise BuildEnvError(
+                "Must create environment before attempting to archive it"
             )
-            raise BuildEnvError(err_msg)
         build_metadata = self.build_metadata
         archive_base_path = self.archive_base_path
         built_archive_path = archive_base_path.parent / build_metadata["archive_name"]
         if not self.needs_build:
             # Already built archive looks OK, so just return the same metadata as last build
             print(f"Using previously built archive at {str(built_archive_path)!r}")
+            previous_metadata = self.archive_metadata
             assert previous_metadata is not None
             return previous_metadata, built_archive_path
         if built_archive_path.exists():
@@ -699,14 +715,15 @@ class ArchiveBuildRequest:
             built_archive_path.unlink()
         print(f"Creating archive for {str(env_path)!r}")
         last_locked = self.env_lock.last_locked
-        archive_path = Path(
-            pack_venv.create_archive(
-                env_path,
-                archive_base_path,
-                clamp_mtime=last_locked,
-                work_dir=work_path,
-                install_target=build_metadata["install_target"],
-            )
+        if work_path is None:
+            # /tmp is likely too small for ML/AI environments
+            work_path = self.env_path.parent
+        archive_path = pack_venv.create_archive(
+            env_path,
+            archive_base_path,
+            clamp_mtime=last_locked,
+            work_dir=work_path,
+            install_target=build_metadata["install_target"],
         )
         assert built_archive_path == archive_path  # pack_venv ensures this is true
         print(f"Created {str(archive_path)!r} from {str(env_path)!r}")
@@ -759,10 +776,10 @@ class LayerExportRequest:
 
     env_name: EnvNameBuild
     env_lock: EnvironmentLock
+    env_path: Path
     export_path: Path
     export_metadata: ExportMetadata = field(repr=False)
     needs_export: bool = field(repr=False)
-    # TODO: Save full previous metadata for use when export is skipped
 
     @staticmethod
     def _needs_new_export(
@@ -788,6 +805,7 @@ class LayerExportRequest:
         cls,
         env_name: EnvNameBuild,
         env_lock: EnvironmentLock,
+        source_path: Path,
         output_path: Path,
         previous_metadata: ExportMetadata | None = None,
         force: bool = False,
@@ -806,7 +824,10 @@ class LayerExportRequest:
         needs_export = force or cls._needs_new_export(
             export_path, export_metadata, previous_metadata
         )
-        return cls(env_name, env_lock, export_path, export_metadata, needs_export)
+        env_path = source_path / env_name
+        return cls(
+            env_name, env_lock, env_path, export_path, export_metadata, needs_export
+        )
 
     @staticmethod
     def _run_postinstall(postinstall_path: Path) -> None:
@@ -815,24 +836,19 @@ class LayerExportRequest:
         command = [sys.executable, "-X", "utf8", "-I", str(postinstall_path)]
         capture_python_output(command)
 
-    def export_environment(
-        self,
-        env_path: Path,
-        previous_metadata: ExportMetadata | None = None,
-    ) -> tuple[ExportMetadata, Path]:
+    def export_environment(self) -> tuple[ExportMetadata, Path]:
         """Locally export the layer environment specified in this export request."""
-        if env_path.name != self.env_name:
-            err_msg = (
-                f"Export mismatch (expected {self.env_name!r}, got {env_path.name!r})"
+        env_path = self.env_path
+        if not env_path.exists():
+            raise BuildEnvError(
+                "Must create environment before attempting to export it"
             )
-            raise BuildEnvError(err_msg)
         export_metadata = self.export_metadata
         export_path = self.export_path
         if not self.needs_export:
             # Previous export looks OK, so just return the same metadata as last time
             print(f"Using previously exported environment at {str(export_path)!r}")
-            assert previous_metadata is not None
-            return previous_metadata, export_path
+            return self.export_metadata, export_path
         if export_path.exists():
             print(f"Removing outdated environment at {str(export_path)!r}")
             export_path.unlink()
@@ -1409,6 +1425,7 @@ class LayerEnvBase(ABC):
         request = ArchiveBuildRequest.define_build(
             self.env_name,
             self.env_lock,
+            self.build_path,
             output_path,
             target_platform,
             tag_output,
@@ -1418,28 +1435,6 @@ class LayerEnvBase(ABC):
         self._update_output_metadata(request.build_metadata)
         return request
 
-    def create_archive(
-        self,
-        output_path: Path,
-        target_platform: str,
-        tag_output: bool = False,
-        previous_metadata: ArchiveMetadata | None = None,
-        force: bool = False,
-    ) -> tuple[ArchiveMetadata, Path]:
-        """Create a layer archive for this environment."""
-        env_path = self.env_path
-        if not env_path.exists():
-            raise RuntimeError(
-                "Must create environment before attempting to archive it"
-            )
-
-        # Define the input metadata that gets published in the archive manifest
-        build_request = self.define_archive_build(
-            output_path, target_platform, tag_output, previous_metadata, force
-        )
-        work_path = self.build_path  # /tmp is likely too small for ML environments
-        return build_request.create_archive(env_path, previous_metadata, work_path)
-
     def request_export(
         self,
         output_path: Path,
@@ -1448,28 +1443,15 @@ class LayerEnvBase(ABC):
     ) -> LayerExportRequest:
         """Define a local export request for this environment."""
         request = LayerExportRequest.define_export(
-            self.env_name, self.env_lock, output_path, previous_metadata, force
+            self.env_name,
+            self.env_lock,
+            self.build_path,
+            output_path,
+            previous_metadata,
+            force,
         )
         self._update_output_metadata(request.export_metadata)
         return request
-
-    def export_environment(
-        self,
-        output_path: Path,
-        previous_metadata: ExportMetadata | None = None,
-        force: bool = False,
-    ) -> tuple[ExportMetadata, Path]:
-        """Locally export this environment."""
-        env_path = self.env_path
-        if not env_path.exists():
-            raise RuntimeError("Must create environment before attempting to export it")
-
-        # Define the input metadata that gets published in the export manifest
-        export_request = self.request_export(output_path, previous_metadata, force)
-        return export_request.export_environment(
-            env_path,
-            previous_metadata,
-        )
 
 
 class RuntimeEnv(LayerEnvBase):
@@ -1659,7 +1641,7 @@ class LayeredEnvBase(LayerEnvBase):
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         if lock_only:
-            raise RuntimeError(
+            raise BuildEnvError(
                 "Only runtime environments support lock-only installation"
             )
         self._ensure_virtual_environment()
@@ -2372,37 +2354,38 @@ class BuildEnvironment:
         metadata_dir = output_path / self.METADATA_DIR
         env_metadata_dir = metadata_dir / self.METADATA_ENV_DIR
 
+        build_requests: list[tuple[LayerCategories, ArchiveBuildRequest]] = []
+        for env in self.environments_to_publish():
+            previous_metadata = self.load_archive_metadata(
+                env_metadata_dir, env, platform_tag
+            )
+            build_requests.append(
+                (
+                    env.category,
+                    env.define_archive_build(
+                        output_path,
+                        target_platform=self.build_platform,
+                        tag_output=tag_outputs,
+                        previous_metadata=previous_metadata,
+                        force=force and not dry_run,
+                    ),
+                )
+            )
+        del env
+
         if dry_run:
             # Return metadata generated by a dry run rather than writing it to disk
-            for env in self.environments_to_publish():
-                previous_metadata = self.load_archive_metadata(
-                    env_metadata_dir, env, platform_tag
-                )
-                build_request = env.define_archive_build(
-                    output_path,
-                    target_platform=self.build_platform,
-                    tag_output=tag_outputs,
-                    previous_metadata=previous_metadata,
-                )
-                layer_data[env.category].append(build_request.build_metadata)
+            for category, build_request in build_requests:
+                layer_data[category].append(build_request.build_metadata)
             publishing_request: StackPublishingRequest = {"layers": layer_data}
             return output_path, publishing_request
         # Build all requested archives and export the corresponding manifests
         output_path.mkdir(parents=True, exist_ok=True)
         result_data = cast(dict[LayerCategories, list[ArchiveMetadata]], layer_data)
-        for env in self.environments_to_publish():
-            previous_metadata = self.load_archive_metadata(
-                env_metadata_dir, env, platform_tag
-            )
-            build_metadata, archive_path = env.create_archive(
-                output_path,
-                target_platform=self.build_platform,
-                tag_output=tag_outputs,
-                previous_metadata=previous_metadata,
-                force=force,
-            )
+        for category, build_request in build_requests:
+            build_metadata, archive_path = build_request.create_archive()
             archive_paths.append(archive_path)
-            result_data[env.category].append(build_metadata)
+            result_data[category].append(build_metadata)
         manifest_data: StackPublishingResult = {"layers": result_data}
         manifest_path, snippet_paths = self._write_artifacts_manifest(
             metadata_dir, manifest_data, platform_tag
@@ -2491,28 +2474,33 @@ class BuildEnvironment:
         metadata_dir = output_path / self.METADATA_DIR
         env_metadata_dir = metadata_dir / self.METADATA_ENV_DIR
 
+        export_requests: list[tuple[LayerCategories, LayerExportRequest]] = []
+        for env in self.environments_to_publish():
+            previous_metadata = self.load_export_metadata(env_metadata_dir, env)
+            export_requests.append(
+                (
+                    env.category,
+                    env.request_export(
+                        output_path,
+                        previous_metadata=previous_metadata,
+                        force=force and not dry_run,
+                    ),
+                )
+            )
+        del env
+
         if dry_run:
             # Return metadata generated by a dry run rather than writing it to disk
-            for env in self.environments_to_publish():
-                previous_metadata = self.load_export_metadata(env_metadata_dir, env)
-                export_request = env.request_export(
-                    output_path,
-                    previous_metadata=previous_metadata,
-                )
-                export_data[env.category].append(export_request.export_metadata)
+            for category, export_request in export_requests:
+                export_data[category].append(export_request.export_metadata)
             output_request: StackExportRequest = {"layers": export_data}
             return output_path, output_request
         # Export the requested environments and the corresponding manifests
         output_path.mkdir(parents=True, exist_ok=True)
-        for env in self.environments_to_publish():
-            previous_metadata = self.load_export_metadata(env_metadata_dir, env)
-            export_metadata, export_path = env.export_environment(
-                output_path,
-                previous_metadata=previous_metadata,
-                force=force,
-            )
+        for category, export_request in export_requests:
+            export_metadata, export_path = export_request.export_environment()
             export_paths.append(export_path)
-            export_data[env.category].append(export_metadata)
+            export_data[category].append(export_metadata)
         manifest_data: StackExportRequest = {"layers": export_data}
         manifest_path, snippet_paths = self._write_export_manifest(
             metadata_dir, manifest_data

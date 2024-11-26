@@ -10,7 +10,6 @@ venvstacks.stacks.LayerEnvBase
 
    .. autosummary::
 
-      ~LayerEnvBase.create_archive
       ~LayerEnvBase.create_environment
       ~LayerEnvBase.define_archive_build
       ~LayerEnvBase.export_environment
