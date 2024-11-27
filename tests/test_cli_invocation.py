@@ -475,6 +475,22 @@ class TestSubcommands:
             ),  # publish_artifacts
         ),
         (
+            ("--format", "tar.gz"),
+            dict(lock=False, build=True, publish=True),  # select_operations
+            dict(clean=False, lock=False),  # create_environments
+            dict(
+                dry_run=True, tag_outputs=False, format=ArchiveFormat.gz
+            ),  # publish_artifacts
+        ),
+        (
+            ("--format", "zip"),
+            dict(lock=False, build=True, publish=True),  # select_operations
+            dict(clean=False, lock=False),  # create_environments
+            dict(
+                dry_run=True, tag_outputs=False, format=ArchiveFormat.zip
+            ),  # publish_artifacts
+        ),
+        (
             ("--lock", "--build", "--publish", "--clean", "--tag-outputs"),
             dict(lock=True, build=True, publish=True),  # select_operations
             dict(clean=True, lock=True),  # create_environments
@@ -641,6 +657,20 @@ class TestSubcommands:
             dict(lock=False, build=False, publish=True),  # select_operations
             dict(
                 force=False, tag_outputs=True, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
+        ),
+        (
+            ("--format", "tar.gz"),
+            dict(lock=False, build=False, publish=True),  # select_operations
+            dict(
+                force=False, tag_outputs=False, format=ArchiveFormat.gz
+            ),  # publish_artifacts
+        ),
+        (
+            ("--format", "zip"),
+            dict(lock=False, build=False, publish=True),  # select_operations
+            dict(
+                force=False, tag_outputs=False, format=ArchiveFormat.zip
             ),  # publish_artifacts
         ),
         (

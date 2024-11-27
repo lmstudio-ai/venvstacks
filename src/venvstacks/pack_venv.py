@@ -39,10 +39,12 @@ import sys
 import tempfile
 import time
 
+from contextlib import ExitStack
 from datetime import datetime, timedelta, timezone, tzinfo
 from enum import StrEnum
+from gzip import GzipFile
 from pathlib import Path
-from typing import Any, Callable, cast, Self, TextIO
+from typing import Any, Callable, cast, BinaryIO, Self, TextIO
 
 from ._injected import postinstall as _default_postinstall
 from ._util import as_normalized_path, StrPath, WINDOWS_BUILD as _WINDOWS_BUILD
@@ -161,7 +163,7 @@ class ArchiveFormat(StrEnum):
                 base_dir,
                 max_mtime,
                 progress_callback,
-                compress=str(self),
+                compress=self.get_compression(),
             )
         # Not a tar compression format -> emit a zipfile instead
         return _make_zipfile(
@@ -330,10 +332,10 @@ def create_archive(
             # between the number of paths found by `rglob` and the number of archive entries
             progress_bar.show(1.0)
     # The name query and the archive creation should always report the same archive name
-    assert archive_with_extension == os.fspath(
-        archive_format.get_archive_path(archive_base_name)
-    )
-    return Path(archive_with_extension)
+    created_path = Path(archive_with_extension)
+    expected_path = archive_format.get_archive_path(archive_base_name)
+    assert created_path == expected_path, f"{created_path} != {expected_path}"
+    return created_path
 
 
 # Would prefer to use shutil.make_archive, but the way it works doesn't quite fit this case
@@ -355,7 +357,7 @@ def _make_tar_archive(
 ) -> str:
     """Create a (possibly compressed) tar file from all the files under 'base_dir'.
 
-    'compress' must be "gzip", "bzip2", "xz", or None.
+    'compress' must be "gzip", "bzip2", "xz", the empty string, or None.
 
     Owner and group info is always set to 0/"root" as per
     https://reproducible-builds.org/docs/archives/.
@@ -431,15 +433,22 @@ def _make_tar_archive(
         return tarinfo
 
     # creating the tarball
-    tar = tarfile.open(archive_name, tar_mode)
-    arcname = base_dir
-    if root_dir is not None:
-        base_dir = os.path.join(root_dir, base_dir)
-    try:
+    with ExitStack() as stack:
+        if _clamp_mtime is not None and compress == "gzip":
+            # Zero out the timestamp in the gzip header
+            storage = cast(BinaryIO, GzipFile(archive_name, mode="w", mtime=0))
+            stack.enter_context(storage)
+        else:
+            # Either mtime is not being clamped, or there is no time in the file header
+            storage = None
+
+        tar = tarfile.open(archive_name, tar_mode, fileobj=storage)
+        stack.enter_context(tar)
+        arcname = base_dir
+        if root_dir is not None:
+            base_dir = os.path.join(root_dir, base_dir)
         # In Python 3.7+, tar.add inherently adds entries in sorted order
         tar.add(base_dir, arcname, filter=_process_archive_entry)
-    finally:
-        tar.close()
 
     if root_dir is not None:
         archive_name = os.path.abspath(archive_name)

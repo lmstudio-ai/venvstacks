@@ -708,29 +708,31 @@ class ArchiveBuildRequest:
             )
         build_metadata = self.build_metadata
         archive_base_path = self.archive_base_path
-        built_archive_path = archive_base_path.parent / build_metadata["archive_name"]
+        archive_path = archive_base_path.parent / build_metadata["archive_name"]
         if not self.needs_build:
             # Already built archive looks OK, so just return the same metadata as last build
-            print(f"Using previously built archive at {str(built_archive_path)!r}")
+            print(f"Using previously built archive at {str(archive_path)!r}")
             previous_metadata = self.archive_metadata
             assert previous_metadata is not None
-            return previous_metadata, built_archive_path
-        if built_archive_path.exists():
-            print(f"Removing outdated archive at {str(built_archive_path)!r}")
-            built_archive_path.unlink()
+            return previous_metadata, archive_path
+        if archive_path.exists():
+            print(f"Removing outdated archive at {str(archive_path)!r}")
+            archive_path.unlink()
         print(f"Creating archive for {str(env_path)!r}")
         last_locked = self.env_lock.last_locked
         if work_path is None:
             # /tmp is likely too small for ML/AI environments
             work_path = self.env_path.parent
-        archive_path = pack_venv.create_archive(
+        built_path = pack_venv.create_archive(
             env_path,
             archive_base_path,
             clamp_mtime=last_locked,
             work_dir=work_path,
             install_target=build_metadata["install_target"],
+            archive_format=self.archive_format,
         )
-        assert built_archive_path == archive_path  # pack_venv ensures this is true
+        # This assertion can be helpful when debugging archive creation changes
+        assert built_path == archive_path, f"{built_path} != {archive_path}"
         print(f"Created {str(archive_path)!r} from {str(env_path)!r}")
 
         metadata = ArchiveMetadata(
