@@ -10,10 +10,8 @@ venvstacks.stacks.FrameworkEnv
 
    .. autosummary::
 
-      ~FrameworkEnv.create_archive
       ~FrameworkEnv.create_environment
       ~FrameworkEnv.define_archive_build
-      ~FrameworkEnv.export_environment
       ~FrameworkEnv.get_constraint_paths
       ~FrameworkEnv.install_requirements
       ~FrameworkEnv.link_base_runtime
