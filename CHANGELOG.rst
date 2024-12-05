@@ -20,7 +20,7 @@ See the fragment files in the `changelog.d directory`_.
 Fixed
 -----
 
-- Fix Typer 0.12.5+ incompatibility when setting app name (reported by Rugved Somwanshi in :issue:`96`).
+- Fix Typer 0.14.0+ incompatibility when setting app name (reported by Rugved Somwanshi in :issue:`96`).
 
 .. _changelog-0.2.0:
 
