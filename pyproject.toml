@@ -1,6 +1,6 @@
 [project]
 name = "venvstacks"
-version = "0.3.0.dev0"
+version = "0.2.1"
 description = "Use layered Python virtual environment stacks to share large dependencies"
 authors = [
     {name = "Alyssa Coghlan", email = "ncoghlan@gmail.com"},
@@ -145,4 +145,5 @@ convention = "google"
 [tool.scriv]
 version = "literal: pyproject.toml: project.version"
 fragment_directory = "docs/changelog.d"
+skip_fragments = "README[._]*"
 ghrel_template = "file: ghrel_template.md.j2"

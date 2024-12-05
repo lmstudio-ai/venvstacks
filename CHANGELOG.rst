@@ -12,6 +12,16 @@ See the fragment files in the `changelog.d directory`_.
 
 .. scriv-insert-here
 
+.. _changelog-0.2.1:
+
+0.2.1 — 2024-12-05
+==================
+
+Fixed
+-----
+
+- Fix Typer 0.12.5+ incompatibility when setting app name (reported by Rugved Somwanshi in :issue:`96`).
+
 .. _changelog-0.2.0:
 
 0.2.0 — 2024-11-14

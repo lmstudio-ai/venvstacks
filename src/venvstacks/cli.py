@@ -30,17 +30,19 @@ def _get_usage_name() -> str:
 
 
 _cli = typer.Typer(
+    name=_get_usage_name(),
     add_completion=False,
     pretty_exceptions_show_locals=False,
     no_args_is_help=True,
 )
 
 
-@_cli.callback(name=_get_usage_name())
+@_cli.callback()
 def handle_app_options() -> None:
     """Lock, build, and publish Python virtual environment stacks."""
     # TODO: Handle app logging config via main command level options
     #       Part of https://github.com/lmstudio-ai/venvstacks/issues/5
+    pass
 
 
 # The shared CLI argument and option annotations have to be module level globals,
