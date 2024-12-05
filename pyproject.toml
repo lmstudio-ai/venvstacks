@@ -145,4 +145,5 @@ convention = "google"
 [tool.scriv]
 version = "literal: pyproject.toml: project.version"
 fragment_directory = "docs/changelog.d"
+skip_fragments = "README[._]*"
 ghrel_template = "file: ghrel_template.md.j2"
