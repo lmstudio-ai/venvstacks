@@ -8,6 +8,7 @@ from typing import Annotated
 import typer
 
 from .stacks import StackSpec, BuildEnvironment, _format_json, PackageIndexConfig
+from .pack_venv import ArchiveFormat, DEFAULT_ARCHIVE_FORMAT
 
 # Inspired by the Python 3.13+ `argparse` feature,
 # but reports `python -m venvstacks` whenever `__main__`
@@ -55,6 +56,7 @@ def handle_app_options() -> None:
 #   * _CLI_OPT_TRISTATE: boolean option, but allows None to indicate "not set"
 #   * _CLI_OPT_STR: optional string (defaulting to empty string to indicate "not set")
 #   * _CLI_OPT_STRLIST: multi-value list of strings
+#   * _CLI_OPT_ENUM: optional case-insensitive enum value
 #
 # The unit tests ensure the internal consistency of the CLI command annotations
 
@@ -122,6 +124,10 @@ _CLI_OPT_FLAG_force = Annotated[
 _CLI_OPT_FLAG_dry_run = Annotated[
     bool,
     typer.Option(help="List archives that would be published")
+]  # fmt: skip
+_CLI_OPT_ENUM_format = Annotated[
+    ArchiveFormat,
+    typer.Option(help="Archive compression format", case_sensitive=False)
 ]  # fmt: skip
 
 # Selective processing of defined layers
@@ -224,11 +230,13 @@ def _publication_dry_run(
     build_env: BuildEnvironment,
     output_dir: str,
     tag_outputs: bool,
+    format: ArchiveFormat,
 ) -> None:
     base_output_path, dry_run_result = build_env.publish_artifacts(
         output_dir,
         dry_run=True,
         tag_outputs=tag_outputs,
+        format=format,
     )
     print("Archive creation skipped, reporting publishing request details:")
     print(_format_json(dry_run_result))
@@ -242,14 +250,18 @@ def _publish_artifacts(
     force: bool,
     dry_run: bool,
     tag_outputs: bool,
+    format: ArchiveFormat,
 ) -> None:
     if dry_run:
-        _publication_dry_run(build_env, output_dir, tag_outputs=tag_outputs)
+        _publication_dry_run(
+            build_env, output_dir, tag_outputs=tag_outputs, format=format
+        )
         return
     manifest_path, snippet_paths, archive_paths = build_env.publish_artifacts(
         output_dir,
         force=force,
         tag_outputs=tag_outputs,
+        format=format,
     )
     base_output_path = os.path.commonpath(
         [manifest_path, *snippet_paths, *archive_paths]
@@ -325,6 +337,8 @@ def build(
     local_wheels: _CLI_OPT_STRLIST_local_wheels = None,
     # Adjust naming of published archives and metadata files
     tag_outputs: _CLI_OPT_FLAG_tag_outputs = False,
+    # Adjust published archive format
+    format: _CLI_OPT_ENUM_format = DEFAULT_ARCHIVE_FORMAT,
     # Selective processing of defined layers
     include: _CLI_OPT_STRLIST_include = None,
     allow_missing: _CLI_OPT_FLAG_allow_missing = False,
@@ -374,7 +388,12 @@ def build(
         )
     build_env.create_environments(clean=clean, lock=lock)
     _publish_artifacts(
-        build_env, output_dir, dry_run=not publish, force=clean, tag_outputs=tag_outputs
+        build_env,
+        output_dir,
+        dry_run=not publish,
+        force=clean,
+        tag_outputs=tag_outputs,
+        format=format,
     )
 
 
@@ -450,6 +469,8 @@ def publish(
     dry_run: _CLI_OPT_FLAG_dry_run = False,
     # Adjust naming of published archives and metadata files
     tag_outputs: _CLI_OPT_FLAG_tag_outputs = False,
+    # Adjust published archive format
+    format: _CLI_OPT_ENUM_format = DEFAULT_ARCHIVE_FORMAT,
     # Selective processing of defined layers
     include: _CLI_OPT_STRLIST_include = None,
     allow_missing: _CLI_OPT_FLAG_allow_missing = False,
@@ -489,7 +510,12 @@ def publish(
             publish=True,
         )
     _publish_artifacts(
-        build_env, output_dir, force=force, dry_run=dry_run, tag_outputs=tag_outputs
+        build_env,
+        output_dir,
+        force=force,
+        dry_run=dry_run,
+        tag_outputs=tag_outputs,
+        format=format,
     )
 
 
