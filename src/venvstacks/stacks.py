@@ -1389,12 +1389,11 @@ class LayerEnvBase(ABC):
         # Wrapper and activation scripts are not used on deployment targets,
         # so drop them entirely rather than making them portable
         for item in self.executables_path.iterdir():
-            if not item.name.lower().startswith("python"):
+            if item.is_dir():
+                shutil.rmtree(item)
+            elif not item.name.lower().startswith("python"):
                 print(f"    Dropping potentially non-portable file {str(item)!r}")
-                if item.is_dir():
-                    shutil.rmtree(item)
-                else:
-                    item.unlink()
+                item.unlink()
         # Symlinks within the build folder should be relative
         # Symlinks outside the build folder shouldn't exist
         build_path = self.build_path
