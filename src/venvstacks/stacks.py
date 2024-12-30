@@ -1390,6 +1390,7 @@ class LayerEnvBase(ABC):
         # so drop them entirely rather than making them portable
         for item in self.executables_path.iterdir():
             if item.is_dir():
+                print(f"    Dropping directory {str(item)!r}")
                 shutil.rmtree(item)
             elif not item.name.lower().startswith("python"):
                 print(f"    Dropping potentially non-portable file {str(item)!r}")

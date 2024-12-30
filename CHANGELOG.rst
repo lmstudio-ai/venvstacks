@@ -12,6 +12,16 @@ See the fragment files in the `changelog.d directory`_.
 
 .. scriv-insert-here
 
+.. _changelog-0.3.0:
+
+0.3.0 — 2024-12-31
+==================
+
+Fixed
+-----
+
+- Remove directories from /bin when building layers
+
 .. _changelog-0.2.1:
 
 0.2.1 — 2024-12-05
