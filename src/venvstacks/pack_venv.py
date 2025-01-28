@@ -39,10 +39,12 @@ import sys
 import tempfile
 import time
 
+from contextlib import ExitStack
 from datetime import datetime, timedelta, timezone, tzinfo
 from enum import StrEnum
+from gzip import GzipFile
 from pathlib import Path
-from typing import Any, Callable, cast, Self, TextIO
+from typing import Any, Callable, cast, BinaryIO, Self, TextIO
 
 from ._injected import postinstall as _default_postinstall
 from ._util import as_normalized_path, StrPath, WINDOWS_BUILD as _WINDOWS_BUILD
@@ -107,10 +109,87 @@ def convert_symlinks(
     return relative_links, external_links
 
 
-def get_archive_path(archive_base_name: StrPath) -> Path:
-    """Report the name of the archive that will be created for the given base name."""
-    extension = ".zip" if _WINDOWS_BUILD else ".tar.xz"
-    return Path(os.fspath(archive_base_name) + extension)
+ProgressCallback = Callable[[str], None]
+
+
+class CompressionAlgorithm(StrEnum):
+    """Compression algorithm for published archive."""
+
+    UNCOMPRESSED = ""
+    BZIP2 = "bzip2"
+    GZIP = "gzip"
+    XZ = "xz"
+    ZIP = "zip"
+
+
+class ArchiveFormat(StrEnum):
+    """Archive publishing format."""
+
+    tar = "tar"
+    bz2 = "tar.bz2"
+    gz = "tar.gz"
+    xz = "tar.xz"
+    zip = "zip"
+
+    @property
+    def is_tar_format(self) -> bool:
+        """Whether this is a tar archive format."""
+        return self is not self.zip
+
+    @classmethod
+    def get_archive_format(cls, format: str | None) -> Self:
+        """Convert optional string value to a known archive format."""
+        if format is None:
+            return cls(DEFAULT_ARCHIVE_FORMAT)
+        return cls(format)
+
+    def get_archive_path(self, archive_base_name: StrPath) -> Path:
+        """Report the name of the archive that will be created for the given base name."""
+        return Path(os.fspath(archive_base_name) + f".{self}")
+
+    def make_archive(
+        self,
+        base_name: StrPath,
+        root_dir: StrPath,
+        base_dir: StrPath,
+        max_mtime: float | None = None,
+        progress_callback: ProgressCallback | None = None,
+    ) -> str:
+        """Create layer archive using this archive format and compression algorithm."""
+        if self.is_tar_format:
+            return _make_tar_archive(
+                base_name,
+                root_dir,
+                base_dir,
+                max_mtime,
+                progress_callback,
+                compress=self.get_compression(),
+            )
+        # Not a tar compression format -> emit a zipfile instead
+        return _make_zipfile(
+            base_name, root_dir, base_dir, max_mtime, progress_callback
+        )
+
+    def get_compression(self) -> str:
+        """Get compression algorithm for this archive format."""
+        return _ARCHIVE_COMPRESSION_ALGORITHMS[str(self)]
+
+
+_ARCHIVE_COMPRESSION_ALGORITHMS = {
+    str(ArchiveFormat.tar): str(CompressionAlgorithm.UNCOMPRESSED),
+    str(ArchiveFormat.bz2): str(CompressionAlgorithm.BZIP2),
+    str(ArchiveFormat.gz): str(CompressionAlgorithm.GZIP),
+    str(ArchiveFormat.xz): str(CompressionAlgorithm.XZ),
+    str(ArchiveFormat.zip): str(CompressionAlgorithm.ZIP),
+}
+
+
+if _WINDOWS_BUILD:
+    # No tar unpacking by default on windows, so use zipfile instead
+    DEFAULT_ARCHIVE_FORMAT = ArchiveFormat.zip
+else:
+    # Everywhere else, create XZ compressed tar archives
+    DEFAULT_ARCHIVE_FORMAT = ArchiveFormat.xz
 
 
 def _inject_postinstall_script(
@@ -187,68 +266,6 @@ def export_venv(
     return target_path
 
 
-if _WINDOWS_BUILD:
-    # No tar unpacking by default on windows, so use zipfile instead
-    _DEFAULT_ARCHIVE_FORMAT = "zip"
-else:
-    # Everywhere else, create XZ compressed tar archives
-    _DEFAULT_ARCHIVE_FORMAT = "xz"
-
-_COMPRESSION_FORMATS = {
-    "tar": "",
-    "tar.bz2": "bzip2",
-    "tar.gz": "gzip",
-    "tar.xz": "xz",
-}
-
-ProgressCallback = Callable[[str], None]
-
-
-class CompressionFormat(StrEnum):
-    """Compression format for published environment."""
-
-    UNCOMPRESSED = ""
-    BZIP2 = "bzip2"
-    GZIP = "gzip"
-    XZ = "xz"
-    ZIP = "zip"
-
-    @classmethod
-    def get_format(cls, format: str | None) -> Self:
-        """Get compression format for given value."""
-        if format is None:
-            return cls(_DEFAULT_ARCHIVE_FORMAT)
-        return cls(_COMPRESSION_FORMATS.get(format, format))
-
-    @property
-    def is_tar_format(self) -> bool:
-        """Whether this compression format is for a tar archive."""
-        return self is not self.ZIP
-
-    def make_archive(
-        self,
-        base_name: StrPath,
-        root_dir: StrPath,
-        base_dir: StrPath,
-        max_mtime: float | None = None,
-        progress_callback: ProgressCallback | None = None,
-    ) -> str:
-        """Create layer archive using this archive format."""
-        if self.is_tar_format:
-            return _make_tar_archive(
-                base_name,
-                root_dir,
-                base_dir,
-                max_mtime,
-                progress_callback,
-                compress=str(self),
-            )
-        # Not a tar compression format -> emit a zipfile instead
-        return _make_zipfile(
-            base_name, root_dir, base_dir, max_mtime, progress_callback
-        )
-
-
 def create_archive(
     source_dir: StrPath,
     archive_base_name: StrPath,
@@ -257,7 +274,7 @@ def create_archive(
     clamp_mtime: datetime | None = None,
     work_dir: StrPath | None = None,
     show_progress: bool = True,
-    format: CompressionFormat | None = None,
+    archive_format: ArchiveFormat | None = None,
 ) -> Path:
     """shutil.make_archive replacement, tailored for Python virtual environments.
 
@@ -305,9 +322,9 @@ def create_archive(
             # To avoid filesystem time resolution quirks without relying on the resolution
             # details of the various archive formats, truncate mtime to exact seconds
             max_mtime = int(clamp_mtime.astimezone(timezone.utc).timestamp())
-        if format is None:
-            format = CompressionFormat.get_format(None)
-        archive_with_extension = format.make_archive(
+        if archive_format is None:
+            archive_format = DEFAULT_ARCHIVE_FORMAT
+        archive_with_extension = archive_format.make_archive(
             archive_path, env_path.parent, env_path.name, max_mtime, report_progress
         )
         if show_progress:
@@ -315,8 +332,10 @@ def create_archive(
             # between the number of paths found by `rglob` and the number of archive entries
             progress_bar.show(1.0)
     # The name query and the archive creation should always report the same archive name
-    assert archive_with_extension == os.fspath(get_archive_path(archive_base_name))
-    return Path(archive_with_extension)
+    created_path = Path(archive_with_extension)
+    expected_path = archive_format.get_archive_path(archive_base_name)
+    assert created_path == expected_path, f"{created_path} != {expected_path}"
+    return created_path
 
 
 # Would prefer to use shutil.make_archive, but the way it works doesn't quite fit this case
@@ -338,7 +357,7 @@ def _make_tar_archive(
 ) -> str:
     """Create a (possibly compressed) tar file from all the files under 'base_dir'.
 
-    'compress' must be "gzip", "bzip2", "xz", or None.
+    'compress' must be "gzip", "bzip2", "xz", the empty string, or None.
 
     Owner and group info is always set to 0/"root" as per
     https://reproducible-builds.org/docs/archives/.
@@ -414,15 +433,22 @@ def _make_tar_archive(
         return tarinfo
 
     # creating the tarball
-    tar = tarfile.open(archive_name, tar_mode)
-    arcname = base_dir
-    if root_dir is not None:
-        base_dir = os.path.join(root_dir, base_dir)
-    try:
+    with ExitStack() as stack:
+        if _clamp_mtime is not None and compress == "gzip":
+            # Zero out the timestamp in the gzip header
+            storage = cast(BinaryIO, GzipFile(archive_name, mode="w", mtime=0))
+            stack.enter_context(storage)
+        else:
+            # Either mtime is not being clamped, or there is no time in the file header
+            storage = None
+
+        tar = tarfile.open(archive_name, tar_mode, fileobj=storage)
+        stack.enter_context(tar)
+        arcname = base_dir
+        if root_dir is not None:
+            base_dir = os.path.join(root_dir, base_dir)
         # In Python 3.7+, tar.add inherently adds entries in sorted order
         tar.add(base_dir, arcname, filter=_process_archive_entry)
-    finally:
-        tar.close()
 
     if root_dir is not None:
         archive_name = os.path.abspath(archive_name)

@@ -147,7 +147,7 @@ def _filter_manifest(
     filtered_summaries: ArchiveSummaries = {}
     last_locked_times: LastLockedTimes = {}
     for kind, archive_manifests in manifest["layers"].items():
-        filtered_summaries[kind] = summaries = []
+        filtered_summaries[str(kind)] = summaries = []
         for archive_manifest in archive_manifests:
             summaries.append(_filter_archive_manifest(archive_manifest))
             last_locked_times[archive_manifest["install_target"]] = (
@@ -160,7 +160,7 @@ def _tag_manifest(manifest: BuildManifest, expected_tag: str) -> BuildManifest:
     """Add expected build tag to fields that are expected to include the build tag."""
     tagged_summaries: ArchiveSummaries = {}
     for kind, summaries in manifest["layers"].items():
-        tagged_summaries[kind] = new_summaries = []
+        tagged_summaries[str(kind)] = new_summaries = []
         for summary in summaries:
             new_summary = summary.copy()
             new_summaries.append(new_summary)
@@ -170,6 +170,30 @@ def _tag_manifest(manifest: BuildManifest, expected_tag: str) -> BuildManifest:
                 f"{install_target}{expected_tag}{ARCHIVE_SUFFIX}"
             )
     return {"layers": tagged_summaries}
+
+
+def _replace_archive_suffix(
+    manifest: BuildManifest, expected_suffix: str, expected_build: int,
+) -> BuildManifest:
+    """Replace the expected file extension in archive names."""
+    updated_summaries: ArchiveSummaries = {}
+    for kind, summaries in manifest["layers"].items():
+        updated_summaries[str(kind)] = new_summaries = []
+        for summary in summaries:
+            new_summary = summary.copy()
+            new_summaries.append(new_summary)
+            # Replace the expected extension in the archive name
+            default_name = summary["archive_name"]
+            updated_name = default_name.replace(
+                ARCHIVE_SUFFIX, expected_suffix
+            )
+            build_tag = "-1."
+            if build_tag in updated_name:
+                updated_tag = f"-{expected_build}."
+                updated_name = updated_name.replace(build_tag, updated_tag)
+            new_summary["archive_name"] = updated_name
+            new_summary["archive_build"] = expected_build
+    return {"layers": updated_summaries}
 
 
 ##########################
@@ -496,6 +520,8 @@ class TestMinimalBuild(DeploymentTestCase):
 
     @pytest.mark.slow
     def test_locking_and_publishing(self) -> None:
+        # Need long diffs to get useful output from metadata checks
+        self.maxDiff = None
         # This is organised as subtests in a monolothic test sequence to reduce CI overhead
         # Separating the tests wouldn't really make them independent, unless the outputs of
         # the earlier steps were checked in for use when testing the later steps.
@@ -616,7 +642,31 @@ class TestMinimalBuild(DeploymentTestCase):
             )
             self.check_archive_deployment(tagged_publication_result)
             subtests_passed += 1
-        # TODO: Add another test stage that confirms build versions increment as expected
+        # Test stage: check overriding the archive format works as expected.
+        #             tar.gz is used, as that isn't the default on any platform.
+        #             This also checks the build numbers increment as expected.
+        subtests_started += 1
+        with self.subTest("Check untagged tar.gz publication"):
+            gz_dry_run_result = _replace_archive_suffix(dry_run_result, ".tar.gz", 2)
+            gz_publication_result = build_env.publish_artifacts(format="tar.gz")
+            self.check_publication_result(
+                gz_publication_result, gz_dry_run_result, expected_tag=None
+            )
+            self.check_archive_deployment(gz_publication_result)
+            subtests_passed += 1
+        subtests_started += 1
+        with self.subTest("Check tagged tar.gz publication"):
+            gz_tagged_dry_run_result = _replace_archive_suffix(
+                tagged_dry_run_result, ".tar.gz", 2
+            )
+            gz_tagged_publication_result = build_env.publish_artifacts(
+                tag_outputs=True, format="tar.gz"
+            )
+            self.check_publication_result(
+                gz_tagged_publication_result, gz_tagged_dry_run_result, expected_tag
+            )
+            self.check_archive_deployment(gz_tagged_publication_result)
+            subtests_passed += 1
 
         # Work aroung pytest-subtests not failing the test case when subtests fail
         # https://github.com/pytest-dev/pytest-subtests/issues/76

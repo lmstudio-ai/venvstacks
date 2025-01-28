@@ -5,6 +5,7 @@ import sys
 
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from enum import StrEnum
 from pathlib import Path
 from traceback import format_exception
 from types import ModuleType
@@ -19,6 +20,7 @@ from typer.models import ArgumentInfo, OptionInfo
 from typer.testing import CliRunner
 
 from venvstacks import cli
+from venvstacks.pack_venv import ArchiveFormat, DEFAULT_ARCHIVE_FORMAT
 from venvstacks.stacks import BuildEnvironment, EnvironmentLock, PackageIndexConfig
 from venvstacks._util import run_python_command_unchecked
 
@@ -222,12 +224,17 @@ def _get_default_index_config(command: str) -> PackageIndexConfig:
 
 
 ARGUMENT_PREFIX = "_CLI_ARG"
+ENUM_OPTION_PREFIX = "_CLI_OPT_ENUM"
 OPTION_PREFIXES = {
     bool: "_CLI_OPT_FLAG",
     bool | None: "_CLI_OPT_TRISTATE",
     list[str] | None: "_CLI_OPT_STRLIST",
     str: "_CLI_OPT_STR",
+    ArchiveFormat: ENUM_OPTION_PREFIX,
 }
+ENUM_OPTIONS = [
+    getattr(cli, name) for name in dir(cli) if name.startswith(ENUM_OPTION_PREFIX)
+]
 
 
 class TestSubcommands:
@@ -256,6 +263,15 @@ class TestSubcommands:
             expected_annotation_name = f"{expected_text_prefix}_{arg_name}"
             named_annotation = getattr(cli, expected_annotation_name)
             assert named_annotation == arg_annotation
+
+    @pytest.mark.parametrize("enum_option", ENUM_OPTIONS)
+    def test_enum_options(self, enum_option: Any) -> None:
+        # Ensure enum options are declared as case-insensitive strings
+        enum_type = enum_option.__origin__
+        assert issubclass(enum_type, StrEnum)
+        option_info = enum_option.__metadata__[0]
+        assert isinstance(option_info, OptionInfo)
+        assert not option_info.case_sensitive
 
     @pytest.mark.parametrize("command", EXPECTED_SUBCOMMANDS)
     def test_help_option(self, mocked_runner: MockedRunner, command: str) -> None:
@@ -411,25 +427,33 @@ class TestSubcommands:
             (),
             dict(lock=False, build=True, publish=True),  # select_operations
             dict(clean=False, lock=False),  # create_environments
-            dict(dry_run=True, tag_outputs=False),  # publish_artifacts
+            dict(
+                dry_run=True, tag_outputs=False, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
         ),
         (
             ("--lock",),
             dict(lock=True, build=True, publish=True),  # select_operations
             dict(clean=False, lock=True),  # create_environments
-            dict(dry_run=True, tag_outputs=False),  # publish_artifacts
+            dict(
+                dry_run=True, tag_outputs=False, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
         ),
         (
             ("--publish",),
             dict(lock=False, build=True, publish=True),  # select_operations
             dict(clean=False, lock=False),  # create_environments
-            dict(force=False, tag_outputs=False),  # publish_artifacts
+            dict(
+                force=False, tag_outputs=False, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
         ),
         (
             ("--clean",),
             dict(lock=False, build=True, publish=True),  # select_operations
             dict(clean=True, lock=False),  # create_environments
-            dict(dry_run=True, tag_outputs=False),  # publish_artifacts
+            dict(
+                dry_run=True, tag_outputs=False, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
         ),
         (
             (
@@ -438,19 +462,41 @@ class TestSubcommands:
             ),
             dict(lock=False, build=True, publish=True),  # select_operations
             dict(clean=True, lock=False),  # create_environments
-            dict(force=True, tag_outputs=False),  # publish_artifacts
+            dict(
+                force=True, tag_outputs=False, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
         ),
         (
             ("--tag-outputs",),
             dict(lock=False, build=True, publish=True),  # select_operations
             dict(clean=False, lock=False),  # create_environments
-            dict(dry_run=True, tag_outputs=True),  # publish_artifacts
+            dict(
+                dry_run=True, tag_outputs=True, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
+        ),
+        (
+            ("--format", "tar.gz"),
+            dict(lock=False, build=True, publish=True),  # select_operations
+            dict(clean=False, lock=False),  # create_environments
+            dict(
+                dry_run=True, tag_outputs=False, format=ArchiveFormat.gz
+            ),  # publish_artifacts
+        ),
+        (
+            ("--format", "zip"),
+            dict(lock=False, build=True, publish=True),  # select_operations
+            dict(clean=False, lock=False),  # create_environments
+            dict(
+                dry_run=True, tag_outputs=False, format=ArchiveFormat.zip
+            ),  # publish_artifacts
         ),
         (
             ("--lock", "--build", "--publish", "--clean", "--tag-outputs"),
             dict(lock=True, build=True, publish=True),  # select_operations
             dict(clean=True, lock=True),  # create_environments
-            dict(force=True, tag_outputs=True),  # publish_artifacts
+            dict(
+                force=True, tag_outputs=True, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
         ),
         (
             (
@@ -462,7 +508,9 @@ class TestSubcommands:
             ),
             dict(lock=False, build=False, publish=True),  # select_operations
             dict(clean=False, lock=False),  # create_environments
-            dict(dry_run=True, tag_outputs=False),  # publish_artifacts
+            dict(
+                dry_run=True, tag_outputs=False, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
         ),
     )
 
@@ -586,22 +634,44 @@ class TestSubcommands:
         (
             (),
             dict(lock=False, build=False, publish=True),  # select_operations
-            dict(force=False, tag_outputs=False),  # publish_artifacts
+            dict(
+                force=False, tag_outputs=False, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
         ),
         (
             ("--force",),
             dict(lock=False, build=False, publish=True),  # select_operations
-            dict(force=True, tag_outputs=False),  # publish_artifacts
+            dict(
+                force=True, tag_outputs=False, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
         ),
         (
             ("--dry-run",),
             dict(lock=False, build=False, publish=True),  # select_operations
-            dict(dry_run=True, tag_outputs=False),  # publish_artifacts
+            dict(
+                dry_run=True, tag_outputs=False, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
         ),
         (
             ("--tag-outputs",),
             dict(lock=False, build=False, publish=True),  # select_operations
-            dict(force=False, tag_outputs=True),  # publish_artifacts
+            dict(
+                force=False, tag_outputs=True, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
+        ),
+        (
+            ("--format", "tar.gz"),
+            dict(lock=False, build=False, publish=True),  # select_operations
+            dict(
+                force=False, tag_outputs=False, format=ArchiveFormat.gz
+            ),  # publish_artifacts
+        ),
+        (
+            ("--format", "zip"),
+            dict(lock=False, build=False, publish=True),  # select_operations
+            dict(
+                force=False, tag_outputs=False, format=ArchiveFormat.zip
+            ),  # publish_artifacts
         ),
         (
             (
@@ -610,7 +680,9 @@ class TestSubcommands:
                 "--no-tag-outputs",
             ),
             dict(lock=False, build=False, publish=True),  # select_operations
-            dict(force=False, tag_outputs=False),  # publish_artifacts
+            dict(
+                force=False, tag_outputs=False, format=DEFAULT_ARCHIVE_FORMAT
+            ),  # publish_artifacts
         ),
     )
 
