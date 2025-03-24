@@ -72,11 +72,11 @@ dev = [
     "mypy>=1.11.0",
     "pytest-subtests>=0.13.1",
     "coverage[toml]>=7.6.4",
-    # Use exact pin for dev as runtime environments are sensitive to the exact pbs version
-    "pbs-installer==2024.10.10",
-    # Uses exact pin for dev as lock file regeneration is sensitive to the exact uv version
-    "uv==0.4.21",
     "scriv[toml]>=1.5.1",
+    # Use exact pin for dev as runtime environments are sensitive to the exact pbs version
+    "pbs-installer==2025.3.17",
+    # Uses exact pin for dev as lock file regeneration is sensitive to the exact uv version
+    "uv==0.6.9",
 ]
 bootstrap = [
     "pdm>=2.16.1",

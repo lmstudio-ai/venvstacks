@@ -2,11 +2,11 @@
 
 [[runtimes]]
 name = "cpython@3.11"
-python_implementation = "cpython@3.11.10"
+python_implementation = "cpython@3.11.11"
 requirements = []
 
 [[runtimes]]
 name = "cpython@3.12"
 versioned = true
-python_implementation = "cpython@3.12.7"
+python_implementation = "cpython@3.12.9"
 requirements = []

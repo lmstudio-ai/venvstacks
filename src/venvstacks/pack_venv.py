@@ -42,7 +42,7 @@ import time
 from datetime import datetime, timedelta, timezone, tzinfo
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Callable, cast, Self, TextIO
+from typing import Any, Callable, cast, Literal, Self, TextIO
 
 from ._injected import postinstall as _default_postinstall
 from ._util import as_normalized_path, StrPath, WINDOWS_BUILD as _WINDOWS_BUILD
@@ -350,7 +350,8 @@ def _make_tar_archive(
     """
     import tarfile  # lazy import since ideally shutil would handle everything
 
-    # pylance complains if the tar_mode string is built dynamically
+    # Type checkers complain if the tar_mode string is built dynamically
+    tar_mode: Literal["w", "w:gz", "w:bz2", "w:xz"]
     if compress is None or compress == "":
         tar_mode = "w"
         compress_ext = ""
@@ -593,8 +594,8 @@ class _ProgressBar:
             completed_increments = int(progress * bar_length)
             status = (" " + self.TEXT_ABORTING) if aborting else ""
         remaining_increments = bar_length - completed_increments
-        bar_content = f"{'#'*completed_increments}{'-'*remaining_increments}"
-        percentage = f"{progress*100:.2f}"
+        bar_content = f"{'#' * completed_increments}{'-' * remaining_increments}"
+        percentage = f"{progress * 100:.2f}"
         progress_text = f"{self.TEXT_PROGRESS}: [{bar_content}] {percentage}%{status}"
         return progress_text, (completed_increments, status)
 
