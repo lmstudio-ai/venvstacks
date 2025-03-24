@@ -16,7 +16,7 @@ venvstacks.stacks.BuildEnvironment
       ~BuildEnvironment.environments_to_lock
       ~BuildEnvironment.environments_to_publish
       ~BuildEnvironment.export_environments
-      ~BuildEnvironment.get_unmatched_patterns
+      ~BuildEnvironment.filter_layers
       ~BuildEnvironment.load_archive_metadata
       ~BuildEnvironment.load_export_metadata
       ~BuildEnvironment.lock_environments
