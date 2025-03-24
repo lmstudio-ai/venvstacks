@@ -13,10 +13,16 @@ class TestDefaultOptions:
     TEST_CONFIG = PackageIndexConfig()
 
     def test_uv_pip_compile(self) -> None:
-        assert self.TEST_CONFIG._get_uv_pip_compile_args() == []
+        assert self.TEST_CONFIG._get_uv_pip_compile_args() == [
+            "--only-binary",
+            ":all:",
+        ]
 
     def test_pip_install(self) -> None:
-        assert self.TEST_CONFIG._get_pip_install_args() == []
+        assert self.TEST_CONFIG._get_pip_install_args() == [
+            "--only-binary",
+            ":all:",
+        ]
 
 
 class TestConfiguredOptions:
@@ -29,6 +35,8 @@ class TestConfiguredOptions:
     def test_uv_pip_compile(self) -> None:
         # There are currently no locking specific args
         assert self.TEST_CONFIG._get_uv_pip_compile_args() == [
+            "--only-binary",
+            ":all:",
             "--no-index",
             "--find-links",
             self.WHEEL_DIR,
@@ -37,6 +45,8 @@ class TestConfiguredOptions:
     def test_pip_install(self) -> None:
         # There are currently no installation specific args
         assert self.TEST_CONFIG._get_pip_install_args() == [
+            "--only-binary",
+            ":all:",
             "--no-index",
             "--find-links",
             self.WHEEL_DIR,

@@ -148,7 +148,8 @@ class PackageIndexConfig:
         ]
 
     def _get_common_pip_args(self) -> list[str]:
-        result = []
+        # Local wheel builds are expected for any source-only dependencies
+        result = ["--only-binary", ":all:"]
         if not self.query_default_index:
             result.append("--no-index")
         for local_wheel_path in self.local_wheel_paths:
@@ -1318,8 +1319,6 @@ class LayerEnvBase(ABC):
             "install",
             "--no-warn-script-location",
             *self.index_config._get_pip_install_args(),
-            "--only-binary",
-            ":all:",
             "--no-deps",
             "--upgrade",
             *pip_install_args,
