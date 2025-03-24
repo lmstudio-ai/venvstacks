@@ -437,9 +437,10 @@ class TestBuildEnvironment(DeploymentTestCase):
         matching = ["app-*", "*-3.*", "framework-http-client"]
         expected_layers = set(
             name
-            for env in EXPECTED_ENVIRONMENTS
+            for env in build_env.all_environments()
             if not (name := env.env_name).startswith("framework-s")
         )
+        self.assertNotEqual(expected_layers, set())
         self.assertEqual(build_env.filter_layers(matching), (expected_layers, set()))
         unknown = ["unknown", "app-?", "*-app"]
         unknown_set = set(unknown)
