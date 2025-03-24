@@ -8,11 +8,11 @@
   "archive_name": "app-sklearn-import.tar.xz",
   "archive_size": 2920,
   "bound_to_implementation": false,
-  "python_implementation": "cpython@3.12.7",
   "install_target": "app-sklearn-import",
   "layer_name": "app-sklearn-import",
   "lock_version": 1,
   "locked_at": "2024-10-15T10:23:43.237589+00:00",
+  "python_implementation": "cpython@3.12.7",
   "required_layers": [
     "framework-sklearn"
   ],

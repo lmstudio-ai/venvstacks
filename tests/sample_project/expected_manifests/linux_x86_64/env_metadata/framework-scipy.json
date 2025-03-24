@@ -6,11 +6,11 @@
   "archive_name": "framework-scipy@1.tar.xz",
   "archive_size": 23956060,
   "bound_to_implementation": false,
-  "python_implementation": "cpython@3.11.10",
   "install_target": "framework-scipy@1",
   "layer_name": "framework-scipy",
   "lock_version": 1,
   "locked_at": "2024-10-15T10:23:42.825586+00:00",
+  "python_implementation": "cpython@3.11.10",
   "requirements_hash": "sha256:36b0dbfec94b7de6507f348f0823cd02fdca2ea79eeafe92d571c26ae347d150",
   "runtime_layer": "cpython-3.11",
   "target_platform": "linux_x86_64"

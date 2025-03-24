@@ -8,11 +8,11 @@
   "archive_name": "app-scipy-client.tar.xz",
   "archive_size": 2984,
   "bound_to_implementation": false,
-  "python_implementation": "cpython@3.11.10",
   "install_target": "app-scipy-client",
   "layer_name": "app-scipy-client",
   "lock_version": 1,
   "locked_at": "2024-10-15T10:23:33.147967+00:00",
+  "python_implementation": "cpython@3.11.10",
   "required_layers": [
     "framework-scipy@1",
     "framework-http-client"

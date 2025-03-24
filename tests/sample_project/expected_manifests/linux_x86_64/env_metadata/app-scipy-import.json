@@ -8,11 +8,11 @@
   "archive_name": "app-scipy-import@1.tar.xz",
   "archive_size": 2920,
   "bound_to_implementation": false,
-  "python_implementation": "cpython@3.11.10",
   "install_target": "app-scipy-import@1",
   "layer_name": "app-scipy-import",
   "lock_version": 1,
   "locked_at": "2024-10-15T10:23:43.173589+00:00",
+  "python_implementation": "cpython@3.11.10",
   "required_layers": [
     "framework-scipy@1"
   ],
