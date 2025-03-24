@@ -2,5 +2,5 @@
 
 [[runtimes]]
 name = "runtime"
-fully_versioned_name = "cpython@3.11.10"
+fully_versioned_name = "cpython@3.11.11"
 requirements = []

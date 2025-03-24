@@ -40,7 +40,7 @@
 # Runtime naming convention avoids `@` to avoid ambiguity with layer lock versioning
 # Implementation name refers to the name used to retrieve the runtime for installation
 name = "cpython-3.11"
-python_implementation = "cpython@3.11.10"
+python_implementation = "cpython@3.11.11"
 requirements = [
     "numpy",
     # `dlltracer` helps to debug any binary wheel DLL import failures on Windows.
@@ -51,7 +51,7 @@ requirements = [
 [[runtimes]]
 # Same spec as the Python 3.11 runtime, just for a newer Python version
 name = "cpython-3.12"
-python_implementation = "cpython@3.12.7"
+python_implementation = "cpython@3.12.9"
 requirements = [
     # Omit dlltracer, as it doesn't publish 3.12 binaries (as of 2024-10-15)
     "numpy",
