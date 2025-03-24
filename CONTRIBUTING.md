@@ -1,6 +1,15 @@
-# Contributing to Our Projects
 
-First off, thank you for considering contributing to our open source projects! We value community contributions and appreciate your interest in making our software better.
+# Contributing to `venvstacks`
+
+First off, thank you for your interest in contributing to `venvstacks`!
+There are many ways to contribute, and we appreciate all of them.
+
+While `venvstacks` is not a Python Packaging Authority project, it is nevertheless
+part of the Python packaging ecosystem, and hence likely to be discussed in
+PyPA-managed communication channels. All contributors are expected to abide by the
+[PyPA Code of Conduct][pypa-coc].
+
+[pypa-coc]: https://www.pypa.io/en/latest/code-of-conduct/
 
 ## Communication
 
@@ -8,11 +17,20 @@ First off, thank you for considering contributing to our open source projects! W
 - For bug reports, include steps to reproduce, expected behavior, and actual behavior
 - For feature requests, explain the use case and benefits clearly
 
+For general `venvstacks` discussion (not specific to its use in LM Studio), there is a
+`#venvstacks` channel within the [PyPA Discord server](https://discord.com/invite/pypa).
+
 ## Before You Contribute
 
 - **If you find an existing issue you'd like to work on, please comment on it first and tag the team**
 - This allows us to provide guidance and ensures your time is well spent
 - **We discourage drive-by feature PRs** without prior discussion - we want to make sure your efforts align with our roadmap and won't go to waste
+
+If you are planning to add a feature,
+please [open an issue](https://github.com/lmstudio-ai/venvstacks/issues) first to discuss it.
+This is mainly to avoid duplicate work and to make sure that your contribution is in line
+with the project's goals,
+so please check if there is an existing issue before filling a new one.
 
 ## Development Workflow
 
@@ -22,6 +40,12 @@ First off, thank you for considering contributing to our open source projects! W
 4. Make your changes
 5. Test thoroughly
 6. Submit your PR
+
+### Development Documentation
+
+Our [development documentation](https://venvstacks.lmstudio.ai/development/)
+contains additional details on how to get started with contributing to `venvstacks`,
+and details of our development processes.
 
 ## Creating Good Pull Requests
 
@@ -49,12 +73,5 @@ First off, thank you for considering contributing to our open source projects! W
 - Maintainers will review your PR as soon as possible
 - We may request changes or clarification
 - Once approved, a maintainer will merge your contribution
-
-## Contributor License Agreement (CLA)
-
-- We require all contributors to sign a Contributor License Agreement (CLA)
-- For first-time contributors, a bot will automatically comment on your PR with instructions
-- You'll need to accept the CLA before we can merge your contribution
-- This is standard practice in open source and helps protect both contributors and the project
 
 Thank you for your contributions!

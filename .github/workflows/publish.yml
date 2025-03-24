@@ -5,6 +5,9 @@ on:
     types: [published]
 
 
+# Require explicit job permissions
+permissions: {}
+
 jobs:
   pypi-publish:
     name: Upload release to PyPI
