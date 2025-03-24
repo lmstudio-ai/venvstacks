@@ -432,14 +432,23 @@ class TestBuildEnvironment(DeploymentTestCase):
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
         )
 
-    def test_get_unmatched_patterns(self) -> None:
+    def test_filter_layers(self) -> None:
         build_env = self.build_env
-        matching = ["app-*", "*-3.*", "framework-*", "app-scipy-import"]
-        self.assertEqual(build_env.get_unmatched_patterns(matching), [])
+        matching = ["app-*", "*-3.*", "framework-http-client"]
+        expected_layers = set(
+            name
+            for env in build_env.all_environments()
+            if not (name := env.env_name).startswith("framework-s")
+        )
+        self.assertNotEqual(expected_layers, set())
+        self.assertEqual(build_env.filter_layers(matching), (expected_layers, set()))
         unknown = ["unknown", "app-?", "*-app"]
-        self.assertEqual(build_env.get_unmatched_patterns(unknown), unknown)
+        unknown_set = set(unknown)
+        self.assertEqual(build_env.filter_layers(unknown), (set(), unknown_set))
         combined = sorted(matching + unknown)
-        self.assertEqual(build_env.get_unmatched_patterns(combined), sorted(unknown))
+        self.assertEqual(
+            build_env.filter_layers(combined), (expected_layers, unknown_set)
+        )
 
     def test_layer_selection(self) -> None:
         subtests_started = subtests_passed = 0  # Track subtest failures
@@ -448,7 +457,8 @@ class TestBuildEnvironment(DeploymentTestCase):
         derived = ["app-sklearn-import"]
         build_env = self.build_env
 
-        build_env.select_layers(included, lock=True)
+        input_selection, _ = build_env.filter_layers(included)
+        build_env.select_layers(input_selection, lock=True)
         for env in build_env.all_environments():
             subtests_started += 1
             env_name = env.env_name

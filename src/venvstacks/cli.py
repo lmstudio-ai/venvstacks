@@ -198,7 +198,7 @@ def _handle_layer_include_options(
     build_derived: bool,
     publish_derived: bool,
 ) -> None:
-    unmatched_patterns = build_env.get_unmatched_patterns(include)
+    matching_layers, unmatched_patterns = build_env.filter_layers(include)
     if unmatched_patterns:
         err_details = f"No matching layers found for: {unmatched_patterns!r}"
         if allow_missing:
@@ -208,7 +208,7 @@ def _handle_layer_include_options(
             print(f"ERROR: {err_details}\n  {warning_hint}")
             raise typer.Exit(code=1)
     build_env.select_layers(
-        include,
+        matching_layers,
         lock=lock,
         build=build,
         publish=publish,
