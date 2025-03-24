@@ -1,7 +1,7 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "73520f414fe96f046e28cd960713a9d330342d40e8278561f33f605508f0728a"
+    "sha256": "cb8a810aa17c7d3fdb7384d9a7b9928460cd4769780b509b8ad8d689945e0051"
   },
   "archive_name": "framework-sklearn.tar.xz",
   "archive_size": 30371692,
@@ -10,7 +10,7 @@
   "layer_name": "framework-sklearn",
   "lock_version": 1,
   "locked_at": "2024-10-15T10:23:43.001587+00:00",
-  "python_implementation": "cpython@3.12.7",
+  "python_implementation": "cpython@3.12.9",
   "requirements_hash": "sha256:600b3bc658d940b756d5917e6fb7dec3431c5ce4ebc878f5d031e74f3ebdb7a9",
   "runtime_layer": "cpython-3.12",
   "target_platform": "linux_x86_64"

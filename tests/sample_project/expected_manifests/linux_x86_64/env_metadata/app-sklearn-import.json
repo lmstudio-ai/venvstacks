@@ -3,7 +3,7 @@
   "app_launch_module_hash": "sha256:f48aeede7d02ae34856f0149bb15b3cd4bebd3a82911cfd4e2e1c2639b8cd53c",
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "f8ce012ac856b5f1c0dabb2cf3f4d29151654810e22f32dcc9d876473f935e60"
+    "sha256": "a6781094a90f00a8a6b361d4ec4a780d95e55887b6ba19491eb991e1f1033afb"
   },
   "archive_name": "app-sklearn-import.tar.xz",
   "archive_size": 2920,
@@ -12,7 +12,7 @@
   "layer_name": "app-sklearn-import",
   "lock_version": 1,
   "locked_at": "2024-10-15T10:23:43.237589+00:00",
-  "python_implementation": "cpython@3.12.7",
+  "python_implementation": "cpython@3.12.9",
   "required_layers": [
     "framework-sklearn"
   ],
