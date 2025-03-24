@@ -19,6 +19,9 @@ on:
       - "tests/sample_project/venvstacks.toml"
       - "tests/sample_project/launch_modules/**"
 
+# Require explicit job permissions
+permissions: {}
+
 defaults:
   run:
     # Use the Git for Windows bash shell, rather than supporting Powershell

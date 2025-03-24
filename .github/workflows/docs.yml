@@ -12,6 +12,9 @@ on:
     branches:
       - main
 
+# Require explicit job permissions
+permissions: {}
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}

@@ -16,6 +16,9 @@ on:
       - "docs/**"
       - "src/**.py"
 
+# Require explicit job permissions
+permissions: {}
+
 concurrency: preview-${{ github.ref }}
 
 jobs:
