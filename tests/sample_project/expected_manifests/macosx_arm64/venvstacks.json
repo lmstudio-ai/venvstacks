@@ -11,11 +11,11 @@
         "archive_name": "app-scipy-import@1.tar.xz",
         "archive_size": 2900,
         "bound_to_implementation": false,
-        "python_implementation": "cpython@3.11.10",
         "install_target": "app-scipy-import@1",
         "layer_name": "app-scipy-import",
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:33.121208+00:00",
+        "python_implementation": "cpython@3.11.10",
         "required_layers": [
           "framework-scipy@1"
         ],
@@ -33,11 +33,11 @@
         "archive_name": "app-scipy-client.tar.xz",
         "archive_size": 2984,
         "bound_to_implementation": false,
-        "python_implementation": "cpython@3.11.10",
         "install_target": "app-scipy-client",
         "layer_name": "app-scipy-client",
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:33.147967+00:00",
+        "python_implementation": "cpython@3.11.10",
         "required_layers": [
           "framework-scipy@1",
           "framework-http-client"
@@ -56,11 +56,11 @@
         "archive_name": "framework-scipy@1.tar.xz",
         "archive_size": 15076180,
         "bound_to_implementation": false,
-        "python_implementation": "cpython@3.11.10",
         "install_target": "framework-scipy@1",
         "layer_name": "framework-scipy",
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:32.960668+00:00",
+        "python_implementation": "cpython@3.11.10",
         "requirements_hash": "sha256:36b0dbfec94b7de6507f348f0823cd02fdca2ea79eeafe92d571c26ae347d150",
         "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
@@ -73,11 +73,11 @@
         "archive_name": "framework-sklearn.tar.xz",
         "archive_size": 20688076,
         "bound_to_implementation": false,
-        "python_implementation": "cpython@3.12.7",
         "install_target": "framework-sklearn",
         "layer_name": "framework-sklearn",
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:33.041734+00:00",
+        "python_implementation": "cpython@3.12.7",
         "requirements_hash": "sha256:600b3bc658d940b756d5917e6fb7dec3431c5ce4ebc878f5d031e74f3ebdb7a9",
         "runtime_layer": "cpython-3.12",
         "target_platform": "macosx_arm64"
@@ -90,11 +90,11 @@
         "archive_name": "framework-http-client.tar.xz",
         "archive_size": 364232,
         "bound_to_implementation": false,
-        "python_implementation": "cpython@3.11.10",
         "install_target": "framework-http-client",
         "layer_name": "framework-http-client",
         "lock_version": 1,
         "locked_at": "2024-10-15T10:23:33.094515+00:00",
+        "python_implementation": "cpython@3.11.10",
         "requirements_hash": "sha256:c9668bc44dcd9728f98686cb7d72b4cdfc3c3ed44512d29b279a484723c9525a",
         "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
@@ -104,16 +104,16 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "88f5cca64fbcb69d799000c32d6b8596156938b44458f764c88b81caf949126d"
+          "sha256": "42c07a999de43159a2a6d562ee5fefe50746a2454aa954ffe282ae1a5c279f92"
         },
         "archive_name": "cpython-3.11.tar.xz",
-        "archive_size": 14963240,
+        "archive_size": 14968664,
         "bound_to_implementation": true,
-        "python_implementation": "cpython@3.11.10",
         "install_target": "cpython-3.11",
         "layer_name": "cpython-3.11",
         "lock_version": 1,
         "locked_at": "2024-11-12T07:31:21.515343+00:00",
+        "python_implementation": "cpython@3.11.10",
         "requirements_hash": "sha256:212b342db7bea93548f01f93e4c91b870e9f7218cbec61e55c16c82fa50f1cd4",
         "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
@@ -121,16 +121,16 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "71624f892994f2a7818070d33e37c100cfb82557993bd9cb832e00a0b38a8d4a"
+          "sha256": "32f8a12faba73ffd5216e8cde96df8b1e82a4ae196b3187f3bc6c161445a8a58"
         },
         "archive_name": "cpython-3.12.tar.xz",
-        "archive_size": 13596100,
+        "archive_size": 13603576,
         "bound_to_implementation": true,
-        "python_implementation": "cpython@3.12.7",
         "install_target": "cpython-3.12",
         "layer_name": "cpython-3.12",
         "lock_version": 1,
         "locked_at": "2024-11-12T07:31:21.594574+00:00",
+        "python_implementation": "cpython@3.12.7",
         "requirements_hash": "sha256:212b342db7bea93548f01f93e4c91b870e9f7218cbec61e55c16c82fa50f1cd4",
         "runtime_layer": "cpython-3.12",
         "target_platform": "macosx_arm64"

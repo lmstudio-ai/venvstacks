@@ -6,11 +6,11 @@
   "archive_name": "framework-http-client.tar.xz",
   "archive_size": 364152,
   "bound_to_implementation": false,
-  "python_implementation": "cpython@3.11.10",
   "install_target": "framework-http-client",
   "layer_name": "framework-http-client",
   "lock_version": 1,
   "locked_at": "2024-10-15T10:23:43.145588+00:00",
+  "python_implementation": "cpython@3.11.10",
   "requirements_hash": "sha256:c9668bc44dcd9728f98686cb7d72b4cdfc3c3ed44512d29b279a484723c9525a",
   "runtime_layer": "cpython-3.11",
   "target_platform": "linux_x86_64"
