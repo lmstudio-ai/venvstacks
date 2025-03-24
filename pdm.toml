@@ -1,0 +1,5 @@
+[strategy]
+inherit_metadata = true
+
+[venv]
+backend = "venv"

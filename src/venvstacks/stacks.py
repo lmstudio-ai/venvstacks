@@ -350,9 +350,9 @@ class EnvironmentLock:
         lock_metadata = self.load_valid_metadata(requirements_hash)
         if lock_metadata is None:
             self._last_locked = last_locked = self._get_path_mtime()
-            assert (
-                last_locked is not None
-            ), "Failed to read lock time for locked environment"
+            assert last_locked is not None, (
+                "Failed to read lock time for locked environment"
+            )
             self._write_lock_metadata()
             return True
         return False
@@ -960,8 +960,7 @@ def _hash_file(
     if not path.exists():
         return ""
     with path.open("rb", buffering=0) as f:
-        # MyPy incorrectly complains here: https://github.com/python/typeshed/issues/12414
-        file_hash = hashlib.file_digest(f, algorithm).hexdigest()  # type: ignore[arg-type]
+        file_hash = hashlib.file_digest(f, algorithm).hexdigest()
     if omit_prefix:
         return file_hash
     return f"{algorithm}:{file_hash}"

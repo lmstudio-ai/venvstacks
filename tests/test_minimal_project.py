@@ -488,7 +488,7 @@ class TestMinimalBuild(DeploymentTestCase):
             self.check_deployed_environments(layered_metadata, get_deployed_env_details)
 
     def test_create_environments(self) -> None:
-        # Fast test to check the links between build envs are set up correctly
+        # Faster test to check the links between build envs are set up correctly
         # (if this fails, there's no point even trying the full slow test case)
         build_env = self.build_env
         build_env.create_environments()

@@ -13,9 +13,9 @@
 # also trigger updates to the expected test results.
 [pinned-dev-packages]
 # Ensure the lockfiles don't unexpectedly change format
-uv="0.4.21"
+uv="0.6.9"
 # Ensure the runtime layer hashes have the expected value
-pbs-installer="2024.10.10"
+pbs-installer="2025.3.17"
 
 # Additional environment variable settings to ensure
 # test_sample_project produces the expected metadata
