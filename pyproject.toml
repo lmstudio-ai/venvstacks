@@ -94,7 +94,10 @@ markers = [
     "expected_output: tests to run when regenerating expected output",
 ]
 # Warnings should only be emitted when being specifically tested
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    "ignore:The venvstacks API is NOT YET STABLE:FutureWarning"
+]
 # Make long diffs visible in pytest 8.3.3 and later
 verbosity_assertions = 2
 # Ensure test suite doesn't consume too much space in /tmp, while still allowing debugging

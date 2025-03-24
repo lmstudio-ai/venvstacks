@@ -38,6 +38,7 @@ from typing import (
     NotRequired,
     Self,
     Sequence,
+    Set,
     TypeVar,
     TypedDict,
 )
@@ -52,6 +53,14 @@ from ._util import (
     StrPath,
     WINDOWS_BUILD as _WINDOWS_BUILD,
 )
+
+_API_STABILITY_WARNING = f"""\
+The {__package__} API is NOT YET STABLE and is expected to change in future releases.
+"""
+# If the CLI submodule has been loaded first, assume it is the main application
+# This avoids the CLI needing to explicitly suppress this warning
+if f"{__package__}.cli" not in sys.modules:
+    warnings.warn(_API_STABILITY_WARNING, FutureWarning)
 
 
 class EnvStackError(ValueError):
@@ -2110,18 +2119,36 @@ class BuildEnvironment:
         for env in self.all_environments():
             env.select_operations(lock=lock, build=build, publish=publish)
 
-    def get_unmatched_patterns(self, patterns: Iterable[str]) -> list[str]:
-        """Returns a list of the given patterns which do not match any environments."""
-        env_names = [env.env_name for env in self.all_environments()]
-        return [
-            pattern
-            for pattern in patterns
-            if not any(fnmatch(env_name, pattern) for env_name in env_names)
-        ]
+    def filter_layers(
+        self, patterns: Iterable[str]
+    ) -> tuple[Set[EnvNameBuild], Set[str]]:
+        """Returns a 2-tuple of matching layer names and patterns which do not match any environments."""
+        matching_env_names: set[EnvNameBuild] = set()
+        matched_patterns: set[str] = set()
+        unmatched_patterns: set[str] = set(patterns)
+        for env in self.all_environments():
+            env_name = env.env_name
+            matched = False
+            # Check *all* the unmatched patterns for each layer
+            for pattern in list(unmatched_patterns):
+                if fnmatch(env_name, pattern):
+                    unmatched_patterns.remove(pattern)
+                    matched_patterns.add(pattern)
+                    if not matched:
+                        matching_env_names.add(env_name)
+                        matched = True
+            if matched:
+                continue
+            # Only check previously matched patterns if necessary
+            for pattern in matched_patterns:
+                if fnmatch(env_name, pattern):
+                    matching_env_names.add(env_name)
+                    break
+        return matching_env_names, unmatched_patterns
 
     def select_layers(
         self,
-        include: Iterable[str],
+        include: Iterable[EnvNameBuild],
         lock: bool | None = False,
         build: bool | None = True,
         publish: bool = True,
@@ -2159,12 +2186,10 @@ class BuildEnvironment:
         envs_by_name: dict[EnvNameBuild, LayerEnvBase] = {
             env.env_name: env for env in self.all_environments()
         }
-        inclusion_patterns = list(include)
-        included_envs: set[str] = set()
+        included_envs = set(include)
         for env_name, env in envs_by_name.items():
-            if any(fnmatch(env_name, pattern) for pattern in inclusion_patterns):
+            if env_name in included_envs:
                 # Run all requested operations on this environment
-                included_envs.add(env_name)
                 env.select_operations(lock=lock, build=build, publish=publish)
             else:
                 # Skip running operations on this environment
