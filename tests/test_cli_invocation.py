@@ -3,13 +3,25 @@
 import subprocess
 import sys
 
+from collections import namedtuple
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from fnmatch import fnmatch
 from pathlib import Path
 from traceback import format_exception
 from types import ModuleType
-from typing import Any, cast, Generator, get_type_hints, Iterator, Self, Sequence
-from unittest.mock import create_autospec, MagicMock, patch
+from typing import (
+    Any,
+    cast,
+    Generator,
+    get_type_hints,
+    Iterable,
+    Iterator,
+    Self,
+    Sequence,
+    Set,
+)
+from unittest.mock import call as mock_call, create_autospec, MagicMock, patch
 
 import pytest
 
@@ -19,7 +31,12 @@ from typer.models import ArgumentInfo, OptionInfo
 from typer.testing import CliRunner
 
 from venvstacks import cli
-from venvstacks.stacks import BuildEnvironment, EnvironmentLock, PackageIndexConfig
+from venvstacks.stacks import (
+    BuildEnvironment,
+    EnvNameBuild,
+    EnvironmentLock,
+    PackageIndexConfig,
+)
 from venvstacks._util import run_python_command_unchecked
 
 from support import requires_venv
@@ -54,6 +71,23 @@ def mock_output_generation(output_dir: Path, *, dry_run: bool = False, **_: Any)
     return _mock_path("{}"), [], []
 
 
+MOCK_LAYERS = ["runtime", "framework-A", "framework-B", "app-1", "app-2", "app-3"]
+
+MockEnv = namedtuple("MockEnv", ("env_name",))
+
+
+def mock_environment_iterator() -> Iterator[MockEnv]:
+    for env_name in MOCK_LAYERS:
+        yield MockEnv(env_name)
+
+
+def mock_layer_filtering(patterns: Iterable[str]) -> tuple[Set[EnvNameBuild], Set[str]]:
+    matching = set(
+        env for env in MOCK_LAYERS if any(fnmatch(env, pattern) for pattern in patterns)
+    )
+    return cast(Set[EnvNameBuild], matching), set()
+
+
 @dataclass(repr=False, eq=False)
 class MockedRunner:
     app: typer.Typer
@@ -80,6 +114,9 @@ class MockedRunner:
         self.mocked_build_env = mocked_build_env
         # Control the result of the environment locking step
         mocked_build_env.lock_environments.side_effect = mock_environment_locking
+        # Control the result of the layer filter step
+        mocked_build_env.all_environments.side_effect = mock_environment_iterator
+        mocked_build_env.filter_layers.side_effect = mock_layer_filtering
         # Control the result of artifact publication and environment exports
         mocked_build_env.publish_artifacts.side_effect = mock_output_generation
         mocked_build_env.export_environments.side_effect = mock_output_generation
@@ -212,6 +249,7 @@ NEEDS_SPEC_PATH = sorted(set(EXPECTED_SUBCOMMANDS) - set(NO_SPEC_PATH))
 ACCEPTS_BUILD_DIR = ["lock", "build", "local-export", "publish"]
 ACCEPTS_OUTPUT_DIR = ["build", "local-export", "publish"]
 ACCEPTS_INDEX_CONFIG = ["lock", "build"]
+ACCEPTS_RESET_LOCK = ["lock", "build"]
 
 
 def _get_default_index_config(command: str) -> PackageIndexConfig:
@@ -343,6 +381,98 @@ class TestSubcommands:
         output_method = mocked_runner.get_output_method(command)
         output_method.assert_called_once()
         assert output_method.call_args.args == (expected_output_dir,)
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.exception is None, report_traceback(result.exception)
+        assert result.exit_code == 0
+
+    # All commands that accept --build-dir should also accept --include
+    @pytest.mark.parametrize("command", ACCEPTS_BUILD_DIR)
+    def test_layer_selection(self, mocked_runner: MockedRunner, command: str) -> None:
+        spec_path_to_mock = "/no/such/path/spec"
+        result = mocked_runner.invoke(
+            [command, "--include", "app-*", spec_path_to_mock]
+        )
+        # Always loads the stack spec and creates the build environment
+        mocked_stack_spec = mocked_runner.mocked_stack_spec
+        mocked_stack_spec.assert_not_called()
+        expected_build_dir = "_build"
+        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
+        expected_index_config = _get_default_index_config(command)
+        mocked_runner.assert_build_config(expected_build_dir, expected_index_config)
+        # Only check the layer selection invocation
+        mocked_build_env = mocked_runner.mocked_build_env
+        mocked_build_env.select_operations.assert_not_called()
+        mocked_build_env.filter_layers.assert_called_once_with(
+            ["app-*"],
+        )
+        layer_selection = mocked_build_env.select_layers
+        layer_selection.assert_called_once()
+        expected_layers = set(env for env in MOCK_LAYERS if env.startswith("app-"))
+        assert layer_selection.call_args.args == (expected_layers,)
+        assert layer_selection.call_args.kwargs["reset_locks"] == ()
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.exception is None, report_traceback(result.exception)
+        assert result.exit_code == 0
+
+    @pytest.mark.parametrize("command", ACCEPTS_RESET_LOCK)
+    def test_lock_reset_selection(
+        self, mocked_runner: MockedRunner, command: str
+    ) -> None:
+        spec_path_to_mock = "/no/such/path/spec"
+        result = mocked_runner.invoke(
+            [command, "--reset-lock", "app-*", spec_path_to_mock]
+        )
+        # Always loads the stack spec and creates the build environment
+        mocked_stack_spec = mocked_runner.mocked_stack_spec
+        mocked_stack_spec.assert_not_called()
+        expected_build_dir = "_build"
+        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
+        expected_index_config = _get_default_index_config(command)
+        mocked_runner.assert_build_config(expected_build_dir, expected_index_config)
+        # Only check the layer selection invocation
+        mocked_build_env = mocked_runner.mocked_build_env
+        mocked_build_env.select_operations.assert_not_called()
+        mocked_build_env.filter_layers.assert_called_once_with(
+            ["app-*"],
+        )
+        layer_selection = mocked_build_env.select_layers
+        layer_selection.assert_called_once()
+        assert layer_selection.call_args.args == (MOCK_LAYERS,)
+        expected_layers = set(env for env in MOCK_LAYERS if env.startswith("app-"))
+        assert layer_selection.call_args.kwargs["reset_locks"] == expected_layers
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.exception is None, report_traceback(result.exception)
+        assert result.exit_code == 0
+
+    @pytest.mark.parametrize("command", ACCEPTS_RESET_LOCK)
+    def test_layer_selection_with_lock_reset(
+        self, mocked_runner: MockedRunner, command: str
+    ) -> None:
+        spec_path_to_mock = "/no/such/path/spec"
+        result = mocked_runner.invoke(
+            [command, "--include", "app-*", "--reset-lock", "*", spec_path_to_mock]
+        )
+        # Always loads the stack spec and creates the build environment
+        mocked_stack_spec = mocked_runner.mocked_stack_spec
+        mocked_stack_spec.assert_not_called()
+        expected_build_dir = "_build"
+        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
+        expected_index_config = _get_default_index_config(command)
+        mocked_runner.assert_build_config(expected_build_dir, expected_index_config)
+        # Only check the layer selection invocation
+        mocked_build_env = mocked_runner.mocked_build_env
+        mocked_build_env.select_operations.assert_not_called()
+        mocked_build_env.filter_layers.assert_has_calls(
+            (
+                mock_call(["app-*"]),
+                mock_call(["*"]),
+            )
+        )
+        layer_selection = mocked_build_env.select_layers
+        layer_selection.assert_called_once()
+        expected_layers = set(env for env in MOCK_LAYERS if env.startswith("app-"))
+        assert layer_selection.call_args.args == (expected_layers,)
+        assert layer_selection.call_args.kwargs["reset_locks"] == set(MOCK_LAYERS)
         # Check operation result last to ensure test results are as informative as possible
         assert result.exception is None, report_traceback(result.exception)
         assert result.exit_code == 0

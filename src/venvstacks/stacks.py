@@ -443,16 +443,17 @@ class LayerSpecBase(ABC):
     platforms: list[TargetPlatforms] = field(repr=False)
 
     def __post_init__(self) -> None:
+        spec_name = self.name
+
         # When instantiating specs that don't have a prefix,
         # they're not allowed to use prefixes that *are* defined
         if not self.ENV_PREFIX:
-            spec_name = self.name
             for spec_type in LayerSpecBase.__subclasses__():
                 reserved_prefix = spec_type.ENV_PREFIX
                 if not reserved_prefix:
                     continue
                 if spec_name.startswith(reserved_prefix + "-"):
-                    err = f"{spec_name} starts with reserved prefix {reserved_prefix}"
+                    err = f"{spec_name} starts with reserved prefix {reserved_prefix!r}"
                     raise ValueError(err)
 
     @property
@@ -1054,6 +1055,9 @@ class LayerEnvBase(ABC):
     want_lock: bool | None = field(
         default=None, init=False, repr=False
     )  # Default: if needed
+    want_lock_reset: bool = field(
+        default=False, init=False, repr=False
+    )  # Default: no reset
     want_build: bool | None = field(
         default=True, init=False, repr=False
     )  # Default: build
@@ -1192,9 +1196,12 @@ class LayerEnvBase(ABC):
         lock: bool | None = False,
         build: bool | None = True,
         publish: bool = True,
+        *,
+        reset_lock: bool = False,
     ) -> None:
         """Enable the selected operations for this environment."""
         self.want_lock = lock
+        self.want_lock_reset = reset_lock
         self.want_build = build
         self.want_publish = publish
         # Also reset operation state tracking
@@ -1360,11 +1367,15 @@ class LayerEnvBase(ABC):
                 "",
             ]
             f.write("\n".join(lines))
+        if self.want_lock_reset and requirements_path.exists():
+            requirements_path.unlink()
         self._run_uv_pip_compile(
             requirements_path, requirements_input_path, constraints
         )
         if not requirements_path.exists():
             self._fail_build(f"Failed to generate {str(requirements_path)!r}")
+        # TODO: Also emit a summary file with just the version details (no hashes)
+        #       https://github.com/lmstudio-ai/venvstacks/issues/108
         if self.env_lock.update_lock_metadata():
             print(f"  Environment lock time set: {self.env_lock.locked_at!r}")
         return self.env_lock
@@ -2114,10 +2125,14 @@ class BuildEnvironment:
         lock: bool | None = False,
         build: bool | None = True,
         publish: bool = True,
+        *,
+        reset_locks: bool = False,
     ) -> None:
         """Configure the selected operations on all defined environments."""
         for env in self.all_environments():
-            env.select_operations(lock=lock, build=build, publish=publish)
+            env.select_operations(
+                lock=lock, build=build, publish=publish, reset_lock=reset_locks
+            )
 
     def filter_layers(
         self, patterns: Iterable[str]
@@ -2157,6 +2172,7 @@ class BuildEnvironment:
         publish_dependencies: bool = False,
         build_derived: bool = True,
         publish_derived: bool = True,
+        reset_locks: Iterable[str] = (),
     ) -> None:
         """Selectively configure operations only on the specified environments."""
         # Ensure later pipeline stages are skipped when earlier ones are skipped
