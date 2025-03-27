@@ -443,11 +443,10 @@ class LayerSpecBase(ABC):
     platforms: list[TargetPlatforms] = field(repr=False)
 
     def __post_init__(self) -> None:
-        spec_name = self.name
-
         # When instantiating specs that don't have a prefix,
         # they're not allowed to use prefixes that *are* defined
         if not self.ENV_PREFIX:
+            spec_name = self.name
             for spec_type in LayerSpecBase.__subclasses__():
                 reserved_prefix = spec_type.ENV_PREFIX
                 if not reserved_prefix:
