@@ -1350,11 +1350,15 @@ class LayerEnvBase(ABC):
 
     def needs_lock(self, platform: str, requirements_dir: StrPath) -> bool:
         """Returns true if this environment needs to be locked."""
-        if self.want_lock_reset and self.want_lock is not False:
+        if self.want_lock is False:
+            # Locking step has been explicitly disabled, so override the check
+            # Later steps will fail if the lock file is needed but missing
+            return False
+        if self.want_lock_reset:
             # If the lock is to be reset, then locking is needed unless
             # the lock operation has been explicitly disabled
             return True
-        # If the lock is not to be reset, then locking is only needed
+        # If the lock is not to be reset, then locking is needed
         # if the locked requirements file doesn't already exist
         lock_path = self.env_spec.get_requirements_path(platform, requirements_dir)
         return not lock_path.exists()
