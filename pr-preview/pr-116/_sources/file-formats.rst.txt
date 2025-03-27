@@ -77,7 +77,7 @@ All layer specifications may also contain the following optional fields:
   * ``"win_amd64"``: Windows on x86-64
   * ``"win_arm64"``: Windows on ARM64/Aarch64 (not currently tested in CI)
   * ``"linux_x86_64"``: Linux on x86_64
-  * ``"linux_arm64"``: Linux on ARM64/Aarch64 (not currently tested in CI)
+  * ``"linux_aarch64"``: Linux on ARM64/Aarch64 (not currently tested in CI)
   * ``"macosx_arm64"``: macOS on Apple (ARM64/Aarch64) silicon
   * ``"macosx_x86_64"``: macOS on Intel silicon (not currently tested in CI)
 
