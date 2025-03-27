@@ -406,11 +406,32 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_names = [env.env_name for env in build_env.all_environments()]
         self.assertEqual(all_names, expected_names)
-        # Lock reset requested, so all envs should need locking,
-        # but their lock status should still be checked by default
+        # Lock reset requested, so all envs should need locking
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = [env.env_name for env in envs_to_lock]
         self.assertEqual(lock_names, expected_names)
+        req_dir = build_env.requirements_dir_path
+        build_target = build_env.build_platform
+        self.assertTrue(
+            all(env.needs_lock(build_target, req_dir) for env in envs_to_lock)
+        )
+        self.assertTrue(build_env._needs_lock())
+        # No envs should be flagged for building
+        self.assertEqual(list(build_env.environments_to_build()), [])
+        # No envs should be flagged for publishing
+        self.assertEqual(list(build_env.environments_to_publish()), [])
+
+    def test_env_categories_lock_layers_with_lock_reset(self) -> None:
+        build_env = self.build_env
+        # Enable locking with locked requirement resets
+        all_names = [env.env_name for env in build_env.all_environments()]
+        build_env.select_layers(
+            lock=True, build=False, publish=False, include=all_names, reset_locks=all_names
+        )
+        # Lock reset requested, so all envs should need locking
+        envs_to_lock = list(build_env.environments_to_lock())
+        lock_names = [env.env_name for env in envs_to_lock]
+        self.assertEqual(lock_names, all_names)
         req_dir = build_env.requirements_dir_path
         build_target = build_env.build_platform
         self.assertTrue(
