@@ -377,7 +377,7 @@ class TargetPlatforms(StrEnum):
     WINDOWS = "win_amd64"
     WINDOWS_ARM64 = "win_arm64"
     LINUX = "linux_x86_64"
-    LINUX_ARM64 = "linux_arm64"
+    LINUX_AARCH64 = "linux_aarch64"
     MACOS_APPLE = "macosx_arm64"
     MACOS_INTEL = "macosx_x86_64"  # Note: not currently tested in CI!
 
@@ -1014,7 +1014,7 @@ def get_build_platform() -> TargetPlatform:
                 assert False  # Ensure mypy knows `uname` won't be used on Windows
             platform_arch = os.uname().machine
         platform_name = f"{platform_os_name}_{platform_arch}"
-    normalized_name = platform_name.replace("-", "_").replace("aarch64", "arm64")
+    normalized_name = platform_name.replace("-", "_")
     return TargetPlatform(normalized_name)  # Let ValueError escape
 
 
