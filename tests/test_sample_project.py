@@ -390,14 +390,32 @@ class TestBuildEnvironment(DeploymentTestCase):
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
         )
 
-    def test_default_operation_selection(self) -> None:
+    def test_initial_operation_selection(self) -> None:
         subtests_started = subtests_passed = 0  # Track subtest failures
         build_env = self.build_env
-        # Test default state
+        # Test initial state
         for env in build_env.all_environments():
             subtests_started += 1
             with self.subTest(env=env.env_name):
                 self.assertIsNone(env.want_lock, "want_lock should be None")
+                self.assertFalse(env.want_lock_reset, "want_lock_reset should be False")
+                self.assertTrue(env.want_build, "want_build should be True")
+                self.assertTrue(env.want_publish, "want_publish should be True")
+                subtests_passed += 1
+        self.assertEqual(
+            subtests_passed, subtests_started, "Fail due to failed subtest(s)"
+        )
+
+    def test_operation_selection_default_parameters(self) -> None:
+        subtests_started = subtests_passed = 0  # Track subtest failures
+        build_env = self.build_env
+        # Test default parameters
+        build_env.select_operations()
+        for env in build_env.all_environments():
+            subtests_started += 1
+            with self.subTest(env=env.env_name):
+                self.assertFalse(env.want_lock, "want_lock should be False")
+                self.assertFalse(env.want_lock_reset, "want_lock_reset should be False")
                 self.assertTrue(env.want_build, "want_build should be True")
                 self.assertTrue(env.want_publish, "want_publish should be True")
                 subtests_passed += 1
@@ -418,11 +436,18 @@ class TestBuildEnvironment(DeploymentTestCase):
         build_env = self.build_env
         for requested in requested_operations:
             want_lock, want_build, want_publish = requested
-            build_env.select_operations(want_lock, want_build, want_publish)
+            # Check lock reset flag is set regardless of whether a lock has been requested or not
+            # (the reset will only take effect if the layer actually ends up getting locked)
+            build_env.select_operations(
+                want_lock, want_build, want_publish, reset_locks=True
+            )
             for env in build_env.all_environments():
                 subtests_started += 1
                 with self.subTest(env=env.env_name, requested=requested):
                     self.assertEqual(env.want_lock, want_lock, "want_lock mismatch")
+                    self.assertTrue(
+                        env.want_lock_reset, "want_lock_reset should be True"
+                    )
                     self.assertEqual(env.want_build, want_build, "want_build mismatch")
                     self.assertEqual(
                         env.want_publish, want_publish, "want_publish mismatch"

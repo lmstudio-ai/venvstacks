@@ -452,7 +452,7 @@ class LayerSpecBase(ABC):
                 if not reserved_prefix:
                     continue
                 if spec_name.startswith(reserved_prefix + "-"):
-                    err = f"{spec_name} starts with reserved prefix {reserved_prefix}"
+                    err = f"{spec_name} starts with reserved prefix {reserved_prefix!r}"
                     raise ValueError(err)
 
     @property
@@ -1054,6 +1054,9 @@ class LayerEnvBase(ABC):
     want_lock: bool | None = field(
         default=None, init=False, repr=False
     )  # Default: if needed
+    want_lock_reset: bool = field(
+        default=False, init=False, repr=False
+    )  # Default: no reset
     want_build: bool | None = field(
         default=True, init=False, repr=False
     )  # Default: build
@@ -1192,9 +1195,12 @@ class LayerEnvBase(ABC):
         lock: bool | None = False,
         build: bool | None = True,
         publish: bool = True,
+        *,
+        reset_lock: bool = False,
     ) -> None:
         """Enable the selected operations for this environment."""
         self.want_lock = lock
+        self.want_lock_reset = reset_lock
         self.want_build = build
         self.want_publish = publish
         # Also reset operation state tracking
@@ -1341,6 +1347,21 @@ class LayerEnvBase(ABC):
         # No constraints files by default, subclasses override as necessary
         return []
 
+    def needs_lock(self, platform: str, requirements_dir: StrPath) -> bool:
+        """Returns true if this environment needs to be locked."""
+        if self.want_lock is False:
+            # Locking step has been explicitly disabled, so override the check
+            # Later steps will fail if the lock file is needed but missing
+            return False
+        if self.want_lock_reset:
+            # If the lock is to be reset, then locking is needed unless
+            # the lock operation has been explicitly disabled
+            return True
+        # If the lock is not to be reset, then locking is needed
+        # if the locked requirements file doesn't already exist
+        lock_path = self.env_spec.get_requirements_path(platform, requirements_dir)
+        return not lock_path.exists()
+
     def lock_requirements(self) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
         spec = self.env_spec
@@ -1360,11 +1381,16 @@ class LayerEnvBase(ABC):
                 "",
             ]
             f.write("\n".join(lines))
+        if self.want_lock_reset and requirements_path.exists():
+            print(f"Removing previous {str(requirements_path)!r}")
+            requirements_path.unlink()
         self._run_uv_pip_compile(
             requirements_path, requirements_input_path, constraints
         )
         if not requirements_path.exists():
             self._fail_build(f"Failed to generate {str(requirements_path)!r}")
+        # TODO: Also emit a summary file with just the version details (no hashes)
+        #       https://github.com/lmstudio-ai/venvstacks/issues/108
         if self.env_lock.update_lock_metadata():
             print(f"  Environment lock time set: {self.env_lock.locked_at!r}")
         return self.env_lock
@@ -2114,10 +2140,14 @@ class BuildEnvironment:
         lock: bool | None = False,
         build: bool | None = True,
         publish: bool = True,
+        *,
+        reset_locks: bool = False,
     ) -> None:
         """Configure the selected operations on all defined environments."""
         for env in self.all_environments():
-            env.select_operations(lock=lock, build=build, publish=publish)
+            env.select_operations(
+                lock=lock, build=build, publish=publish, reset_lock=reset_locks
+            )
 
     def filter_layers(
         self, patterns: Iterable[str]
@@ -2157,6 +2187,7 @@ class BuildEnvironment:
         publish_dependencies: bool = False,
         build_derived: bool = True,
         publish_derived: bool = True,
+        reset_locks: Iterable[str] = (),
     ) -> None:
         """Selectively configure operations only on the specified environments."""
         # Ensure later pipeline stages are skipped when earlier ones are skipped
@@ -2187,10 +2218,14 @@ class BuildEnvironment:
             env.env_name: env for env in self.all_environments()
         }
         included_envs = set(include)
+        envs_to_reset = set(reset_locks)
         for env_name, env in envs_by_name.items():
             if env_name in included_envs:
                 # Run all requested operations on this environment
-                env.select_operations(lock=lock, build=build, publish=publish)
+                reset_lock = env_name in envs_to_reset
+                env.select_operations(
+                    lock=lock, build=build, publish=publish, reset_lock=reset_lock
+                )
             else:
                 # Skip running operations on this environment
                 env.select_operations(lock=False, build=False, publish=False)
@@ -2268,10 +2303,10 @@ class BuildEnvironment:
         spec_dir = self.requirements_dir_path
         build_platform = self.build_platform
 
-        def lock_exists(spec: LayerSpecBase) -> bool:
-            return spec.get_requirements_path(build_platform, spec_dir).exists()
-
-        return not all(lock_exists(env.env_spec) for env in self.environments_to_lock())
+        return any(
+            env.needs_lock(build_platform, spec_dir)
+            for env in self.environments_to_lock()
+        )
 
     def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
         """Lock build environments for specified layers."""

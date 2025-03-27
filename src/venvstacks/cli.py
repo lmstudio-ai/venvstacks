@@ -3,11 +3,17 @@
 import os.path
 import sys
 
-from typing import Annotated
+from typing import Annotated, Iterable, Sequence
 
 import typer
 
-from .stacks import StackSpec, BuildEnvironment, _format_json, PackageIndexConfig
+from .stacks import (
+    StackSpec,
+    BuildEnvironment,
+    _format_json,
+    PackageIndexConfig,
+    EnvNameBuild,
+)
 
 # Inspired by the Python 3.13+ `argparse` feature,
 # but reports `python -m venvstacks` whenever `__main__`
@@ -134,9 +140,19 @@ _CLI_OPT_STRLIST_include = Annotated[
         "If this option is omitted, all defined layers are included."
     ),
 ]
+_CLI_OPT_STRLIST_reset_lock = Annotated[
+    list[str] | None,
+    typer.Option(
+        help="Delete existing layer lock file before locking specified layer.\n"
+        "Option may be supplied multiple times to match multiple layer names.\n"
+        "Also accepts Python 'fnmatch' syntax to match multiple layer names.\n"
+        "Only layers selected for locking will have their lock files reset.\n"
+        "If this option is omitted, packages are only updated as necessary."
+    ),
+]
 _CLI_OPT_FLAG_allow_missing = Annotated[
     bool,
-    typer.Option(help="Allow '--include' entries that do not match any layers")
+    typer.Option(help="Allow layer filtering entries that do not match any layers")
 ]  # fmt: skip
 
 # Handling layers that included layers depend on
@@ -174,7 +190,7 @@ def _define_build_environment(
     build_path: str,
     *,
     index: bool,
-    local_wheels: list[str] | None,
+    local_wheels: Sequence[str] | None,
 ) -> BuildEnvironment:
     """Load given stack specification and define a build environment."""
     stack_spec = StackSpec.load(spec_path)
@@ -187,7 +203,8 @@ def _define_build_environment(
 
 def _handle_layer_include_options(
     build_env: BuildEnvironment,
-    include: list[str],
+    include: Sequence[str] | None,
+    *,
     allow_missing: bool,
     lock: bool,
     build: bool,
@@ -197,18 +214,40 @@ def _handle_layer_include_options(
     publish_dependencies: bool,
     build_derived: bool,
     publish_derived: bool,
+    reset_locks: Sequence[str] | None,
 ) -> None:
-    matching_layers, unmatched_patterns = build_env.filter_layers(include)
-    if unmatched_patterns:
-        err_details = f"No matching layers found for: {unmatched_patterns!r}"
-        if allow_missing:
-            print(f"WARNING: {err_details}")
-        else:
-            warning_hint = "Pass '--allow-missing' to convert to warning"
-            print(f"ERROR: {err_details}\n  {warning_hint}")
-            raise typer.Exit(code=1)
+    included_layers: Iterable[EnvNameBuild]
+    if not include:
+        # Include all layers (helper invocation is for lock reset filtering)
+        included_layers = [env.env_name for env in build_env.all_environments()]
+    else:
+        included_layers, unmatched_patterns = build_env.filter_layers(include)
+        if unmatched_patterns:
+            err_details = f"No matching layers found for: {unmatched_patterns!r}"
+            if allow_missing:
+                print(f"WARNING: {err_details}")
+            else:
+                warning_hint = "Pass '--allow-missing' to convert to warning"
+                print(f"ERROR: {err_details}\n  {warning_hint}")
+                raise typer.Exit(code=1)
+    layers_to_reset: Iterable[EnvNameBuild]
+    if not reset_locks:
+        # No lock reset patterns -> don't reset any layers
+        layers_to_reset = ()
+    else:
+        layers_to_reset, unmatched = build_env.filter_layers(reset_locks)
+        if unmatched:
+            err_details = f"No matching layers found for upgrade: {unmatched!r}"
+            if allow_missing:
+                print(f"WARNING: {err_details}")
+            else:
+                warning_hint = "Pass '--allow-missing' to convert to warning"
+                print(f"ERROR: {err_details}\n  {warning_hint}")
+                raise typer.Exit(code=1)
+    # Layer lock files are only reset if the layer actually gets locked,
+    # so there's no explicit cross-check between included and reset layers
     build_env.select_layers(
-        matching_layers,
+        included_layers,
         lock=lock,
         build=build,
         publish=publish,
@@ -217,6 +256,7 @@ def _handle_layer_include_options(
         publish_dependencies=publish_dependencies,
         build_derived=build_derived,
         publish_derived=publish_derived,
+        reset_locks=layers_to_reset,
     )
 
 
@@ -327,6 +367,7 @@ def build(
     tag_outputs: _CLI_OPT_FLAG_tag_outputs = False,
     # Selective processing of defined layers
     include: _CLI_OPT_STRLIST_include = None,
+    reset_lock: _CLI_OPT_STRLIST_reset_lock = None,
     allow_missing: _CLI_OPT_FLAG_allow_missing = False,
     # Handling layers that included layers depend on
     lock_dependencies: _CLI_OPT_FLAG_lock_dependencies = False,
@@ -352,7 +393,7 @@ def build(
     )
     # Update the various `want_*` flags on each environment
     # Note: CLI `publish` controls the `dry_run` flag on the `publish_artifacts` method call
-    if include:
+    if include or reset_lock:
         _handle_layer_include_options(
             build_env,
             include,
@@ -365,6 +406,7 @@ def build(
             publish_dependencies=publish_dependencies,
             build_derived=build_derived,
             publish_derived=publish_derived,
+            reset_locks=reset_lock,
         )
     else:
         build_env.select_operations(
@@ -391,6 +433,7 @@ def lock(
     local_wheels: _CLI_OPT_STRLIST_local_wheels = None,
     # Selective processing of defined layers
     include: _CLI_OPT_STRLIST_include = None,
+    reset_lock: _CLI_OPT_STRLIST_reset_lock = None,
     allow_missing: _CLI_OPT_FLAG_allow_missing = False,
     # Whether to lock the layers that the included layers depend on
     lock_dependencies: _CLI_OPT_FLAG_lock_dependencies = False,
@@ -404,7 +447,7 @@ def lock(
         local_wheels=local_wheels,
     )
     # Update the various `want_*` flags on each environment
-    if include:
+    if include or reset_lock:
         _handle_layer_include_options(
             build_env,
             include,
@@ -417,6 +460,7 @@ def lock(
             publish_dependencies=False,
             build_derived=False,
             publish_derived=False,
+            reset_locks=reset_lock,
         )
     else:
         build_env.select_operations(
@@ -472,6 +516,7 @@ def publish(
         _handle_layer_include_options(
             build_env,
             include,
+            reset_locks=None,
             allow_missing=allow_missing,
             lock=False,
             build=False,
@@ -525,6 +570,7 @@ def local_export(
         _handle_layer_include_options(
             build_env,
             include,
+            reset_locks=None,
             allow_missing=allow_missing,
             lock=False,
             build=False,
@@ -549,7 +595,7 @@ def local_export(
     )
 
 
-def main(args: list[str] | None = None) -> None:
+def main(args: Sequence[str] | None = None) -> None:
     """Run the ``venvstacks`` CLI.
 
     If *args* is not given, defaults to using ``sys.argv``.
