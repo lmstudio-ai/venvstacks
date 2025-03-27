@@ -426,7 +426,11 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         # Enable locking with locked requirement resets
         all_names = [env.env_name for env in build_env.all_environments()]
         build_env.select_layers(
-            lock=True, build=False, publish=False, include=all_names, reset_locks=all_names
+            lock=True,
+            build=False,
+            publish=False,
+            include=all_names,
+            reset_locks=all_names,
         )
         # Lock reset requested, so all envs should need locking
         envs_to_lock = list(build_env.environments_to_lock())

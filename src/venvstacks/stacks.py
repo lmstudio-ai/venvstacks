@@ -2224,7 +2224,9 @@ class BuildEnvironment:
             if env_name in included_envs:
                 # Run all requested operations on this environment
                 reset_lock = env_name in envs_to_reset
-                env.select_operations(lock=lock, build=build, publish=publish, reset_lock=reset_lock)
+                env.select_operations(
+                    lock=lock, build=build, publish=publish, reset_lock=reset_lock
+                )
             else:
                 # Skip running operations on this environment
                 env.select_operations(lock=False, build=False, publish=False)
