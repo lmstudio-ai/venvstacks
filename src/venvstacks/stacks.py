@@ -1383,6 +1383,7 @@ class LayerEnvBase(ABC):
             ]
             f.write("\n".join(lines))
         if self.want_lock_reset and requirements_path.exists():
+            print(f"Removing previous {str(requirements_path)!r}")
             requirements_path.unlink()
         self._run_uv_pip_compile(
             requirements_path, requirements_input_path, constraints
@@ -2218,10 +2219,12 @@ class BuildEnvironment:
             env.env_name: env for env in self.all_environments()
         }
         included_envs = set(include)
+        envs_to_reset = set(reset_locks)
         for env_name, env in envs_by_name.items():
             if env_name in included_envs:
                 # Run all requested operations on this environment
-                env.select_operations(lock=lock, build=build, publish=publish)
+                reset_lock = env_name in envs_to_reset
+                env.select_operations(lock=lock, build=build, publish=publish, reset_lock=reset_lock)
             else:
                 # Skip running operations on this environment
                 env.select_operations(lock=False, build=False, publish=False)
