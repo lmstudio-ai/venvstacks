@@ -1348,6 +1348,17 @@ class LayerEnvBase(ABC):
         # No constraints files by default, subclasses override as necessary
         return []
 
+    def needs_lock(self, platform: str, requirements_dir: StrPath) -> bool:
+        """Returns true if this environment needs to be locked."""
+        if self.want_lock_reset and self.want_lock is not False:
+            # If the lock is to be reset, then locking is needed unless
+            # the lock operation has been explicitly disabled
+            return True
+        # If the lock is not to be reset, then locking is only needed
+        # if the locked requirements file doesn't already exist
+        lock_path = self.env_spec.get_requirements_path(platform, requirements_dir)
+        return not lock_path.exists()
+
     def lock_requirements(self) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
         spec = self.env_spec
@@ -2284,10 +2295,10 @@ class BuildEnvironment:
         spec_dir = self.requirements_dir_path
         build_platform = self.build_platform
 
-        def lock_exists(spec: LayerSpecBase) -> bool:
-            return spec.get_requirements_path(build_platform, spec_dir).exists()
-
-        return not all(lock_exists(env.env_spec) for env in self.environments_to_lock())
+        return any(
+            env.needs_lock(build_platform, spec_dir)
+            for env in self.environments_to_lock()
+        )
 
     def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
         """Lock build environments for specified layers."""
