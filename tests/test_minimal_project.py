@@ -258,7 +258,7 @@ class TestMinimalBuildConfig(unittest.TestCase):
     def test_env_categories_without_lock_files(self) -> None:
         stack_spec = self.stack_spec
         build_env = stack_spec.define_build_environment()
-        expected_names =[env.env_name for env in EXPECTED_ENVIRONMENTS]
+        expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_names = [env.env_name for env in build_env.all_environments()]
         self.assertEqual(all_names, expected_names)
         # No lock files, so all envs should need locking
@@ -267,7 +267,9 @@ class TestMinimalBuildConfig(unittest.TestCase):
         self.assertEqual(lock_names, expected_names)
         req_dir = build_env.requirements_dir_path
         build_target = build_env.build_platform
-        self.assertTrue(all(env.needs_lock(build_target, req_dir) for env in envs_to_lock))
+        self.assertTrue(
+            all(env.needs_lock(build_target, req_dir) for env in envs_to_lock)
+        )
         self.assertTrue(build_env._needs_lock())
         # All envs should be flagged for building
         build_names = [env.env_name for env in build_env.environments_to_build()]
@@ -281,8 +283,10 @@ class TestMinimalBuildConfig(unittest.TestCase):
         build_env = stack_spec.define_build_environment()
         # Disable all operations
         # Also check disabling locking entirely overrides the lock reset request
-        build_env.select_operations(lock=False, build=False, publish=False, reset_locks=True)
-        expected_names =[env.env_name for env in EXPECTED_ENVIRONMENTS]
+        build_env.select_operations(
+            lock=False, build=False, publish=False, reset_locks=True
+        )
+        expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_envs = list(build_env.all_environments())
         all_names = [env.env_name for env in all_envs]
         self.assertEqual(all_names, expected_names)
@@ -296,6 +300,7 @@ class TestMinimalBuildConfig(unittest.TestCase):
         self.assertEqual(list(build_env.environments_to_build()), [])
         # No envs should be flagged for publishing
         self.assertEqual(list(build_env.environments_to_publish()), [])
+
 
 class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
     # These test cases don't need the build environment to actually exist
@@ -371,7 +376,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
 
     def test_env_categories_with_lock_files(self) -> None:
         build_env = self.build_env
-        expected_names =[env.env_name for env in EXPECTED_ENVIRONMENTS]
+        expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_names = [env.env_name for env in build_env.all_environments()]
         self.assertEqual(all_names, expected_names)
         # Lock files exist, so no envs should *need* locking,
@@ -381,7 +386,9 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         self.assertEqual(lock_names, expected_names)
         req_dir = build_env.requirements_dir_path
         build_target = build_env.build_platform
-        self.assertFalse(any(env.needs_lock(build_target, req_dir) for env in envs_to_lock))
+        self.assertFalse(
+            any(env.needs_lock(build_target, req_dir) for env in envs_to_lock)
+        )
         self.assertFalse(build_env._needs_lock())
         # All envs should be flagged for building
         build_names = [env.env_name for env in build_env.environments_to_build()]
@@ -393,8 +400,10 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
     def test_env_categories_lock_with_lock_reset(self) -> None:
         build_env = self.build_env
         # Enable locking with locked requirement resets
-        build_env.select_operations(lock=True, build=False, publish=False, reset_locks=True)
-        expected_names =[env.env_name for env in EXPECTED_ENVIRONMENTS]
+        build_env.select_operations(
+            lock=True, build=False, publish=False, reset_locks=True
+        )
+        expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_names = [env.env_name for env in build_env.all_environments()]
         self.assertEqual(all_names, expected_names)
         # Lock reset requested, so all envs should need locking,
@@ -404,7 +413,9 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         self.assertEqual(lock_names, expected_names)
         req_dir = build_env.requirements_dir_path
         build_target = build_env.build_platform
-        self.assertTrue(all(env.needs_lock(build_target, req_dir) for env in envs_to_lock))
+        self.assertTrue(
+            all(env.needs_lock(build_target, req_dir) for env in envs_to_lock)
+        )
         self.assertTrue(build_env._needs_lock())
         # No envs should be flagged for building
         self.assertEqual(list(build_env.environments_to_build()), [])
