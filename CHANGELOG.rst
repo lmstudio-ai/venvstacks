@@ -1,7 +1,7 @@
 .. Included in published docs via docs/changelog.rst
 
 .. Temporary link target for next release
-.. _changelog-0.3.0:
+.. _changelog-0.4.0:
 
 Unreleased
 ==========
@@ -12,10 +12,46 @@ See the fragment files in the `changelog.d directory`_.
 
 .. scriv-insert-here
 
+.. _changelog-0.3.0:
+
+0.3.0 — 2025-03-28
+==================
+
+Added
+-----
+
+- The `build` and `lock` subcommands accept a new `--reset-lock`
+  CLI option. This multi-use option requests that any previously
+  created layer lock file be removed before locking the selected
+  layers (thus ignoring any previous version pins or artifact
+  hashes). This option uses the same wildcard pattern matching as
+  the `--include` option. Only layers that are locked by the given
+  command will have their previous lock files removed, as excluded
+  layers will be excluded from both locking and having their lock
+  files reset (added in :issue:`22`).
+- `"win_arm64"` and `"linux_aarch64"` are now accepted as target platforms.
+  ARM64/Aarch64 refer to the same CPU architecture, but Python reports it differently
+  depending on the OS, and this is reflected in their respective platform tags
+  (added in :issue:`107`).
+
+Changed
+-------
+
+- A Python API instability `FutureWarning` is now emitted at runtime (added while resolving :issue:`22`).
+- The previous :func:`!BuildEnvironment.get_unmatched_patterns` method has been replaced
+  by the new :func:`BuildEnvironment.filter_layers` method, which returns both the
+  matching layer names and the unmatched patterns (changed in :issue:`22`).
+- :func:`BuildEnvironment.select_layers` now accepts an iterable of environment names
+  rather than an iterable of filter patterns to be matched (changed in :issue:`22`).
+
 Fixed
 -----
 
-- Remove directories from /bin when building layers
+- `--only-binary ":all:"` is now passed when locking the layers in addition
+  to being passed when creating the layer environments. This avoids emitting
+  requirements that can't be installed (resolved in :issue:`102`).
+- Remove directories from /bin when building layers (resolved in :pr:`103`)
+
 
 .. _changelog-0.2.1:
 

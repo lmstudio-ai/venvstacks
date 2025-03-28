@@ -81,6 +81,10 @@ All layer specifications may also contain the following optional fields:
   * ``"macosx_arm64"``: macOS on Apple (ARM64/Aarch64) silicon
   * ``"macosx_x86_64"``: macOS on Intel silicon (not currently tested in CI)
 
+  .. versionchanged:: 0.3.0
+    Added ``win_arm64`` and ``linux_aarch64`` as permitted target platforms
+    (:ref:`release details <changelog-0.3.0>`).
+
 * ``versioned`` (:toml:`boolean`): by default, and when this setting is ``false``,
   the layer is considered unversioned (even if an ``@`` symbol appears in the
   layer name). The layer metadata will always report the lock version for these
