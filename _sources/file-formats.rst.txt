@@ -75,8 +75,10 @@ All layer specifications may also contain the following optional fields:
   Permitted entries in the ``platforms`` list are:
 
   * ``"win_amd64"``: Windows on x86-64
+  * ``"win_arm64"``: Windows on ARM64/Aarch64 (not currently tested in CI)
   * ``"linux_x86_64"``: Linux on x86_64
-  * ``"macosx_arm64"``: macOS on Apple silicon
+  * ``"linux_aarch64"``: Linux on ARM64/Aarch64 (not currently tested in CI)
+  * ``"macosx_arm64"``: macOS on Apple (ARM64/Aarch64) silicon
   * ``"macosx_x86_64"``: macOS on Intel silicon (not currently tested in CI)
 
 * ``versioned`` (:toml:`boolean`): by default, and when this setting is ``false``,
