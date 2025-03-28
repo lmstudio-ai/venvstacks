@@ -1910,15 +1910,15 @@ class StackSpec:
             checked: set[LayerBaseName] = set()
             next_dep: FrameworkSpec | None = None
             for seq in remaining_seqs:
-                cand = seq[-1]  # Reversed lists, so the head is the last element
-                if cand.name in checked:
+                candidate = seq[-1]  # Reversed lists, so the head is the last element
+                if candidate.name in checked:
                     # Already failed the check, don't check it again
                     continue
-                if any(in_tail(cand, seq) for seq in remaining_seqs):
+                if any(in_tail(candidate, seq) for seq in remaining_seqs):
                     # In the tail of one of the seqs, so try again later
-                    checked.add(cand.name)
+                    checked.add(candidate.name)
                     continue
-                next_dep = cand
+                next_dep = candidate
                 break
             if next_dep is None:
                 # The heads of all remaining sequences are in the tail of at least one sequence,
