@@ -497,6 +497,7 @@ class LayeredSpecBase(LayerSpecBase):
 
     # Intermediate class for covariant property typing (never instantiated)
     runtime: RuntimeSpec = field(repr=False)
+    frameworks: list["FrameworkSpec"] = field(repr=False)
 
 
 @dataclass
@@ -516,7 +517,6 @@ class ApplicationSpec(LayeredSpecBase):
     kind = LayerVariants.APPLICATION
     category = LayerCategories.APPLICATIONS
     launch_module_path: Path = field(repr=False)
-    frameworks: list[FrameworkSpec] = field(repr=False)
 
 
 class LayerSpecMetadata(TypedDict):
@@ -1568,6 +1568,7 @@ class LayeredEnvBase(LayerEnvBase):
 
     base_runtime: RuntimeEnv | None = field(init=False, repr=False)
     linked_constraints_paths: list[Path] = field(init=False, repr=False)
+    linked_frameworks: list["FrameworkEnv"] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         # Ensure Python version is set before finishing base class initialisation
@@ -1576,6 +1577,7 @@ class LayeredEnvBase(LayerEnvBase):
         # Base runtime env will be linked when creating the build environments
         self.base_runtime = None
         self.linked_constraints_paths = []
+        self.linked_frameworks = []
 
     @property
     def env_spec(self) -> LayeredSpecBase:
@@ -1585,8 +1587,11 @@ class LayeredEnvBase(LayerEnvBase):
         return self._env_spec
 
     def _linked_environments(self) -> Iterator[LayerEnvBase]:
-        runtime_env = self.base_runtime
+        # Linked frameworks are emitted before the base runtime layer
+        for fw_env in self.linked_frameworks:
+            yield fw_env
         # This is only ever invoked *after* the environment has been linked
+        runtime_env = self.base_runtime
         assert runtime_env is not None
         yield runtime_env
 
@@ -1625,6 +1630,24 @@ class LayeredEnvBase(LayerEnvBase):
             self._fail_build("Layered environment base runtime already linked")
         self.linked_constraints_paths[:] = [runtime.requirements_path]
         print(f"Linked {self}")
+
+    def link_layered_environments(
+        self, runtime: RuntimeEnv, frameworks: Mapping[LayerBaseName, "FrameworkEnv"]
+    ) -> None:
+        """Link this application build environment with its runtime and framework layers."""
+        self.link_base_runtime(runtime)
+        constraints_paths = self.linked_constraints_paths
+        if not constraints_paths:
+            self._fail_build("Failed to add base environment constraints path")
+        # The runtime site-packages folder is added here rather than via pyvenv.cfg
+        # to ensure it appears in sys.path after the framework site-packages folders
+        fw_envs = self.linked_frameworks
+        if fw_envs:
+            self._fail_build("Layered application environment already linked")
+        for env_spec in self.env_spec.frameworks:
+            env = frameworks[env_spec.name]
+            fw_envs.append(env)
+            constraints_paths.append(env.requirements_path)
 
     def get_deployed_config(self) -> postinstall.LayerConfig:
         """Layer config to be published in `venvstacks_layer.json`."""
@@ -1698,6 +1721,8 @@ class LayeredEnvBase(LayerEnvBase):
         metadata["runtime_layer"] = runtime.install_target
         metadata["python_implementation"] = runtime.env_spec.python_implementation
         metadata["bound_to_implementation"] = bool(_WINDOWS_BUILD)
+        framework_env_names = [fw.install_target for fw in self.linked_frameworks]
+        metadata["required_layers"] = framework_env_names
 
 
 class FrameworkEnv(LayeredEnvBase):
@@ -1721,7 +1746,6 @@ class ApplicationEnv(LayeredEnvBase):
     category = LayerCategories.APPLICATIONS
 
     launch_module_name: str = field(init=False, repr=False)
-    linked_frameworks: list[FrameworkEnv] = field(init=False, repr=False)
 
     @property
     def env_spec(self) -> ApplicationSpec:
@@ -1733,31 +1757,6 @@ class ApplicationEnv(LayeredEnvBase):
     def __post_init__(self) -> None:
         super().__post_init__()
         self.launch_module_name = self.env_spec.launch_module_path.stem
-        self.linked_frameworks = []
-
-    def _linked_environments(self) -> Iterator[LayerEnvBase]:
-        # Linked frameworks are emitted before the base runtime layer
-        for fw_env in self.linked_frameworks:
-            yield fw_env
-        yield from super()._linked_environments()
-
-    def link_layered_environments(
-        self, runtime: RuntimeEnv, frameworks: Mapping[LayerBaseName, FrameworkEnv]
-    ) -> None:
-        """Link this application build environment with its runtime and framework layers."""
-        self.link_base_runtime(runtime)
-        constraints_paths = self.linked_constraints_paths
-        if not constraints_paths:
-            self._fail_build("Failed to add base environment constraints path")
-        # The runtime site-packages folder is added here rather than via pyvenv.cfg
-        # to ensure it appears in sys.path after the framework site-packages folders
-        fw_envs = self.linked_frameworks
-        if fw_envs:
-            self._fail_build("Layered application environment already linked")
-        for env_spec in self.env_spec.frameworks:
-            env = frameworks[env_spec.name]
-            fw_envs.append(env)
-            constraints_paths.append(env.requirements_path)
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         super()._update_existing_environment(lock_only=lock_only)
@@ -1783,8 +1782,6 @@ class ApplicationEnv(LayeredEnvBase):
             metadata["app_launch_module_hash"] = _hash_directory(
                 self.env_spec.launch_module_path
             )
-        framework_env_names = [fw.install_target for fw in self.linked_frameworks]
-        metadata["required_layers"] = framework_env_names
 
 
 ######################################################
@@ -1879,6 +1876,116 @@ class StackSpec:
         "build_requirements": None,
     }
 
+    @staticmethod
+    def _linearize_C3(
+        err_prefix: str, declared_deps: Iterable[FrameworkSpec]
+    ) -> tuple[FrameworkSpec, ...]:
+        # Framework layers are allowed to depend on each other, forming a directed acyclic graph.
+        # Root layers depend only on their underlying runtime, not on any other framework layers.
+        # To be able to build the envs, these graphs need to be linearized for sys.path inclusion.
+        # Rather than inventing anything novel, we use the same C3 linearization as Python itself.
+        # See https://www.python.org/download/releases/2.3/mro/ for more details.
+        # Note: unlike class MROs, the layer itself is NOT part of the linearization result
+        # Work with reversed lists so popping the "head" of each list is a cheap operation
+        declared_seq = list(declared_deps)
+        declared_seq.reverse()
+        # Framework deps are already linearized, so no need to linearize them again
+        sequences_to_merge = [
+            [*reversed(spec.frameworks), spec] for spec in declared_deps
+        ]
+        sequences_to_merge.append(declared_seq)
+        linearized_deps: list[FrameworkSpec] = []
+
+        def in_tail(cand: FrameworkSpec, seq: Sequence[FrameworkSpec]) -> bool:
+            # Reversed lists, so the tail is everything except the last element
+            try:
+                idx = seq.index(cand)
+            except ValueError:
+                return False
+            return idx < (len(seq) - 1)
+
+        remaining_seqs = [seq for seq in sequences_to_merge if seq]
+        while remaining_seqs := [seq for seq in remaining_seqs if seq]:
+            # find a merge candidate among the seq heads
+            checked: set[LayerBaseName] = set()
+            cand: FrameworkSpec | None = None
+            for seq in remaining_seqs:
+                cand = seq[-1]  # Reversed lists, so the head is the last element
+                if cand.name in checked:
+                    # Already failed the check, don't check it again
+                    continue
+                if any(in_tail(cand, seq) for seq in remaining_seqs):
+                    # In the tail of one of the seqs, so try again later
+                    checked.add(cand.name)
+                    continue
+                break
+            if cand is None:
+                # The heads of all remaining sequences are in the tail of at least one sequence,
+                # indicating either a self-referential loop, or contradictory resolution orders
+                msg = (
+                    f"{err_prefix} dependency linearization failed"
+                    f" (remaining sequences: {[list(reversed(seq) for seq in remaining_seqs)]!r})"
+                )
+                raise LayerSpecError(msg)
+            linearized_deps.append(cand)
+            # Update sequences for the successfully merged candidate
+            for seq in remaining_seqs:
+                if seq[-1] == cand:
+                    seq.pop()
+
+        return tuple(linearized_deps)
+
+    @classmethod
+    def _resolve_layer_deps(
+        cls,
+        err_prefix: str,
+        declared_spec: Mapping[str, Any],
+        runtimes: Mapping[LayerBaseName, RuntimeSpec],
+        frameworks: Mapping[LayerBaseName, FrameworkSpec],
+    ) -> tuple[RuntimeSpec, tuple[FrameworkSpec, ...]]:
+        declared_runtime: LayerBaseName | None = declared_spec.get("runtime")
+        declared_frameworks: Sequence[LayerBaseName] | None = declared_spec.get(
+            "frameworks"
+        )
+        runtime_dep: RuntimeSpec | None = None
+        framework_deps: tuple[FrameworkSpec, ...]
+        if declared_runtime is not None:
+            if declared_frameworks is not None:
+                msg = (
+                    f"{err_prefix} must specify a runtime or framework dependencies, not both"
+                    f" (runtime: {declared_runtime!r}; frameworks: {declared_frameworks!r})"
+                )
+                raise LayerSpecError(msg)
+            framework_deps = ()
+            runtime_spec_name = declared_runtime
+            runtime_dep = runtimes.get(runtime_spec_name)
+            if runtime_dep is None:
+                msg = f"{err_prefix} references unknown runtime {declared_runtime!r}"
+                raise LayerSpecError(msg)
+        elif not declared_frameworks:
+            msg = f"{err_prefix} must specify a runtime or at least one framework dependency"
+            raise LayerSpecError(msg)
+        else:
+            declared_fw_deps: list[FrameworkSpec] = []
+            for fw_name in declared_frameworks:
+                fw_spec = frameworks.get(fw_name)
+                if fw_spec is None:
+                    msg = f"{err_prefix} references unknown framework {fw_name!r}"
+                    raise LayerSpecError(msg)
+                if runtime_dep is None:
+                    runtime_dep = fw_spec.runtime
+                elif fw_spec.runtime is not runtime_dep:
+                    msg = (
+                        f"{err_prefix} references inconsistent frameworks. "
+                        f"{declared_fw_deps[0].name!r} requires runtime {runtime_dep.name!r}."
+                        f"while {fw_spec.name!r} requires runtime {fw_spec.runtime.name!r}."
+                    )
+                    raise LayerSpecError(msg)
+                declared_fw_deps.append(fw_spec)
+            framework_deps = cls._linearize_C3(err_prefix, declared_fw_deps)
+            assert runtime_dep is not None
+        return runtime_dep, framework_deps
+
     @classmethod
     def load(cls, fname: StrPath) -> Self:
         """Load stack specification from given TOML file."""
@@ -1888,7 +1995,7 @@ class StackSpec:
         spec_dir_path = stack_spec_path.parent
         requirements_dir_path = spec_dir_path / "requirements"
         # Collect the list of runtime specs
-        runtimes = {}
+        runtimes: dict[LayerBaseName, RuntimeSpec] = {}
         for rt in data.get("runtimes", ()):
             name = cls._get_layer_name(rt)
             # Handle backwards compatibility fixes and warnings
@@ -1899,8 +2006,9 @@ class StackSpec:
                 raise LayerSpecError(msg)
             ensure_optional_env_spec_fields(rt)
             runtimes[name] = RuntimeSpec(**rt)
+        del rt
         # Collect the list of framework specs
-        frameworks = {}
+        frameworks: dict[LayerBaseName, FrameworkSpec] = {}
         for fw in data.get("frameworks", ()):
             name = cls._get_layer_name(fw)
             # Handle backwards compatibility fixes and warnings
@@ -1909,16 +2017,17 @@ class StackSpec:
             if name in frameworks:
                 msg = f"Framework names must be distinct ({name!r} already defined)"
                 raise LayerSpecError(msg)
-            runtime_layer_spec_name = fw["runtime"]
-            runtime = runtimes.get(runtime_layer_spec_name)
-            if runtime is None:
-                msg = f"Framework {name!r} references unknown runtime {runtime_layer_spec_name!r}"
-                raise LayerSpecError(msg)
-            fw["runtime"] = runtime
+            err_prefix = f"Framework {name!r}"
+            runtime_dep, framework_deps = cls._resolve_layer_deps(
+                err_prefix, fw, runtimes, frameworks
+            )
+            fw["runtime"] = runtime_dep
+            fw["frameworks"] = framework_deps
             ensure_optional_env_spec_fields(fw)
             frameworks[name] = FrameworkSpec(**fw)
+        del fw
         # Collect the list of application specs
-        applications = {}
+        applications: dict[LayerBaseName, ApplicationSpec] = {}
         for app in data.get("applications", ()):
             name = cls._get_layer_name(app)
             # Handle backwards compatibility fixes and warnings
@@ -1931,30 +2040,16 @@ class StackSpec:
             if not launch_module_path.exists():
                 msg = f"Specified launch module {launch_module_path!r} does not exist)"
                 raise LayerSpecError(msg)
-            runtime = None
-            app_frameworks = []
-            for fw_name in app["frameworks"]:
-                app_fw = frameworks.get(fw_name)
-                if app_fw is None:
-                    msg = (
-                        f"Application {name!r} references unknown framework {fw_name!r}"
-                    )
-                    raise LayerSpecError(msg)
-                if runtime is None:
-                    runtime = app_fw.runtime
-                elif app_fw.runtime is not runtime:
-                    msg = (
-                        f"Application {name!r} references inconsistent frameworks. "
-                        f"{app_frameworks[0].name!r} requires runtime {runtime.name!r}."
-                        f"while {app_fw!r} requires runtime {app_fw.runtime.name!r}."
-                    )
-                    raise LayerSpecError(msg)
-                app_frameworks.append(app_fw)
-            app["runtime"] = runtime
-            app["frameworks"] = app_frameworks
+            err_prefix = f"Application {name!r}"
+            runtime_dep, framework_deps = cls._resolve_layer_deps(
+                err_prefix, app, runtimes, frameworks
+            )
+            app["runtime"] = runtime_dep
+            app["frameworks"] = framework_deps
             app["launch_module_path"] = launch_module_path
             ensure_optional_env_spec_fields(app)
             applications[name] = ApplicationSpec(**app)
+        del app
         return cls(
             stack_spec_path, runtimes, frameworks, applications, requirements_dir_path
         )
@@ -2014,7 +2109,7 @@ class StackSpec:
         )
         for fw_env in frameworks.values():
             runtime = runtimes[fw_env.env_spec.runtime.name]
-            fw_env.link_base_runtime(runtime)
+            fw_env.link_layered_environments(runtime, frameworks)
         print("Defining application environments:")
         applications = self._define_envs(
             build_path, index_config, ApplicationEnv, self.applications
