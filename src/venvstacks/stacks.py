@@ -375,7 +375,9 @@ class TargetPlatforms(StrEnum):
     """Enum for support target deployment platforms."""
 
     WINDOWS = "win_amd64"
+    WINDOWS_ARM64 = "win_arm64"
     LINUX = "linux_x86_64"
+    LINUX_AARCH64 = "linux_aarch64"
     MACOS_APPLE = "macosx_arm64"
     MACOS_INTEL = "macosx_x86_64"  # Note: not currently tested in CI!
 
@@ -1002,8 +1004,8 @@ def _hash_directory(
 def get_build_platform() -> TargetPlatform:
     """Report target platform that matches the currently running system."""
     # Currently no need for cross-build support, so always query the running system
-    # Examples: win_amd64, linux_x86_64, macosx_10_12_x86_64, macosx_10_12_arm64
-    platform_name = sysconfig.get_platform()
+    # Examples: win_amd64, linux_x86_64, macosx-10_12-x86_64, macosx-10_12-arm64
+    platform_name = sysconfig.get_platform().lower()
     if platform_name.startswith("macosx"):
         platform_os_name, *__, platform_arch = platform_name.split("-")
         if platform_arch.startswith("universal"):
@@ -1012,7 +1014,8 @@ def get_build_platform() -> TargetPlatform:
                 assert False  # Ensure mypy knows `uname` won't be used on Windows
             platform_arch = os.uname().machine
         platform_name = f"{platform_os_name}_{platform_arch}"
-    return TargetPlatform(platform_name.replace("-", "_"))  # Let ValueError escape
+    normalized_name = platform_name.replace("-", "_")
+    return TargetPlatform(normalized_name)  # Let ValueError escape
 
 
 @dataclass
