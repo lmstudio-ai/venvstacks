@@ -1908,7 +1908,7 @@ class StackSpec:
         while remaining_seqs := [seq for seq in remaining_seqs if seq]:
             # find a merge candidate among the seq heads
             checked: set[LayerBaseName] = set()
-            cand: FrameworkSpec | None = None
+            next_dep: FrameworkSpec | None = None
             for seq in remaining_seqs:
                 cand = seq[-1]  # Reversed lists, so the head is the last element
                 if cand.name in checked:
@@ -1918,8 +1918,9 @@ class StackSpec:
                     # In the tail of one of the seqs, so try again later
                     checked.add(cand.name)
                     continue
+                next_dep = cand
                 break
-            if cand is None:
+            if next_dep is None:
                 # The heads of all remaining sequences are in the tail of at least one sequence,
                 # indicating either a self-referential loop, or contradictory resolution orders
                 msg = (
@@ -1927,10 +1928,10 @@ class StackSpec:
                     f" (remaining sequences: {[list(reversed(seq) for seq in remaining_seqs)]!r})"
                 )
                 raise LayerSpecError(msg)
-            linearized_deps.append(cand)
+            linearized_deps.append(next_dep)
             # Update sequences for the successfully merged candidate
             for seq in remaining_seqs:
-                if seq[-1] == cand:
+                if seq[-1] == next_dep:
                     seq.pop()
 
         return tuple(linearized_deps)
