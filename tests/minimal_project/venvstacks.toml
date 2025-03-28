@@ -1,21 +1,62 @@
 # Minimal Python runtime, framework and application layers for venvstacks testing
 
 # See `sample_project` for a more complex environment build that covers more features.
-# This minimal project is aimed at testing features like archive tagging where the
-# actual content of the layers doesn't matter, the environments just need to exist.
+# This minimal project is aimed at testing features like archive tagging and framework
+# dependency resolution, where the actual content of the layers doesn't matter,
+# the environments just need to exist.
 
 [[runtimes]]
 name = "cpython-3.11"
 python_implementation = "cpython@3.11.11"
 requirements = []
 
+# Set up the framework layers to cover classic linearization problems:
+#
+# * diamond inheritance (D depends on B & C, which both depend on A)
+# * C3 linearization (both F and E must appear before B in the path order)
+
 [[frameworks]]
-name = "layer"
+name = "layerA"
 runtime = "cpython-3.11"
+requirements = []
+
+[[frameworks]]
+name = "layerB"
+frameworks = ["layerA"]
+requirements = []
+
+[[frameworks]]
+name = "layerC"
+frameworks = ["layerA"]
+requirements = []
+
+[[frameworks]]
+name = "layerD"
+frameworks = ["layerB", "layerC"]
+# Expected resolved frameworks: B, C, A
+requirements = []
+
+[[frameworks]]
+name = "layerE"
+frameworks = ["layerB"]
+# Expected resolved frameworks: B, A
+requirements = []
+
+[[frameworks]]
+name = "layerF"
+frameworks = ["layerE"]
+# Expected resolved frameworks: E, B, A
 requirements = []
 
 [[applications]]
 name = "empty"
 launch_module = "empty.py"
-frameworks = ["layer"]
+frameworks = ["layerD", "layerF"]
+# Expected resolved frameworks: D, F, E, B, C, A
+requirements = []
+
+[[applications]]
+name = "no-framework"
+launch_module = "empty.py"
+runtime = "cpython-3.11"
 requirements = []

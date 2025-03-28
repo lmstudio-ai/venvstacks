@@ -129,12 +129,13 @@ class EnvSummary:
 @dataclass(frozen=True)
 class LayeredEnvSummary(EnvSummary):
     runtime_spec_name: str
+    framework_spec_names: tuple[str, ...]
 
 
 # Applications
 @dataclass(frozen=True)
 class ApplicationEnvSummary(LayeredEnvSummary):
-    framework_spec_names: tuple[str, ...]
+    pass
 
 
 ############################################

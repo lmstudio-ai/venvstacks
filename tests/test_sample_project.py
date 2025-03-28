@@ -183,9 +183,9 @@ EXPECTED_RUNTIMES = [
 ]
 
 EXPECTED_FRAMEWORKS = [
-    LayeredEnvSummary("scipy", "framework-", "cpython-3.11"),
-    LayeredEnvSummary("sklearn", "framework-", "cpython-3.12"),
-    LayeredEnvSummary("http-client", "framework-", "cpython-3.11"),
+    LayeredEnvSummary("scipy", "framework-", "cpython-3.11", ()),
+    LayeredEnvSummary("sklearn", "framework-", "cpython-3.12", ()),
+    LayeredEnvSummary("http-client", "framework-", "cpython-3.11", ()),
 ]
 
 EXPECTED_APPLICATIONS = [
@@ -233,16 +233,25 @@ class TestStackSpec(unittest.TestCase):
             rt_env = stack_spec.runtimes[spec_name]
             self.assertEqual(rt_env.name, spec_name)
             self.assertEqual(rt_env.env_name, rt_summary.env_name)
+        del spec_name, rt_env, rt_summary
         for fw_summary in EXPECTED_FRAMEWORKS:
             spec_name = fw_summary.spec_name
             fw_env = stack_spec.frameworks[spec_name]
             self.assertEqual(fw_env.name, spec_name)
             self.assertEqual(fw_env.env_name, fw_summary.env_name)
+            self.assertEqual(fw_env.runtime.name, fw_summary.runtime_spec_name)
+            fw_dep_names = tuple(spec.name for spec in fw_env.frameworks)
+            self.assertEqual(fw_dep_names, fw_summary.framework_spec_names)
+        del spec_name, fw_dep_names, fw_env, fw_summary
         for app_summary in EXPECTED_APPLICATIONS:
             spec_name = app_summary.spec_name
             app_env = stack_spec.applications[spec_name]
             self.assertEqual(app_env.name, spec_name)
             self.assertEqual(app_env.env_name, app_summary.env_name)
+            self.assertEqual(app_env.runtime.name, app_summary.runtime_spec_name)
+            fw_dep_names = tuple(spec.name for spec in app_env.frameworks)
+            self.assertEqual(fw_dep_names, app_summary.framework_spec_names)
+        del spec_name, fw_dep_names, app_env, app_summary
 
 
 class TestBuildEnvironment(DeploymentTestCase):

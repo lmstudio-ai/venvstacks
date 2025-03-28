@@ -75,11 +75,26 @@ EXPECTED_RUNTIMES = [
 ]
 
 EXPECTED_FRAMEWORKS = [
-    LayeredEnvSummary("layer", "framework-", "cpython-3.11"),
+    LayeredEnvSummary("layerA", "framework-", "cpython-3.11", ()),
+    LayeredEnvSummary("layerB", "framework-", "cpython-3.11", ("layerA",)),
+    LayeredEnvSummary("layerC", "framework-", "cpython-3.11", ("layerA",)),
+    LayeredEnvSummary(
+        "layerD", "framework-", "cpython-3.11", ("layerB", "layerC", "layerA")
+    ),
+    LayeredEnvSummary("layerE", "framework-", "cpython-3.11", ("layerB", "layerA")),
+    LayeredEnvSummary(
+        "layerF", "framework-", "cpython-3.11", ("layerE", "layerB", "layerA")
+    ),
 ]
 
 EXPECTED_APPLICATIONS = [
-    ApplicationEnvSummary("empty", "app-", "cpython-3.11", ("layer",)),
+    ApplicationEnvSummary(
+        "empty",
+        "app-",
+        "cpython-3.11",
+        ("layerD", "layerF", "layerE", "layerB", "layerC", "layerA"),
+    ),
+    ApplicationEnvSummary("no-framework", "app-", "cpython-3.11", ()),
 ]
 
 EXPECTED_ENVIRONMENTS = EXPECTED_RUNTIMES.copy()
@@ -102,16 +117,80 @@ EXPECTED_MANIFEST: BuildManifest = {
                 "install_target": "app-empty",
                 "archive_name": f"app-empty{ARCHIVE_SUFFIX}",
                 "required_layers": [
-                    "framework-layer",
+                    "framework-layerD",
+                    "framework-layerF",
+                    "framework-layerE",
+                    "framework-layerB",
+                    "framework-layerC",
+                    "framework-layerA",
                 ],
+                "target_platform": BUILD_PLATFORM,
+            },
+            {
+                "app_launch_module": "empty",
+                "archive_build": 1,
+                "install_target": "app-no-framework",
+                "archive_name": f"app-no-framework{ARCHIVE_SUFFIX}",
+                "required_layers": [],
                 "target_platform": BUILD_PLATFORM,
             },
         ],
         "frameworks": [
             {
                 "archive_build": 1,
-                "install_target": "framework-layer",
-                "archive_name": f"framework-layer{ARCHIVE_SUFFIX}",
+                "install_target": "framework-layerA",
+                "archive_name": f"framework-layerA{ARCHIVE_SUFFIX}",
+                "required_layers": [],
+                "target_platform": BUILD_PLATFORM,
+            },
+            {
+                "archive_build": 1,
+                "install_target": "framework-layerB",
+                "archive_name": f"framework-layerB{ARCHIVE_SUFFIX}",
+                "required_layers": [
+                    "framework-layerA",
+                ],
+                "target_platform": BUILD_PLATFORM,
+            },
+            {
+                "archive_build": 1,
+                "install_target": "framework-layerC",
+                "archive_name": f"framework-layerC{ARCHIVE_SUFFIX}",
+                "required_layers": [
+                    "framework-layerA",
+                ],
+                "target_platform": BUILD_PLATFORM,
+            },
+            {
+                "archive_build": 1,
+                "install_target": "framework-layerD",
+                "archive_name": f"framework-layerD{ARCHIVE_SUFFIX}",
+                "required_layers": [
+                    "framework-layerB",
+                    "framework-layerC",
+                    "framework-layerA",
+                ],
+                "target_platform": BUILD_PLATFORM,
+            },
+            {
+                "archive_build": 1,
+                "install_target": "framework-layerE",
+                "archive_name": f"framework-layerE{ARCHIVE_SUFFIX}",
+                "required_layers": [
+                    "framework-layerB",
+                    "framework-layerA",
+                ],
+                "target_platform": BUILD_PLATFORM,
+            },
+            {
+                "archive_build": 1,
+                "install_target": "framework-layerF",
+                "archive_name": f"framework-layerF{ARCHIVE_SUFFIX}",
+                "required_layers": [
+                    "framework-layerE",
+                    "framework-layerB",
+                    "framework-layerA",
+                ],
                 "target_platform": BUILD_PLATFORM,
             },
         ],
@@ -200,16 +279,25 @@ class TestMinimalSpec(unittest.TestCase):
             rt_env = stack_spec.runtimes[spec_name]
             self.assertEqual(rt_env.name, spec_name)
             self.assertEqual(rt_env.env_name, rt_summary.env_name)
+        del spec_name, rt_env, rt_summary
         for fw_summary in EXPECTED_FRAMEWORKS:
             spec_name = fw_summary.spec_name
             fw_env = stack_spec.frameworks[spec_name]
             self.assertEqual(fw_env.name, spec_name)
             self.assertEqual(fw_env.env_name, fw_summary.env_name)
+            self.assertEqual(fw_env.runtime.name, fw_summary.runtime_spec_name)
+            fw_dep_names = tuple(spec.name for spec in fw_env.frameworks)
+            self.assertEqual(fw_dep_names, fw_summary.framework_spec_names)
+        del spec_name, fw_dep_names, fw_env, fw_summary
         for app_summary in EXPECTED_APPLICATIONS:
             spec_name = app_summary.spec_name
             app_env = stack_spec.applications[spec_name]
             self.assertEqual(app_env.name, spec_name)
             self.assertEqual(app_env.env_name, app_summary.env_name)
+            self.assertEqual(app_env.runtime.name, app_summary.runtime_spec_name)
+            fw_dep_names = tuple(spec.name for spec in app_env.frameworks)
+            self.assertEqual(fw_dep_names, app_summary.framework_spec_names)
+        del spec_name, fw_dep_names, app_env, app_summary
         # Check path attributes
         self.assertEqual(stack_spec.spec_path, expected_spec_path)
         expected_requirements_dir_path = expected_spec_path.parent / "requirements"
