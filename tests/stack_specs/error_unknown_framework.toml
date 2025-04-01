@@ -1,0 +1,8 @@
+# Ensure suitable error is raised for unknown frameworks
+
+[[applications]]
+name = "empty"
+launch_module = "../minimal_project/empty.py"
+# This will fail, since the framework layer is not defined
+frameworks = ["framework"]
+requirements = []

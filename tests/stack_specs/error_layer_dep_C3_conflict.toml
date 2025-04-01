@@ -1,0 +1,40 @@
+# Ensure suitable error is raised for a C3 linearization failure
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+
+# Set up the framework layers to ensure C3 linearization fails:
+#
+# * C depends on A & B (in that order)
+# * D depends on B & A (in that order)
+# * app layer depends on C & D (either order will fail)
+
+[[frameworks]]
+name = "layerA"
+runtime = "cpython-3.11"
+requirements = []
+
+[[frameworks]]
+name = "layerB"
+runtime = "cpython-3.11"
+requirements = []
+
+[[frameworks]]
+name = "layerC"
+frameworks = ["layerA", "layerB"]
+requirements = []
+
+[[frameworks]]
+name = "layerD"
+frameworks = ["layerB", "layerA"]
+requirements = []
+
+[[applications]]
+name = "empty"
+launch_module = "../minimal_project/empty.py"
+# This will fail, since C and D disagree on the
+# expected relative resolution order for A and B
+frameworks = ["layerC", "layerD"]
+requirements = []

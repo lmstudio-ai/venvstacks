@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from venvstacks.stacks import StackSpec
+from venvstacks.stacks import LayerSpecError, StackSpec
 
 ##################################
 # Stack spec loading test helpers
@@ -62,7 +62,23 @@ def test_future_warning_for_build_requirements() -> None:
         assert not hasattr(layer, "build_requirements")
 
 
-# TODO: the sample project is intentionally well-formed, there should be additional
-#       test cases for the assorted incorrect layer specs that StackSpec rejects (e.g.
-#       missing launch modules, applications depending on frameworks with inconsistent
-#       runtime requirements)
+EXPECTED_ERRORS = {
+    "error_inconsistent_runtimes.toml": (LayerSpecError, "inconsistent frameworks"),
+    "error_layer_dep_C3_conflict.toml": (LayerSpecError, "linearization failed.*['layerC', 'layerD'].*['layerD', 'layerC']"),
+    "error_layer_dep_cycle.toml": (LayerSpecError, "unknown framework"),
+    "error_layer_dep_forward_reference.toml": (LayerSpecError, "unknown framework"),
+    "error_missing_launch_module.toml": (LayerSpecError, "launch module.*does not exist"),
+    "error_unknown_framework.toml": (LayerSpecError, "unknown framework"),
+    "error_unknown_runtime.toml": (LayerSpecError, "unknown runtime"),
+}
+
+def test_error_case_results_are_defined() -> None:
+    # Ensure any new error cases that are added have expected errors defined
+    defined_error_cases = sorted(p.name for p in TEST_SPEC_PATH.glob("error_*"))
+    assert defined_error_cases == sorted(EXPECTED_ERRORS)
+
+@pytest.mark.parametrize("spec_path", EXPECTED_ERRORS)
+def test_stack_spec_error_case(spec_path) -> None:
+    expected_exc, expected_match = EXPECTED_ERRORS[spec_path]
+    with pytest.raises(expected_exc, match=expected_match):
+        _load_stack_spec(spec_path)

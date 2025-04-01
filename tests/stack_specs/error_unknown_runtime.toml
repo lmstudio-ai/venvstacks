@@ -1,0 +1,7 @@
+# Ensure suitable error is raised for unknown runtimes
+
+[[frameworks]]
+name = "layer"
+# This will fail, since the runtime layer is not defined
+runtime = "cpython-3.11"
+requirements = []

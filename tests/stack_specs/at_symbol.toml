@@ -10,3 +10,5 @@ name = "cpython@3.12"
 versioned = true
 python_implementation = "cpython@3.12.9"
 requirements = []
+
+# Also checks that parsing succeeds if only runtimes are defined

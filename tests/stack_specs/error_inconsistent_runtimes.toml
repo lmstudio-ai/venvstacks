@@ -1,0 +1,28 @@
+# Ensure suitable error is raised for inconsistent framework runtimes
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+
+[[runtimes]]
+name = "cpython-3.12"
+python_implementation = "cpython@3.12.9"
+requirements = []
+
+[[frameworks]]
+name = "layerA"
+runtime = "cpython-3.11"
+requirements = []
+
+[[frameworks]]
+name = "layerB"
+runtime = "cpython-3.12"
+requirements = []
+
+[[applications]]
+name = "empty"
+launch_module = "../minimal_project/empty.py"
+# This will fail, since the layers use different runtimes
+frameworks = ["layerA", "layerB"]
+requirements = []

@@ -1925,7 +1925,7 @@ class StackSpec:
                 # indicating either a self-referential loop, or contradictory resolution orders
                 msg = (
                     f"{err_prefix} dependency linearization failed"
-                    f" (remaining sequences: {[list(reversed(seq) for seq in remaining_seqs)]!r})"
+                    f" (remaining sequences: {[list(reversed(seq)) for seq in remaining_seqs]!r})"
                 )
                 raise LayerSpecError(msg)
             linearized_deps.append(next_dep)
@@ -2037,7 +2037,7 @@ class StackSpec:
                 raise LayerSpecError(msg)
             launch_module_path = spec_dir_path / app.pop("launch_module")
             if not launch_module_path.exists():
-                msg = f"Specified launch module {launch_module_path!r} does not exist)"
+                msg = f"Specified launch module {str(launch_module_path)!r} does not exist)"
                 raise LayerSpecError(msg)
             err_prefix = f"Application {name!r}"
             runtime_dep, framework_deps = cls._resolve_layer_deps(
