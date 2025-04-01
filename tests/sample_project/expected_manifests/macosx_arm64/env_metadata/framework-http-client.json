@@ -11,6 +11,7 @@
   "lock_version": 1,
   "locked_at": "2024-10-15T10:23:33.094515+00:00",
   "python_implementation": "cpython@3.11.11",
+  "required_layers": [],
   "requirements_hash": "sha256:c9668bc44dcd9728f98686cb7d72b4cdfc3c3ed44512d29b279a484723c9525a",
   "runtime_layer": "cpython-3.11",
   "target_platform": "macosx_arm64"
