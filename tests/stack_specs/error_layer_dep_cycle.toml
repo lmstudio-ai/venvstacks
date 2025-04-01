@@ -1,0 +1,43 @@
+# Ensure suitable error is raised for a dependency cycle
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+
+# Set up the framework layers with an indirect dependency cycle:
+#
+# * app -> D -> C -> B -> A -> runtime
+# * B also declares a dependency on D
+#
+# There isn't currently any dedicated cycle detection. Instead,
+# this fails because the linear nature of TOML means that declaring
+# a cycle necessarily involves at least one forward reference, which
+# fails due to the (intentional) lack of forward reference support.
+
+[[frameworks]]
+name = "layerA"
+runtime = "cpython-3.11"
+requirements = []
+
+[[frameworks]]
+name = "layerB"
+# This will fail, complaining layer D isn't defined yet
+frameworks = ["layerA", "layerD"]
+requirements = []
+
+[[frameworks]]
+name = "layerC"
+frameworks = ["layerB"]
+requirements = []
+
+[[frameworks]]
+name = "layerD"
+frameworks = ["layerC"]
+requirements = []
+
+[[applications]]
+name = "empty"
+launch_module = "../minimal_project/empty.py"
+frameworks = ["layerD"]
+requirements = []

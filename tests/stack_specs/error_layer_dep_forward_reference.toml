@@ -1,0 +1,36 @@
+# Ensure suitable error is raised for an attempted forward reference
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+
+# Set up the framework layers with a valid dependency chain:
+#
+# * app -> C -> B -> A -> runtime
+#
+# However, list the frameworks out of order (this will fail,
+# since forward references aren't currently supported)
+
+[[frameworks]]
+name = "layerA"
+runtime = "cpython-3.11"
+requirements = []
+
+[[frameworks]]
+name = "layerC"
+# This will fail, complaining layer B isn't defined yet
+frameworks = ["layerB"]
+requirements = []
+
+
+[[frameworks]]
+name = "layerB"
+frameworks = ["layerA"]
+requirements = []
+
+[[applications]]
+name = "empty"
+launch_module = "../minimal_project/empty.py"
+frameworks = ["layerC"]
+requirements = []

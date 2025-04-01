@@ -36,12 +36,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false  # Always report results for all targets
-      max-parallel: 6
+      max-parallel: 12
       matrix:
         python-version: [3.11, 3.12, 3.13]
         # Note: while venvstacks nominally supports x86-64 macOS, the actual demand
         #       for that is unclear, so skip macos-12 testing until it is requested
-        os: [ubuntu-20.04, windows-2019, macos-14]
+        #       Linux and Windows aarch64 testing is more gated on runner availability
+        os: [ubuntu-22.04, windows-2019, macos-14]
 
     # Check https://github.com/actions/action-versions/tree/main/config/actions
     # for latest versions if the standard actions start emitting warnings
