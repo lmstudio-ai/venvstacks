@@ -82,8 +82,8 @@ All layer specifications may also contain the following optional fields:
   * ``"macosx_x86_64"``: macOS on Intel silicon (not currently tested in CI)
 
   .. versionchanged:: 0.3.0
-    Added ``win_arm64`` and ``linux_aarch64`` as permitted target platforms
-    (:ref:`release details <changelog-0.3.0>`).
+     Added ``win_arm64`` and ``linux_aarch64`` as permitted target platforms
+     (:ref:`release details <changelog-0.3.0>`).
 
 * ``versioned`` (:toml:`boolean`): by default, and when this setting is ``false``,
   the layer is considered unversioned (even if an ``@`` symbol appears in the
@@ -139,6 +139,7 @@ This means the following layer versioning styles are supported:
 Refer to :ref:`layer-names` for additional details on how layer names are used
 when building virtual environment stacks.
 
+.. _runtime-layer-spec:
 
 Runtime layer specification fields
 ----------------------------------
@@ -151,19 +152,32 @@ Runtime layer specifications must contain the following additional field:
   use the format ``{implementation_name}@{implementation_version}``
   (for example, ``cpython@3.12.7``).
 
+.. _framework-layer-spec:
 
 Framework layer specification fields
 ------------------------------------
 
-Framework layer specifications must contain the following additional field:
+Framework layer specifications must contain one of the following additional fields
+(but not both):
 
 * ``runtime`` (:toml:`string`): the name of the runtime layer that this framework layer uses.
+* ``frameworks`` (:toml:`array` of :toml:`strings <string>`):
+  the names of the other framework layers that this framework layer depends on.
 
-The ``install_target`` and ``python_implementation`` attributes of the specified
-runtime are respectively recorded in the ``runtime_layer``
-and ``python_implementation`` fields of the layer output metadata.
+When a framework layer declares a dependency on other framework layers, the ``runtime``
+dependency for this layer is not specified directly. Instead, all of the declared
+framework dependencies *must* depend on the same runtime layer, and that base
+runtime also becomes the base runtime for this framework layer. In order to
+support this runtime inference step, and to prevent the declaration of circular
+dependencies between layers, forward references are *not* supported (in other
+words, layers must be declared *after* the layers they depend on).
 
-``bound_to_implementation`` is an additional boolean field in the frame layer
+Whether the runtime is specified directly or indirectly, the ``install_target``
+and ``python_implementation`` attributes of the runtime layer are respectively recorded
+in the ``runtime_layer`` and ``python_implementation`` fields of the framework layer's
+output metadata.
+
+``bound_to_implementation`` is an additional boolean field in the framework layer
 output metadata that indicates how tightly coupled the framework layer is
 to the underlying implementation layer.
 
@@ -183,28 +197,76 @@ the upper layers will need to be rebuilt and republished for new CPython
 maintenance releases.
 
 
+.. versionchanged:: 0.4.0
+   Added the ability for framework layers to depend on other framework layers
+   instead of depending directly on a runtime layer
+   (:ref:`release details <changelog-0.4.0>`).
+
+
+.. _application-layer-spec:
+
 Application layer specification fields
 --------------------------------------
 
-Application layer specifications must contain the following additional field:
+Application layer specifications must contain one of the following additional fields (but not both):
 
+* ``runtime`` (:toml:`string`): the name of the runtime layer that this application layer uses.
 * ``frameworks`` (:toml:`array` of :toml:`strings <string>`):
-  the names of the framework layers that this application layer uses.
+  the names of the framework layers that this application layer depends on.
+
+These two fields are handled in the same way as they are for
+:ref:`framework layer specifications <framework-layer-spec>`.
+
+Python code running in this application layer will be able to import modules from the specified
+base runtime layer, and from any of the framework layers declared as dependencies (whether
+directly or indirectly). Refer to :ref:`layer-dependency-linearization` for additional details
+on how the relative order of the application layer ``sys.path`` entries is determined.
+
+Application layer specifications must also contain the following additional field:
+
 * ``launch_module`` (:toml:`string`): a relative path (starting from the folder containing
   the stack specification file) that specifies a Python module or import package that will
   be included in the built environment for execution with the :option:`-m` switch.
-
-The ``runtime`` dependency for application layers is not specified directly. Instead, all
-of the declared framework dependencies *must* depend on the same runtime layer, and that
-base runtime also becomes the base runtime for the application layer using those frameworks.
-``runtime_layer``, ``python_implementation``, and ``bound_to_implementation`` in the layer
-output metadata are set to the same values as they are for the underlying frameworks.
-
 
 .. note:: updating the launch module contents does *not* implicitly update the lock version
           for implicitly versioned environments (but it does update the ``archive_build``
           field for published artifacts).
 
+.. versionchanged:: 0.4.0
+   Added the ability for application layers to depend directly on a runtime layer instead
+   of declaring that they depend on one or more framework layers
+   (:ref:`release details <changelog-0.4.0>`).
+
+.. _layer-dependency-linearization:
+
+Linearizing the Python import path
+----------------------------------
+
+The ``venvstacks.toml`` file format allows the declared dependencies between framework
+layers to form a directed acyclic graph (DAG). Python's import system requires that
+this graph be flattened into a list in order to be able to define the relative order
+of application layer ``sys.path`` entries in a consistent fashion.
+
+This linearization problem is similar to the one that Python itself needs to solve when
+determining how to resolve attribute lookups on Python classes in the presence of multiple
+inheritance, and ``venvstacks`` intentionally uses the same solution: the C3 linearization
+algorithm described in this article about the
+`Python 2.3 Method Resolution Order <https://www.python.org/download/releases/2.3/mro/>`_.
+
+In simple cases where the only common point in the declared layer dependencies is the base
+runtime, this algorithm gives the same result as a depth-first left-to-right resolution of
+the declared dependencies.
+
+The benefit of the more complex linearization arises in more complex cases, where the C3
+algorithm either ensures that all layers are always listed in a consistent relative import
+priority order, or else it raises an exception reporting the relative priority conflict.
+
+The `Wikipedia article on C3 linearization <https://en.wikipedia.org/wiki/C3_linearization>`_
+includes additional details on the C3 algorithm and the assurances it provides.
+
+.. versionadded:: 0.4.0
+   In previous versions, frameworks were not permitted to declare dependencies on other
+   framework layers, so linearization was not required.
 
 .. _layer-names:
 

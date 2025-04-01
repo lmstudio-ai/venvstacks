@@ -418,7 +418,7 @@ setting <code class="docutils literal notranslate"><span class="pre">versioned</
 when building virtual environment stacks.</p>
 </section>
 <section id="runtime-layer-specification-fields">
-<h3>Runtime layer specification fields<a class="headerlink" href="#runtime-layer-specification-fields" title="Link to this heading">¶</a></h3>
+<span id="runtime-layer-spec"></span><h3>Runtime layer specification fields<a class="headerlink" href="#runtime-layer-specification-fields" title="Link to this heading">¶</a></h3>
 <p>Runtime layer specifications must contain the following additional field:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">python_implementation</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the <a class="extlink-pypi reference external" href="https://pypi.org/project/pbs-installer/">pbs-installer</a> name
@@ -429,15 +429,26 @@ use the format <code class="docutils literal notranslate"><span class="pre">{imp
 </ul>
 </section>
 <section id="framework-layer-specification-fields">
-<h3>Framework layer specification fields<a class="headerlink" href="#framework-layer-specification-fields" title="Link to this heading">¶</a></h3>
-<p>Framework layer specifications must contain the following additional field:</p>
+<span id="framework-layer-spec"></span><h3>Framework layer specification fields<a class="headerlink" href="#framework-layer-specification-fields" title="Link to this heading">¶</a></h3>
+<p>Framework layer specifications must contain one of the following additional fields
+(but not both):</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">runtime</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the name of the runtime layer that this framework layer uses.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frameworks</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
+the names of the other framework layers that this framework layer depends on.</p></li>
 </ul>
-<p>The <code class="docutils literal notranslate"><span class="pre">install_target</span></code> and <code class="docutils literal notranslate"><span class="pre">python_implementation</span></code> attributes of the specified
-runtime are respectively recorded in the <code class="docutils literal notranslate"><span class="pre">runtime_layer</span></code>
-and <code class="docutils literal notranslate"><span class="pre">python_implementation</span></code> fields of the layer output metadata.</p>
-<p><code class="docutils literal notranslate"><span class="pre">bound_to_implementation</span></code> is an additional boolean field in the frame layer
+<p>When a framework layer declares a dependency on other framework layers, the <code class="docutils literal notranslate"><span class="pre">runtime</span></code>
+dependency for this layer is not specified directly. Instead, all of the declared
+framework dependencies <em>must</em> depend on the same runtime layer, and that base
+runtime also becomes the base runtime for this framework layer. In order to
+support this runtime inference step, and to prevent the declaration of circular
+dependencies between layers, forward references are <em>not</em> supported (in other
+words, layers must be declared <em>after</em> the layers they depend on).</p>
+<p>Whether the runtime is specified directly or indirectly, the <code class="docutils literal notranslate"><span class="pre">install_target</span></code>
+and <code class="docutils literal notranslate"><span class="pre">python_implementation</span></code> attributes of the runtime layer are respectively recorded
+in the <code class="docutils literal notranslate"><span class="pre">runtime_layer</span></code> and <code class="docutils literal notranslate"><span class="pre">python_implementation</span></code> fields of the framework layer’s
+output metadata.</p>
+<p><code class="docutils literal notranslate"><span class="pre">bound_to_implementation</span></code> is an additional boolean field in the framework layer
 output metadata that indicates how tightly coupled the framework layer is
 to the underlying implementation layer.</p>
 <p>On platforms which use symlinks between layered environments and their base
@@ -453,27 +464,66 @@ This still allows for transparent security updates of the base runtime layer
 in some cases (for example, to update to new OpenSSL versions), but indicates
 the upper layers will need to be rebuilt and republished for new CPython
 maintenance releases.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.4.0: </span>Added the ability for framework layers to depend on other framework layers
+instead of depending directly on a runtime layer
+(<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
 </section>
 <section id="application-layer-specification-fields">
-<h3>Application layer specification fields<a class="headerlink" href="#application-layer-specification-fields" title="Link to this heading">¶</a></h3>
-<p>Application layer specifications must contain the following additional field:</p>
+<span id="application-layer-spec"></span><h3>Application layer specification fields<a class="headerlink" href="#application-layer-specification-fields" title="Link to this heading">¶</a></h3>
+<p>Application layer specifications must contain one of the following additional fields (but not both):</p>
 <ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): the name of the runtime layer that this application layer uses.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">frameworks</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
-the names of the framework layers that this application layer uses.</p></li>
+the names of the framework layers that this application layer depends on.</p></li>
+</ul>
+<p>These two fields are handled in the same way as they are for
+<a class="reference internal" href="#framework-layer-spec"><span class="std std-ref">framework layer specifications</span></a>.</p>
+<p>Python code running in this application layer will be able to import modules from the specified
+base runtime layer, and from any of the framework layers declared as dependencies (whether
+directly or indirectly). Refer to <a class="reference internal" href="#layer-dependency-linearization"><span class="std std-ref">Linearizing the Python import path</span></a> for additional details
+on how the relative order of the application layer <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> entries is determined.</p>
+<p>Application layer specifications must also contain the following additional field:</p>
+<ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">launch_module</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): a relative path (starting from the folder containing
 the stack specification file) that specifies a Python module or import package that will
 be included in the built environment for execution with the <a class="reference external" href="https://docs.python.org/3/using/cmdline.html#cmdoption-m" title="(in Python v3.13)"><code class="xref std std-option docutils literal notranslate"><span class="pre">-m</span></code></a> switch.</p></li>
 </ul>
-<p>The <code class="docutils literal notranslate"><span class="pre">runtime</span></code> dependency for application layers is not specified directly. Instead, all
-of the declared framework dependencies <em>must</em> depend on the same runtime layer, and that
-base runtime also becomes the base runtime for the application layer using those frameworks.
-<code class="docutils literal notranslate"><span class="pre">runtime_layer</span></code>, <code class="docutils literal notranslate"><span class="pre">python_implementation</span></code>, and <code class="docutils literal notranslate"><span class="pre">bound_to_implementation</span></code> in the layer
-output metadata are set to the same values as they are for the underlying frameworks.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>updating the launch module contents does <em>not</em> implicitly update the lock version
 for implicitly versioned environments (but it does update the <code class="docutils literal notranslate"><span class="pre">archive_build</span></code>
 field for published artifacts).</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.4.0: </span>Added the ability for application layers to depend directly on a runtime layer instead
+of declaring that they depend on one or more framework layers
+(<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</section>
+<section id="linearizing-the-python-import-path">
+<span id="layer-dependency-linearization"></span><h3>Linearizing the Python import path<a class="headerlink" href="#linearizing-the-python-import-path" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">venvstacks.toml</span></code> file format allows the declared dependencies between framework
+layers to form a directed acyclic graph (DAG). Python’s import system requires that
+this graph be flattened into a list in order to be able to define the relative order
+of application layer <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> entries in a consistent fashion.</p>
+<p>This linearization problem is similar to the one that Python itself needs to solve when
+determining how to resolve attribute lookups on Python classes in the presence of multiple
+inheritance, and <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> intentionally uses the same solution: the C3 linearization
+algorithm described in this article about the
+<a class="reference external" href="https://www.python.org/download/releases/2.3/mro/">Python 2.3 Method Resolution Order</a>.</p>
+<p>In simple cases where the only common point in the declared layer dependencies is the base
+runtime, this algorithm gives the same result as a depth-first left-to-right resolution of
+the declared dependencies.</p>
+<p>The benefit of the more complex linearization arises in more complex cases, where the C3
+algorithm either ensures that all layers are always listed in a consistent relative import
+priority order, or else it raises an exception reporting the relative priority conflict.</p>
+<p>The <a class="reference external" href="https://en.wikipedia.org/wiki/C3_linearization">Wikipedia article on C3 linearization</a>
+includes additional details on the C3 algorithm and the assurances it provides.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.4.0: </span>In previous versions, frameworks were not permitted to declare dependencies on other
+framework layers, so linearization was not required.</p>
 </div>
 </section>
 <section id="layer-names-and-versioning">
@@ -659,6 +709,7 @@ including the effects of the <code class="docutils literal notranslate"><span cl
 <li><a class="reference internal" href="#runtime-layer-specification-fields">Runtime layer specification fields</a></li>
 <li><a class="reference internal" href="#framework-layer-specification-fields">Framework layer specification fields</a></li>
 <li><a class="reference internal" href="#application-layer-specification-fields">Application layer specification fields</a></li>
+<li><a class="reference internal" href="#linearizing-the-python-import-path">Linearizing the Python import path</a></li>
 <li><a class="reference internal" href="#layer-names-and-versioning">Layer names and versioning</a></li>
 <li><a class="reference internal" href="#deprecated-fields">Deprecated fields</a></li>
 </ul>

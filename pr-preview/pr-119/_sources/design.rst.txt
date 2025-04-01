@@ -49,7 +49,8 @@ across multiple environments.
 Splitting environments into layers the way ``venvstacks`` does
 also doesn't align well with the way the ``conda`` dependency
 resolver works, so it ended up making more sense to design
-``venvstacks`` to work with ``venv`` and ``pip``.
+``venvstacks`` to work with ``venv`` and ``pip``-style dependency
+resolution.
 
 The assorted "Python application packaging" utilities that produce
 standalone platform native executables or Python :py:mod:`zipapp`
