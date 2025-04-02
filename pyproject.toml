@@ -59,32 +59,48 @@ Changelog = "https://venvstacks.lmstudio.ai/changelog/"
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
-[tool.pdm]
-distribution = true
-
-[tool.pdm.dev-dependencies]
+[dependency-groups]
 dev = [
+    {include-group = "task-runner"},
+    {include-group = "test"},
+    {include-group = "lint"},
+    {include-group = "typecheck"},
+    # Utility for generating release note fragments
+    "scriv[toml]>=1.5.1",
+]
+task-runner = [
     "tox>=4.16.0",
     "tox-gh>=1.3.2",
+    # Note: may be able to drop tox-pdm after tox and pdm
+    # both support the standardised lock file format
     "tox-pdm>=0.7.2",
+]
+test = [
     "pytest>=8.3.1",
-    "ruff>=0.5.4",
-    "mypy>=1.11.0",
     "pytest-subtests>=0.13.1",
     "coverage[toml]>=7.6.4",
-    "scriv[toml]>=1.5.1",
-    # Use exact pin for dev as runtime environments are sensitive to the exact pbs version
+    # Exact pin for tests as runtime environments are sensitive to the pbs version
     "pbs-installer==2025.3.17",
-    # Uses exact pin for dev as lock file regeneration is sensitive to the exact uv version
+    # Exact pin for tests as lock file regeneration is sensitive to the uv version
     "uv==0.6.9",
 ]
+lint = [
+    "ruff>=0.5.4",
+]
+typecheck = [
+    "mypy>=1.11.0",
+]
 bootstrap = [
-    "pdm>=2.16.1",
+    # Need support for the [dependency-groups] table
+    "pdm>=2.20.0",
 ]
 docs = [
     "sphinx>=8.1.3",
     "furo>=2024.8.6",
 ]
+
+[tool.pdm]
+distribution = true
 
 [tool.pytest.ini_options]
 # Allow skipping slow tests for local testing
