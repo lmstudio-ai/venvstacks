@@ -5,3 +5,6 @@ requires = ['meson-python']
 [project]
 name = 'venvstacks-testing-dynlib-publisher'
 version = '1.0.0'
+
+[project.entry-points.pkg_config]
+checkdynlib = 'dynlib_publisher'

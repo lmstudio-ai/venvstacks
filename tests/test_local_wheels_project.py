@@ -47,6 +47,7 @@ WHEEL_PROJECT_PATHS = (
     WHEEL_PROJECT_PATH / "dynlib_import.py",
 )
 
+
 # Similar to LayerEnvBase._run_pip, but uses the test runner's Python env
 def _run_pip(cmd_args: list[str], **kwds: Any) -> subprocess.CompletedProcess[str]:
     command = [
@@ -60,6 +61,7 @@ def _run_pip(cmd_args: list[str], **kwds: Any) -> subprocess.CompletedProcess[st
     ]
     return run_python_command(command, **kwds)
 
+
 def _build_wheel(src_path: Path, output_path: Path) -> subprocess.CompletedProcess[str]:
     return _run_pip(
         [
@@ -68,9 +70,10 @@ def _build_wheel(src_path: Path, output_path: Path) -> subprocess.CompletedProce
             "--no-build-isolation",  # Test env is set up for this
             "--wheel-dir",
             str(output_path),
-            str(src_path)
+            str(src_path),
         ]
     )
+
 
 def _build_local_wheels(local_wheel_path: Path):
     for src_project in ("dynlib-publisher", "dynlib-consumer"):
