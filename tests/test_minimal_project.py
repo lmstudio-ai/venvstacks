@@ -21,6 +21,7 @@ from support import (
     EnvSummary,
     LayeredEnvSummary,
     ManifestData,
+    SpecLoadingTestCase,
     make_mock_index_config,
     get_sys_path,
 )
@@ -256,53 +257,16 @@ def _tag_manifest(manifest: BuildManifest, expected_tag: str) -> BuildManifest:
 ##########################
 
 
-class TestMinimalSpec(unittest.TestCase):
+class TestMinimalSpec(SpecLoadingTestCase):
     # Test cases that only need the stack specification file
 
     def test_spec_loading(self) -> None:
-        expected_spec_path = MINIMAL_PROJECT_STACK_SPEC_PATH
-        stack_spec = StackSpec.load(expected_spec_path)
-        runtime_keys = list(stack_spec.runtimes)
-        framework_keys = list(stack_spec.frameworks)
-        application_keys = list(stack_spec.applications)
-        spec_keys = runtime_keys + framework_keys + application_keys
-        self.assertCountEqual(spec_keys, set(spec_keys))
-        expected_spec_names = [env.spec_name for env in EXPECTED_ENVIRONMENTS]
-        self.assertCountEqual(spec_keys, expected_spec_names)
-        spec_names = [env.name for env in stack_spec.all_environment_specs()]
-        self.assertCountEqual(spec_names, expected_spec_names)
-        expected_env_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
-        env_names = [env.env_name for env in stack_spec.all_environment_specs()]
-        self.assertCountEqual(env_names, expected_env_names)
-        for rt_summary in EXPECTED_RUNTIMES:
-            spec_name = rt_summary.spec_name
-            rt_env = stack_spec.runtimes[spec_name]
-            self.assertEqual(rt_env.name, spec_name)
-            self.assertEqual(rt_env.env_name, rt_summary.env_name)
-        del spec_name, rt_env, rt_summary
-        for fw_summary in EXPECTED_FRAMEWORKS:
-            spec_name = fw_summary.spec_name
-            fw_env = stack_spec.frameworks[spec_name]
-            self.assertEqual(fw_env.name, spec_name)
-            self.assertEqual(fw_env.env_name, fw_summary.env_name)
-            self.assertEqual(fw_env.runtime.name, fw_summary.runtime_spec_name)
-            fw_dep_names = tuple(spec.name for spec in fw_env.frameworks)
-            self.assertEqual(fw_dep_names, fw_summary.framework_spec_names)
-        del spec_name, fw_dep_names, fw_env, fw_summary
-        for app_summary in EXPECTED_APPLICATIONS:
-            spec_name = app_summary.spec_name
-            app_env = stack_spec.applications[spec_name]
-            self.assertEqual(app_env.name, spec_name)
-            self.assertEqual(app_env.env_name, app_summary.env_name)
-            self.assertEqual(app_env.runtime.name, app_summary.runtime_spec_name)
-            fw_dep_names = tuple(spec.name for spec in app_env.frameworks)
-            self.assertEqual(fw_dep_names, app_summary.framework_spec_names)
-        del spec_name, fw_dep_names, app_env, app_summary
-        # Check path attributes
-        self.assertEqual(stack_spec.spec_path, expected_spec_path)
-        expected_requirements_dir_path = expected_spec_path.parent / "requirements"
-        self.assertEqual(
-            stack_spec.requirements_dir_path, expected_requirements_dir_path
+        self.check_stack_specification(
+            MINIMAL_PROJECT_STACK_SPEC_PATH,
+            EXPECTED_ENVIRONMENTS,
+            EXPECTED_RUNTIMES,
+            EXPECTED_FRAMEWORKS,
+            EXPECTED_APPLICATIONS,
         )
 
 

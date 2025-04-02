@@ -1,3 +1,3 @@
-# Don't commit the locked requirements or the lock metadata for the minimal project
+# Don't commit the locked requirements or the lock metadata for the local wheels project
 # (the test suite puts these in a temp dir, but someone may lock the stack directly)
 requirements/

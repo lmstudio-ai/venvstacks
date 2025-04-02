@@ -1,5 +1,7 @@
 #!/bin/bash
 if [ "$1" != "--skip-lock" ]; then
+    # pdm doesn't offer a shorthand that says "update lock for all targets",
+    # so we list out all the potential target testing platforms here
     pdm lock --dev          --platform=manylinux_2_17_x86_64
     pdm lock --dev --append --platform=manylinux_2_17_aarch64
     pdm lock --dev --append --platform=musllinux_1_1_x86_64

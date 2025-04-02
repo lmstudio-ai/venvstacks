@@ -5,7 +5,7 @@
 groups = ["default", "bootstrap", "dev", "docs", "lint", "task-runner", "test", "typecheck"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:16cadb177b1dbb23742b8928295e63a5900215ce28a2a992a0b191d5453ca665"
+content_hash = "sha256:26d96f220e15276e240e7427a92086c2c9663f611b25560d9f8c0929634d954c"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -545,6 +545,35 @@ files = [
 ]
 
 [[package]]
+name = "meson"
+version = "1.7.1"
+requires_python = ">=3.7"
+summary = "A high performance build system"
+groups = ["dev", "test"]
+files = [
+    {file = "meson-1.7.1-py3-none-any.whl", hash = "sha256:6d9cbc9ce87a70243c75e4cc668ee3f206ab50b184beb0a08ece948112f19bd7"},
+    {file = "meson-1.7.1.tar.gz", hash = "sha256:155780a5be87f6dd7f427ad8bcbf0f2b2c5f62ee5fdacca7caa9de8439a24b89"},
+]
+
+[[package]]
+name = "meson-python"
+version = "0.17.1"
+requires_python = ">=3.7"
+summary = "Meson Python build backend (PEP 517)"
+groups = ["dev", "test"]
+dependencies = [
+    "meson>=0.63.3; python_version < \"3.12\"",
+    "meson>=1.2.3; python_version >= \"3.12\"",
+    "packaging>=19.0",
+    "pyproject-metadata>=0.7.1",
+    "tomli>=1.0.0; python_version < \"3.11\"",
+]
+files = [
+    {file = "meson_python-0.17.1-py3-none-any.whl", hash = "sha256:30a75c52578ef14aff8392677b09c39346e0a24d2b2c6204b8ed30583c11269c"},
+    {file = "meson_python-0.17.1.tar.gz", hash = "sha256:efb91f69f2e19eef7bc9a471ed2a4e730088cc6b39eacaf3e49fc4f930eb5f83"},
+]
+
+[[package]]
 name = "msgpack"
 version = "1.1.0"
 requires_python = ">=3.8"
@@ -678,10 +707,29 @@ name = "pip"
 version = "25.0.1"
 requires_python = ">=3.8"
 summary = "The PyPA recommended tool for installing Python packages."
-groups = ["default"]
+groups = ["default", "dev", "test"]
 files = [
     {file = "pip-25.0.1-py3-none-any.whl", hash = "sha256:c46efd13b6aa8279f33f2864459c8ce587ea6a1a59ee20de055868d8f7688f7f"},
     {file = "pip-25.0.1.tar.gz", hash = "sha256:88f96547ea48b940a3a385494e181e29fb8637898f88d88737c5049780f196ea"},
+]
+
+[[package]]
+name = "pkgconf"
+version = "2.4.3.post1"
+requires_python = ">=3.9"
+summary = "`pkgconf` is a program which helps with discovering library dependencies and configuring compiler and linker flags."
+groups = ["dev", "test"]
+dependencies = [
+    "colorama; os_name == \"nt\"",
+    "importlib-metadata; python_version < \"3.10\"",
+]
+files = [
+    {file = "pkgconf-2.4.3.post1-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:a95610a629818290305860f666bab82b53039746a44e36de35ecf55275345e66"},
+    {file = "pkgconf-2.4.3.post1-py3-none-macosx_11_0_arm64.whl", hash = "sha256:6f77ac67af2fac4947ab436e0b6f80db73cca22c87ad3abc6948e096a68370d1"},
+    {file = "pkgconf-2.4.3.post1-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4346e011187ceff0856e1c472a759790b225856da68c60b806e051c84c6ac9ed"},
+    {file = "pkgconf-2.4.3.post1-py3-none-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4e8fe5abadf9c64d4cae927445da5172310cdec300a9c3e49716a95e61848a5f"},
+    {file = "pkgconf-2.4.3.post1-py3-none-win_amd64.whl", hash = "sha256:564a84be78f62605f39a8f45d5449a3549647e6488b8133b8a05281d4cba8aed"},
+    {file = "pkgconf-2.4.3.post1.tar.gz", hash = "sha256:86857d46fef3c6ee1011a11fe20717803e9c40e004a1347a0876b6e39485288d"},
 ]
 
 [[package]]
@@ -741,6 +789,21 @@ groups = ["default", "bootstrap"]
 files = [
     {file = "pyproject_hooks-1.2.0-py3-none-any.whl", hash = "sha256:9e5c6bfa8dcc30091c74b0cf803c81fdd29d94f01992a7707bc97babb1141913"},
     {file = "pyproject_hooks-1.2.0.tar.gz", hash = "sha256:1e859bd5c40fae9448642dd871adf459e5e2084186e8d2c2a79a824c970da1f8"},
+]
+
+[[package]]
+name = "pyproject-metadata"
+version = "0.9.1"
+requires_python = ">=3.7"
+summary = "PEP 621 metadata parsing"
+groups = ["dev", "test"]
+dependencies = [
+    "packaging>=19.0",
+    "typing-extensions; python_version < \"3.8\"",
+]
+files = [
+    {file = "pyproject_metadata-0.9.1-py3-none-any.whl", hash = "sha256:ee5efde548c3ed9b75a354fc319d5afd25e9585fa918a34f62f904cc731973ad"},
+    {file = "pyproject_metadata-0.9.1.tar.gz", hash = "sha256:b8b2253dd1b7062b78cf949a115f02ba7fa4114aabe63fa10528e9e1a954a816"},
 ]
 
 [[package]]

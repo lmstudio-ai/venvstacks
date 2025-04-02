@@ -9,12 +9,11 @@ from pathlib import Path
 from typing import Any
 
 
-# Use unittest for the actual test implementations due to the diff-handling in pytest being
-# atrociously bad, as discussed in https://github.com/pytest-dev/pytest/issues/6682
-import unittest
+# Use unittest for these test implementations due to pytest's diff handling not working
+# well for these tests, as discussed in https://github.com/pytest-dev/pytest/issues/6682
 from unittest import mock
 
-import pytest  # To mark slow test cases
+import pytest
 
 from support import (
     DeploymentTestCase,
@@ -22,6 +21,7 @@ from support import (
     LayeredEnvSummary,
     ApplicationEnvSummary,
     ManifestData,
+    SpecLoadingTestCase,
     get_artifact_export_path,
     force_artifact_export,
     get_os_environ_settings,
@@ -211,47 +211,17 @@ EXPECTED_ENVIRONMENTS.extend(EXPECTED_APPLICATIONS)
 ##########################
 
 
-class TestStackSpec(unittest.TestCase):
+class TestStackSpec(SpecLoadingTestCase):
     # Test cases that only need the stack specification file
 
     def test_spec_loading(self) -> None:
-        stack_spec = StackSpec.load(SAMPLE_PROJECT_STACK_SPEC_PATH)
-        runtime_keys = list(stack_spec.runtimes)
-        framework_keys = list(stack_spec.frameworks)
-        application_keys = list(stack_spec.applications)
-        spec_keys = runtime_keys + framework_keys + application_keys
-        self.assertCountEqual(spec_keys, set(spec_keys))
-        expected_spec_names = [env.spec_name for env in EXPECTED_ENVIRONMENTS]
-        self.assertCountEqual(spec_keys, expected_spec_names)
-        spec_names = [env.name for env in stack_spec.all_environment_specs()]
-        self.assertCountEqual(spec_names, expected_spec_names)
-        expected_env_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
-        env_names = [env.env_name for env in stack_spec.all_environment_specs()]
-        self.assertCountEqual(env_names, expected_env_names)
-        for rt_summary in EXPECTED_RUNTIMES:
-            spec_name = rt_summary.spec_name
-            rt_env = stack_spec.runtimes[spec_name]
-            self.assertEqual(rt_env.name, spec_name)
-            self.assertEqual(rt_env.env_name, rt_summary.env_name)
-        del spec_name, rt_env, rt_summary
-        for fw_summary in EXPECTED_FRAMEWORKS:
-            spec_name = fw_summary.spec_name
-            fw_env = stack_spec.frameworks[spec_name]
-            self.assertEqual(fw_env.name, spec_name)
-            self.assertEqual(fw_env.env_name, fw_summary.env_name)
-            self.assertEqual(fw_env.runtime.name, fw_summary.runtime_spec_name)
-            fw_dep_names = tuple(spec.name for spec in fw_env.frameworks)
-            self.assertEqual(fw_dep_names, fw_summary.framework_spec_names)
-        del spec_name, fw_dep_names, fw_env, fw_summary
-        for app_summary in EXPECTED_APPLICATIONS:
-            spec_name = app_summary.spec_name
-            app_env = stack_spec.applications[spec_name]
-            self.assertEqual(app_env.name, spec_name)
-            self.assertEqual(app_env.env_name, app_summary.env_name)
-            self.assertEqual(app_env.runtime.name, app_summary.runtime_spec_name)
-            fw_dep_names = tuple(spec.name for spec in app_env.frameworks)
-            self.assertEqual(fw_dep_names, app_summary.framework_spec_names)
-        del spec_name, fw_dep_names, app_env, app_summary
+        self.check_stack_specification(
+            SAMPLE_PROJECT_STACK_SPEC_PATH,
+            EXPECTED_ENVIRONMENTS,
+            EXPECTED_RUNTIMES,
+            EXPECTED_FRAMEWORKS,
+            EXPECTED_APPLICATIONS,
+        )
 
 
 class TestBuildEnvironment(DeploymentTestCase):

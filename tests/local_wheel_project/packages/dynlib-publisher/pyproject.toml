@@ -1,0 +1,7 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ['meson-python']
+
+[project]
+name = 'venvstacks-testing-dynlib-publisher'
+version = '1.0.0'

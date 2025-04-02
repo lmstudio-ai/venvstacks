@@ -23,9 +23,10 @@ from venvstacks.stacks import (
     ExportedEnvironmentPaths,
     ExportMetadata,
     LayerBaseName,
+    LayerEnvBase,
     LayerVariants,
     PackageIndexConfig,
-    LayerEnvBase,
+    StackSpec,
 )
 
 _THIS_DIR = Path(__file__).parent
@@ -226,6 +227,67 @@ def get_sys_path(env_python: Path) -> list[str]:
 def run_module(env_python: Path, module_name: str) -> subprocess.CompletedProcess[str]:
     command = [str(env_python), "-X", "utf8", "-Im", module_name]
     return capture_python_output(command)
+
+
+#######################################################
+# Checking specification loading for expected details
+#######################################################
+
+
+class SpecLoadingTestCase(unittest.TestCase):
+    """Native unittest test case with additional spec loading validation checks."""
+
+    def check_stack_specification(
+        self,
+        expected_spec_path: Path,
+        expected_environments: Sequence[EnvSummary],
+        expected_runtimes: Sequence[EnvSummary],
+        expected_frameworks: Sequence[LayeredEnvSummary],
+        expected_applications: Sequence[LayeredEnvSummary],
+    ) -> None:
+        stack_spec = StackSpec.load(expected_spec_path)
+        runtime_keys = list(stack_spec.runtimes)
+        framework_keys = list(stack_spec.frameworks)
+        application_keys = list(stack_spec.applications)
+        spec_keys = runtime_keys + framework_keys + application_keys
+        self.assertCountEqual(spec_keys, set(spec_keys))
+        expected_spec_names = [env.spec_name for env in expected_environments]
+        self.assertCountEqual(spec_keys, expected_spec_names)
+        spec_names = [env.name for env in stack_spec.all_environment_specs()]
+        self.assertCountEqual(spec_names, expected_spec_names)
+        expected_env_names = [env.env_name for env in expected_environments]
+        env_names = [env.env_name for env in stack_spec.all_environment_specs()]
+        self.assertCountEqual(env_names, expected_env_names)
+        for rt_summary in expected_runtimes:
+            spec_name = rt_summary.spec_name
+            rt_env = stack_spec.runtimes[spec_name]
+            self.assertEqual(rt_env.name, spec_name)
+            self.assertEqual(rt_env.env_name, rt_summary.env_name)
+        del spec_name, rt_env, rt_summary
+        for fw_summary in expected_frameworks:
+            spec_name = fw_summary.spec_name
+            fw_env = stack_spec.frameworks[spec_name]
+            self.assertEqual(fw_env.name, spec_name)
+            self.assertEqual(fw_env.env_name, fw_summary.env_name)
+            self.assertEqual(fw_env.runtime.name, fw_summary.runtime_spec_name)
+            fw_dep_names = tuple(spec.name for spec in fw_env.frameworks)
+            self.assertEqual(fw_dep_names, fw_summary.framework_spec_names)
+        del spec_name, fw_dep_names, fw_env, fw_summary
+        for app_summary in expected_applications:
+            spec_name = app_summary.spec_name
+            app_env = stack_spec.applications[spec_name]
+            self.assertEqual(app_env.name, spec_name)
+            self.assertEqual(app_env.env_name, app_summary.env_name)
+            self.assertEqual(app_env.runtime.name, app_summary.runtime_spec_name)
+            fw_dep_names = tuple(spec.name for spec in app_env.frameworks)
+            self.assertEqual(fw_dep_names, app_summary.framework_spec_names)
+        del spec_name, fw_dep_names, app_env, app_summary
+        # Check path attributes
+        self.assertEqual(stack_spec.spec_path, expected_spec_path)
+        expected_requirements_dir_path = expected_spec_path.parent / "requirements"
+        self.assertEqual(
+            stack_spec.requirements_dir_path, expected_requirements_dir_path
+        )
 
 
 #######################################################

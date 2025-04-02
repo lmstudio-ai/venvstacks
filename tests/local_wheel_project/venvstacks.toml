@@ -1,0 +1,51 @@
+# Example project to test various features related to wheel builds:
+#
+# * Local wheel inclusion (initial purpose, and the origin of the folder name)
+# * Dynamic linking across layers (only supported on Windows for now)
+
+# Credit to https://github.com/pypackaging-native/dynamic-library/ for
+# inspiring the general testing approach (although venv has some additional
+# complications due to needing CI-built wheels to load in other Python versions)
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+
+# Also interleave framework and app definitions to ensure that works
+
+# Test deploying the dynlib publisher and consumer to the same framework layer
+[[frameworks]]
+name = "both-wheels"
+runtime = "cpython-3.11"
+requirements = [
+    "venvstacks-testing-dynlib-publisher",
+    "venvstacks-testing-dynlib-consumer",
+]
+
+[[applications]]
+name = "via-combined-layer"
+launch_module = "dynlib_import.py"
+frameworks = ["both-wheels"]
+requirements = []
+
+# Test splitting the dynlib publisher and consumer across layers
+[[frameworks]]
+name = "only-publisher"
+runtime = "cpython-3.11"
+requirements = [
+    "venvstacks-testing-dynlib-publisher",
+]
+
+[[frameworks]]
+name = "only-consumer"
+frameworks = ["only-publisher"]
+requirements = [
+    "venvstacks-testing-dynlib-consumer",
+]
+
+[[applications]]
+name = "via-split-layers"
+launch_module = "dynlib_import.py"
+frameworks = ["only-consumer"]
+requirements = []

@@ -1,0 +1,8 @@
+includedir=${pcfiledir}/include
+libdir=${pcfiledir}
+
+Name: checkdynlib
+Description: checkdynlib library
+Version: 1.0.0
+Libs: -L${libdir} -lcheckdynlib
+Cflags: -I${includedir}
