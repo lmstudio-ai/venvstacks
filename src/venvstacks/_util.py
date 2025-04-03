@@ -112,7 +112,7 @@ def run_python_command_unchecked(
     text = text if text else False
     encoding = "utf-8" if text else None
     result: subprocess.CompletedProcess[str] = subprocess.run(
-        command, env=env, text=text, encoding=encoding, **kwds
+        command, env=run_env, text=text, encoding=encoding, **kwds
     )
     return result
 
