@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import venv
 
@@ -100,7 +101,7 @@ class _WheelBuildEnv:
         env_settings: dict[str, str] = {}
         if venv_bin_dir not in path_envvar:
             env_settings["PATH"] = f"{venv_bin_dir}{os.pathsep}{path_envvar}"
-        return self._run_pip(
+        result = self._run_pip(
             [
                 "wheel",
                 "--no-index",
@@ -111,6 +112,23 @@ class _WheelBuildEnv:
             ],
             env=env_settings,
         )
+        # Work around https://github.com/mesonbuild/meson-python/issues/639
+        # (even when built on later versions, dynlibs are compatible with 3.11)
+        normalized_name = src_path.name.replace("-", "_")
+        expected_wheel = f"venvstacks_testing_{normalized_name}-*.whl"
+        for built_wheel in self.wheel_path.glob(expected_wheel):
+            built_name = built_wheel.name
+            py_major, py_minor, *_ = sys.version_info
+            cp_tag = f"cp{py_major}{py_minor}"
+            fixed_name = built_name.replace(cp_tag, "cp311")
+            if fixed_name != built_name:
+                fixed_path = built_wheel.with_name(fixed_name)
+                os.rename(built_wheel, fixed_path)
+                print(f"Renamed {built_wheel} -> {fixed_path}")
+            break
+        else:
+            raise RuntimeError(f"Failed to build expected wheel {expected_wheel!r}")
+        return result
 
     def install_built_wheel(self, name: str) -> subprocess.CompletedProcess[str]:
         return self._run_pip_install([name], with_index=False)
@@ -214,7 +232,6 @@ class TestBuildEnvironment(DeploymentTestCase):
     def tearDownClass(cls) -> None:
         wheel_temp_dir = cls._wheel_temp_dir
         if wheel_temp_dir is not None:
-            shutil.copytree(wheel_temp_dir.name, WHEEL_PROJECT_PATH)
             wheel_temp_dir.cleanup()
 
     def setUp(self) -> None:
