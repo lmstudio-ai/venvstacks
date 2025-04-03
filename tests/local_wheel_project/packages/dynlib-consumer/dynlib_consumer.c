@@ -14,14 +14,14 @@ checkdynlib_impl(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    int result = sum(a, b);
+    int result = sum(a, b); /* checkdynlib provides "sum" */
 
     return PyLong_FromLong(result);
 }
 
 
 static PyMethodDef dynlib_consumer_methods[] = {
-    {"checkdynlib", checkdynlib_impl, METH_VARARGS, NULL},
+    {"checkdynlib_sum", checkdynlib_impl, METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 

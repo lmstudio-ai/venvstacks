@@ -258,7 +258,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
 
-    def _test_locking_and_publishing(self) -> None:
+    def test_locking_and_publishing(self) -> None:
         # Need long diffs to get useful output from metadata checks
         self.maxDiff = None
         # This is organised as subtests in a monolothic test sequence to reduce CI overhead

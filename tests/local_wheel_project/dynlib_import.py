@@ -1,4 +1,4 @@
-import venvstacks_testing_dynlib_consumer as dynlib_consumer
+import dynlib_consumer
 
 if __name__ == "__main__":
     # The app environment should NOT have access to pip
@@ -8,6 +8,8 @@ if __name__ == "__main__":
         if find_spec(disallowed):
             raise RuntimeError(f"Should not be able to import {disallowed!r}!")
 
-    dynlib_consumer.access_linked_lib()
+    result = dynlib_consumer.checkdynlib_sum(1, 2)
+    if result != 3:
+        raise RuntimeError(f"Expected 1+2=3, got {result}")
 
     print("Environment launch module executed successfully")

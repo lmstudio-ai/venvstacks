@@ -50,4 +50,4 @@ launch_module = "dynlib_import.py"
 frameworks = ["only-consumer"]
 requirements = []
 # This is currently Windows-only
-# platforms = ["win_x86_64"]
+platforms = ["win_amd64"]
