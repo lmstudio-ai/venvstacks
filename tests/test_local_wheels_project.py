@@ -1,12 +1,11 @@
 """Test building the local wheels project produces the expected results."""
 
+import os
 import shutil
 import subprocess
-import sys
 import tempfile
 import venv
 
-from importlib.metadata import metadata
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -50,18 +49,24 @@ WHEEL_PROJECT_PATHS = (
     WHEEL_PROJECT_PATH / "dynlib_import.py",
 )
 
-class _WheelBuildEnv:
 
+class _WheelBuildEnv:
     def __init__(self, working_path: Path) -> None:
         self._working_path = working_path
         self.wheel_path = wheel_path = working_path / "wheels"
         wheel_path.mkdir()
         self._venv_path = venv_path = working_path / "build_venv"
         venv.create(venv_path, symlinks=(not WINDOWS_BUILD), with_pip=True)
-        self._python_path = get_env_python(venv_path)
-        self._run_pip_install(["-r", str(WHEEL_BUILD_REQUIREMENTS_PATH)], with_index=True)
+        self._python_path = python_path = get_env_python(venv_path)
+        self._run_pip_install(
+            ["-r", str(WHEEL_BUILD_REQUIREMENTS_PATH)], with_index=True
+        )
+        self._venv_bin_path = python_path.parent
+        print(self._venv_bin_path)
 
-    def _run_pip(self, cmd_args: list[str], **kwds: Any) -> subprocess.CompletedProcess[str]:
+    def _run_pip(
+        self, cmd_args: list[str], **kwds: Any
+    ) -> subprocess.CompletedProcess[str]:
         command = [
             str(self._python_path),
             "-X",
@@ -73,8 +78,9 @@ class _WheelBuildEnv:
         ]
         return run_python_command(command, **kwds)
 
-    def _run_pip_install(self, cmd_args: list[str], *, with_index: bool, **kwds: Any) -> subprocess.CompletedProcess[str]:
-        print(list(self.wheel_path.iterdir()))
+    def _run_pip_install(
+        self, cmd_args: list[str], *, with_index: bool, **kwds: Any
+    ) -> subprocess.CompletedProcess[str]:
         return self._run_pip(
             [
                 "install",
@@ -89,6 +95,11 @@ class _WheelBuildEnv:
         )
 
     def build_wheel(self, src_path: Path) -> subprocess.CompletedProcess[str]:
+        path_envvar = os.getenv("PATH", "")
+        venv_bin_dir = str(self._venv_bin_path)
+        env_settings: dict[str, str] = {}
+        if venv_bin_dir not in path_envvar:
+            env_settings["PATH"] = f"{venv_bin_dir}{os.pathsep}{path_envvar}"
         return self._run_pip(
             [
                 "wheel",
@@ -97,7 +108,8 @@ class _WheelBuildEnv:
                 "--wheel-dir",
                 str(self.wheel_path),
                 str(src_path),
-            ]
+            ],
+            env=env_settings,
         )
 
     def install_built_wheel(self, name: str) -> subprocess.CompletedProcess[str]:
@@ -108,7 +120,6 @@ def _build_local_wheels(working_path: Path) -> Path:
     build_env = _WheelBuildEnv(working_path)
     build_env.build_wheel(WHEEL_PACKAGES_PATH / "dynlib-publisher")
     build_env.install_built_wheel("venvstacks-testing-dynlib-publisher")
-    input("Hit enter to continue")
     build_env.build_wheel(WHEEL_PACKAGES_PATH / "dynlib-consumer")
     return build_env.wheel_path
 
