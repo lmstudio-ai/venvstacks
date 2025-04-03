@@ -8,3 +8,6 @@ version = '1.0.0'
 
 [project.entry-points.pkg_config]
 checkdynlib = 'dynlib_publisher'
+
+[tool.meson-python]
+limited-api = true

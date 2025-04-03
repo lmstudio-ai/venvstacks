@@ -5,3 +5,6 @@ requires = ['meson-python', 'pkgconf']
 [project]
 name = 'venvstacks-testing-dynlib-consumer'
 version = '1.0.0'
+
+[tool.meson-python]
+limited-api = true

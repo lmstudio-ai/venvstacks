@@ -9,3 +9,4 @@ library(
 )
 py.install_sources(['checkdynlib.h'], subdir: 'dynlib_publisher/include')
 py.install_sources(['checkdynlib.pc'], subdir: 'dynlib_publisher')
+py.install_sources(['__init__.py'], subdir: 'dynlib_publisher')

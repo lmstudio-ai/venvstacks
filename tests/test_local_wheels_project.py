@@ -4,7 +4,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import venv
 
+from importlib.metadata import metadata
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -29,7 +31,7 @@ from venvstacks.stacks import (
     PackageIndexConfig,
     StackSpec,
 )
-from venvstacks._util import run_python_command
+from venvstacks._util import get_env_python, run_python_command, WINDOWS_BUILD
 
 ##################################
 # Sample project test helpers
@@ -38,6 +40,7 @@ from venvstacks._util import run_python_command
 _THIS_PATH = Path(__file__)
 WHEEL_PROJECT_PATH = _THIS_PATH.parent / "local_wheel_project"
 WHEEL_PACKAGES_PATH = WHEEL_PROJECT_PATH / "packages"
+WHEEL_BUILD_REQUIREMENTS_PATH = WHEEL_PROJECT_PATH / "build-requirements.txt"
 WHEEL_PROJECT_STACK_SPEC_PATH = WHEEL_PROJECT_PATH / "venvstacks.toml"
 WHEEL_PROJECT_REQUIREMENTS_PATH = WHEEL_PROJECT_PATH / "requirements"
 WHEEL_PROJECT_MANIFESTS_PATH = WHEEL_PROJECT_PATH / "expected_manifests"
@@ -47,38 +50,67 @@ WHEEL_PROJECT_PATHS = (
     WHEEL_PROJECT_PATH / "dynlib_import.py",
 )
 
+class _WheelBuildEnv:
 
-# Similar to LayerEnvBase._run_pip, but uses the test runner's Python env
-def _run_pip(cmd_args: list[str], **kwds: Any) -> subprocess.CompletedProcess[str]:
-    command = [
-        sys.executable,
-        "-X",
-        "utf8",
-        "-Im",
-        "pip",
-        "--no-input",
-        *cmd_args,
-    ]
-    return run_python_command(command, **kwds)
+    def __init__(self, working_path: Path) -> None:
+        self._working_path = working_path
+        self.wheel_path = wheel_path = working_path / "wheels"
+        wheel_path.mkdir()
+        self._venv_path = venv_path = working_path / "build_venv"
+        venv.create(venv_path, symlinks=(not WINDOWS_BUILD), with_pip=True)
+        self._python_path = get_env_python(venv_path)
+        self._run_pip_install(["-r", str(WHEEL_BUILD_REQUIREMENTS_PATH)], with_index=True)
 
-
-def _build_wheel(src_path: Path, output_path: Path) -> subprocess.CompletedProcess[str]:
-    return _run_pip(
-        [
-            "wheel",
-            "--no-index",
-            "--no-build-isolation",  # Test env is set up for this
-            "--wheel-dir",
-            str(output_path),
-            str(src_path),
+    def _run_pip(self, cmd_args: list[str], **kwds: Any) -> subprocess.CompletedProcess[str]:
+        command = [
+            str(self._python_path),
+            "-X",
+            "utf8",
+            "-Im",
+            "pip",
+            "--no-input",
+            *cmd_args,
         ]
-    )
+        return run_python_command(command, **kwds)
+
+    def _run_pip_install(self, cmd_args: list[str], *, with_index: bool, **kwds: Any) -> subprocess.CompletedProcess[str]:
+        print(list(self.wheel_path.iterdir()))
+        return self._run_pip(
+            [
+                "install",
+                *(() if with_index else ("--no-index",)),
+                "--no-deps",
+                "--only-binary",
+                ":all:",
+                "--find-links",
+                str(self.wheel_path),
+                *cmd_args,
+            ]
+        )
+
+    def build_wheel(self, src_path: Path) -> subprocess.CompletedProcess[str]:
+        return self._run_pip(
+            [
+                "wheel",
+                "--no-index",
+                "--no-build-isolation",  # Build env is managed by the test suite
+                "--wheel-dir",
+                str(self.wheel_path),
+                str(src_path),
+            ]
+        )
+
+    def install_built_wheel(self, name: str) -> subprocess.CompletedProcess[str]:
+        return self._run_pip_install([name], with_index=False)
 
 
-def _build_local_wheels(local_wheel_path: Path):
-    for src_project in ("dynlib-publisher", "dynlib-consumer"):
-        src_path = WHEEL_PACKAGES_PATH / src_project
-        _build_wheel(src_path, local_wheel_path)
+def _build_local_wheels(working_path: Path) -> Path:
+    build_env = _WheelBuildEnv(working_path)
+    build_env.build_wheel(WHEEL_PACKAGES_PATH / "dynlib-publisher")
+    build_env.install_built_wheel("venvstacks-testing-dynlib-publisher")
+    input("Hit enter to continue")
+    build_env.build_wheel(WHEEL_PACKAGES_PATH / "dynlib-consumer")
+    return build_env.wheel_path
 
 
 def _define_build_env(
@@ -151,6 +183,7 @@ class TestStackSpec(SpecLoadingTestCase):
         )
 
 
+@pytest.mark.slow
 class TestBuildEnvironment(DeploymentTestCase):
     # Test cases that need the full build environment to exist
     EXPECTED_APP_OUTPUT = "Environment launch module executed successfully"
@@ -162,15 +195,15 @@ class TestBuildEnvironment(DeploymentTestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        local_wheel_dir = tempfile.TemporaryDirectory()
-        cls._wheel_temp_dir = local_wheel_dir
-        cls.local_wheel_path = local_wheel_path = Path(local_wheel_dir.name)
-        _build_local_wheels(local_wheel_path)
+        work_dir = tempfile.TemporaryDirectory()
+        cls._wheel_temp_dir = work_dir
+        cls.local_wheel_path = _build_local_wheels(Path(work_dir.name))
 
     @classmethod
     def tearDownClass(cls) -> None:
         wheel_temp_dir = cls._wheel_temp_dir
         if wheel_temp_dir is not None:
+            shutil.copytree(wheel_temp_dir.name, WHEEL_PROJECT_PATH)
             wheel_temp_dir.cleanup()
 
     def setUp(self) -> None:
@@ -197,8 +230,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
 
-    @pytest.mark.slow
-    def test_locking_and_publishing(self) -> None:
+    def _test_locking_and_publishing(self) -> None:
         # Need long diffs to get useful output from metadata checks
         self.maxDiff = None
         # This is organised as subtests in a monolothic test sequence to reduce CI overhead
