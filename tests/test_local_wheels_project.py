@@ -34,15 +34,6 @@ from venvstacks.stacks import (
 from venvstacks._util import get_env_python, run_python_command, WINDOWS_BUILD
 
 
-def setUpModule():
-    # Fail the Windows test run fast if "ninja" isn't available
-    # (this works around the GitHub Action's CI pool still having
-    # a lot of runners with the old pre-ninja image)
-    if WINDOWS_BUILD:
-        if shutil.which("ninja") is None:
-            raise RuntimeError("Could not find 'ninja' on PATH")
-
-
 ##################################
 # Sample project test helpers
 ##################################
