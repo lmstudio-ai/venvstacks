@@ -1,3 +1,4 @@
+import dynlib_publisher  # Needed for os.add_dll_directory on Windows
 import dynlib_consumer
 
 if __name__ == "__main__":

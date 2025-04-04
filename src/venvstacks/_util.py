@@ -18,6 +18,7 @@ StrPath = str | os.PathLike[str]
 # the full environment being passed to subprocesses
 _DEBUG_SUBPROCESS_ENVS = False
 
+
 def as_normalized_path(path: StrPath, /) -> Path:
     """Normalize given path and make it absolute, *without* resolving symlinks.
 
@@ -114,6 +115,7 @@ def run_python_command_unchecked(
     run_env.update(_SUBPROCESS_PYTHON_CONFIG)
     if _DEBUG_SUBPROCESS_ENVS:
         import json
+
         print(json.dumps(run_env, indent=2, sort_keys=True))
     # Default to running in text mode,
     # but allow it to be explicitly switched off
