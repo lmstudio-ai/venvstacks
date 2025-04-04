@@ -5,7 +5,7 @@
 groups = ["default", "bootstrap", "dev", "docs", "dynlib-wheel-build", "lint", "task-runner", "test", "typecheck"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:fe32582aa082a1e371e64cc267d1a21cd0ab53233fa657c1c4a88cb915c3ecb4"
+content_hash = "sha256:a4b94150b343407d695a1c0dc99d4ecea1cd20bb3e77606674dde1a35fe60071"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -720,7 +720,7 @@ name = "pip"
 version = "25.0.1"
 requires_python = ">=3.8"
 summary = "The PyPA recommended tool for installing Python packages."
-groups = ["default", "dev", "test"]
+groups = ["default", "dynlib-wheel-build"]
 files = [
     {file = "pip-25.0.1-py3-none-any.whl", hash = "sha256:c46efd13b6aa8279f33f2864459c8ce587ea6a1a59ee20de055868d8f7688f7f"},
     {file = "pip-25.0.1.tar.gz", hash = "sha256:88f96547ea48b940a3a385494e181e29fb8637898f88d88737c5049780f196ea"},
