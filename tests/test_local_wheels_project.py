@@ -98,7 +98,9 @@ class _WheelBuildEnv:
     def build_wheel(self, src_path: Path) -> subprocess.CompletedProcess[str]:
         path_envvar = os.getenv("PATH", "")
         venv_bin_dir = str(self._venv_bin_path)
-        env_settings: dict[str, str] = {}
+        env_settings = {
+            "PKGCONF_PYPI_EMBEDDED_ONLY": "1",
+        }
         if venv_bin_dir not in path_envvar:
             env_settings["PATH"] = f"{venv_bin_dir}{os.pathsep}{path_envvar}"
         result = self._run_pip(
