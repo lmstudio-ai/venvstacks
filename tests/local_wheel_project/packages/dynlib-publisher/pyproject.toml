@@ -1,0 +1,13 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ['meson-python', 'ninja; sys_platform == "win32"']
+
+[project]
+name = 'venvstacks-testing-dynlib-publisher'
+version = '1.0.0'
+
+[project.entry-points.pkg_config]
+checkdynlib = 'dynlib_publisher'
+
+[tool.meson-python]
+limited-api = true

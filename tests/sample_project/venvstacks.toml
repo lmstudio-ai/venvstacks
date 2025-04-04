@@ -63,10 +63,6 @@ requirements = [
 # Sample project framework layers
 ######################################
 
-# TODO: consider reworking this test example to also cover
-#       dependency declarations between framework layers
-#       (without losing the multiple runtime testing)
-
 [[frameworks]]
 name = "scipy"
 versioned = true
