@@ -39,7 +39,7 @@ from venvstacks._util import get_env_python, run_python_command, WINDOWS_BUILD
 ##################################
 
 _THIS_PATH = Path(__file__)
-WHEEL_PROJECT_PATH = _THIS_PATH.parent / "local_wheel_project"
+WHEEL_PROJECT_PATH = _THIS_PATH.parent / "local_wheels_project"
 WHEEL_PACKAGES_PATH = WHEEL_PROJECT_PATH / "packages"
 WHEEL_BUILD_REQUIREMENTS_PATH = WHEEL_PROJECT_PATH / "build-requirements.txt"
 WHEEL_PROJECT_STACK_SPEC_PATH = WHEEL_PROJECT_PATH / "venvstacks.toml"
@@ -65,6 +65,10 @@ class _WheelBuildEnv:
         )
         self._venv_bin_path = python_path.parent
         print(self._venv_bin_path)
+
+    def remove_venv(self):
+        # Test suite is done with the build, only keep the built wheels around
+        shutil.rmtree(self._venv_path)
 
     def _run_pip(
         self, cmd_args: list[str], **kwds: Any
@@ -142,6 +146,8 @@ def _build_local_wheels(working_path: Path) -> Path:
     build_env.build_wheel(WHEEL_PACKAGES_PATH / "dynlib-publisher")
     build_env.install_built_wheel("venvstacks-testing-dynlib-publisher")
     build_env.build_wheel(WHEEL_PACKAGES_PATH / "dynlib-consumer")
+    # Ensure the shared library in the build folder isn't found by the dynamic linker
+    build_env.remove_venv()
     return build_env.wheel_path
 
 
@@ -264,7 +270,7 @@ class TestBuildEnvironment(DeploymentTestCase):
     def test_locking_and_publishing(self) -> None:
         # Need long diffs to get useful output from metadata checks
         self.maxDiff = None
-        # This is organised as subtests in a monolothic test sequence to reduce CI overhead
+        # This is organised as subtests in a monolithic test sequence to reduce CI overhead
         # Separating the tests wouldn't really make them independent, unless the outputs of
         # the initial intermediate steps were checked in for use when testing the later steps.
         # Actually configuring and building the environments is executed outside the subtest
@@ -283,7 +289,7 @@ class TestBuildEnvironment(DeploymentTestCase):
             self.check_environment_exports(export_path, export_result)
             subtests_passed += 1
 
-        # Work aroung pytest-subtests not failing the test case when subtests fail
+        # Work around pytest-subtests not failing the test case when subtests fail
         # https://github.com/pytest-dev/pytest-subtests/issues/76
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"

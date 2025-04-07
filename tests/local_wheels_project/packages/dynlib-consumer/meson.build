@@ -8,4 +8,6 @@ py.extension_module(
     dependencies: libcheckdynlib,
     install: true,
     limited_api: '3.11',
+    build_rpath: '$ORIGIN/dynlib_publisher',
+    install_rpath: '$ORIGIN/dynlib_publisher',
 )
