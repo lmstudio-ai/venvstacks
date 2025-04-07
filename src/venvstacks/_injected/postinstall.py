@@ -10,11 +10,13 @@ This post-installation script is automatically injected when packing environment
 
 import json
 import os
+import shlex
+import sys
 
 from compileall import compile_dir
 from os.path import abspath
 from pathlib import Path
-from typing import cast, NotRequired, Sequence, TypedDict
+from typing import cast, Iterable, NotRequired, Sequence, TypedDict
 
 DEPLOYED_LAYER_CONFIG = "share/venv/metadata/venvstacks_layer.json"
 
@@ -28,7 +30,7 @@ class LayerConfig(TypedDict):
     base_python: str                 # Relative path from layer dir to base Python executable
     site_dir: str                    # Relative path to site-packages within this layer
     pylib_dirs: Sequence[str]        # Relative paths to additional sys.path entries
-    dynlib_dirs: Sequence[str]       # Relative paths to additional Windows DLL directories
+    dynlib_dirs: Sequence[str]       # Relative paths to additional shared library directories
     launch_module: NotRequired[str]  # Module to run with `-m` to launch the application
     # fmt: on
 
@@ -47,7 +49,7 @@ class ResolvedLayerConfig(TypedDict):
     base_python_path: Path           # Absolute path from layer dir to base Python executable
     site_path: Path                  # Absolute path to site-packages within this layer
     pylib_paths: Sequence[Path]      # Absolute paths to additional sys.path entries
-    dynlib_paths: Sequence[Path]     # Absolute paths to additional Windows DLL directories
+    dynlib_paths: Sequence[Path]     # Absolute paths to additional shared library directories
     launch_module: str|None          # Module to run with `-m` to launch the application
     # fmt: on
 
@@ -75,10 +77,21 @@ def load_layer_config(layer_path: Path) -> ResolvedLayerConfig:
     )
 
 
+def check_absolute_path(env_path: Path) -> None:
+    """Ensures given path is absolute (raises RuntimeError otherwise)."""
+    if not env_path.is_absolute():
+        raise RuntimeError("Post-installation must use absolute environment paths")
+
+
+def check_absolute_paths(env_paths: Iterable[Path]) -> None:
+    """Ensures all given paths are absolute (raises RuntimeError otherwise)."""
+    for env_path in env_paths:
+        check_absolute_path(env_path)
+
+
 def generate_pyvenv_cfg(base_python_path: Path, py_version: str) -> str:
     """Generate `pyvenv.cfg` contents for given base Python path and version."""
-    if not base_python_path.is_absolute():
-        raise RuntimeError("Post-installation must use absolute environment paths")
+    check_absolute_path(base_python_path)
     venv_config_lines = [
         f"home = {base_python_path.parent}",
         "include-system-site-packages = false",
@@ -105,46 +118,100 @@ def generate_sitecustomize(
     pylib_paths: Sequence[Path],
     dynlib_paths: Sequence[Path],
     *,
-    skip_missing_dynlib_paths: bool = True,
+    include_missing_dynlib_paths: bool = False,
 ) -> str | None:
     """Generate `sitecustomize.py` contents for given linked environment directories."""
-    sc_contents = [_SITE_CUSTOMIZE_HEADER]
+    sc_lines = [_SITE_CUSTOMIZE_HEADER]
     if pylib_paths:
+        check_absolute_paths(pylib_paths)
         pylib_contents = [
             "# Allow loading modules and packages from linked environments",
             "from site import addsitedir",
         ]
         for path_entry in pylib_paths:
-            if not path_entry.is_absolute():
-                raise RuntimeError(
-                    "Post-installation must use absolute environment paths"
-                )
             pylib_contents.append(f"addsitedir({str(path_entry)!r})")
         pylib_contents.append("")
-        sc_contents.extend(pylib_contents)
+        sc_lines.extend(pylib_contents)
     if dynlib_paths and hasattr(os, "add_dll_directory"):
+        # Python packages for Windows generally handle their own dynamic import config
+        # This works around the cases that don't
+        check_absolute_paths(dynlib_paths)
         dynlib_contents = [
             "# Allow loading misplaced DLLs on Windows",
             "from os import add_dll_directory",
         ]
         for dynlib_path in dynlib_paths:
-            if not dynlib_path.is_absolute():
-                raise RuntimeError(
-                    "Post-installation must use absolute environment paths"
-                )
-            if skip_missing_dynlib_paths and not dynlib_path.exists():
+            if include_missing_dynlib_paths or dynlib_path.exists():
+                dynlib_entry = f"add_dll_directory({str(dynlib_path)!r})"
+            else:
                 # Nothing added DLLs to this folder at build time, so skip it
                 # (add_dll_directory fails if the specified folder doesn't exist)
                 dynlib_entry = f"# Skipping {str(dynlib_path)!r} (no such directory)"
-            else:
-                dynlib_entry = f"add_dll_directory({str(dynlib_path)!r})"
             dynlib_contents.append(dynlib_entry)
         dynlib_contents.append("")
-        sc_contents.extend(dynlib_contents)
-    if len(sc_contents) == 1:
+        sc_lines.extend(dynlib_contents)
+    if len(sc_lines) == 1:
         # Environment layer doesn't actually need customizing
         return None
-    return "\n".join(sc_contents)
+    sc_contents = "\n".join(sc_lines)
+    return sc_contents
+
+
+def generate_python_sh(
+    env_python_path: Path,
+    dynlib_paths: Sequence[Path],
+) -> tuple[str, Path] | None:
+    """Generate a Python wrapper script that sets the dynamic linking config appropriately."""
+    if not dynlib_paths:
+        # No need to wrap the link if the dynamic library loading doesn't need customisation
+        return None
+    if not env_python_path.is_symlink():
+        # Symlink has already been replaced, don't try to replace it again
+        return None
+    check_absolute_path(env_python_path)
+    check_absolute_paths(dynlib_paths)
+    # Use file relative paths so the wrapper script is portable (e.g. for local-export)
+    # We avoid `walk_up=True` here to maintain Python 3.11 compatibility,
+    # and to limit the relative paths to remaining within peer environments
+    env_bin_dir_path = env_python_path.parent
+    env_bin_dir_name = env_bin_dir_path.name
+    env_path = env_bin_dir_path.parent
+    env_name = env_path.name
+    parent_path = env_path.parent
+
+    def _sh_path(p: Path) -> str:
+        parent_relative_path = p.relative_to(parent_path)
+        if parent_relative_path.parts[0] != env_name:
+            # Path is in a peer environment
+            path_parts = ("..", "..", *parent_relative_path.parts)
+        elif parent_relative_path.parts[1] != env_bin_dir_name:
+            # Path is in the same environment as the wrapper script
+            path_parts = ("..", *parent_relative_path.parts[1:])
+        else:
+            # Path is in the same directory as the wrapper script
+            path_parts = parent_relative_path.parts[2:]
+        return f"$script_dir/{shlex.quote(str(Path(*path_parts)))}"
+
+    target = "DYLD_LIBRARY_PATH" if sys.platform == "darwin" else "LD_LIBRARY_PATH"
+    dynlib_content: list[str] = [
+        # Based on the PATH manipulation suggestion in https://unix.stackexchange.com/a/124447
+        # Path list is reversed on iteration because the helper function *pre*pends each entry
+        f'add_dynlib_dir() {{ case ":${{{target}:=$1}}:" in *:"$1":*) ;; *) {target}="$1:${target}" ;; esac; }}',
+        *(f'add_dynlib_dir "{_sh_path(p)}"' for p in reversed(dynlib_paths)),
+        f"export {target}",
+    ]
+    symlink_path = env_bin_dir_path / f"{env_python_path.name}_"
+    wrapper_script_lines = [
+        "#!/bin/sh",
+        "# Allow extension modules to find shared libraries published by lower layers",
+        "# Note: `readlink -f` (long available in GNU coreutils) is available on macOS 12.3 and later",
+        'script_dir="$(cd -- "$(dirname -- "$(readlink -f "$0")")" &> /dev/null && pwd)"',
+        *dynlib_content,
+        f'exec -a "{_sh_path(env_python_path)}" "{_sh_path(symlink_path)}" "$@"',
+        "",
+    ]
+    wrapper_script_contents = "\n".join(wrapper_script_lines)
+    return wrapper_script_contents, symlink_path
 
 
 def _run_postinstall(layer_path: Path) -> None:
@@ -153,19 +220,34 @@ def _run_postinstall(layer_path: Path) -> None:
     config = load_layer_config(layer_path)
 
     base_python_path = config["base_python_path"]
-    if base_python_path != config["python_path"]:
+    env_python_path = config["python_path"]
+    if base_python_path != env_python_path:
         # Generate `pyvenv.cfg` for layered environments
         venv_config = generate_pyvenv_cfg(base_python_path, config["py_version"])
         venv_config_path = layer_path / "pyvenv.cfg"
         venv_config_path.write_text(venv_config, encoding="utf-8")
 
         # Generate `sitecustomize.py` for layered environments
-        sc_contents = generate_sitecustomize(
-            config["pylib_paths"], config["dynlib_paths"]
-        )
+        dynlib_paths = config["dynlib_paths"]
+        sc_contents = generate_sitecustomize(config["pylib_paths"], dynlib_paths)
         if sc_contents is not None:
             sc_path = config["site_path"] / "sitecustomize.py"
             sc_path.write_text(sc_contents, encoding="utf-8")
+
+        # Potentially generate Python wrapper script for non-Windows envs
+        # We still run via the symlink so the path to pyvenv.cfg is valid
+        # regardless of whether or not "exec -a" is taken into account
+        if dynlib_paths and not hasattr(os, "add_dll_directory"):
+            wrapper_info = generate_python_sh(
+                env_python_path,
+                dynlib_paths,
+            )
+            if wrapper_info is not None:
+                sh_contents, symlink_path = wrapper_info
+                # Replace the symlink with a wrapper script
+                env_python_path.rename(symlink_path)
+                env_python_path.write_text(sh_contents, encoding="utf-8")
+                os.chmod(env_python_path, 0x755)
 
     # Precompile Python library modules
     pylib_path = (

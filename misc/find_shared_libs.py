@@ -2,7 +2,7 @@
 """Proof of concept for finding non-Python-module shared modules."""
 
 # Concept demonstrator for the cross-environment shared library loading support
-# described in https://github.com/lmstudio-ai/venvstacks/issues/1
+# described in https://github.com/lmstudio-ai/venvstacks/issues/38
 
 import os
 import sys

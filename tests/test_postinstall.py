@@ -70,7 +70,7 @@ def test_sitecustomize_with_dynlib() -> None:
     pylib_paths, expected_pylib_lines = _make_pylib_paths()
     dynlib_paths, expected_dynlib_lines = _make_dynlib_paths()
     sc_text = postinstall.generate_sitecustomize(
-        pylib_paths, dynlib_paths, skip_missing_dynlib_paths=False
+        pylib_paths, dynlib_paths, include_missing_dynlib_paths=True
     )
     assert sc_text is not None
     assert sc_text.startswith(postinstall._SITE_CUSTOMIZE_HEADER)

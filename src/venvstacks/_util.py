@@ -7,8 +7,9 @@ import sys
 import tarfile
 
 from contextlib import contextmanager
+from importlib.machinery import EXTENSION_SUFFIXES
 from pathlib import Path
-from typing import Any, Generator, Literal, Mapping, overload
+from typing import Any, Container, Generator, Literal, Mapping, overload
 
 WINDOWS_BUILD = hasattr(os, "add_dll_directory")
 
@@ -47,6 +48,11 @@ def default_tarfile_filter(filter: str) -> Generator[None, None, None]:
         yield
     finally:
         tarfile.TarFile.extraction_filter = old_filter
+
+
+##############################################################################
+# Running Python in built/deployed/exported layer environments
+##############################################################################
 
 
 def get_env_python(env_path: Path) -> Path:
@@ -139,3 +145,38 @@ def run_python_command(
 
 def capture_python_output(command: list[str]) -> subprocess.CompletedProcess[str]:
     return run_python_command(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
+##############################################################################
+#  Finding shared libraries to link to a common location in each environment
+##############################################################################
+
+
+def _ext_to_suffixes(extension: str) -> tuple["str", ...]:
+    suffix_parts = extension.split(".")
+    return tuple(f".{part}" for part in suffix_parts if part)
+
+
+_PYLIB_SUFFIX = ".so"  # .dylib is never importable as a Python module, even on macOS
+_LIB_SUFFIXES = frozenset((_PYLIB_SUFFIX, ".dylib"))
+
+# Skip libraries with extensions that are explicitly for importable Python extension modules
+_IGNORED_SUFFIXES = frozenset(
+    _ext_to_suffixes(ext) for ext in EXTENSION_SUFFIXES if ext != _PYLIB_SUFFIX
+)
+
+
+def find_shared_libraries(
+    base_path: Path, *, excluded: Container[str] = ()
+) -> Generator[Path, None, None]:
+    """Find non-extension-module shared libraries in specified directory."""
+    for dir_path, _, files in base_path.walk():
+        for fname in files:
+            file_path = dir_path / fname
+            if file_path.suffix not in _LIB_SUFFIXES:
+                continue
+            if tuple(file_path.suffixes) in _IGNORED_SUFFIXES:
+                continue
+            if file_path.stem in excluded:
+                continue
+            yield file_path
