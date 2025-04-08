@@ -207,6 +207,8 @@ def generate_python_sh(
         "set -eu",
         "# Note: `readlink -f` (long available in GNU coreutils) is available on macOS 12.3 and later",
         'script_dir="$(cd -- "$(dirname -- "$(readlink -f "$0")")" &> /dev/null && pwd)"',
+        'echo "$0"',
+        'echo "$script_dir"',
         *dynlib_content,
         f'script_path="$script_dir/{_sh_path(env_python_path)}"',
         f'symlink_path="$script_dir/{_sh_path(symlink_path)}"',
