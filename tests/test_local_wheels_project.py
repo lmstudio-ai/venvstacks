@@ -49,6 +49,7 @@ WHEEL_PROJECT_MANIFESTS_PATH = WHEEL_PROJECT_PATH / "expected_manifests"
 WHEEL_PROJECT_PATHS = (
     WHEEL_PROJECT_STACK_SPEC_PATH,
     WHEEL_PROJECT_PATH / "dynlib_import.py",
+    WHEEL_PROJECT_PATH / "windows_only_dynlib_import.py",
 )
 
 
