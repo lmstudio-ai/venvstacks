@@ -1701,6 +1701,8 @@ class LayeredEnvBase(LayerEnvBase):
         options = ["--without-pip"]
         if self.env_path.exists():
             options.append("--upgrade")
+            # Ensure the wrapper script doesn't cause any update problems
+            self.python_path.unlink(missing_ok=True)
         if _WINDOWS_BUILD:
             options.append("--copies")
         else:
@@ -1746,6 +1748,7 @@ class LayeredEnvBase(LayerEnvBase):
             wrapper_info = postinstall.generate_python_sh(sh_path, build_dynlib_paths)
             assert wrapper_info is not None
             sh_contents, symlink_path = wrapper_info
+            symlink_path.unlink(missing_ok=True)
             print(f"Renaming {str(sh_path)!r} -> {str(symlink_path)!r}...")
             sh_path.rename(symlink_path)
             print(f"Generating {str(sh_path)!r}...")
