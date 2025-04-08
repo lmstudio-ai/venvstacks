@@ -58,7 +58,9 @@ requirements = [
     "venvstacks-testing-dynlib-publisher",
 ]
 dynlib_exclude = [
-    "*.so",
+    # This could be a simple "*" filter, but it is split for testing
+    "*.so",     # Makes Linux fail
+    "*.dylib",  # Makes macOS fail
 ]
 
 [[frameworks]]
