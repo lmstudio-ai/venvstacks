@@ -430,7 +430,13 @@ class DeploymentTestCase(unittest.TestCase):
             env_config = json.loads(env_config_path.read_text(encoding="utf-8"))
             env_python = env_path / env_config["python"]
             launch_module = app_env["app_launch_module"]
-            launch_result = run_module(env_python, launch_module)
+            try:
+                launch_result = run_module(env_python, launch_module)
+            except subprocess.CalledProcessError as exc:
+                print(exc)
+                print(exc.stdout)
+                print(exc.stderr)
+                raise
             # Tolerate extra trailing whitespace on stdout
             self.assertEqual(launch_result.stdout.rstrip(), self.EXPECTED_APP_OUTPUT)
             # Nothing at all should be emitted on stderr
