@@ -1116,6 +1116,10 @@ class LayerEnvBase(ABC):
             self.requirements_path,
             self.env_spec.versioned,
         )
+        # Ensure symlinks in the environment paths aren't inadvertently resolved
+        assert self.pylib_path.relative_to(self.env_path)
+        assert self.executables_path.relative_to(self.env_path)
+        assert self.dynlib_path.relative_to(self.env_path)
 
     @property
     def env_spec(self) -> LayerSpecBase:

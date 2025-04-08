@@ -59,7 +59,11 @@ def load_layer_config(layer_path: Path) -> ResolvedLayerConfig:
 
     def deployed_path(relative_path: str) -> Path:
         """Normalize path and make it absolute, *without* resolving symlinks."""
-        return Path(abspath(layer_path / relative_path))
+        absolute_path = Path(abspath(layer_path / relative_path))
+        if not absolute_path.is_relative_to(layer_path.parent):
+            err_msg = f"Layer path ({str(absolute_path)!r} is not inside {str(layer_path.parent)!r})"
+            raise RuntimeError(err_msg)
+        return absolute_path
 
     config_path = layer_path / DEPLOYED_LAYER_CONFIG
     config_text = config_path.read_text(encoding="utf-8")
@@ -80,7 +84,8 @@ def load_layer_config(layer_path: Path) -> ResolvedLayerConfig:
 def check_absolute_path(env_path: Path) -> None:
     """Ensures given path is absolute (raises RuntimeError otherwise)."""
     if not env_path.is_absolute():
-        raise RuntimeError("Post-installation must use absolute environment paths")
+        err_msg = f"Post-installation must use absolute environment paths ({str(env_path)!r} is relative)"
+        raise RuntimeError(err_msg)
 
 
 def check_absolute_paths(env_paths: Iterable[Path]) -> None:
