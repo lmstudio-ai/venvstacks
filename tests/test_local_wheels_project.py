@@ -64,7 +64,6 @@ class _WheelBuildEnv:
             ["-r", str(WHEEL_BUILD_REQUIREMENTS_PATH)], with_index=True
         )
         self._venv_bin_path = python_path.parent
-        print(self._venv_bin_path)
 
     def remove_venv(self):
         # Test suite is done with the build, only keep the built wheels around

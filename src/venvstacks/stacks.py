@@ -1437,10 +1437,6 @@ class LayerEnvBase(ABC):
                 else:
                     symlink_path.parent.mkdir(exist_ok=True, parents=True)
                     symlink_path.symlink_to(so_path)
-            if symlink_dir_path.exists():
-                print(
-                    symlink_dir_path, list(p.name for p in symlink_dir_path.iterdir())
-                )
         return install_result
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
