@@ -49,6 +49,7 @@ WHEEL_PROJECT_MANIFESTS_PATH = WHEEL_PROJECT_PATH / "expected_manifests"
 WHEEL_PROJECT_PATHS = (
     WHEEL_PROJECT_STACK_SPEC_PATH,
     WHEEL_PROJECT_PATH / "dynlib_import.py",
+    WHEEL_PROJECT_PATH / "windows_only_dynlib_import.py",
 )
 
 
@@ -64,7 +65,6 @@ class _WheelBuildEnv:
             ["-r", str(WHEEL_BUILD_REQUIREMENTS_PATH)], with_index=True
         )
         self._venv_bin_path = python_path.parent
-        print(self._venv_bin_path)
 
     def remove_venv(self):
         # Test suite is done with the build, only keep the built wheels around
@@ -182,6 +182,10 @@ EXPECTED_FRAMEWORKS = [
     LayeredEnvSummary(
         "only-consumer", "framework-", "cpython-3.11", ("only-publisher",)
     ),
+    LayeredEnvSummary("broken-publisher", "framework-", "cpython-3.11", ()),
+    LayeredEnvSummary(
+        "broken-consumer", "framework-", "cpython-3.11", ("broken-publisher",)
+    ),
 ]
 
 EXPECTED_APPLICATIONS = [
@@ -195,6 +199,15 @@ EXPECTED_APPLICATIONS = [
         (
             "only-consumer",
             "only-publisher",
+        ),
+    ),
+    ApplicationEnvSummary(
+        "via-add-dll-directory",
+        "app-",
+        "cpython-3.11",
+        (
+            "broken-consumer",
+            "broken-publisher",
         ),
     ),
 ]

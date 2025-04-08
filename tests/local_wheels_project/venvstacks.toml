@@ -28,10 +28,6 @@ name = "via-combined-layer"
 launch_module = "dynlib_import.py"
 frameworks = ["both-wheels"]
 requirements = []
-# The local test wheel RPATH setup isn't right on macOS
-# Instead of working out what's wrong with the meson config, wait for
-# https://github.com/lmstudio-ai/venvstacks/issues/38
-platforms = ["linux_x86_64", "win_amd64"]
 
 # Test splitting the dynlib publisher and consumer across layers
 [[frameworks]]
@@ -53,6 +49,29 @@ name = "via-split-layers"
 launch_module = "dynlib_import.py"
 frameworks = ["only-consumer"]
 requirements = []
-# This is Windows-only until Linux & macOS support is added in
-# https://github.com/lmstudio-ai/venvstacks/issues/38
-platforms = ["win_amd64"]
+
+# Test dynlib exclusion from the dynamic linking
+[[frameworks]]
+name = "broken-publisher"
+runtime = "cpython-3.11"
+requirements = [
+    "venvstacks-testing-dynlib-publisher",
+]
+dynlib_exclude = [
+    # This could be a simple "*" filter, but it is split for testing
+    "*.so",     # Makes Linux fail
+    "*.dylib",  # Makes macOS fail
+]
+
+[[frameworks]]
+name = "broken-consumer"
+frameworks = ["broken-publisher"]
+requirements = [
+    "venvstacks-testing-dynlib-consumer",
+]
+
+[[applications]]
+name = "via-add-dll-directory"
+launch_module = "windows_only_dynlib_import.py"
+frameworks = ["broken-consumer"]
+requirements = []

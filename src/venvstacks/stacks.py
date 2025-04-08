@@ -49,6 +49,7 @@ from ._util import (
     as_normalized_path,
     capture_python_output,
     default_tarfile_filter,
+    find_shared_libraries,
     run_python_command,
     StrPath,
     WINDOWS_BUILD as _WINDOWS_BUILD,
@@ -425,6 +426,7 @@ def ensure_optional_env_spec_fields(env_metadata: MutableMapping[str, Any]) -> N
     """Populate missing environment spec fields that are optional in the TOML file."""
     TargetPlatforms.ensure_platform_list(env_metadata)
     env_metadata.setdefault("versioned", False)
+    env_metadata.setdefault("dynlib_exclude", [])
 
 
 @dataclass
@@ -443,6 +445,7 @@ class LayerSpecBase(ABC):
     versioned: bool
     requirements: list[str] = field(repr=False)
     platforms: list[TargetPlatforms] = field(repr=False)
+    dynlib_exclude: list[str] = field(repr=False)
 
     def __post_init__(self) -> None:
         # When instantiating specs that don't have a prefix,
@@ -982,7 +985,7 @@ def _hash_directory(
     path: Path, algorithm: str = "sha256", *, omit_prefix: bool = False
 ) -> str:
     incremental_hash = hashlib.new(algorithm)
-    # Alas, there's no `Path.walk` yet in Python 3.11
+    # Python 3.11 compatibility: use os.walk instead of Path.walk
     for this_dir, subdirs, files in os.walk(path):
         if not files:
             continue
@@ -1097,22 +1100,28 @@ class LayerEnvBase(ABC):
         # Assert its existence here to make failures to do so easier to diagnose
         assert self.py_version is not None, "Subclass failed to set 'py_version'"
         self.env_path = self.build_path / self.env_name
+        # Note: purelib and platlib are the same location in virtual environments
+        # (even when they have different names, platlib is a symlink to purelib)
         self.pylib_path = self._get_py_scheme_path("purelib")
         self.executables_path = self._get_py_scheme_path("scripts")
         self.python_path = self._get_python_dir_path() / _binary_with_extension(
             "python"
         )
         if _WINDOWS_BUILD:
+            # Windows DLL loading is typically handled via os.add_dll_directory()
             # Intel install some DLLs in a weird spot that needs extra config to handle
             self.dynlib_path = self.env_path / "Library" / "bin"
         else:
-            # No extra library search paths on non-Windows systems
-            # (but see https://github.com/lmstudio-ai/venvstacks/issues/38)
-            self.dynlib_path = None
+            # Allow POSIX extension modules to load shared libraries from lower layers
+            self.dynlib_path = self.env_path / "share" / "venv" / "dynlib"
         self.env_lock = EnvironmentLock(
             self.requirements_path,
             self.env_spec.versioned,
         )
+        # Ensure symlinks in the environment paths aren't inadvertently resolved
+        assert self.pylib_path.relative_to(self.env_path)
+        assert self.executables_path.relative_to(self.env_path)
+        assert self.dynlib_path.relative_to(self.env_path)
 
     @property
     def env_spec(self) -> LayerSpecBase:
@@ -1408,10 +1417,36 @@ class LayerEnvBase(ABC):
             self._fail_build(
                 "Environment must be locked before installing dependencies"
             )
-        return self._run_pip_install(
+        install_result = self._run_pip_install(
             "-r",
             str(self.requirements_path),
         )
+        if not _WINDOWS_BUILD:
+            # TODO: Add a shared library exclusion mechanism
+            symlink_dir_path = self.dynlib_path
+            if symlink_dir_path is None:
+                self._fail_build(
+                    "Environments must be linked before installing dependencies"
+                )
+            for so_path in find_shared_libraries(
+                self.py_version, self.pylib_path, excluded=self.env_spec.dynlib_exclude
+            ):
+                symlink_path = symlink_dir_path / so_path.name
+                if symlink_path.exists():
+                    if not symlink_path.is_symlink():
+                        self._fail_build(
+                            f"{str(symlink_path)!r} already exists and is not a symlink"
+                        )
+                    target_path = symlink_path.readlink()
+                    absolute_target_path = symlink_path.parent / target_path
+                    if not absolute_target_path.samefile(so_path):
+                        self._fail_build(
+                            f"{str(symlink_path)!r} already exists, but links to {str(absolute_target_path)!r}, not {str(so_path)!r}"
+                        )
+                else:
+                    symlink_path.parent.mkdir(exist_ok=True, parents=True)
+                    symlink_path.symlink_to(so_path)
+        return install_result
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         if not lock_only:
@@ -1666,6 +1701,8 @@ class LayeredEnvBase(LayerEnvBase):
         options = ["--without-pip"]
         if self.env_path.exists():
             options.append("--upgrade")
+            # Ensure the wrapper script doesn't cause any update problems
+            self.python_path.unlink(missing_ok=True)
         if _WINDOWS_BUILD:
             options.append("--copies")
         else:
@@ -1700,6 +1737,23 @@ class LayeredEnvBase(LayerEnvBase):
         sc_path = self.pylib_path / "sitecustomize.py"
         print(f"Generating {str(sc_path)!r}...")
         sc_path.write_text(sc_contents, encoding="utf-8")
+        if not _WINDOWS_BUILD and build_dynlib_paths:
+            # Allow shared library loading in POSIX environments
+            base_python_path = self.base_python_path
+            if base_python_path is None:
+                self._fail_build(
+                    "Layered environments must at least link a base runtime environment"
+                )
+            sh_path = self.python_path
+            wrapper_info = postinstall.generate_python_sh(sh_path, build_dynlib_paths)
+            assert wrapper_info is not None
+            sh_contents, symlink_path = wrapper_info
+            symlink_path.unlink(missing_ok=True)
+            print(f"Renaming {str(sh_path)!r} -> {str(symlink_path)!r}...")
+            sh_path.rename(symlink_path)
+            print(f"Generating {str(sh_path)!r}...")
+            sh_path.write_text(sh_contents, encoding="utf-8")
+            os.chmod(sh_path, 0x755)
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         if lock_only:

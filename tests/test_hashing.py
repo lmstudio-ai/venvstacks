@@ -114,7 +114,7 @@ def _make_expected_dir_hash(algorithm: str, content_hashes: Mapping[str, str]) -
                 hash_component = (
                     f"{algorithm}:{content_hashes[component_text]}".encode()
                 )
-        print(component_text, hash_component)
+        # print(component_text, hash_component)
         incremental_hash.update(hash_component)
     return incremental_hash.hexdigest()
 

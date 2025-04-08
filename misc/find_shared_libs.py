@@ -2,7 +2,7 @@
 """Proof of concept for finding non-Python-module shared modules."""
 
 # Concept demonstrator for the cross-environment shared library loading support
-# described in https://github.com/lmstudio-ai/venvstacks/issues/1
+# described in https://github.com/lmstudio-ai/venvstacks/issues/38
 
 import os
 import sys
@@ -29,6 +29,7 @@ def main() -> None:
     """Find non-extension-module shared libraries in specified folder."""
     _dir_to_search = sys.argv[1]
     _paths_to_link = []
+    # Python 3.11 compatibility: use os.walk instead of Path.walk
     for this_dir, _, files in os.walk(_dir_to_search):
         dir_path = Path(this_dir)
         for fname in files:
