@@ -210,8 +210,8 @@ def generate_python_sh(
         *dynlib_content,
         f'script_path="$script_dir/{_sh_path(env_python_path)}"',
         f'symlink_path="$script_dir/{_sh_path(symlink_path)}"',
-        'test -f "$script_path"',
-        'test -L "$symlink_path"',
+        'test -f "$script_path" || echo 1>&2 "Invalid wrapper script path: $script_path"',
+        'test -L "$symlink_path" || echo 1>&2 "Invalid base Python symlink: $symlink_path"',
         'exec -a "$script_path" "$symlink_path" "$@"',
     ]
     wrapper_script_contents = "\n".join(wrapper_script_lines)
