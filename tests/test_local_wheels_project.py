@@ -182,6 +182,10 @@ EXPECTED_FRAMEWORKS = [
     LayeredEnvSummary(
         "only-consumer", "framework-", "cpython-3.11", ("only-publisher",)
     ),
+    LayeredEnvSummary("broken-publisher", "framework-", "cpython-3.11", ()),
+    LayeredEnvSummary(
+        "broken-consumer", "framework-", "cpython-3.11", ("broken-publisher",)
+    ),
 ]
 
 EXPECTED_APPLICATIONS = [
@@ -195,6 +199,15 @@ EXPECTED_APPLICATIONS = [
         (
             "only-consumer",
             "only-publisher",
+        ),
+    ),
+    ApplicationEnvSummary(
+        "via-add-dll-directory",
+        "app-",
+        "cpython-3.11",
+        (
+            "broken-consumer",
+            "broken-publisher",
         ),
     ),
 ]
