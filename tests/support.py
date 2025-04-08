@@ -338,10 +338,13 @@ class DeploymentTestCase(unittest.TestCase):
                 continue
             self.assertPathExists(path_entry)
         # Check for sys.path references outside this environment
+        def _is_relative_to(p: Path, base_path: Path) -> bool:
+            # Also accept paths which have been fully resolved by the Python runtime
+            return p.is_relative_to(base_path) or p.is_relative_to(base_path.resolve())
         if self_contained:
             # All sys.path entries should be inside the environment
             self.assertTrue(
-                all(p.is_relative_to(env_path) for p in sys_path_entries),
+                all(_is_relative_to(p, env_path) for p in sys_path_entries),
                 f"Path outside deployed {env_path} in {env_sys_path}",
             )
         else:
@@ -349,11 +352,11 @@ class DeploymentTestCase(unittest.TestCase):
             # but at least one sys.path entry should refer to a peer environment
             peer_env_path = env_path.parent
             self.assertTrue(
-                all(p.is_relative_to(peer_env_path) for p in sys_path_entries),
+                all(_is_relative_to(p, peer_env_path) for p in sys_path_entries),
                 f"Path outside deployed {peer_env_path} in {env_sys_path}",
             )
             self.assertFalse(
-                all(p.is_relative_to(env_path) for p in sys_path_entries),
+                all(_is_relative_to(p, env_path) for p in sys_path_entries),
                 f"No path outside deployed {env_path} in {env_sys_path}",
             )
 
