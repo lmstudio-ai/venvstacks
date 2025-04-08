@@ -983,7 +983,7 @@ def _hash_directory(
     path: Path, algorithm: str = "sha256", *, omit_prefix: bool = False
 ) -> str:
     incremental_hash = hashlib.new(algorithm)
-    # Alas, there's no `Path.walk` yet in Python 3.11
+    # Python 3.11 compatibility: use os.walk instead of Path.walk
     for this_dir, subdirs, files in os.walk(path):
         if not files:
             continue

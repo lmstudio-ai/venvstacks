@@ -515,6 +515,7 @@ def _make_zipfile(
         base_dir = os.path.normpath(base_dir)
         if arcname != os.curdir:
             _add_zip_entry(base_dir, arcname)
+        # Python 3.11 compatibility: use os.walk instead of Path.walk
         for dirpath, dirnames, filenames in os.walk(base_dir):
             arcdirpath = dirpath
             if root_dir is not None:

@@ -170,7 +170,9 @@ def find_shared_libraries(
     base_path: Path, *, excluded: Container[str] = ()
 ) -> Generator[Path, None, None]:
     """Find non-extension-module shared libraries in specified directory."""
-    for dir_path, _, files in base_path.walk():
+    # Python 3.11 compatibility: use os.walk instead of Path.walk
+    for this_dir, _, files in os.walk(base_path):
+        dir_path = Path(this_dir)
         for fname in files:
             file_path = dir_path / fname
             if file_path.suffix not in _LIB_SUFFIXES:
