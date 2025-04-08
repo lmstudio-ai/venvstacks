@@ -1,10 +1,10 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "1b92ab934afdf7087addf06e594a1294566774e8ac1ada51fae84dc6b19d832b"
+    "sha256": "5ebb914e827ec28a810a79a84aef326b506a26769e43b0336f02a76995da9008"
   },
   "archive_name": "cpython-3.12.zip",
-  "archive_size": 49922982,
+  "archive_size": 49924570,
   "bound_to_implementation": true,
   "install_target": "cpython-3.12",
   "layer_name": "cpython-3.12",
