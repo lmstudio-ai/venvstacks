@@ -1438,9 +1438,10 @@ class LayerEnvBase(ABC):
                             f"{str(symlink_path)!r} already exists and is not a symlink"
                         )
                     target_path = symlink_path.readlink()
-                    if not target_path.samefile(so_path):
+                    absolute_target_path = symlink_path.parent / target_path
+                    if not absolute_target_path.samefile(so_path):
                         self._fail_build(
-                            f"{str(symlink_path)!r} already exists, but links to {str(target_path)!r}, not {str(so_path)!r}"
+                            f"{str(symlink_path)!r} already exists, but links to {str(absolute_target_path)!r}, not {str(so_path)!r}"
                         )
                 else:
                     symlink_path.parent.mkdir(exist_ok=True, parents=True)
