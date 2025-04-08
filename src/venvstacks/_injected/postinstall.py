@@ -190,27 +190,32 @@ def generate_python_sh(
         else:
             # Path is in the same directory as the wrapper script
             path_parts = parent_relative_path.parts[2:]
-        return f"$script_dir/{shlex.quote(str(Path(*path_parts)))}"
+        return shlex.quote(str(Path(*path_parts)))
 
     target = "DYLD_LIBRARY_PATH" if sys.platform == "darwin" else "LD_LIBRARY_PATH"
     dynlib_content: list[str] = [
         # Based on the PATH manipulation suggestion in https://unix.stackexchange.com/a/124447
         # Path list is reversed on iteration because the helper function *pre*pends each entry
         f'add_dynlib_dir() {{ case ":${{{target}:=$1}}:" in *:"$1":*) ;; *) {target}="$1:${target}" ;; esac; }}',
-        *(f'add_dynlib_dir "{_sh_path(p)}"' for p in reversed(dynlib_paths)),
+        *(f'add_dynlib_dir "$script_dir/{_sh_path(p)}"' for p in reversed(dynlib_paths)),
         f"export {target}",
     ]
     symlink_path = env_bin_dir_path / f"{env_python_path.name}_"
     wrapper_script_lines = [
         "#!/bin/sh",
         "# Allow extension modules to find shared libraries published by lower layers",
+        "set -eu",
         "# Note: `readlink -f` (long available in GNU coreutils) is available on macOS 12.3 and later",
         'script_dir="$(cd -- "$(dirname -- "$(readlink -f "$0")")" &> /dev/null && pwd)"',
         *dynlib_content,
-        f'exec -a "{_sh_path(env_python_path)}" "{_sh_path(symlink_path)}" "$@"',
-        "",
+        f'script_path="$script_dir/{_sh_path(env_python_path)}"',
+        f'symlink_path="$script_dir/{_sh_path(symlink_path)}"',
+        'test -f "$script_path"',
+        'test -L "$symlink_path"',
+        'exec -a "$script_path" "$symlink_path" "$@"',
     ]
     wrapper_script_contents = "\n".join(wrapper_script_lines)
+    print(wrapper_script_contents)
     return wrapper_script_contents, symlink_path
 
 
