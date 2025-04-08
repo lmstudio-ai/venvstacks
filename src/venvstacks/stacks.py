@@ -426,6 +426,7 @@ def ensure_optional_env_spec_fields(env_metadata: MutableMapping[str, Any]) -> N
     """Populate missing environment spec fields that are optional in the TOML file."""
     TargetPlatforms.ensure_platform_list(env_metadata)
     env_metadata.setdefault("versioned", False)
+    env_metadata.setdefault("dynlib_exclude", [])
 
 
 @dataclass
@@ -444,6 +445,7 @@ class LayerSpecBase(ABC):
     versioned: bool
     requirements: list[str] = field(repr=False)
     platforms: list[TargetPlatforms] = field(repr=False)
+    dynlib_exclude: list[str] = field(repr=False)
 
     def __post_init__(self) -> None:
         # When instantiating specs that don't have a prefix,
@@ -1426,7 +1428,9 @@ class LayerEnvBase(ABC):
                 self._fail_build(
                     "Environments must be linked before installing dependencies"
                 )
-            for so_path in find_shared_libraries(self.pylib_path):
+            for so_path in find_shared_libraries(
+                self.py_version, self.pylib_path, excluded=self.env_spec.dynlib_exclude
+            ):
                 symlink_path = symlink_dir_path / so_path.name
                 if symlink_path.exists():
                     if not symlink_path.is_symlink():

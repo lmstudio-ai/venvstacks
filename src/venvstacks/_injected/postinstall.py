@@ -211,7 +211,10 @@ def generate_python_sh(
         # Based on the PATH manipulation suggestion in https://unix.stackexchange.com/a/124447
         # Path list is reversed on iteration because the helper function *pre*pends each entry
         f'add_dynlib_dir() {{ case ":${{{dynlib_var}:=$1}}:" in *:"$1":*) ;; *) {dynlib_var}="$1:${dynlib_var}" ;; esac; }}',
-        *(f'add_dynlib_dir "$script_dir/{_sh_path(p)}"' for p in reversed(dynlib_paths)),
+        *(
+            f'add_dynlib_dir "$script_dir/{_sh_path(p)}"'
+            for p in reversed(dynlib_paths)
+        ),
         f"export {dynlib_var}",
     ]
     symlink_path = env_bin_dir_path / f"{env_python_path.name}_"

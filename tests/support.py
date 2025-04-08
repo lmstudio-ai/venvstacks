@@ -337,10 +337,12 @@ class DeploymentTestCase(unittest.TestCase):
             if path_entry.suffix:
                 continue
             self.assertPathExists(path_entry)
+
         # Check for sys.path references outside this environment
         def _is_relative_to(p: Path, base_path: Path) -> bool:
             # Also accept paths which have been fully resolved by the Python runtime
             return p.is_relative_to(base_path) or p.is_relative_to(base_path.resolve())
+
         if self_contained:
             # All sys.path entries should be inside the environment
             self.assertTrue(

@@ -49,3 +49,27 @@ name = "via-split-layers"
 launch_module = "dynlib_import.py"
 frameworks = ["only-consumer"]
 requirements = []
+
+# Test dynlib exclusion from the dynamic linking
+[[frameworks]]
+name = "broken-publisher"
+runtime = "cpython-3.11"
+requirements = [
+    "venvstacks-testing-dynlib-publisher",
+]
+dynlib_exclude = [
+    "*.so",
+]
+
+[[frameworks]]
+name = "broken-consumer"
+frameworks = ["broken-publisher"]
+requirements = [
+    "venvstacks-testing-dynlib-consumer",
+]
+
+[[applications]]
+name = "via-add-dll-directory"
+launch_module = "windows_only_dynlib_import.py"
+frameworks = ["broken-consumer"]
+requirements = []
