@@ -192,21 +192,33 @@ def generate_python_sh(
             path_parts = parent_relative_path.parts[2:]
         return shlex.quote(str(Path(*path_parts)))
 
-    target = "DYLD_LIBRARY_PATH" if sys.platform == "darwin" else "LD_LIBRARY_PATH"
+    # Wrapper needs "exec -a" support, so specify a shell that provides it
+    # (most notably, "dash", which provide "/bin/sh" on Ubuntu omits it)
+    # Also set the relevant environment variable for dynamic loading config
+    if sys.platform == "darwin":
+        shell = "/bin/zsh"
+        dynlib_var = "DYLD_LIBRARY_PATH"
+    else:
+        shell = "/usr/bin/bash"
+        dynlib_var = "LD_LIBRARY_PATH"
+
     dynlib_content: list[str] = [
         # Based on the PATH manipulation suggestion in https://unix.stackexchange.com/a/124447
         # Path list is reversed on iteration because the helper function *pre*pends each entry
-        f'add_dynlib_dir() {{ case ":${{{target}:=$1}}:" in *:"$1":*) ;; *) {target}="$1:${target}" ;; esac; }}',
+        f'add_dynlib_dir() {{ case ":${{{dynlib_var}:=$1}}:" in *:"$1":*) ;; *) {dynlib_var}="$1:${dynlib_var}" ;; esac; }}',
         *(f'add_dynlib_dir "$script_dir/{_sh_path(p)}"' for p in reversed(dynlib_paths)),
-        f"export {target}",
+        f"export {dynlib_var}",
     ]
     symlink_path = env_bin_dir_path / f"{env_python_path.name}_"
     wrapper_script_lines = [
-        "#!/bin/sh",
+        f"#!{shell}",
         "# Allow extension modules to find shared libraries published by lower layers",
         "set -eu",
         "# Note: `readlink -f` (long available in GNU coreutils) is available on macOS 12.3 and later",
         'script_dir="$(cd "$(dirname "$(readlink -f "$0")")" 1> /dev/null 2>&1 && pwd)"',
+        'echo "$(dirname "$(readlink -f "$0")")"',
+        'echo "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"',
+        'echo "$script_dir"',
         *dynlib_content,
         f'script_path="$script_dir/{_sh_path(env_python_path)}"',
         f'symlink_path="$script_dir/{_sh_path(symlink_path)}"',
@@ -215,7 +227,6 @@ def generate_python_sh(
         'exec -a "$script_path" "$symlink_path" "$@"',
     ]
     wrapper_script_contents = "\n".join(wrapper_script_lines)
-    print(wrapper_script_contents)
     return wrapper_script_contents, symlink_path
 
 
