@@ -356,6 +356,59 @@ needs in its base runtime layers.</p>
 could be a genuinely interesting capability, but there are no current
 plans to implement such a mechanism.</p>
 </section>
+<section id="how-does-dynamic-linking-work-across-layers">
+<span id="dynamic-linking"></span><h3>How does dynamic linking work across layers?<a class="headerlink" href="#how-does-dynamic-linking-work-across-layers" title="Link to this heading">¶</a></h3>
+<p>In some cases, binary extension modules in a Python package may depend
+on dynamically linked libraries that are provided by a different Python
+package. For example, <a class="extlink-pypi reference external" href="https://pypi.org/project/torch/">PyTorch</a> supports using the nVidia
+CUDA libraries published through the <a class="extlink-pypi reference external" href="https://pypi.org/project/nvidia/">nvidia</a> PyPI project.</p>
+<p>On Windows, finding these dependencies at runtime generally relies on the
+package publishing them calling <a class="reference external" href="https://docs.python.org/3/library/os.html#os.add_dll_directory" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">os.add_dll_directory()</span></code></a> with the
+relevant package subdirectory.</p>
+<p>On Linux and macOS, making this example case work typically requires that
+the nVidia CUDA libraries be installed into the <em>same</em> <code class="docutils literal notranslate"><span class="pre">site-packages</span></code>
+directory as the PyTorch extension modules, so they can be found via
+the relative rpath added to the extension modules when they are built.</p>
+<p>To allow for dynamic linking across layers (without relying on the use of
+tools like <a class="extlink-pypi reference external" href="https://pypi.org/project/dynamic-library/">dynamic-library</a> that require changes to the projects
+involved), <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> does the following on Linux and macOS:</p>
+<ul class="simple">
+<li><p>when building environments, symbolic links to all shared object files
+that do not appear to be Python extension modules are added to a
+<code class="docutils literal notranslate"><span class="pre">share/venv/dynlib</span></code> folder inside the built environment.</p></li>
+<li><p>when building environments, the symlink to the base environment’s
+Python runtime is renamed and replaced with a wrapper script that
+ensures the <code class="docutils literal notranslate"><span class="pre">share/venv/dynlib</span></code> folders of the linked layers are on
+the shared object loading path (<code class="docutils literal notranslate"><span class="pre">LD_LIBRARY_PATH</span></code> on Linux,
+<code class="docutils literal notranslate"><span class="pre">DYLD_LIBRARY_PATH</span></code> on macOS) before invoking the Python runtime.</p></li>
+</ul>
+<p>The additional library path entries are appended after any existing
+entries, so these environment variables may still be set as normal
+to indicate that alternative copies of the linked libraries should be
+preferred.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.4.0: </span>Added support for dynamic linking across layers on Linux and macOS
+(<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</section>
+<section id="are-there-limitations-on-the-permitted-depth-of-layer-dependency-chains">
+<h3>Are there limitations on the permitted depth of layer dependency chains?<a class="headerlink" href="#are-there-limitations-on-the-permitted-depth-of-layer-dependency-chains" title="Link to this heading">¶</a></h3>
+<p>There are no specifically enforced limits on how many framework layers are
+added between an application environment and its underlying runtime environment.</p>
+<p>However, each framework layer does add an extra <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> entry on all platforms,
+and an extra dynamic library loading path entry on Linux and macOS.</p>
+<p>These additions may encounter Python runtime or platform limitations that make
+it desirable to keep the dependency chains relatively short (no more than 5-10
+total layers) rather than making the individual layers excessively granular.
+If that kind of granularity in dependency declarations is desired, it may
+be better to dynamically construct suitable virtual environments on the target
+systems, rather than using <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> with a large number of framework layers.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.4.0: </span>Added the ability for framework layers to depend on other framework layers
+instead of depending directly on a runtime layer
+(<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</section>
 </section>
 </section>
 
@@ -422,6 +475,8 @@ plans to implement such a mechanism.</p>
 </li>
 <li><a class="reference internal" href="#technical">Technical</a><ul>
 <li><a class="reference internal" href="#why-use-python-build-standalone-for-the-base-runtimes">Why use <code class="docutils literal notranslate"><span class="pre">python-build-standalone</span></code> for the base runtimes?</a></li>
+<li><a class="reference internal" href="#how-does-dynamic-linking-work-across-layers">How does dynamic linking work across layers?</a></li>
+<li><a class="reference internal" href="#are-there-limitations-on-the-permitted-depth-of-layer-dependency-chains">Are there limitations on the permitted depth of layer dependency chains?</a></li>
 </ul>
 </li>
 </ul>

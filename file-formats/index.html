@@ -365,6 +365,19 @@ Permitted entries in the <code class="docutils literal notranslate"><span class=
 (<a class="reference internal" href="../changelog/#changelog-0-3-0"><span class="std std-ref">release details</span></a>).</p>
 </div>
 </li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dynlib_exclude</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
+by default, dynamic library (also known as shared object) files on Linux
+and macOS that do not appear to be Python extension modules will be symbolically
+linked from a <code class="docutils literal notranslate"><span class="pre">share/venv/dynlib/</span></code> folder within the virtual environment
+(see <a class="reference internal" href="../design/#dynamic-linking"><span class="std std-ref">How does dynamic linking work across layers?</span></a> for additional details).
+Setting this field allows files to be excluded from the linking process based
+on filename glob patterns. These patterns are checked against the <em>end</em> of the
+full path to the files using the equivalent of <a class="reference external" href="https://docs.python.org/3/library/glob.html#glob.translate" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">glob.translate()</span></code></a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.4.0: </span>Added support for dynamic linking across layers on Linux and macOS
+(<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</li>
 <li><p><code class="docutils literal notranslate"><span class="pre">versioned</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#boolean">boolean</a>): by default, and when this setting is <code class="docutils literal notranslate"><span class="pre">false</span></code>,
 the layer is considered unversioned (even if an <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> symbol appears in the
 layer name). The layer metadata will always report the lock version for these

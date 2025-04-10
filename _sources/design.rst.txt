@@ -76,3 +76,67 @@ needs in its base runtime layers.
 Supporting additional base runtime layer providers (such as :pypi:`conda`)
 could be a genuinely interesting capability, but there are no current
 plans to implement such a mechanism.
+
+
+.. _dynamic-linking:
+
+How does dynamic linking work across layers?
+--------------------------------------------
+
+In some cases, binary extension modules in a Python package may depend
+on dynamically linked libraries that are provided by a different Python
+package. For example, :pypi:`PyTorch <torch>` supports using the nVidia
+CUDA libraries published through the :pypi:`nvidia` PyPI project.
+
+On Windows, finding these dependencies at runtime generally relies on the
+package publishing them calling :func:`os.add_dll_directory` with the
+relevant package subdirectory.
+
+On Linux and macOS, making this example case work typically requires that
+the nVidia CUDA libraries be installed into the *same* ``site-packages``
+directory as the PyTorch extension modules, so they can be found via
+the relative rpath added to the extension modules when they are built.
+
+To allow for dynamic linking across layers (without relying on the use of
+tools like :pypi:`dynamic-library` that require changes to the projects
+involved), ``venvstacks`` does the following on Linux and macOS:
+
+* when building environments, symbolic links to all shared object files
+  that do not appear to be Python extension modules are added to a
+  ``share/venv/dynlib`` folder inside the built environment.
+* when building environments, the symlink to the base environment's
+  Python runtime is renamed and replaced with a wrapper script that
+  ensures the ``share/venv/dynlib`` folders of the linked layers are on
+  the shared object loading path (``LD_LIBRARY_PATH`` on Linux,
+  ``DYLD_LIBRARY_PATH`` on macOS) before invoking the Python runtime.
+
+The additional library path entries are appended after any existing
+entries, so these environment variables may still be set as normal
+to indicate that alternative copies of the linked libraries should be
+preferred.
+
+.. versionchanged:: 0.4.0
+   Added support for dynamic linking across layers on Linux and macOS
+   (:ref:`release details <changelog-0.4.0>`).
+
+
+Are there limitations on the permitted depth of layer dependency chains?
+------------------------------------------------------------------------
+
+There are no specifically enforced limits on how many framework layers are
+added between an application environment and its underlying runtime environment.
+
+However, each framework layer does add an extra ``sys.path`` entry on all platforms,
+and an extra dynamic library loading path entry on Linux and macOS.
+
+These additions may encounter Python runtime or platform limitations that make
+it desirable to keep the dependency chains relatively short (no more than 5-10
+total layers) rather than making the individual layers excessively granular.
+If that kind of granularity in dependency declarations is desired, it may
+be better to dynamically construct suitable virtual environments on the target
+systems, rather than using ``venvstacks`` with a large number of framework layers.
+
+.. versionchanged:: 0.4.0
+   Added the ability for framework layers to depend on other framework layers
+   instead of depending directly on a runtime layer
+   (:ref:`release details <changelog-0.4.0>`).
