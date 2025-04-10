@@ -36,3 +36,5 @@ jobs:
         run:  |
           uv tool install 'scriv[toml]'
           scriv github-release -v DEBUG --fail-if-warn
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
