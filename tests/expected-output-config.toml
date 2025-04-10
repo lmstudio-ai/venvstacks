@@ -33,4 +33,4 @@ UV_EXCLUDE_NEWER="2024-10-15 00:00:00+00:00"
 # Metadata updates can also be requested when the
 # launch module content in the sample project changes
 
-# Last requested update: dynamic linking across layers
+# Last requested update: improved dynamic linking across layers
