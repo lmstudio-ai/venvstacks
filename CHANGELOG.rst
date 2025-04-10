@@ -1,7 +1,7 @@
 .. Included in published docs via docs/changelog.rst
 
 .. Temporary link target for next release
-.. _changelog-0.4.0:
+.. _changelog-0.5.0:
 
 Unreleased
 ==========
@@ -11,6 +11,45 @@ See the fragment files in the `changelog.d directory`_.
 .. _changelog.d directory: https://github.com/lmstudio-ai/venvstacks/tree/main/docs/changelog.d
 
 .. scriv-insert-here
+
+.. _changelog-0.4.0:
+
+0.4.0 — 2025-04-11
+==================
+
+Added
+-----
+
+- Framework layers may now specify `frameworks` to depend on one or more
+  framework layers instead of depending directly on a runtime layer.
+  Framework dependencies must form a directed acyclic graph (DAG), and
+  framework layers must be defined *after* any framework layers they
+  depend on (proposed in :issue:`18`, implemented in :pr:`119`).
+- Application layers may now specify `runtime` to depend directly on a
+  a runtime layer with no intervening framework layers
+  (added as part of resolving :issue:`18`).
+- All layers may now specify `dynlib_exclude` to indicate dynamic
+  libraries which should not be symbolically linked into the
+  `share/venv/dynlib/` environment subfolder on Linux and macOS
+  (added as part of resolving :issue:`38`).
+
+Changed
+-------
+
+- To enable loading of shared objects from other environment layers,
+  framework and application environments on Linux and macOS now run
+  Python via a suitably capable shell environment (`bash` on Linux,
+  `zsh` on macOS) that can be expected to be consistently installed
+  (changed in :issue:`38`).
+
+Fixed
+-----
+
+- Extension modules on Linux and macOS that rely on shared objects
+  published by their dependencies (for example, PyTorch depending
+  on CUDA libraries) now work correctly even if those dependencies
+  are installed in a lower environment layer. See :ref:`dynamic-linking`
+  for additional details (resolved in :issue:`38`).
 
 .. _changelog-0.3.0:
 
