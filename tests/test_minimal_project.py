@@ -666,7 +666,7 @@ class TestMinimalBuild(DeploymentTestCase):
 
     @pytest.mark.slow
     def test_locking_and_publishing(self) -> None:
-        # This is organised as subtests in a monolothic test sequence to reduce CI overhead
+        # This is organised as subtests in a monolithic test sequence to reduce CI overhead
         # Separating the tests wouldn't really make them independent, unless the outputs of
         # the earlier steps were checked in for use when testing the later steps.
         # Actually configuring and building the environments is executed outside the subtest
@@ -790,7 +790,7 @@ class TestMinimalBuild(DeploymentTestCase):
             subtests_passed += 1
         # TODO: Add another test stage that confirms build versions increment as expected
 
-        # Work aroung pytest-subtests not failing the test case when subtests fail
+        # Work around pytest-subtests not failing the test case when subtests fail
         # https://github.com/pytest-dev/pytest-subtests/issues/76
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"

@@ -264,7 +264,7 @@ class EnvironmentLock:
 
     @property
     def locked_at(self) -> str:
-        """ISO-formated UTC string reporting the last locked date/time."""
+        """ISO-formatted UTC string reporting the last locked date/time."""
         return _format_as_utc(self.last_locked)
 
     def _hash_requirements(self) -> str | None:
@@ -1439,7 +1439,6 @@ class LayerEnvBase(ABC):
             str(self.requirements_path),
         )
         if not _WINDOWS_BUILD:
-            # TODO: Add a shared library exclusion mechanism
             symlink_dir_path = self.dynlib_path
             if symlink_dir_path is None:
                 self._fail_build(
@@ -1793,7 +1792,6 @@ class LayeredEnvBase(LayerEnvBase):
             *(f'add_dynlib_dir "$script_dir/{_sh_path(p)}"' for p in dynlib_paths),
             f"export {dynlib_var}",
         ]
-        # TODO: use `glob` here to find the external symlink and replace that
         symlink_path = env_bin_dir_path / f"{env_python_path.name}_"
         wrapper_script_lines = [
             f"#!{shell}",
@@ -1858,7 +1856,7 @@ class LayeredEnvBase(LayerEnvBase):
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
         super()._update_output_metadata(metadata)
         # Non-windows platforms use symlinks, so only need updates on feature releases
-        # Windows copies the main Python binary and support libary, so always needs updates
+        # Windows copies the main Python binary and support library, so always needs updates
         runtime = self.base_runtime
         assert runtime is not None
         metadata["runtime_layer"] = runtime.install_target
@@ -2532,7 +2530,7 @@ class BuildEnvironment:
         for env_name in dependency_envs:
             env = envs_by_name[env_name]
             env.select_operations(
-                lock=lock_dependencies or None,    # Allow locking if neeeded
+                lock=lock_dependencies or None,    # Allow locking if needed
                 build=build_dependencies or None,  # Allow building if needed
                 publish=publish_dependencies,      # No implicit publication
             )  # fmt: skip

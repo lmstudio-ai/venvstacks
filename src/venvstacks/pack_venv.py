@@ -57,7 +57,7 @@ def convert_symlinks(
     """Make env portable by making internal symlinks relative and external links hard.
 
     If set, containing path must be a parent directory of the environment path and is
-    used as the boundary for creating relative symlinks instead of hardlinks. If not set,
+    used as the boundary for creating relative symlinks instead of hard links. If not set,
     the environment path itself is used as the boundary for creating relative symlinks.
 
     Returns a 2-tuple containing lists of internal relative link conversions and
@@ -75,7 +75,7 @@ def convert_symlinks(
 
     relative_links = []
     external_links = []
-    # Ensure internal symlinks are relative, collect external links for hardlink conversion.
+    # Ensure internal symlinks are relative, collect external links for hard link conversion.
     # The external links are *not* eagerly converted, so only the final link in any internal
     # symlink chains gets converted to a hard link.
     for file_path in env_path.rglob("*"):
@@ -542,7 +542,8 @@ def _make_zipfile(
 
 # Basic progress bar support, taken from ncoghlan's SO answer at
 # https://stackoverflow.com/questions/3160699/python-progress-bar/78590319#78590319
-# (since the code originated with her, it isn't subject to Stack Overflow's CC-BY-SA terms)
+# (since the code originated with her, and she also implemented it here,
+# it isn't subject to Stack Overflow's CC-BY-SA terms)
 #
 # Archiving pytorch (and similarly large AI/ML libraries) takes a long time,
 # so you really need some assurance that progress is being made.

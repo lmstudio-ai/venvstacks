@@ -1,7 +1,7 @@
 Python layered environments test suite
 ======================================
 
-Currently mostly a monolothic functional test suite checking that the `sample_project`
+Currently mostly a monolithic functional test suite checking that the `sample_project`
 folder builds as expected on all supported platforms.
 
 Individual test cases can be written using either `pytest` or `unittest` based on which

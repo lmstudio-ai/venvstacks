@@ -256,7 +256,7 @@ class TestBuildEnvironment(DeploymentTestCase):
     def test_build_is_reproducible(self) -> None:
         # Need long diffs to get useful output from metadata checks
         self.maxDiff = None
-        # This is organised as subtests in a monolothic test sequence to reduce CI overhead
+        # This is organised as subtests in a monolithic test sequence to reduce CI overhead
         # Separating the tests wouldn't really make them independent, unless the outputs of
         # the initial intermediate steps were checked in for use when testing the later steps.
         # Actually configuring and building the environments is executed outside the subtest
@@ -363,7 +363,7 @@ class TestBuildEnvironment(DeploymentTestCase):
             self.check_environment_exports(export_path, export_result)
             subtests_passed += 1
 
-        # Work aroung pytest-subtests not failing the test case when subtests fail
+        # Work around pytest-subtests not failing the test case when subtests fail
         # https://github.com/pytest-dev/pytest-subtests/issues/76
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
