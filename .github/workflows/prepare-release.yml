@@ -21,6 +21,11 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
+      - uses: pandoc/actions/setup@v1
+        with:
+          # Control when pandoc is updated
+          version: 3.6.4
+
       - uses: actions/setup-python@v5
         with:
           # Control when Python is updated to a new feature release
@@ -30,4 +35,4 @@ jobs:
       - name: Create GitHub Release from latest release notes
         run:  |
           uv tool install 'scriv[toml]'
-          scriv github-release -v DEBUG
+          scriv github-release -v DEBUG --fail-if-warn
