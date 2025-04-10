@@ -80,9 +80,6 @@ Caveats and Limitations
   `venvstacks.stacks` namespace) will be the trigger for the 1.0 milestone release.
 * While the `venvstacks` CLI is broadly stable, there are still some specific areas
   where changes may occur (such as in the handling of relative paths).
-* Dynamic library dependencies across layers currently only work on Windows.
-  There is a [proposal](https://github.com/lmstudio-ai/venvstacks/issues38) in
-  place for resolving that limitation, but it has not yet been implemented.
 * Local exports to filesystems which do not support symlinks (such as `VFAT` and
   `FAT32`) are nominally supported (with symlinks being replaced by the files
   they refer to), but this support is *not* currently tested.
