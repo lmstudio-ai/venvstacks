@@ -790,7 +790,7 @@ class TestMinimalBuild(DeploymentTestCase):
             subtests_passed += 1
         # TODO: Add another test stage that confirms build versions increment as expected
 
-        # Work aroung pytest-subtests not failing the test case when subtests fail
+        # Work around pytest-subtests not failing the test case when subtests fail
         # https://github.com/pytest-dev/pytest-subtests/issues/76
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
