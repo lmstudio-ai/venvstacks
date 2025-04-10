@@ -1,7 +1,7 @@
 name: Prepare release
 
 on:
-  # At least for now, decide when tags should be turned into release
+  # At least for now, decide when tags should be turned into a release
   workflow_dispatch
 
 
