@@ -7,6 +7,7 @@ Creates Python runtime, framework, and app environments based on ``venvstacks.to
 import hashlib
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -1104,9 +1105,25 @@ class LayerEnvBase(ABC):
         # (even when they have different names, platlib is a symlink to purelib)
         self.pylib_path = self._get_py_scheme_path("purelib")
         self.executables_path = self._get_py_scheme_path("scripts")
-        self.python_path = self._get_python_dir_path() / _binary_with_extension(
-            "python"
-        )
+        env_python_dir_path = self._get_python_dir_path()
+        env_python_path = env_python_dir_path / _binary_with_extension("python")
+        # Symlinked environments may technically vary in whether the link chain is:
+        #   python -> ./pythonX -> ./pythonX.Y -> base runtime Python
+        # or instead:
+        #   python -> base runtime Python
+        #   pythonX -> ./python
+        #   pythonX.Y -> ./python
+        #
+        # The stdlib venv does the latter, but this detail isn't formally standardised,
+        # so both potential cases are tolerated (setting whichever link actually targets
+        # the base runtime as the Python binary path for the environment layer)
+        while env_python_path.is_symlink():
+            symlink_target = env_python_dir_path / env_python_path.readlink()
+            if not symlink_target.is_relative_to(env_python_dir_path):
+                # Links out to the base Python environment, so use this path
+                break
+            env_python_path = symlink_target
+        self.python_path = env_python_path
         if _WINDOWS_BUILD:
             # Windows DLL loading is typically handled via os.add_dll_directory()
             # Intel install some DLLs in a weird spot that needs extra config to handle
@@ -1722,6 +1739,78 @@ class LayeredEnvBase(LayerEnvBase):
         print(f"Virtual environment configured in {str(self.env_path)!r}")
         return result
 
+    @classmethod
+    def _generate_python_sh(
+        cls,
+        env_python_path: Path,
+        dynlib_paths: Sequence[Path],
+    ) -> tuple[str, Path] | None:
+        """Generate a Python wrapper script that sets the dynamic linking config appropriately."""
+        if not dynlib_paths:
+            # No need to wrap the link if the dynamic library loading doesn't need customisation
+            return None
+        if not env_python_path.is_symlink():
+            # Symlink has already been replaced, don't try to replace it again
+            return None
+        assert env_python_path.is_absolute()
+        assert all(p.is_absolute() for p in dynlib_paths)
+        # Use file relative paths so the wrapper script is portable (e.g. for local-export)
+        # We avoid `walk_up=True` here to maintain Python 3.11 compatibility,
+        # and to limit the relative paths to remaining within peer environments
+        env_bin_dir_path = env_python_path.parent
+        env_bin_dir_name = env_bin_dir_path.name
+        env_path = env_bin_dir_path.parent
+        env_name = env_path.name
+        parent_path = env_path.parent
+
+        def _sh_path(p: Path) -> str:
+            parent_relative_path = p.relative_to(parent_path)
+            if parent_relative_path.parts[0] != env_name:
+                # Path is in a peer environment
+                path_parts = ("..", "..", *parent_relative_path.parts)
+            elif parent_relative_path.parts[1] != env_bin_dir_name:
+                # Path is in the same environment as the wrapper script
+                path_parts = ("..", *parent_relative_path.parts[1:])
+            else:
+                # Path is in the same directory as the wrapper script
+                path_parts = parent_relative_path.parts[2:]
+            return shlex.quote(str(Path(*path_parts)))
+
+        # Wrapper needs "exec -a" support, so specify a shell that provides it
+        # (most notably, "dash", which provide "/bin/sh" on Ubuntu omits it)
+        # Also set the relevant environment variable for dynamic loading config
+        if sys.platform == "darwin":
+            shell = "/bin/zsh"
+            dynlib_var = "DYLD_LIBRARY_PATH"
+        else:
+            shell = "/usr/bin/bash"
+            dynlib_var = "LD_LIBRARY_PATH"
+
+        dynlib_content: list[str] = [
+            # Based on the PATH manipulation suggestion in https://unix.stackexchange.com/a/124447
+            # New entries are appended rather than prepended so the env var can override the default load locations
+            f'add_dynlib_dir() {{ case ":${{{dynlib_var}:=$1}}:" in *:"$1":*) ;; *) {dynlib_var}="${dynlib_var}:$1" ;; esac; }}',
+            *(f'add_dynlib_dir "$script_dir/{_sh_path(p)}"' for p in dynlib_paths),
+            f"export {dynlib_var}",
+        ]
+        # TODO: use `glob` here to find the external symlink and replace that
+        symlink_path = env_bin_dir_path / f"{env_python_path.name}_"
+        wrapper_script_lines = [
+            f"#!{shell}",
+            "# Allow extension modules to find shared libraries published by lower layers",
+            "set -eu",
+            "# Note: `readlink -f` (long available in GNU coreutils) is available on macOS 12.3 and later",
+            'script_dir="$(cd "$(dirname "$(readlink -f "$0")")" 1> /dev/null 2>&1 && pwd)"',
+            *dynlib_content,
+            f'script_path="$script_dir/{_sh_path(env_python_path)}"',
+            f'symlink_path="$script_dir/{_sh_path(symlink_path)}"',
+            'test -f "$script_path" || echo 1>&2 "Invalid wrapper script path: $script_path"',
+            'test -L "$symlink_path" || echo 1>&2 "Invalid base Python symlink: $symlink_path"',
+            'exec -a "$script_path" "$symlink_path" "$@"',
+        ]
+        wrapper_script_contents = "\n".join(wrapper_script_lines)
+        return wrapper_script_contents, symlink_path
+
     def _link_build_environment(self) -> None:
         # Create sitecustomize file for the build environment
         build_path = self.build_path
@@ -1745,7 +1834,7 @@ class LayeredEnvBase(LayerEnvBase):
                     "Layered environments must at least link a base runtime environment"
                 )
             sh_path = self.python_path
-            wrapper_info = postinstall.generate_python_sh(sh_path, build_dynlib_paths)
+            wrapper_info = self._generate_python_sh(sh_path, build_dynlib_paths)
             assert wrapper_info is not None
             sh_contents, symlink_path = wrapper_info
             symlink_path.unlink(missing_ok=True)
