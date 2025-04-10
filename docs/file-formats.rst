@@ -85,6 +85,19 @@ All layer specifications may also contain the following optional fields:
      Added ``win_arm64`` and ``linux_aarch64`` as permitted target platforms
      (:ref:`release details <changelog-0.3.0>`).
 
+* ``dynlib_exclude`` (:toml:`array` of :toml:`strings <string>`):
+  by default, dynamic library (also known as shared object) files on Linux
+  and macOS that do not appear to be Python extension modules will be symbolically
+  linked from a ``share/venv/dynlib/`` folder within the virtual environment
+  (see :ref:`dynamic-linking` for additional details).
+  Setting this field allows files to be excluded from the linking process based
+  on filename glob patterns. These patterns are checked against the *end* of the
+  full path to the files using the equivalent of :func:`glob.translate`.
+
+  .. versionadded:: 0.4.0
+     Added support for dynamic linking across layers on Linux and macOS
+     (:ref:`release details <changelog-0.4.0>`).
+
 * ``versioned`` (:toml:`boolean`): by default, and when this setting is ``false``,
   the layer is considered unversioned (even if an ``@`` symbol appears in the
   layer name). The layer metadata will always report the lock version for these
