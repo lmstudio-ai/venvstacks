@@ -360,12 +360,12 @@ plans to implement such a mechanism.</p>
 <span id="dynamic-linking"></span><h3>How does dynamic linking work across layers?<a class="headerlink" href="#how-does-dynamic-linking-work-across-layers" title="Link to this heading">¶</a></h3>
 <p>In some cases, binary extension modules in a Python package may depend
 on dynamically linked libraries that are provided by a different Python
-package (for example, <a class="extlink-pypi reference external" href="https://pypi.org/project/torch/">PyTorch</a> supports using the nVidia
-CUDA libraries published through the <a class="extlink-pypi reference external" href="https://pypi.org/project/nvidia/">nvidia</a> PyPI project).</p>
+package. For example, <a class="extlink-pypi reference external" href="https://pypi.org/project/torch/">PyTorch</a> supports using the nVidia
+CUDA libraries published through the <a class="extlink-pypi reference external" href="https://pypi.org/project/nvidia/">nvidia</a> PyPI project.</p>
 <p>On Windows, finding these dependencies at runtime generally relies on the
 package publishing them calling <a class="reference external" href="https://docs.python.org/3/library/os.html#os.add_dll_directory" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">os.add_dll_directory()</span></code></a> with the
 relevant package subdirectory.</p>
-<p>On Linux and macOS, finding these dependencies typically requires that
+<p>On Linux and macOS, making this example case work typically requires that
 the nVidia CUDA libraries be installed into the <em>same</em> <code class="docutils literal notranslate"><span class="pre">site-packages</span></code>
 directory as the PyTorch extension modules, so they can be found via
 the relative rpath added to the extension modules when they are built.</p>
