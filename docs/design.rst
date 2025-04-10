@@ -85,14 +85,14 @@ How does dynamic linking work across layers?
 
 In some cases, binary extension modules in a Python package may depend
 on dynamically linked libraries that are provided by a different Python
-package (for example, :pypi:`PyTorch <torch>` supports using the nVidia
-CUDA libraries published through the :pypi:`nvidia` PyPI project).
+package. For example, :pypi:`PyTorch <torch>` supports using the nVidia
+CUDA libraries published through the :pypi:`nvidia` PyPI project.
 
 On Windows, finding these dependencies at runtime generally relies on the
 package publishing them calling :func:`os.add_dll_directory` with the
 relevant package subdirectory.
 
-On Linux and macOS, finding these dependencies typically requires that
+On Linux and macOS, making this example case work typically requires that
 the nVidia CUDA libraries be installed into the *same* ``site-packages``
 directory as the PyTorch extension modules, so they can be found via
 the relative rpath added to the extension modules when they are built.
