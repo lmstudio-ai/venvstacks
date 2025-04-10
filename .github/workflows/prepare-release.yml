@@ -1,0 +1,32 @@
+name: Prepare release
+
+on:
+  # At least for now, decide when tags should be turned into a release
+  workflow_dispatch
+
+
+# Require explicit job permissions
+permissions: {}
+
+jobs:
+  pypi-publish:
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      # Allow creating and updating release
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          # Control when Python is updated to a new feature release
+          python-version: "3.13"
+      - uses: hynek/setup-cached-uv@v2
+
+      - name: Create GitHub Release from latest release notes
+        run:  |
+          uv tool install 'scriv[toml]'
+          scriv github-release -v DEBUG
