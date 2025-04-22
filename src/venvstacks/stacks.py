@@ -2378,12 +2378,12 @@ class BuildEnvironment:
         build: bool | None = True,
         publish: bool = True,
         *,
-        reset_locks: bool = False,
+        reset_lock: bool = False,
     ) -> None:
         """Configure the selected operations on all defined environments."""
         for env in self.all_environments():
             env.select_operations(
-                lock=lock, build=build, publish=publish, reset_lock=reset_locks
+                lock=lock, build=build, publish=publish, reset_lock=reset_lock
             )
 
     def filter_layers(
@@ -2397,6 +2397,7 @@ class BuildEnvironment:
             env_name = env.env_name
             matched = False
             # Check *all* the unmatched patterns for each layer
+            # (this allows a matching env to count as matching multiple patterns)
             for pattern in list(unmatched_patterns):
                 if fnmatch(env_name, pattern):
                     unmatched_patterns.remove(pattern)
@@ -2424,7 +2425,7 @@ class BuildEnvironment:
         publish_dependencies: bool = False,
         build_derived: bool = True,
         publish_derived: bool = True,
-        reset_locks: Iterable[str] = (),
+        reset_locks: Iterable[EnvNameBuild] = (),
     ) -> None:
         """Selectively configure operations only on the specified environments."""
         # Ensure later pipeline stages are skipped when earlier ones are skipped
@@ -2465,30 +2466,22 @@ class BuildEnvironment:
                 )
             else:
                 # Skip running operations on this environment
+                # (Note: this selection may be overridden on related layers below)
                 env.select_operations(lock=False, build=False, publish=False)
         # Enable operations on related layers if requested
         # Dependencies are always checked so they can be set to "if needed" locks & builds
         check_derived = lock_derived or build_derived or publish_derived
         derived_envs: set[EnvNameBuild] = set()
         dependency_envs: set[EnvNameBuild] = set()
-        # Check frameworks
-        for fw_env in self.frameworks.values():
-            env_name = fw_env.env_name
-            rt_env_name = fw_env.env_spec.runtime.env_name
-            if env_name in included_envs:
-                # This env is included, check if any of its dependencies need inclusion
-                if rt_env_name not in included_envs:
-                    dependency_envs.add(rt_env_name)
-            elif check_derived:
-                # Check for the runtime this env depends on being included
-                if rt_env_name in included_envs:
-                    derived_envs.add(env_name)
-        # Check applications
-        for app_env in self.applications.values():
-            env_name = app_env.env_name
-            app_spec = app_env.env_spec
-            rt_env_name = app_spec.runtime.env_name
-            fw_env_names = [fw_spec.env_name for fw_spec in app_spec.frameworks]
+        layered_envs: list[LayeredEnvBase] = [
+            *self.frameworks.values(),
+            *self.applications.values(),
+        ]
+        for layered_env in layered_envs:
+            env_name = layered_env.env_name
+            env_spec = layered_env.env_spec
+            rt_env_name = env_spec.runtime.env_name
+            fw_env_names = [fw_spec.env_name for fw_spec in env_spec.frameworks]
             if env_name in included_envs:
                 # This env is included, check if any of its dependencies need inclusion
                 for fw_env_name in fw_env_names:
@@ -2523,16 +2516,22 @@ class BuildEnvironment:
         for env_name in derived_envs:
             env = envs_by_name[env_name]
             env.select_operations(
-                lock=lock_derived, build=build_derived, publish=publish_derived
+                lock=lock_derived,
+                build=build_derived,
+                publish=publish_derived,
+                reset_lock=lock_derived and (env_name in envs_to_reset),
             )
         # Dependencies are always allowed to be locked or built implicitly
         # (this only happens if the operation's outputs don't exist yet)
+        # Also reset dependency layer locks if locking dependency layers
+        # is explicitly requested rather than being "only if needed"
         for env_name in dependency_envs:
             env = envs_by_name[env_name]
             env.select_operations(
                 lock=lock_dependencies or None,    # Allow locking if needed
                 build=build_dependencies or None,  # Allow building if needed
                 publish=publish_dependencies,      # No implicit publication
+                reset_lock=lock_dependencies and (env_name in envs_to_reset),
             )  # fmt: skip
 
     # Define the various operations on the included environments

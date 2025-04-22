@@ -418,7 +418,7 @@ class TestBuildEnvironment(DeploymentTestCase):
             # Check lock reset flag is set regardless of whether a lock has been requested or not
             # (the reset will only take effect if the layer actually ends up getting locked)
             build_env.select_operations(
-                want_lock, want_build, want_publish, reset_locks=True
+                want_lock, want_build, want_publish, reset_lock=True
             )
             for env in build_env.all_environments():
                 subtests_started += 1
