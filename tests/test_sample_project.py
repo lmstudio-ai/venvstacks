@@ -122,12 +122,14 @@ def _export_locked_requirements(
     export_dir_path.mkdir(parents=True, exist_ok=True)
     print(f"Exporting locked requirements files to {str(export_dir_path)!r}")
     spec_dir_path = build_env.requirements_dir_path
-    for locked_requirements_path in lock_paths:
-        export_path = export_dir_path / locked_requirements_path.relative_to(
+    summary_paths = [p.with_name(p.name.replace("requirements-", "packages-")) for p in lock_paths]
+    paths_to_export = lock_paths + summary_paths
+    for path_to_export in paths_to_export:
+        export_path = export_dir_path / path_to_export.relative_to(
             spec_dir_path
         )
         export_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(locked_requirements_path, export_path)
+        shutil.copyfile(path_to_export, export_path)
 
 
 def _export_manifests(
