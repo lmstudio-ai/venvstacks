@@ -31,6 +31,7 @@ from venvstacks.stacks import (
     ArchiveMetadata,
     StackPublishingRequest,
     BuildEnvironment,
+    EnvNameBuild,
     EnvNameDeploy,
     StackSpec,
     PackageIndexConfig,
@@ -336,7 +337,7 @@ class TestMinimalBuildConfig(unittest.TestCase):
         # Disable all operations
         # Also check disabling locking entirely overrides the lock reset request
         build_env.select_operations(
-            lock=False, build=False, publish=False, reset_locks=True
+            lock=False, build=False, publish=False, reset_lock=True
         )
         expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_envs = list(build_env.all_environments())
@@ -453,7 +454,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         build_env = self.build_env
         # Enable locking with locked requirement resets
         build_env.select_operations(
-            lock=True, build=False, publish=False, reset_locks=True
+            lock=True, build=False, publish=False, reset_lock=True
         )
         expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_names = [env.env_name for env in build_env.all_environments()]
@@ -498,6 +499,55 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         self.assertEqual(list(build_env.environments_to_build()), [])
         # No envs should be flagged for publishing
         self.assertEqual(list(build_env.environments_to_publish()), [])
+
+    def test_env_categories_selective_lock_with_lock_reset(self) -> None:
+        build_env = self.build_env
+        # Locking only "framework-layerA" with the default settings:
+        # * should omit "app-no-framework" entirely
+        # * should only lock the runtime layer if necessary (no implicit reset)
+        # * should lock and reset everything else directly or as a derived layer
+        locked_layer = "framework-layerA"
+        no_lock = {EnvNameBuild("app-no-framework")}
+        no_reset = build_env.filter_layers(["cpython-*"])[0] | no_lock
+        assert len(no_reset) > 1
+
+        all_names = {env.env_name for env in build_env.all_environments()}
+        included, _ = build_env.filter_layers([locked_layer])
+        assert included == {"framework-layerA"}
+        build_env.select_layers(
+            lock=True,
+            build=False,
+            publish=False,
+            include=included,
+            reset_locks=all_names,
+        )
+        # Ensure expected envs want and need locking
+        envs_to_lock = list(build_env.environments_to_lock())
+        lock_names = {env.env_name for env in envs_to_lock}
+        self.assertEqual(lock_names, all_names - no_lock)
+        req_dir = build_env.requirements_dir_path
+        build_target = build_env.build_platform
+        self.assertTrue(
+            all(
+                env.needs_lock(build_target, req_dir)
+                for env in envs_to_lock
+                if env.env_name not in no_reset
+            )
+        )
+        self.assertTrue(build_env._needs_lock())
+        # Mark the runtime environment as unlocked
+        for rt_env in build_env.runtimes.values():
+            rt_env.env_lock._purge_lock()
+        # Check the runtime environment has been added to layers to lock
+        envs_to_lock = list(build_env.environments_to_lock())
+        lock_names = {env.env_name for env in envs_to_lock}
+        self.assertEqual(lock_names, all_names - no_lock)
+        req_dir = build_env.requirements_dir_path
+        build_target = build_env.build_platform
+        self.assertTrue(
+            all(env.needs_lock(build_target, req_dir) for env in envs_to_lock)
+        )
+        self.assertTrue(build_env._needs_lock())
 
 
 class TestMinimalBuild(DeploymentTestCase):
