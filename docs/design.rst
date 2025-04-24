@@ -115,6 +115,25 @@ entries, so these environment variables may still be set as normal
 to indicate that alternative copies of the linked libraries should be
 preferred.
 
+If dynamic libraries with the same name are provided by multiple packages
+in the same environment layer, this will be reported as an exception when
+generating the symbolic links in the ``share/venv/dynlib`` folder. For
+example::
+
+   BuildEnvError: Layer framework-torchvision: './framework-torchvision/share/venv/dynlib/libpng16.16.dylib'
+   already exists, but links to './framework-torchvision/lib/python3.11/site-packages/torchvision/.dylibs/libpng16.16.dylib',
+   not './framework-torchvision/lib/python3.11/site-packages/PIL/.dylibs/libpng16.16.dylib'.
+   Set `dynlib_exclude` in the layer definition to resolve this conflict.
+
+For the given example, setting ``dynlib_exclude=["libpng16.*"]`` would omit
+generating any symlinks to ``libpng16`` libraries. Path matching is supported
+(not just name matching), so setting ``dynlib_exclude=["PIL/**/libpng16.*"]``
+will only exclude ``PIL``'s embedded copy of the library (leaving the symlink
+in place, referring to the copy in ``torchvision``)
+
+Setting ``dynlib_exclude=["*"]`` means that no dynamic library symbolic
+links at all will be generated for that layer.
+
 .. versionchanged:: 0.4.0
    Added support for dynamic linking across layers on Linux and macOS
    (:ref:`release details <changelog-0.4.0>`).
