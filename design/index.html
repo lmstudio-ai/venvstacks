@@ -386,6 +386,23 @@ the shared object loading path (<code class="docutils literal notranslate"><span
 entries, so these environment variables may still be set as normal
 to indicate that alternative copies of the linked libraries should be
 preferred.</p>
+<p>If dynamic libraries with the same name are provided by multiple packages
+in the same environment layer, this will be reported as an exception when
+generating the symbolic links in the <code class="docutils literal notranslate"><span class="pre">share/venv/dynlib</span></code> folder. For
+example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>BuildEnvError: Layer framework-torchvision: &#39;./framework-torchvision/share/venv/dynlib/libpng16.16.dylib&#39;
+already exists, but links to &#39;./framework-torchvision/lib/python3.11/site-packages/torchvision/.dylibs/libpng16.16.dylib&#39;,
+not &#39;./framework-torchvision/lib/python3.11/site-packages/PIL/.dylibs/libpng16.16.dylib&#39;.
+Set `dynlib_exclude` in the layer definition to resolve this conflict.
+</pre></div>
+</div>
+<p>For the given example, setting <code class="docutils literal notranslate"><span class="pre">dynlib_exclude=[&quot;libpng16.*&quot;]</span></code> would omit
+generating any symlinks to <code class="docutils literal notranslate"><span class="pre">libpng16</span></code> libraries. Path matching is supported
+(not just name matching), so setting <code class="docutils literal notranslate"><span class="pre">dynlib_exclude=[&quot;PIL/**/libpng16.*&quot;]</span></code>
+will only exclude <code class="docutils literal notranslate"><span class="pre">PIL</span></code>’s embedded copy of the library (leaving the symlink
+in place, referring to the copy in <code class="docutils literal notranslate"><span class="pre">torchvision</span></code>)</p>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">dynlib_exclude=[&quot;*&quot;]</span></code> means that no dynamic library symbolic
+links at all will be generated for that layer.</p>
 <div class="versionchanged">
 <p><span class="versionmodified changed">Changed in version 0.4.0: </span>Added support for dynamic linking across layers on Linux and macOS
 (<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
