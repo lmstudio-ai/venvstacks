@@ -12,6 +12,32 @@ See the fragment files in the `changelog.d directory`_.
 
 .. scriv-insert-here
 
+.. _changelog-0.4.1:
+
+0.4.1 — 2025-04-25
+==================
+
+Added
+-----
+
+- Locking layers now emits package summary files for each layer, which should
+  make it easier to see what has changed when locks are updated
+  (suggested in :issue:`108`).
+
+Changed
+-------
+
+- The exception raised when reporting dynamic library symlink conflicts in
+  a layer now suggests using the ``dynlib_exclude`` setting to resolve the
+  conflict (changed in :pr:`141`).
+
+Fixed
+-----
+
+- The `--reset-lock` option now propagates to derived layers as intended
+  (reported in :issue:`137`).
+
+
 .. _changelog-0.4.0:
 
 0.4.0 — 2025-04-11
