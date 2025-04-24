@@ -1091,11 +1091,15 @@ class LayerEnvBase(ABC):
         """The environment name used for this layer when deployed."""
         return self.env_lock.get_deployed_name(self.env_spec.env_name)
 
-    def get_deployed_path(self, build_path: Path) -> str:
-        """Get relative deployment location for a build env path."""
+    def get_relative_build_path(self, build_env_path: Path) -> Path:
+        """Get relative build location for a build path (includes layer's build name)."""
+        return build_env_path.relative_to(self.build_path)
+
+    def get_deployed_path(self, build_env_path: Path) -> Path:
+        """Get relative deployment location for a build path (includes layer's deployed name)."""
         env_deployed_path = Path(self.install_target)
-        relative_path = build_path.relative_to(self.env_path)
-        return str(env_deployed_path / relative_path)
+        relative_path = build_env_path.relative_to(self.env_path)
+        return env_deployed_path / relative_path
 
     def __post_init__(self) -> None:
         # Concrete subclasses must set the version before finishing the base initialisation
@@ -1495,11 +1499,16 @@ class LayerEnvBase(ABC):
                             f"{str(symlink_path)!r} already exists and is not a symlink"
                         )
                     target_path = symlink_path.readlink()
-                    absolute_target_path = symlink_path.parent / target_path
-                    if not absolute_target_path.samefile(so_path):
+                    abs_target_path = symlink_path.parent / target_path
+                    if not abs_target_path.samefile(so_path):
+                        symlink_info = str(self.get_relative_build_path(symlink_path))
+                        existing_info = str(
+                            self.get_relative_build_path(abs_target_path)
+                        )
+                        conflicting_info = str(self.get_relative_build_path(so_path))
                         self._fail_build(
-                            f"{str(symlink_path)!r} already exists, "
-                            f"but links to {str(absolute_target_path)!r}, not {str(so_path)!r}.\n"
+                            f"{symlink_info!r} already exists, "
+                            f"but links to {existing_info!r}, not {conflicting_info!r}.\n"
                             "Set `dynlib_exclude` in the layer definition to resolve this conflict."
                         )
                 else:
@@ -1691,23 +1700,23 @@ class LayeredEnvBase(LayerEnvBase):
 
     def _iter_build_pylib_dirs(self) -> Iterator[str]:
         for env in self._linked_environments():
-            yield str(env.pylib_path.relative_to(self.build_path))
+            yield str(self.get_relative_build_path(env.pylib_path))
 
     def _iter_build_dynlib_dirs(self) -> Iterator[str]:
         for env in self._linked_environments():
             dynlib_path = env.dynlib_path
             if dynlib_path is not None:
-                yield str(dynlib_path.relative_to(self.build_path))
+                yield str(self.get_relative_build_path(dynlib_path))
 
     def _iter_deployed_pylib_dirs(self) -> Iterator[str]:
         for env in self._linked_environments():
-            yield env.get_deployed_path(env.pylib_path)
+            yield str(env.get_deployed_path(env.pylib_path))
 
     def _iter_deployed_dynlib_dirs(self) -> Iterator[str]:
         for env in self._linked_environments():
             dynlib_path = env.dynlib_path
             if dynlib_path is not None:
-                yield env.get_deployed_path(dynlib_path)
+                yield str(env.get_deployed_path(dynlib_path))
 
     def link_base_runtime(self, runtime: RuntimeEnv) -> None:
         """Link this layered environment to its base runtime environment."""
