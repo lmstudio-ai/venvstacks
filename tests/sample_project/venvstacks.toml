@@ -84,6 +84,8 @@ runtime = "cpython-3.11"
 requirements = [
     # Framework layer for non-ML app layers that just do HTTP requests
     "httpx",
+    # Force h11 update to resolve CVE-2025-43859 warnings
+    "h11>=0.15.0",
 ]
 
 # Add more [[frameworks]] sections to define additional frameworks (TOML array of tables)
