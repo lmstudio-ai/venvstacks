@@ -20,7 +20,7 @@ pbs-installer="2025.3.17"
 # Additional environment variable settings to ensure
 # test_sample_project produces the expected metadata
 [env]
-UV_EXCLUDE_NEWER="2024-10-15 00:00:00+00:00"
+UV_EXCLUDE_NEWER="2025-04-27 00:00:00+00:00"
 
 ########################################################
 # Explicitly requested updates
