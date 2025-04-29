@@ -53,12 +53,17 @@ MINIMAL_PROJECT_PATHS = (
 )
 
 
-def _define_build_env(working_path: Path) -> BuildEnvironment:
-    """Define a build environment for the sample project in a temporary folder."""
-    # To avoid side effects from lock file creation, copy input files to the working path
+def _copy_project_input_files(working_path: Path) -> None:
+    """Copy the input files for the project to the given temporary folder."""
+    # To avoid side effects from lock file creation, copy project files to the working path
     for src_path in MINIMAL_PROJECT_PATHS:
         dest_path = working_path / src_path.name
         shutil.copyfile(src_path, dest_path)
+
+
+def _define_build_env(working_path: Path) -> BuildEnvironment:
+    """Define a build environment for the sample project in a temporary folder."""
+    _copy_project_input_files(working_path)
     # Include "/../" in the spec path in order to test relative path resolution when
     # accessing the Python executables (that can be temperamental, especially on macOS).
     # The subdirectory won't be used for anything, so it being missing shouldn't matter.
@@ -275,8 +280,15 @@ class TestMinimalBuildConfig(unittest.TestCase):
     # These test cases don't need the build environment to actually exist
 
     def setUp(self) -> None:
-        # No files are created, so no need to use a temporary directory
-        self.stack_spec = StackSpec.load(MINIMAL_PROJECT_STACK_SPEC_PATH)
+        # Requirements input files are created when loading the stack spec,
+        # so use a temporary directory to avoid checkout dir pollution
+        working_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(working_dir.cleanup)
+        working_path = Path(working_dir.name)
+        _copy_project_input_files(working_path)
+        src_spec_path = MINIMAL_PROJECT_STACK_SPEC_PATH
+        cloned_spec_path = working_path / src_spec_path.name
+        self.stack_spec = StackSpec.load(cloned_spec_path)
 
     def test_default_build_directory(self) -> None:
         stack_spec = self.stack_spec
@@ -373,10 +385,9 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
             requirements_path = env_spec.get_requirements_path(
                 build_platform, lock_dir_path
             )
-            requirements_path.parent.mkdir(parents=True, exist_ok=True)
             requirements_path.write_text("")
-            requirements_path.with_suffix(".in").write_text("")
             env.env_lock.update_lock_metadata()
+            self.assertIsNotNone(env.env_lock.load_valid_metadata())
         # Path diffs can get surprisingly long
         self.maxDiff = None
 

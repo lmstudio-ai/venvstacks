@@ -18,12 +18,13 @@ venvstacks.stacks.EnvironmentLock
 
    .. autosummary::
 
+      ~EnvironmentLock.declared_requirements_path
       ~EnvironmentLock.is_locked
       ~EnvironmentLock.last_locked
       ~EnvironmentLock.lock_version
       ~EnvironmentLock.locked_at
+      ~EnvironmentLock.locked_requirements_path
       ~EnvironmentLock.requirements_hash
-      ~EnvironmentLock.requirements_path
       ~EnvironmentLock.versioned
       ~EnvironmentLock.lock_metadata_path
 
