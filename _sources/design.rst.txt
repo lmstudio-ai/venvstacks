@@ -62,6 +62,30 @@ heavily in the Python AI ecosystem across different applications.
 Technical
 =========
 
+Why use runtime environment layering over conventional virtual environments?
+----------------------------------------------------------------------------
+
+It's at least theoretically possible to use the ``venvstacks`` locking model
+to build :issue:`conventional virtual environments <146>` on the target
+deployment systems without needing to arrange for runtime customisation of
+``sys.path`` and dynamic library loading paths. Using such an arrangement
+with a suitably designed package installer (such as :pypi:`uv`) would be
+able to avoid excessive duplication of components on target systems even
+more effectively than the runtime environment layering approach.
+
+While it's plausible that ``venvstacks`` will eventually offer the option to build
+stacks using that alternative "conceptual" layer deployment model, the runtime
+environment layering deployment model offers the following practical benefits:
+
+* deployment layer archives are entirely self-contained, and can be installed
+  without requiring any further internet access during the post-installation step
+* deployment layer archives may be signed directly, without needing to account for
+  additional package downloads occurring in the post-installation step
+* deployment layer updates may consist solely of changes which can't be readily
+  expressed in a Python level dependency declaration (such as updates to the build
+  configurations of locally built binary extensions)
+
+
 Why use ``python-build-standalone`` for the base runtimes?
 ----------------------------------------------------------
 

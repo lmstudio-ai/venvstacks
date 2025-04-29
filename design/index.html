@@ -344,6 +344,28 @@ heavily in the Python AI ecosystem across different applications.</p>
 </section>
 <section id="technical">
 <h2>Technical<a class="headerlink" href="#technical" title="Link to this heading">¶</a></h2>
+<section id="why-use-runtime-environment-layering-over-conventional-virtual-environments">
+<h3>Why use runtime environment layering over conventional virtual environments?<a class="headerlink" href="#why-use-runtime-environment-layering-over-conventional-virtual-environments" title="Link to this heading">¶</a></h3>
+<p>It’s at least theoretically possible to use the <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> locking model
+to build <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/146">conventional virtual environments</a> on the target
+deployment systems without needing to arrange for runtime customisation of
+<code class="docutils literal notranslate"><span class="pre">sys.path</span></code> and dynamic library loading paths. Using such an arrangement
+with a suitably designed package installer (such as <a class="extlink-pypi reference external" href="https://pypi.org/project/uv/">uv</a>) would be
+able to avoid excessive duplication of components on target systems even
+more effectively than the runtime environment layering approach.</p>
+<p>While it’s plausible that <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> will eventually offer the option to build
+stacks using that alternative “conceptual” layer deployment model, the runtime
+environment layering deployment model offers the following practical benefits:</p>
+<ul class="simple">
+<li><p>deployment layer archives are entirely self-contained, and can be installed
+without requiring any further internet access during the post-installation step</p></li>
+<li><p>deployment layer archives may be signed directly, without needing to account for
+additional package downloads occurring in the post-installation step</p></li>
+<li><p>deployment layer updates may consist solely of changes which can’t be readily
+expressed in a Python level dependency declaration (such as updates to the build
+configurations of locally built binary extensions)</p></li>
+</ul>
+</section>
 <section id="why-use-python-build-standalone-for-the-base-runtimes">
 <h3>Why use <code class="docutils literal notranslate"><span class="pre">python-build-standalone</span></code> for the base runtimes?<a class="headerlink" href="#why-use-python-build-standalone-for-the-base-runtimes" title="Link to this heading">¶</a></h3>
 <p>The short answer to this question is “Because that’s what <a class="extlink-pypi reference external" href="https://pypi.org/project/pdm/">pdm</a> uses,
@@ -491,6 +513,7 @@ instead of depending directly on a runtime layer
 </ul>
 </li>
 <li><a class="reference internal" href="#technical">Technical</a><ul>
+<li><a class="reference internal" href="#why-use-runtime-environment-layering-over-conventional-virtual-environments">Why use runtime environment layering over conventional virtual environments?</a></li>
 <li><a class="reference internal" href="#why-use-python-build-standalone-for-the-base-runtimes">Why use <code class="docutils literal notranslate"><span class="pre">python-build-standalone</span></code> for the base runtimes?</a></li>
 <li><a class="reference internal" href="#how-does-dynamic-linking-work-across-layers">How does dynamic linking work across layers?</a></li>
 <li><a class="reference internal" href="#are-there-limitations-on-the-permitted-depth-of-layer-dependency-chains">Are there limitations on the permitted depth of layer dependency chains?</a></li>
