@@ -19,7 +19,7 @@ venvstacks.stacks.EnvironmentLock
    .. autosummary::
 
       ~EnvironmentLock.declared_requirements_path
-      ~EnvironmentLock.is_locked
+      ~EnvironmentLock.has_valid_lock
       ~EnvironmentLock.last_locked
       ~EnvironmentLock.lock_version
       ~EnvironmentLock.locked_at

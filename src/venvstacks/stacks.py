@@ -207,8 +207,8 @@ class EnvironmentLock:
     """Layered environment dependency locking management."""
 
     locked_requirements_path: Path
-    versioned: bool
     declared_requirements: Sequence[str]
+    versioned: bool = False
     declared_requirements_path: Path = field(init=False, repr=False)
     lock_metadata_path: Path = field(init=False, repr=False)
     _locked_req_hash: str | None = field(init=False, repr=False)
@@ -223,8 +223,8 @@ class EnvironmentLock:
             self.declared_requirements_path,
             self.declared_requirements,
         )
-        self.lock_metadata_path = Path(f"{req_path}.json")
         self._update_req_file_hashes()
+        self.lock_metadata_path = Path(f"{req_path}.json")
         self._last_locked = self._get_last_locked_time()
         self._lock_version = self._get_last_locked_version()
 
@@ -284,9 +284,9 @@ class EnvironmentLock:
         return self._raise_if_none(self._lock_version)
 
     @property
-    def is_locked(self) -> bool:
-        """``True`` if layer requirements have been locked."""
-        return self._last_locked is not None
+    def has_valid_lock(self) -> bool:
+        """``True`` if layer has been locked and lock metadata is consistent."""
+        return self._last_locked is not None and self.load_valid_metadata() is not None
 
     @property
     def locked_at(self) -> str:
@@ -1180,8 +1180,8 @@ class LayerEnvBase(ABC):
             self.dynlib_path = self.env_path / "share" / "venv" / "dynlib"
         self.env_lock = EnvironmentLock(
             self.requirements_path,
-            self.env_spec.versioned,
             self.env_spec.requirements,
+            self.env_spec.versioned,
         )
         # Ensure symlinks in the environment paths aren't inadvertently resolved
         assert self.pylib_path.relative_to(self.env_path)
@@ -1480,9 +1480,9 @@ class LayerEnvBase(ABC):
     def lock_requirements(self) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
         requirements_path = self.requirements_path
-        if not self.want_lock and requirements_path.exists():
+        if not self.want_lock and self.env_lock.has_valid_lock:
             print(f"Using existing {str(requirements_path)!r}")
-            # Transitional code for environments that don't have summary files yet
+            # Ensure summary files are always emitted, even for existing layer locks
             self._write_package_summary()
             return self.env_lock
         print(f"Generating {str(requirements_path)!r}")
@@ -1506,7 +1506,7 @@ class LayerEnvBase(ABC):
         Note: assumes dependencies have already been installed into linked layers.
         """
         # Run a pip dependency upgrade inside the target environment
-        if not self.env_lock.is_locked:
+        if not self.env_lock.has_valid_lock:
             self._fail_build(
                 "Environment must be locked before installing dependencies"
             )
