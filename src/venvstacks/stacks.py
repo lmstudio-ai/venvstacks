@@ -193,7 +193,8 @@ class EnvironmentLockMetadata(TypedDict):
 
     # fmt: off
     locked_at: str          # ISO formatted date/time value
-    requirements_hash: str  # Uses "algorithm:hexdigest" format
+    locked_req_hash: str    # Uses "algorithm:hexdigest" format
+    declared_req_hash: str  # Uses "algorithm:hexdigest" format
     lock_version: int       # Auto-incremented from previous lock metadata
     # fmt: on
 
@@ -205,18 +206,22 @@ _T = TypeVar("_T")
 class EnvironmentLock:
     """Layered environment dependency locking management."""
 
-    requirements_path: Path
+    locked_requirements_path: Path
     versioned: bool
+    declared_requirements_path: Path = field(init=False, repr=False)
     lock_metadata_path: Path = field(init=False, repr=False)
-    _requirements_hash: str | None = field(init=False, repr=False)
+    _locked_req_hash: str | None = field(init=False, repr=False)
+    _declared_req_hash: str | None = field(init=False, repr=False)
     _last_locked: datetime | None = field(init=False, repr=False)
     _lock_version: int | None = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        self.lock_metadata_path = Path(f"{self.requirements_path}.json")
-        self._requirements_hash = requirements_hash = self._hash_requirements()
-        self._last_locked = self._get_last_locked_time(requirements_hash)
-        self._lock_version = self._get_last_locked_version(requirements_hash)
+        req_path = self.locked_requirements_path
+        self.declared_requirements_path = req_path.with_suffix(".in")
+        self.lock_metadata_path = Path(f"{req_path}.json")
+        self._update_req_file_hashes()
+        self._last_locked = self._get_last_locked_time()
+        self._lock_version = self._get_last_locked_version()
 
     def get_deployed_name(self, env_name: EnvNameBuild) -> EnvNameDeploy:
         """Report layer name with lock version (if any) appended.
@@ -228,7 +233,7 @@ class EnvironmentLock:
         return EnvNameDeploy(env_name)
 
     def _fail_lock(self, message: str) -> NoReturn:
-        missing = self.requirements_path.name
+        missing = self.locked_requirements_path.name
         msg = f"Environment has not been locked ({missing} not found)"
         raise BuildEnvError(msg)
 
@@ -240,7 +245,7 @@ class EnvironmentLock:
     @property
     def requirements_hash(self) -> str:
         """Hash of the last locked set of layer requirements."""
-        return self._raise_if_none(self._requirements_hash)
+        return self._raise_if_none(self._locked_req_hash)
 
     @property
     def last_locked(self) -> datetime:
@@ -268,11 +273,15 @@ class EnvironmentLock:
         """ISO-formatted UTC string reporting the last locked date/time."""
         return _format_as_utc(self.last_locked)
 
-    def _hash_requirements(self) -> str | None:
-        requirements_path = self.requirements_path
+    @staticmethod
+    def _hash_req_file(requirements_path: Path) -> str | None:
         if not requirements_path.exists():
             return None
-        return _hash_file(self.requirements_path)
+        return _hash_file(requirements_path)
+
+    def _update_req_file_hashes(self) -> None:
+        self._declared_req_hash = self._hash_req_file(self.declared_requirements_path)
+        self._locked_req_hash = self._hash_req_file(self.locked_requirements_path)
 
     def _load_saved_metadata(self) -> EnvironmentLockMetadata | None:
         """Loads last locked metadata from disk (if it exists)."""
@@ -286,55 +295,65 @@ class EnvironmentLock:
             # defined and used for validation when reading the metadata files.
             return cast(EnvironmentLockMetadata, json.load(f))
 
-    def load_valid_metadata(
-        self, requirements_hash: str
-    ) -> EnvironmentLockMetadata | None:
+    def load_valid_metadata(self) -> EnvironmentLockMetadata | None:
         """Loads last locked metadata only if the requirements hash matches."""
+        # No requirements declaration file -> metadata is not valid
+        declared_req_hash = self._declared_req_hash
+        if declared_req_hash is None:
+            return None
+        # No locked requirements file -> metadata is not valid
+        locked_req_hash = self._locked_req_hash
+        if locked_req_hash is None:
+            return None
+        # Metadata is valid only if the recorded hashes match the files on disk
         lock_metadata = self._load_saved_metadata()
-        if lock_metadata and requirements_hash == lock_metadata["requirements_hash"]:
-            return lock_metadata
-        return None
+        if (
+            not lock_metadata
+            or declared_req_hash != lock_metadata.get("declared_req_hash", None)
+            or locked_req_hash != lock_metadata.get("locked_req_hash", None)
+        ):
+            return None
+        return lock_metadata
 
-    def _get_last_locked_metadata(self, requirements_hash: str) -> datetime | None:
-        lock_metadata = self.load_valid_metadata(requirements_hash)
+    def _get_last_locked_metadata(self) -> datetime | None:
+        lock_metadata = self.load_valid_metadata()
         if lock_metadata is not None:
             return datetime.fromisoformat(lock_metadata["locked_at"])
         return None
 
     def _get_path_mtime(self) -> datetime | None:
-        return _get_path_mtime(self.requirements_path)
+        return _get_path_mtime(self.locked_requirements_path)
 
-    def _get_last_locked_time(self, requirements_hash: str | None) -> datetime | None:
+    def _get_last_locked_time(self) -> datetime | None:
         # Prefer the lock timestamp from an adjacent (still valid) lock metadata file
-        if requirements_hash is not None:
-            last_locked = self._get_last_locked_metadata(requirements_hash)
-            if last_locked is not None:
-                return last_locked
+        last_locked = self._get_last_locked_metadata()
+        if last_locked is not None:
+            return last_locked
         # Otherwise assume the local file mtime reflects when the environment was locked
         # This will return None if the lock file doesn't exist yet
         return self._get_path_mtime()
 
-    def _get_last_locked_version(self, requirements_hash: str | None) -> int | None:
-        if requirements_hash is not None:
-            lock_metadata = self.load_valid_metadata(requirements_hash)
-            if lock_metadata is not None:
-                # Unversioned specs are always considered version 1
-                return lock_metadata.get("lock_version", 1)
+    def _get_last_locked_version(self) -> int | None:
+        lock_metadata = self.load_valid_metadata()
+        if lock_metadata is not None:
+            # Unversioned specs are always considered version 1
+            return lock_metadata.get("lock_version", 1)
         return None
 
     def _purge_lock(self) -> bool:
         # Currently a test suite helper, but may become a public API if it proves
         # useful when implementing https://github.com/lmstudio-ai/venvstacks/issues/10
         files_removed = False
-        for path_to_remove in (self.requirements_path, self.lock_metadata_path):
+        for path_to_remove in (self.locked_requirements_path, self.lock_metadata_path):
             if path_to_remove.exists():
                 path_to_remove.unlink()
                 files_removed = True
         return files_removed
 
     def _write_lock_metadata(self) -> None:
-        requirements_hash = self._requirements_hash
-        if requirements_hash is None:
+        declared_req_hash = self._declared_req_hash
+        locked_req_hash = self._locked_req_hash
+        if declared_req_hash is None or locked_req_hash is None:
             self._fail_lock("Environment must be locked before writing lock metadata")
         last_version = self._lock_version
         if last_version is None:
@@ -345,22 +364,25 @@ class EnvironmentLock:
             lock_version = last_version
         lock_metadata = EnvironmentLockMetadata(
             locked_at=self.locked_at,
-            requirements_hash=requirements_hash,
+            locked_req_hash=locked_req_hash,
+            declared_req_hash=declared_req_hash,
             lock_version=lock_version,
         )
         _write_json(self.lock_metadata_path, lock_metadata)
 
     def update_lock_metadata(self) -> bool:
         """Update the recorded lock metadata for this environment lock."""
-        # Calculate current requirements hash
-        requirements_hash = self._hash_requirements()
-        if requirements_hash is None:
+        # Calculate current requirements hashes
+        declared_req_hash = self._hash_req_file(self.declared_requirements_path)
+        locked_req_hash = self._hash_req_file(self.locked_requirements_path)
+        if declared_req_hash is None or locked_req_hash is None:
             self._fail_lock("Environment must be locked before updating lock metadata")
-        self._requirements_hash = requirements_hash
+        self._declared_req_hash = declared_req_hash
+        self._locked_req_hash = locked_req_hash
         # Only update and save the last locked time if
         # the lockfile contents have changed or if
         # the lock metadata file doesn't exist yet
-        lock_metadata = self.load_valid_metadata(requirements_hash)
+        lock_metadata = self.load_valid_metadata()
         if lock_metadata is None:
             self._last_locked = last_locked = self._get_path_mtime()
             assert last_locked is not None, (

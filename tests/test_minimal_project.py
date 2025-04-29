@@ -375,6 +375,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
             )
             requirements_path.parent.mkdir(parents=True, exist_ok=True)
             requirements_path.write_text("")
+            requirements_path.with_suffix(".in").write_text("")
             env.env_lock.update_lock_metadata()
         # Path diffs can get surprisingly long
         self.maxDiff = None
@@ -792,7 +793,7 @@ class TestMinimalBuild(DeploymentTestCase):
         for env in build_env.all_environments():
             # Rather than actually make the hash change, instead change the hash *records*
             env_lock = env.env_lock
-            env_lock._requirements_hash = "ensure requirements appear to have changed"
+            env_lock._locked_req_hash = "ensure requirements appear to have changed"
             env_lock._write_lock_metadata()
         minimum_relock_time = datetime.now(timezone.utc)
         build_env.lock_environments()

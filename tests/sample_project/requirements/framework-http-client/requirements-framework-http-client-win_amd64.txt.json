@@ -1,4 +1,5 @@
 {
+  "declared_req_hash": "sha256:818756bdfd765958cf2c96424ca2dd154d437a38c3e781ae69f1c5b8f489a3d3",
   "locked_at": "2024-10-15T10:24:36.316012+00:00",
-  "requirements_hash": "sha256:71ba32717956dcf9c0d4e18b69061efbe53816f4b591ceb50553d6d3d12e1960"
+  "locked_req_hash": "sha256:71ba32717956dcf9c0d4e18b69061efbe53816f4b591ceb50553d6d3d12e1960"
 }

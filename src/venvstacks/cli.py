@@ -473,11 +473,13 @@ def lock(
         print("No environments found to lock")
     else:
         base_output_path = os.path.commonpath(
-            [env.requirements_path for env in lock_results]
+            [env.locked_requirements_path for env in lock_results]
         )
         print("Locked environments:")
         for env_lock in lock_results:
-            relative_path = env_lock.requirements_path.relative_to(base_output_path)
+            relative_path = env_lock.locked_requirements_path.relative_to(
+                base_output_path
+            )
             print(f"  {relative_path} (locked at: {env_lock.locked_at})")
         print(f"All paths reported relative to {base_output_path}")
 
