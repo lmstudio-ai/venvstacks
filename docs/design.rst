@@ -66,7 +66,7 @@ Why use runtime environment layering over conventional virtual environments?
 ----------------------------------------------------------------------------
 
 It's at least theoretically possible to use the ``venvstacks`` locking model
-to build `:issue:`conventional virtual environments <146>` on the target
+to build :issue:`conventional virtual environments <146>` on the target
 deployment systems without needing to arrange for runtime customisation of
 ``sys.path`` and dynamic library loading paths. Using such an arrangement
 with a suitably designed package installer (such as :pypi:`uv`) would be
