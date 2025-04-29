@@ -1114,6 +1114,7 @@ class LayerEnvBase(ABC):
 
     # State flags used to selectively execute some cleanup operations
     was_created: bool = field(default=False, init=False, repr=False)
+    was_locked: bool = field(default=False, init=False, repr=False)
     was_built: bool = field(default=False, init=False, repr=False)
 
     def _get_py_scheme_path(self, category: str) -> Path:
@@ -1424,11 +1425,11 @@ class LayerEnvBase(ABC):
         # No constraints files by default, subclasses override as necessary
         return []
 
-    def needs_lock(self, platform: str, requirements_dir: StrPath) -> bool:
+    def needs_lock(self) -> bool:
         """Returns true if this environment needs to be locked."""
         if self.want_lock is False:
             # Locking step has been explicitly disabled, so override the check
-            # Later steps will fail if the lock file is needed but missing
+            # Later build steps will fail if the lock file is needed but missing
             return False
         if self.want_lock_reset:
             # If the lock is to be reset, then locking is needed unless
@@ -1437,6 +1438,11 @@ class LayerEnvBase(ABC):
         # If the lock is not to be reset, then locking is only needed
         # if there is no valid lock file metadata already available
         return self.env_lock.load_valid_metadata() is None
+
+    def lock_derived(self) -> bool:
+        """Returns true if layers depending on this layer need to be locked."""
+        # Calls the base class version of needs_lock to avoid redundant iteration
+        return self.was_locked or LayerEnvBase.needs_lock(self)
 
     @staticmethod
     @lru_cache(maxsize=None)
@@ -1480,7 +1486,7 @@ class LayerEnvBase(ABC):
     def lock_requirements(self) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
         requirements_path = self.requirements_path
-        if not self.want_lock and self.env_lock.has_valid_lock:
+        if not self.want_lock and not self.needs_lock():
             print(f"Using existing {str(requirements_path)!r}")
             # Ensure summary files are always emitted, even for existing layer locks
             self._write_package_summary()
@@ -1498,6 +1504,7 @@ class LayerEnvBase(ABC):
         self._write_package_summary()
         if self.env_lock.update_lock_metadata():
             print(f"  Environment lock time set: {self.env_lock.locked_at!r}")
+        self.was_locked = True
         return self.env_lock
 
     def install_requirements(self) -> subprocess.CompletedProcess[str]:
@@ -1792,6 +1799,19 @@ class LayeredEnvBase(LayerEnvBase):
     def get_constraint_paths(self) -> list[Path]:
         """Get the lower level layer constraints imposed on this environment."""
         return self.linked_constraints_paths
+
+    def needs_lock(self) -> bool:
+        """Returns true if this environment needs to be locked."""
+        if super().needs_lock():
+            # This environment needs locking, independent of other layers
+            return True
+        # If any of the layers this layer depends on need locking, the
+        # constraints on this layer may change, so relocking is required
+        base_runtime = self.base_runtime
+        assert base_runtime is not None
+        if base_runtime.lock_derived():
+            return True
+        return any(fw_env.lock_derived() for fw_env in self.linked_frameworks)
 
     def _ensure_virtual_environment(self) -> subprocess.CompletedProcess[str]:
         # Use the base Python installation to create a new virtual environment
@@ -2619,13 +2639,7 @@ class BuildEnvironment:
 
     # Define the various operations on the included environments
     def _needs_lock(self) -> bool:
-        spec_dir = self.requirements_dir_path
-        build_platform = self.build_platform
-
-        return any(
-            env.needs_lock(build_platform, spec_dir)
-            for env in self.environments_to_lock()
-        )
+        return any(env.needs_lock() for env in self.environments_to_lock())
 
     def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
         """Lock build environments for specified layers."""
