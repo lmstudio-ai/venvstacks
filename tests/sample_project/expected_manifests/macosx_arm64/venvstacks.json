@@ -6,20 +6,20 @@
         "app_launch_module_hash": "sha256:3970f360501594e9603c2799861aba17e5e7b4f6c37a3dc0ba59de42f07ba998",
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "c9aedc5162463983959e4d71c955d918ea647fd5c331fc23163f2a646cdfa2e5"
+          "sha256": "1435b592016620703c29bb68bfb82fb46690334461e0fd52280e5d425acd48a7"
         },
         "archive_name": "app-scipy-import@1.tar.xz",
-        "archive_size": 3572,
+        "archive_size": 3576,
         "bound_to_implementation": false,
         "install_target": "app-scipy-import@1",
         "layer_name": "app-scipy-import",
         "lock_version": 1,
-        "locked_at": "2024-10-15T10:23:33.121208+00:00",
+        "locked_at": "2025-05-01T15:24:11.827179+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [
           "framework-scipy@1"
         ],
-        "requirements_hash": "sha256:d7244928da714bc5790275e1f0b972f3e6ca8841c04e5463d6cf35f5e8437259",
+        "requirements_hash": "sha256:c78a4c81c6bc9afb393badf3b7ae3ab21e9ac927cfd3ab1db96978ac5eaef217",
         "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       },
@@ -28,21 +28,21 @@
         "app_launch_module_hash": "sha256/76d203dd6d3bb1fdb1117053c81590d42ef3f62b4b92b8d316b31f08334fbca6",
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "985136d07f0256ad49e1ba23f05adc33634390dd2010def5ac72627bd8049e7b"
+          "sha256": "12857167469e04214cb7a8b42b7c48c3bb6bbf74a85fc4410f40b49ceaaeaaa1"
         },
         "archive_name": "app-scipy-client.tar.xz",
-        "archive_size": 3676,
+        "archive_size": 3752,
         "bound_to_implementation": false,
         "install_target": "app-scipy-client",
         "layer_name": "app-scipy-client",
         "lock_version": 1,
-        "locked_at": "2024-10-15T10:23:33.147967+00:00",
+        "locked_at": "2025-05-01T15:24:11.857670+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [
           "framework-scipy@1",
           "framework-http-client"
         ],
-        "requirements_hash": "sha256:b413e3b76a380a64e8b3838a8f6c468aa920ee3b518dc5cc514f3617fcba807d",
+        "requirements_hash": "sha256:378b061db2a736674291cf3b81337b85ffb64c1bb5211e1badcc4902585114ea",
         "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       }
@@ -51,54 +51,54 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "bdfaead153b9cbc0a10cef3b2e7ca5c5cfb24cc17b304093239cf64c255200df"
+          "sha256": "541a47b0fdb4b9bc75604dc810807c9226362d138e4a02c5eaafd08ee406a872"
         },
         "archive_name": "framework-scipy@1.tar.xz",
-        "archive_size": 15081544,
+        "archive_size": 15081756,
         "bound_to_implementation": false,
         "install_target": "framework-scipy@1",
         "layer_name": "framework-scipy",
         "lock_version": 1,
-        "locked_at": "2024-10-15T10:23:32.960668+00:00",
+        "locked_at": "2025-05-01T15:24:11.736986+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [],
-        "requirements_hash": "sha256:d7244928da714bc5790275e1f0b972f3e6ca8841c04e5463d6cf35f5e8437259",
+        "requirements_hash": "sha256:c78a4c81c6bc9afb393badf3b7ae3ab21e9ac927cfd3ab1db96978ac5eaef217",
         "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       },
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "b06b53dc17c4e4fe0b07acd5b72b252865dac313ea0eb6d57ce153a4bd98e298"
+          "sha256": "93c50d129dda4f2f8ad8906931f30338d9474b27aa56fe840d4540ddccc7460b"
         },
         "archive_name": "framework-sklearn.tar.xz",
-        "archive_size": 20689220,
+        "archive_size": 20683024,
         "bound_to_implementation": false,
         "install_target": "framework-sklearn",
         "layer_name": "framework-sklearn",
         "lock_version": 1,
-        "locked_at": "2024-10-15T10:23:33.041734+00:00",
+        "locked_at": "2025-05-01T15:24:11.768636+00:00",
         "python_implementation": "cpython@3.12.9",
         "required_layers": [],
-        "requirements_hash": "sha256:3c1fe0f170bd58195285044fb36ff7ab759a50b685c9966fde53c1c71f2f3ed9",
+        "requirements_hash": "sha256:5600adcb820b3f27dd6434fcd83573d2feed718732092ebb1dcd16cebed9f017",
         "runtime_layer": "cpython-3.12",
         "target_platform": "macosx_arm64"
       },
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "81f8ff666adc27f0a12f170ad8137cdb70102d8d27bcbfb9e3bd31588de2743e"
+          "sha256": "e24377dc231bbe7fa761e07bc799902a0af867d1a4f07717d0726442606dc3d4"
         },
         "archive_name": "framework-http-client.tar.xz",
-        "archive_size": 364732,
+        "archive_size": 351784,
         "bound_to_implementation": false,
         "install_target": "framework-http-client",
         "layer_name": "framework-http-client",
         "lock_version": 1,
-        "locked_at": "2024-10-15T10:23:33.094515+00:00",
+        "locked_at": "2025-05-01T15:24:11.797668+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [],
-        "requirements_hash": "sha256:a444cdb32c1154b0b5deecf156272b4f29a5abaf05e9321db15adc89412216eb",
+        "requirements_hash": "sha256:a925616aba798906b17e7f1cb4a32d640dd2e07efa6019c8150895a63234f6f0",
         "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       }
@@ -107,34 +107,34 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "e20b4d0def22cc496629edfa2c54d6f00c6d69ebd8b9d2078355d5f741c6afe6"
+          "sha256": "1cb42c4340babc6c9a080843a05752c19dfb6f891bb2496b5e89b0a002c61b1d"
         },
         "archive_name": "cpython-3.11.tar.xz",
-        "archive_size": 15033212,
+        "archive_size": 15033884,
         "bound_to_implementation": true,
         "install_target": "cpython-3.11",
         "layer_name": "cpython-3.11",
         "lock_version": 1,
-        "locked_at": "2024-11-12T07:31:21.515343+00:00",
+        "locked_at": "2025-05-01T15:24:11.657165+00:00",
         "python_implementation": "cpython@3.11.11",
-        "requirements_hash": "sha256:62386f81a8549121a8ecae7fc10bf8970356b255391fabe13fb55e6678a1fdbc",
+        "requirements_hash": "sha256:4571d3f97153fc0051c989ff51b621de29854c2018b765fba6e877015a64c697",
         "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       },
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "8f2b6b7382fee4468382f54b407a27c6c6c088fd4e2dec19ba7302d2c8d785f6"
+          "sha256": "e911a46cc23859cb542f81d7e15a00fef59077ed85398da9be36250ccae6f1fa"
         },
         "archive_name": "cpython-3.12.tar.xz",
-        "archive_size": 13668324,
+        "archive_size": 13668816,
         "bound_to_implementation": true,
         "install_target": "cpython-3.12",
         "layer_name": "cpython-3.12",
         "lock_version": 1,
-        "locked_at": "2024-11-12T07:31:21.594574+00:00",
+        "locked_at": "2025-05-01T15:24:11.707322+00:00",
         "python_implementation": "cpython@3.12.9",
-        "requirements_hash": "sha256:62386f81a8549121a8ecae7fc10bf8970356b255391fabe13fb55e6678a1fdbc",
+        "requirements_hash": "sha256:4571d3f97153fc0051c989ff51b621de29854c2018b765fba6e877015a64c697",
         "runtime_layer": "cpython-3.12",
         "target_platform": "macosx_arm64"
       }
