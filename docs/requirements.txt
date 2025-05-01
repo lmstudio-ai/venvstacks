@@ -3,8 +3,8 @@
 
 alabaster==1.0.0
 babel==2.17.0
-beautifulsoup4==4.13.3
-certifi==2025.1.31
+beautifulsoup4==4.13.4
+certifi==2025.4.26
 charset-normalizer==3.4.1
 colorama==0.4.6
 docutils==0.21.2
@@ -13,12 +13,12 @@ idna==3.10
 imagesize==1.4.1
 jinja2==3.1.6
 markupsafe==3.0.2
-packaging==24.2
+packaging==25.0
 pygments==2.19.1
 requests==2.32.3
 roman-numerals-py==3.1.0
 snowballstemmer==2.2.0
-soupsieve==2.6
+soupsieve==2.7
 sphinx==8.2.3
 sphinx-basic-ng==1.0.0b2
 sphinxcontrib-applehelp==2.0.0
@@ -27,6 +27,6 @@ sphinxcontrib-htmlhelp==2.1.0
 sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==2.0.0
 sphinxcontrib-serializinghtml==2.0.0
-typing-extensions==4.13.1
-urllib3==2.3.0
+typing-extensions==4.13.2
+urllib3==2.4.0
 .  # this package

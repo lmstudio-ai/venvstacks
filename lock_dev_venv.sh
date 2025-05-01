@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# See http://redsymbol.net/articles/unofficial-bash-strict-mode/ for benefit of these options
+set -euo pipefail
+IFS=$'\n\t'
+
 if [ "$1" != "--skip-lock" ]; then
     # pdm doesn't offer a shorthand that says "update lock for all targets",
     # so we list out all the potential target testing platforms here
@@ -24,6 +29,6 @@ docs_requirements_file="docs/requirements.txt"
 pdm export --dev --no-default --group docs --self --no-hashes -o "$docs_requirements_file"
 echo "Exported $docs_requirements_file"
 # Export the docs build dependencies for the dynlib wheel building environment
-wheel_build_requirements_file="tests/local_wheel_project/build-requirements.txt"
+wheel_build_requirements_file="tests/local_wheels_project/build-requirements.txt"
 pdm export --dev --no-default --group dynlib-wheel-build -o "$wheel_build_requirements_file"
 echo "Exported $wheel_build_requirements_file"
