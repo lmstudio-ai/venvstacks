@@ -280,15 +280,8 @@ class TestMinimalBuildConfig(unittest.TestCase):
     # These test cases don't need the build environment to actually exist
 
     def setUp(self) -> None:
-        # Requirements input files are created when loading the stack spec,
-        # so use a temporary directory to avoid checkout dir pollution
-        working_dir = tempfile.TemporaryDirectory()
-        self.addCleanup(working_dir.cleanup)
-        working_path = Path(working_dir.name)
-        _copy_project_input_files(working_path)
-        src_spec_path = MINIMAL_PROJECT_STACK_SPEC_PATH
-        cloned_spec_path = working_path / src_spec_path.name
-        self.stack_spec = StackSpec.load(cloned_spec_path)
+        # No files are created, so no need to use a temporary directory
+        self.stack_spec = StackSpec.load(MINIMAL_PROJECT_STACK_SPEC_PATH)
 
     def test_default_build_directory(self) -> None:
         stack_spec = self.stack_spec
@@ -376,6 +369,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         lock_dir_path = build_env.requirements_dir_path
         for env in build_env.all_environments():
             env_spec = env.env_spec
+            env.env_lock.prepare_lock_inputs() # Also creates relevant subdir
             requirements_path = env_spec.get_requirements_path(
                 build_platform, lock_dir_path
             )
@@ -778,7 +772,7 @@ class TestMinimalBuild(DeploymentTestCase):
         for env in build_env.all_environments():
             # Rather than actually make the hash change, instead change the hash *records*
             env_lock = env.env_lock
-            env_lock._locked_req_hash = "ensure requirements appear to have changed"
+            env_lock._requirements_hash = "ensure requirements appear to have changed"
             env_lock._write_lock_metadata()
         minimum_relock_time = datetime.now(timezone.utc)
         build_env.lock_environments()

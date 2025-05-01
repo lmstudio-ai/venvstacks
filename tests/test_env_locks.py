@@ -24,65 +24,72 @@ def temp_dir_path() -> Generator[Path, None, None]:
 def test_default_state(temp_dir_path: Path) -> None:
     req_path = temp_dir_path / "requirements.txt"
     env_lock = EnvironmentLock(req_path, ())
-    # Declared requirements file is implicitly created
+    # Declared requirements file is only written when requested
     assert env_lock.declared_requirements == ()
-    assert env_lock.declared_requirements_path == temp_dir_path / "requirements.in"
-    assert env_lock.declared_requirements_path.read_text() != ""
-    assert env_lock._declared_req_hash is not None
+    assert env_lock._lock_input_path == temp_dir_path / "requirements.in"
+    assert not env_lock.locked_requirements_path.exists()
+    no_dependencies_hash = env_lock._lock_input_hash
+    assert no_dependencies_hash is not None
+    env_lock.prepare_lock_inputs()
+    assert env_lock._lock_input_path.read_text() != ""
+    assert env_lock._lock_input_hash == no_dependencies_hash
     # Locked requirements file must be written externally
     assert env_lock.locked_requirements_path == req_path
     assert not env_lock.locked_requirements_path.exists()
-    assert env_lock._locked_req_hash is None
+    assert env_lock._requirements_hash is None
     # Metadata file is only written when requested
-    assert env_lock.lock_metadata_path == temp_dir_path / "requirements.txt.json"
-    assert not env_lock.lock_metadata_path.exists()
+    assert env_lock._lock_metadata_path == temp_dir_path / "requirements.txt.json"
+    assert not env_lock._lock_metadata_path.exists()
     assert env_lock.load_valid_metadata() is None
 
 
 def test_load_with_consistent_file_hashes(temp_dir_path: Path) -> None:
     req_path = temp_dir_path / "requirements.txt"
     env_lock = EnvironmentLock(req_path, ())
+    env_lock.prepare_lock_inputs()
     env_lock.locked_requirements_path.write_text("")
     env_lock.update_lock_metadata()
-    assert env_lock._declared_req_hash is not None
-    assert env_lock._locked_req_hash is not None
+    assert env_lock._lock_input_hash is not None
+    assert env_lock._requirements_hash is not None
     env_lock_metadata = env_lock.load_valid_metadata()
     assert env_lock_metadata is not None
     # Loading the lock without changes gives the same metadata
     loaded_lock = EnvironmentLock(req_path, ())
-    assert loaded_lock._declared_req_hash == env_lock._declared_req_hash
-    assert loaded_lock._locked_req_hash == env_lock._locked_req_hash
+    assert loaded_lock._lock_input_hash == env_lock._lock_input_hash
+    assert loaded_lock._requirements_hash == env_lock._requirements_hash
     assert loaded_lock.load_valid_metadata() == env_lock_metadata
 
 
 def test_load_with_inconsistent_input_hash(temp_dir_path: Path) -> None:
     req_path = temp_dir_path / "requirements.txt"
     env_lock = EnvironmentLock(req_path, ())
+    env_lock.prepare_lock_inputs()
     env_lock.locked_requirements_path.write_text("Hash fodder")
     env_lock.update_lock_metadata()
-    assert env_lock._declared_req_hash is not None
-    assert env_lock._locked_req_hash is not None
+    assert env_lock._lock_input_hash is not None
+    assert env_lock._requirements_hash is not None
     assert env_lock.load_valid_metadata() is not None
     # Loading the lock with different requirements invalidates the metadata
     loaded_lock = EnvironmentLock(req_path, ("some-requirement",))
-    assert loaded_lock._declared_req_hash != env_lock._declared_req_hash
-    assert loaded_lock._locked_req_hash == env_lock._locked_req_hash
+    assert loaded_lock._lock_input_hash != env_lock._lock_input_hash
+    assert loaded_lock._requirements_hash is None
     assert loaded_lock.load_valid_metadata() is None
 
 
 def test_load_with_inconsistent_output_hash(temp_dir_path: Path) -> None:
     req_path = temp_dir_path / "requirements.txt"
     env_lock = EnvironmentLock(req_path, ())
+    env_lock.prepare_lock_inputs()
     env_lock.locked_requirements_path.write_text("Hash fodder")
     env_lock.update_lock_metadata()
-    assert env_lock._declared_req_hash is not None
-    assert env_lock._locked_req_hash is not None
+    assert env_lock._lock_input_hash is not None
+    assert env_lock._requirements_hash is not None
     assert env_lock.load_valid_metadata() is not None
     # Loading the lock with a different lock file invalidates the metadata
     env_lock.locked_requirements_path.write_text("")
     loaded_lock = EnvironmentLock(req_path, ())
-    assert loaded_lock._declared_req_hash == env_lock._declared_req_hash
-    assert loaded_lock._locked_req_hash != env_lock._locked_req_hash
+    assert loaded_lock._lock_input_hash == env_lock._lock_input_hash
+    assert loaded_lock._requirements_hash != env_lock._requirements_hash
     assert loaded_lock.load_valid_metadata() is None
 
 
@@ -105,6 +112,7 @@ def test_requirements_file_hashing(temp_dir_path: Path) -> None:
     ]
     assert clean_requirements == expected_requirements
     expected_hash = _hash_strings(expected_requirements)
+    assert EnvironmentLock._hash_reqs(messy_requirements) == expected_hash
     req_input_path = temp_dir_path / "requirements.in"
     req_input_path.write_text("\n".join(messy_requirements))
     req_file_hash = EnvironmentLock._hash_req_file(req_input_path)

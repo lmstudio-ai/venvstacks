@@ -40,13 +40,12 @@ def _rehash_lockfiles() -> None:
         bundle_name = json_path.parent.name
         target_platform = json_path.name.partition(".txt")[0].rpartition("-")[2]
         lock_metadata: dict[str, typing.Any] = json.loads(json_path.read_text())
-        lock_metadata.pop("requirements_hash", None)
         requirements_path = json_path.with_name(json_path.stem)
-        locked_req_hash = _rehash_req_file(requirements_path)
-        lock_metadata["locked_req_hash"] = locked_req_hash
-        declared_req_hash = _rehash_req_file(requirements_path.with_suffix(".in"))
-        lock_metadata["declared_req_hash"] = declared_req_hash
-        updated_hashes[(bundle_name, target_platform)] = locked_req_hash
+        requirements_hash = _rehash_req_file(requirements_path)
+        lock_metadata["requirements_hash"] = requirements_hash
+        lock_input_hash = _rehash_req_file(requirements_path.with_suffix(".in"))
+        lock_metadata["lock_input_hash"] = lock_input_hash
+        updated_hashes[(bundle_name, target_platform)] = requirements_hash
         # Update the lock metadata file
         json_path.write_text(json.dumps(lock_metadata, indent=2, sort_keys=True) + "\n")
 
