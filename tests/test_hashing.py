@@ -9,7 +9,7 @@ import pytest
 from pathlib import Path
 from typing import Generator, Mapping
 
-from venvstacks.stacks import _hash_directory, _hash_file
+from venvstacks.stacks import _hash_directory, _hash_file, _hash_strings
 
 ##################################
 # Hash testing helpers
@@ -40,21 +40,50 @@ EXPECTED_FILE_HASHES_BLAKE2: Mapping[str, str] = {
 DEFAULT_ALGORITHM = SHA256_ALGORITHM
 EXPECTED_FILE_HASHES_DEFAULT = EXPECTED_FILE_HASHES_SHA256
 
-
 # Flatten the content hash mappings into 3-tuples for easier test parameterisation
+ALGORITHMS_TO_EXPECTED_HASHES = {
+    SHA256_ALGORITHM: EXPECTED_FILE_HASHES_SHA256,
+    BLAKE2_ALGORITHM: EXPECTED_FILE_HASHES_BLAKE2,
+}
+
+
 def _all_expected_file_hashes() -> Generator[tuple[str, str, str], None, None]:
-    for fname, expected_hash in EXPECTED_FILE_HASHES_SHA256.items():
-        yield SHA256_ALGORITHM, fname, expected_hash
-    for fname, expected_hash in EXPECTED_FILE_HASHES_BLAKE2.items():
-        yield BLAKE2_ALGORITHM, fname, expected_hash
+    for algorithm, expected_hashes in ALGORITHMS_TO_EXPECTED_HASHES.items():
+        for fname, expected_hash in expected_hashes.items():
+            yield algorithm, fname, expected_hash
 
 
 EXPECTED_FILE_HASHES = [*_all_expected_file_hashes()]
+
+STRINGS_TO_HASH = (
+    "A string",
+    "Another string",
+    "A string with non-ASCII characters: 🦎🐸🦎",
+)
+EXPECTED_STRING_ITERABLE_HASHES = {
+    SHA256_ALGORITHM: "30ad29063127d5e45ade75380df47dbbcee1246c55e138b0d42419ecb3a8635a",
+    BLAKE2_ALGORITHM: "cc67ce2ed4b3b8da567de50312ea33f9207b4fcd34be07476198e7e9a20422e5c2795ef3f3c955581b53bcf715dab5945b687ef3f1e8e6a8ef1bc9bf327f72e4",
+}
 
 
 ##########################
 # Test cases
 ##########################
+
+
+class TestStringIterableHashing:
+    def test_default_hash(self) -> None:
+        hash_fodder = STRINGS_TO_HASH
+        expected_hash = EXPECTED_STRING_ITERABLE_HASHES[DEFAULT_ALGORITHM]
+        assert _hash_strings(hash_fodder) == f"{DEFAULT_ALGORITHM}:{expected_hash}"
+        assert _hash_strings(hash_fodder, omit_prefix=True) == expected_hash
+
+    @pytest.mark.parametrize("algorithm", ALGORITHMS_TO_EXPECTED_HASHES)
+    def test_algorithm_selection(self, algorithm: str) -> None:
+        hash_fodder = STRINGS_TO_HASH
+        expected_hash = EXPECTED_STRING_ITERABLE_HASHES[algorithm]
+        assert _hash_strings(hash_fodder, algorithm) == f"{algorithm}:{expected_hash}"
+        assert _hash_strings(hash_fodder, algorithm, omit_prefix=True) == expected_hash
 
 
 class TestFileHashing:
@@ -120,8 +149,8 @@ def _make_expected_dir_hash(algorithm: str, content_hashes: Mapping[str, str]) -
 
 
 EXPECTED_DIR_HASHES = {
-    "sha256": _make_expected_dir_hash("sha256", EXPECTED_FILE_HASHES_SHA256),
-    "blake2b": _make_expected_dir_hash("blake2b", EXPECTED_FILE_HASHES_BLAKE2),
+    algorithm: _make_expected_dir_hash(algorithm, expected_file_hashes)
+    for algorithm, expected_file_hashes in ALGORITHMS_TO_EXPECTED_HASHES.items()
 }
 
 

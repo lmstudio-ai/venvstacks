@@ -53,12 +53,17 @@ MINIMAL_PROJECT_PATHS = (
 )
 
 
-def _define_build_env(working_path: Path) -> BuildEnvironment:
-    """Define a build environment for the sample project in a temporary folder."""
-    # To avoid side effects from lock file creation, copy input files to the working path
+def _copy_project_input_files(working_path: Path) -> None:
+    """Copy the input files for the project to the given temporary folder."""
+    # To avoid side effects from lock file creation, copy project files to the working path
     for src_path in MINIMAL_PROJECT_PATHS:
         dest_path = working_path / src_path.name
         shutil.copyfile(src_path, dest_path)
+
+
+def _define_build_env(working_path: Path) -> BuildEnvironment:
+    """Define a build environment for the sample project in a temporary folder."""
+    _copy_project_input_files(working_path)
     # Include "/../" in the spec path in order to test relative path resolution when
     # accessing the Python executables (that can be temperamental, especially on macOS).
     # The subdirectory won't be used for anything, so it being missing shouldn't matter.
@@ -318,11 +323,7 @@ class TestMinimalBuildConfig(unittest.TestCase):
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = [env.env_name for env in envs_to_lock]
         self.assertEqual(lock_names, expected_names)
-        req_dir = build_env.requirements_dir_path
-        build_target = build_env.build_platform
-        self.assertTrue(
-            all(env.needs_lock(build_target, req_dir) for env in envs_to_lock)
-        )
+        self.assertTrue(all(env.needs_lock() for env in envs_to_lock))
         self.assertTrue(build_env._needs_lock())
         # All envs should be flagged for building
         build_names = [env.env_name for env in build_env.environments_to_build()]
@@ -345,9 +346,7 @@ class TestMinimalBuildConfig(unittest.TestCase):
         self.assertEqual(all_names, expected_names)
         # No envs should be selected for locking
         self.assertEqual(list(build_env.environments_to_lock()), [])
-        req_dir = build_env.requirements_dir_path
-        build_target = build_env.build_platform
-        self.assertFalse(any(env.needs_lock(build_target, req_dir) for env in all_envs))
+        self.assertFalse(any(env.needs_lock() for env in all_envs))
         self.assertFalse(build_env._needs_lock())
         # No envs should be flagged for building
         self.assertEqual(list(build_env.environments_to_build()), [])
@@ -370,12 +369,13 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         lock_dir_path = build_env.requirements_dir_path
         for env in build_env.all_environments():
             env_spec = env.env_spec
+            env.env_lock.prepare_lock_inputs()  # Also creates relevant subdir
             requirements_path = env_spec.get_requirements_path(
                 build_platform, lock_dir_path
             )
-            requirements_path.parent.mkdir(parents=True, exist_ok=True)
             requirements_path.write_text("")
             env.env_lock.update_lock_metadata()
+            self.assertIsNotNone(env.env_lock.load_valid_metadata())
         # Path diffs can get surprisingly long
         self.maxDiff = None
 
@@ -437,11 +437,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = [env.env_name for env in envs_to_lock]
         self.assertEqual(lock_names, expected_names)
-        req_dir = build_env.requirements_dir_path
-        build_target = build_env.build_platform
-        self.assertFalse(
-            any(env.needs_lock(build_target, req_dir) for env in envs_to_lock)
-        )
+        self.assertFalse(any(env.needs_lock() for env in envs_to_lock))
         self.assertFalse(build_env._needs_lock())
         # All envs should be flagged for building
         build_names = [env.env_name for env in build_env.environments_to_build()]
@@ -463,11 +459,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = [env.env_name for env in envs_to_lock]
         self.assertEqual(lock_names, expected_names)
-        req_dir = build_env.requirements_dir_path
-        build_target = build_env.build_platform
-        self.assertTrue(
-            all(env.needs_lock(build_target, req_dir) for env in envs_to_lock)
-        )
+        self.assertTrue(all(env.needs_lock() for env in envs_to_lock))
         self.assertTrue(build_env._needs_lock())
         # No envs should be flagged for building
         self.assertEqual(list(build_env.environments_to_build()), [])
@@ -489,11 +481,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = [env.env_name for env in envs_to_lock]
         self.assertEqual(lock_names, all_names)
-        req_dir = build_env.requirements_dir_path
-        build_target = build_env.build_platform
-        self.assertTrue(
-            all(env.needs_lock(build_target, req_dir) for env in envs_to_lock)
-        )
+        self.assertTrue(all(env.needs_lock() for env in envs_to_lock))
         self.assertTrue(build_env._needs_lock())
         # No envs should be flagged for building
         self.assertEqual(list(build_env.environments_to_build()), [])
@@ -525,13 +513,9 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = {env.env_name for env in envs_to_lock}
         self.assertEqual(lock_names, all_names - no_lock)
-        req_dir = build_env.requirements_dir_path
-        build_target = build_env.build_platform
         self.assertTrue(
             all(
-                env.needs_lock(build_target, req_dir)
-                for env in envs_to_lock
-                if env.env_name not in no_reset
+                env.needs_lock() for env in envs_to_lock if env.env_name not in no_reset
             )
         )
         self.assertTrue(build_env._needs_lock())
@@ -542,11 +526,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = {env.env_name for env in envs_to_lock}
         self.assertEqual(lock_names, all_names - no_lock)
-        req_dir = build_env.requirements_dir_path
-        build_target = build_env.build_platform
-        self.assertTrue(
-            all(env.needs_lock(build_target, req_dir) for env in envs_to_lock)
-        )
+        self.assertTrue(all(env.needs_lock() for env in envs_to_lock))
         self.assertTrue(build_env._needs_lock())
 
 
