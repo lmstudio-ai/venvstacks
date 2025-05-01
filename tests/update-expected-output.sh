@@ -11,7 +11,7 @@ output_target="${1:?}"
 # allowing any discrepancies to be detected via "git status".
 # Tests that update output files are specifically marked.
 # Ignore return code, as the tests will fail when updates are needed.
-# Make the tests explicitly chatting to allow debugging when they pass
+# Make the tests explicitly chatty to allow debugging when they pass
 # unexpectedly (failing to update the output when updates are expected)
 tox -m test -- -m "expected_output" -vvs || true
 
