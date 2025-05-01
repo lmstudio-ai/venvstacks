@@ -2062,12 +2062,20 @@ class ApplicationEnv(LayeredEnvBase):
         launch_module_source_path = self.env_spec.launch_module_path
         launch_module_env_path = self.pylib_path / launch_module_source_path.name
         print(f"Including launch module {launch_module_source_path!r}...")
+        # To ensure the timestamps in the layer archive are *always* clamped,
+        # we intentionally *don't* copy the launch module file metadata here
         if launch_module_source_path.is_file():
             shutil.copyfile(launch_module_source_path, launch_module_env_path)
         else:
             shutil.copytree(
-                launch_module_source_path, launch_module_env_path, dirs_exist_ok=True
+                launch_module_source_path,
+                launch_module_env_path,
+                dirs_exist_ok=True,
+                copy_function=shutil.copyfile,
             )
+            # Also override the copied directory timestamps
+            for dir_path, _subdirs, _files in launch_module_env_path.walk():
+                dir_path.touch()
 
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
         super()._update_output_metadata(metadata)
