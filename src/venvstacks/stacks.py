@@ -222,10 +222,7 @@ class EnvironmentLock:
         self._update_req_hashes()
         self._lock_metadata_path = Path(f"{req_path}.json")
         self._last_locked = last_locked = self._get_last_locked_time()
-        # Only set the lock version if the last lock is still valid
-        if last_locked is None:
-            self._lock_version = None
-        else:
+        if last_locked:
             self._lock_version = self._get_last_locked_version()
 
     def invalidate_lock(self) -> None:
@@ -387,13 +384,12 @@ class EnvironmentLock:
         return _get_path_mtime(self.locked_requirements_path)
 
     def _get_last_locked_time(self) -> datetime | None:
-        # Prefer the lock timestamp from an adjacent (still valid) lock metadata file
+        # Retrieve the lock timestamp from an adjacent (still valid) lock metadata file
         last_locked = self._get_last_locked_metadata()
         if last_locked is not None:
             return last_locked
-        # Otherwise assume the local file mtime reflects when the environment was locked
-        # This will return None if the lock file doesn't exist yet
-        return self._get_path_mtime()
+        # Otherwise wait until the lock metadata is updated after the layer is locked
+        return None
 
     def _get_last_locked_version(self) -> int | None:
         lock_metadata = self.load_valid_metadata()
@@ -424,6 +420,7 @@ class EnvironmentLock:
             lock_version = last_version + 1
         else:
             lock_version = 1
+        self._lock_version = lock_version
         lock_metadata = EnvironmentLockMetadata(
             requirements_hash=req_hash,
             lock_input_hash=lock_input_hash,
@@ -1316,7 +1313,8 @@ class LayerEnvBase(ABC):
 
     def _write_deployed_config(self) -> None:
         # This is written as part of creating/updating the build environments
-        if self.env_lock.versioned and self.needs_lock():
+        env_lock = self.env_lock
+        if env_lock.versioned and not env_lock.has_valid_lock:
             # Versioned layers need an up to date lock to write deployment config
             return
         config_path = self.env_path / postinstall.DEPLOYED_LAYER_CONFIG
@@ -1560,6 +1558,7 @@ class LayerEnvBase(ABC):
         self._write_package_summary()
         if self.env_lock.update_lock_metadata():
             print(f"  Environment lock time set: {self.env_lock.locked_at!r}")
+        assert self.env_lock.has_valid_lock
         if self.env_lock.versioned:
             # Layer version may have changed -> rewrite the deployment config
             self._write_deployed_config()
