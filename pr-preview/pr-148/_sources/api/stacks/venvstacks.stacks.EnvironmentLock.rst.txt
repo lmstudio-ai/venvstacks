@@ -11,14 +11,15 @@ venvstacks.stacks.EnvironmentLock
    .. autosummary::
 
       ~EnvironmentLock.get_deployed_name
+      ~EnvironmentLock.invalidate_lock
       ~EnvironmentLock.load_valid_metadata
+      ~EnvironmentLock.prepare_lock_inputs
       ~EnvironmentLock.update_lock_metadata
 
    .. rubric:: Attributes
 
    .. autosummary::
 
-      ~EnvironmentLock.declared_requirements_path
       ~EnvironmentLock.has_valid_lock
       ~EnvironmentLock.last_locked
       ~EnvironmentLock.lock_version
@@ -26,5 +27,4 @@ venvstacks.stacks.EnvironmentLock
       ~EnvironmentLock.locked_requirements_path
       ~EnvironmentLock.requirements_hash
       ~EnvironmentLock.versioned
-      ~EnvironmentLock.lock_metadata_path
 

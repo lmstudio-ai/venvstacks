@@ -9,8 +9,8 @@ venvstacks.stacks.EnvironmentLockMetadata
 
    .. autosummary::
 
-      ~EnvironmentLockMetadata.declared_req_hash
-      ~EnvironmentLockMetadata.locked_at
-      ~EnvironmentLockMetadata.locked_req_hash
+      ~EnvironmentLockMetadata.requirements_hash
+      ~EnvironmentLockMetadata.lock_input_hash
       ~EnvironmentLockMetadata.lock_version
+      ~EnvironmentLockMetadata.locked_at
 

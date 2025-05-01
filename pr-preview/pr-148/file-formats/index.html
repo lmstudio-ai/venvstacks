@@ -582,10 +582,10 @@ when used in a loaded stack specification:</p>
 <section id="locked-layer-requirements">
 <span id="layer-requirements"></span><h2>Locked layer requirements<a class="headerlink" href="#locked-layer-requirements" title="Link to this heading">¶</a></h2>
 <p>Environment lock metadata files saved alongside the layer’s transitively locked requirements file:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">locked_at</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># ISO formatted date/time value</span>
-<span class="n">locked_req_hash</span><span class="p">:</span> <span class="nb">str</span>    <span class="c1"># Uses &quot;algorithm:hexdigest&quot; format</span>
-<span class="n">declared_req_hash</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Uses &quot;algorithm:hexdigest&quot; format</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">requirements_hash</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Uses &quot;algorithm:hexdigest&quot; format</span>
+<span class="n">lock_input_hash</span><span class="p">:</span> <span class="nb">str</span>    <span class="c1"># Uses &quot;algorithm:hexdigest&quot; format</span>
 <span class="n">lock_version</span><span class="p">:</span> <span class="nb">int</span>       <span class="c1"># Auto-incremented from previous lock metadata</span>
+<span class="n">locked_at</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># ISO formatted date/time value</span>
 </pre></div>
 </div>
 <p>Note: A future documentation update will cover these <code class="docutils literal notranslate"><span class="pre">venvstacks</span> <span class="pre">lock</span></code> output files in additional detail.</p>
