@@ -336,9 +336,10 @@ Environment lock metadata files saved alongside the layer's transitively locked 
 
 .. code-block:: python
 
-   locked_at: str          # ISO formatted date/time value
    requirements_hash: str  # Uses "algorithm:hexdigest" format
+   lock_input_hash: str    # Uses "algorithm:hexdigest" format
    lock_version: int       # Auto-incremented from previous lock metadata
+   locked_at: str          # ISO formatted date/time value
 
 Note: A future documentation update will cover these ``venvstacks lock`` output files in additional detail.
 

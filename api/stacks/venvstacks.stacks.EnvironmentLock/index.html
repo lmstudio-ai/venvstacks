@@ -296,7 +296,7 @@
 <h1>venvstacks.stacks.EnvironmentLock<a class="headerlink" href="#venvstacks-stacks-environmentlock" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="venvstacks.stacks.EnvironmentLock">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">venvstacks.stacks.</span></span><span class="sig-name descname"><span class="pre">EnvironmentLock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">requirements_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">versioned</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#venvstacks.stacks.EnvironmentLock" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">venvstacks.stacks.</span></span><span class="sig-name descname"><span class="pre">EnvironmentLock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">locked_requirements_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">declared_requirements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.13)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">versioned</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#venvstacks.stacks.EnvironmentLock" title="Link to this definition">¶</a></dt>
 <dd><p>Layered environment dependency locking management.</p>
 <p class="rubric">Methods</p>
 <div class="table-wrapper autosummary longtable docutils container">
@@ -305,8 +305,14 @@
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_deployed_name</span></code>(env_name)</p></td>
 <td><p>Report layer name with lock version (if any) appended.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_valid_metadata</span></code>(requirements_hash)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">invalidate_lock</span></code>()</p></td>
+<td><p>Mark the lock as invalid, even if it appears locally consistent.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_valid_metadata</span></code>()</p></td>
 <td><p>Loads last locked metadata only if the requirements hash matches.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">prepare_lock_inputs</span></code>()</p></td>
+<td><p>Write declared requirements to disk as a locking process input.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_lock_metadata</span></code>()</p></td>
 <td><p>Update the recorded lock metadata for this environment lock.</p></td>
@@ -318,8 +324,8 @@
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_locked</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if layer requirements have been locked.</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_valid_lock</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if layer has been locked and lock metadata is consistent.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">last_locked</span></code></p></td>
 <td><p>Date and time when the layer requirements were last locked.</p></td>
@@ -330,16 +336,13 @@
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">locked_at</span></code></p></td>
 <td><p>ISO-formatted UTC string reporting the last locked date/time.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">requirements_hash</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">locked_requirements_path</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">requirements_hash</span></code></p></td>
 <td><p>Hash of the last locked set of layer requirements.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">requirements_path</span></code></p></td>
-<td><p></p></td>
-</tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">versioned</span></code></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">lock_metadata_path</span></code></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
