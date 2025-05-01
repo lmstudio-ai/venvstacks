@@ -19,13 +19,16 @@ _REPO_DIR = _THIS_DIR.parent
 
 def _rehash_req_file(req_path: pathlib.Path, algorithm: str = "sha256") -> str:
     # Reimplemented, as script is easier to use if it doesn't depend on the project API
-    incremental_hash = hashlib.new(algorithm)
-
+    reqs: list[str] = []
     for req_line in req_path.read_text().splitlines():
-        req, _, comment = req_line.strip().partition("#")
+        req, _sep, _comment = req_line.strip().partition("#")
         req = req.strip()
         if req:
-            incremental_hash.update(req.encode())
+            reqs.append(req)
+    reqs.sort()
+    incremental_hash = hashlib.new(algorithm)
+    for req in reqs:
+        incremental_hash.update(req.encode())
     reqs_hash = incremental_hash.hexdigest()
     return f"{algorithm}:{reqs_hash}"
 
