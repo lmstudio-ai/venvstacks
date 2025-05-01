@@ -1313,10 +1313,6 @@ class LayerEnvBase(ABC):
 
     def _write_deployed_config(self) -> None:
         # This is written as part of creating/updating the build environments
-        env_lock = self.env_lock
-        if env_lock.versioned and not env_lock.has_valid_lock:
-            # Versioned layers need an up to date lock to write deployment config
-            return
         config_path = self.env_path / postinstall.DEPLOYED_LAYER_CONFIG
         print(f"Generating {str(config_path)!r}...")
         config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1365,7 +1361,11 @@ class LayerEnvBase(ABC):
             create_env = False
         if create_env:
             self._create_new_environment(lock_only=lock_only)
-        self._write_deployed_config()
+        env_lock = self.env_lock
+        if env_lock.has_valid_lock or not env_lock.versioned:
+            # Versioned layers need an up to date lock to write the deployed config
+            # Unversioned deployed config can be written regardless of the lock status
+            self._write_deployed_config()
         self.was_created = create_env
         self.was_built = create_env or env_updated
 
