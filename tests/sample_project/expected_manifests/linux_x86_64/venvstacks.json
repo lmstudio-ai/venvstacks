@@ -42,7 +42,7 @@
           "framework-scipy@1",
           "framework-http-client"
         ],
-        "requirements_hash": "sha256:b413e3b76a380a64e8b3838a8f6c468aa920ee3b518dc5cc514f3617fcba807d",
+        "requirements_hash": "sha256:f6b28511b7048e542083c2d1ede9ff913a2fcd711b97b281f6883cce01aca15b",
         "runtime_layer": "cpython-3.11",
         "target_platform": "linux_x86_64"
       },
@@ -120,7 +120,7 @@
         "locked_at": "2024-10-15T10:23:43.145588+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [],
-        "requirements_hash": "sha256:a444cdb32c1154b0b5deecf156272b4f29a5abaf05e9321db15adc89412216eb",
+        "requirements_hash": "sha256:9c357dabd1889d77168929b3842eb0d4b3fa54fd09d3da9568b32243c5daf197",
         "runtime_layer": "cpython-3.11",
         "target_platform": "linux_x86_64"
       }
