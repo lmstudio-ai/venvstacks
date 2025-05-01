@@ -2074,8 +2074,9 @@ class ApplicationEnv(LayeredEnvBase):
                 copy_function=shutil.copyfile,
             )
             # Also override the copied directory timestamps
-            for dir_path, _subdirs, _files in launch_module_env_path.walk():
-                dir_path.touch()
+            # Python 3.11 compatibility: use os.walk instead of Path.walk
+            for this_dir, _subdirs, _files in os.walk(launch_module_env_path):
+                Path(this_dir).touch()
 
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
         super()._update_output_metadata(metadata)
