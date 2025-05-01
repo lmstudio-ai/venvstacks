@@ -221,8 +221,12 @@ class EnvironmentLock:
         self._lock_input_path = req_path.with_suffix(".in")
         self._update_req_hashes()
         self._lock_metadata_path = Path(f"{req_path}.json")
-        self._last_locked = self._get_last_locked_time()
-        self._lock_version = self._get_last_locked_version()
+        self._last_locked = last_locked = self._get_last_locked_time()
+        # Only set the lock version if the last lock is still valid
+        if last_locked is None:
+            self._lock_version = None
+        else:
+            self._lock_version = self._get_last_locked_version()
 
     def invalidate_lock(self) -> None:
         """Mark the lock as invalid, even if it appears locally consistent.
@@ -415,13 +419,11 @@ class EnvironmentLock:
             self._fail_lock_metadata_query(
                 "Environment must be locked before writing lock metadata"
             )
-        last_version = self._lock_version
-        if last_version is None:
-            lock_version = 1
-        elif self.versioned:
+        if self.versioned:
+            last_version = self._get_last_locked_version() or 0
             lock_version = last_version + 1
         else:
-            lock_version = last_version
+            lock_version = 1
         lock_metadata = EnvironmentLockMetadata(
             requirements_hash=req_hash,
             lock_input_hash=lock_input_hash,
