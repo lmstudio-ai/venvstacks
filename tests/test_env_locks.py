@@ -7,7 +7,7 @@ import pytest
 from pathlib import Path
 from typing import Generator
 
-from venvstacks.stacks import EnvironmentLock
+from venvstacks.stacks import EnvironmentLock, _hash_strings
 
 
 ##########################
@@ -84,3 +84,28 @@ def test_load_with_inconsistent_output_hash(temp_dir_path: Path) -> None:
     assert loaded_lock._declared_req_hash == env_lock._declared_req_hash
     assert loaded_lock._locked_req_hash != env_lock._locked_req_hash
     assert loaded_lock.load_valid_metadata() is None
+
+
+def test_requirements_file_hashing(temp_dir_path: Path) -> None:
+    messy_requirements = [
+        "# File header comment",
+        "b==2.3.4  # Trailing comment",
+        "    c==3.4.5  # Leading whitespace",
+        "a==1.2.3  # Entry out of order",
+        "",
+        "# Preceding line intentionally blank",
+        "d==4.5.6",
+    ]
+    clean_requirements = EnvironmentLock._clean_reqs(messy_requirements)
+    expected_requirements = [
+        "a==1.2.3",
+        "b==2.3.4",
+        "c==3.4.5",
+        "d==4.5.6",
+    ]
+    assert clean_requirements == expected_requirements
+    expected_hash = _hash_strings(expected_requirements)
+    req_input_path = temp_dir_path / "requirements.in"
+    req_input_path.write_text("\n".join(messy_requirements))
+    req_file_hash = EnvironmentLock._hash_req_file(req_input_path)
+    assert req_file_hash == expected_hash

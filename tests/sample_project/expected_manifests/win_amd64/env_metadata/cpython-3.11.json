@@ -11,7 +11,7 @@
   "lock_version": 1,
   "locked_at": "2024-11-12T07:33:26.947601+00:00",
   "python_implementation": "cpython@3.11.11",
-  "requirements_hash": "sha256:7306d3600f1528b8ad25eae3e51e282c2f5503a014433fb17e31da00789c84f3",
+  "requirements_hash": "sha256:26a1fa57e06c824b10bb490dce76bbb3cd31c40be424b64e447d184ca6096d82",
   "runtime_layer": "cpython-3.11",
   "target_platform": "win_amd64"
 }

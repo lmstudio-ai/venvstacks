@@ -293,11 +293,23 @@ class EnvironmentLock:
         """ISO-formatted UTC string reporting the last locked date/time."""
         return _format_as_utc(self.last_locked)
 
-    @staticmethod
-    def _hash_req_file(requirements_path: Path) -> str | None:
+    @classmethod
+    def _clean_reqs(cls, requirements: Sequence[str]) -> list[str]:
+        result: list[str] = []
+        for req_line in requirements:
+            req, _, comment = req_line.strip().partition("#")
+            req = req.strip()
+            if req:
+                result.append(req)
+        result.sort()
+        return result
+
+    @classmethod
+    def _hash_req_file(cls, requirements_path: Path) -> str | None:
         if not requirements_path.exists():
             return None
-        return _hash_file(requirements_path)
+        requirements = requirements_path.read_text().splitlines()
+        return _hash_strings(cls._clean_reqs(requirements))
 
     def _update_req_file_hashes(self) -> None:
         self._declared_req_hash = self._hash_req_file(self.declared_requirements_path)
@@ -1011,6 +1023,18 @@ def _get_py_scheme_path(category: str, base_path: StrPath, py_version: str) -> P
 def _binary_with_extension(name: str) -> str:
     binary_suffix = Path(sys.executable).suffix
     return f"{name}{binary_suffix}"
+
+
+def _hash_strings(
+    items: Iterable[str], algorithm: str = "sha256", *, omit_prefix: bool = False
+) -> str:
+    incremental_hash = hashlib.new(algorithm)
+    for item in items:
+        incremental_hash.update(item.encode())
+    strings_hash = incremental_hash.hexdigest()
+    if omit_prefix:
+        return strings_hash
+    return f"{algorithm}:{strings_hash}"
 
 
 def _hash_file(

@@ -12,7 +12,7 @@
   "locked_at": "2024-10-15T10:24:36.193328+00:00",
   "python_implementation": "cpython@3.12.9",
   "required_layers": [],
-  "requirements_hash": "sha256:52d03445e70ccc0f6f3fe8523185f9f4b0b2795b83927d8703fba35fdc82bf62",
+  "requirements_hash": "sha256:3c1fe0f170bd58195285044fb36ff7ab759a50b685c9966fde53c1c71f2f3ed9",
   "runtime_layer": "cpython-3.12",
   "target_platform": "win_amd64"
 }

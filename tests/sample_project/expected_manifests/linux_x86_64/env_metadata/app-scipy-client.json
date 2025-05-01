@@ -17,7 +17,7 @@
     "framework-scipy@1",
     "framework-http-client"
   ],
-  "requirements_hash": "sha256:fb8a843c694d03d7ee74b457cdac2bd82b6b439de0ed308d72fe698c6c9c6cf4",
+  "requirements_hash": "sha256:b413e3b76a380a64e8b3838a8f6c468aa920ee3b518dc5cc514f3617fcba807d",
   "runtime_layer": "cpython-3.11",
   "target_platform": "linux_x86_64"
 }

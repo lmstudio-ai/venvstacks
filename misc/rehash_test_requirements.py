@@ -11,14 +11,23 @@ _THIS_DIR = pathlib.Path(__file__).parent
 _REPO_DIR = _THIS_DIR.parent
 
 # Utility script to programmatically rehash the test requirements files for
-# cosmetic format changes which don't otherwise affect the lockfile contents
+# cosmetic format changes which don't otherwise affect the lockfile contents.
+# This script was added as part of the update that switched to at least somewhat
+# semantically aware hashing of the layer requirements files, so it should be less
+# necessary in the future)
 
 
-def _rehash_file(path: pathlib.Path, algorithm: str = "sha256") -> str:
+def _rehash_req_file(req_path: pathlib.Path, algorithm: str = "sha256") -> str:
     # Reimplemented, as script is easier to use if it doesn't depend on the project API
-    with path.open("rb", buffering=0) as f:
-        file_hash = hashlib.file_digest(f, algorithm).hexdigest()
-    return f"{algorithm}:{file_hash}"
+    incremental_hash = hashlib.new(algorithm)
+
+    for req_line in req_path.read_text().splitlines():
+        req, _, comment = req_line.strip().partition("#")
+        req = req.strip()
+        if req:
+            incremental_hash.update(req.encode())
+    reqs_hash = incremental_hash.hexdigest()
+    return f"{algorithm}:{reqs_hash}"
 
 
 def _rehash_lockfiles() -> None:
@@ -33,9 +42,9 @@ def _rehash_lockfiles() -> None:
         lock_metadata: dict[str, typing.Any] = json.loads(json_path.read_text())
         lock_metadata.pop("requirements_hash", None)
         requirements_path = json_path.with_name(json_path.stem)
-        locked_req_hash = _rehash_file(requirements_path)
+        locked_req_hash = _rehash_req_file(requirements_path)
         lock_metadata["locked_req_hash"] = locked_req_hash
-        declared_req_hash = _rehash_file(requirements_path.with_suffix(".in"))
+        declared_req_hash = _rehash_req_file(requirements_path.with_suffix(".in"))
         lock_metadata["declared_req_hash"] = declared_req_hash
         updated_hashes[(bundle_name, target_platform)] = locked_req_hash
         # Update the lock metadata file

@@ -16,7 +16,7 @@
   "required_layers": [
     "framework-scipy@1"
   ],
-  "requirements_hash": "sha256:36b0dbfec94b7de6507f348f0823cd02fdca2ea79eeafe92d571c26ae347d150",
+  "requirements_hash": "sha256:d7244928da714bc5790275e1f0b972f3e6ca8841c04e5463d6cf35f5e8437259",
   "runtime_layer": "cpython-3.11",
   "target_platform": "linux_x86_64"
 }

@@ -19,7 +19,7 @@
         "required_layers": [
           "framework-scipy@1"
         ],
-        "requirements_hash": "sha256:9aba38b5efe287f35d58825dce6b1c47ed556b930056e6edc00ca9e1a165796b",
+        "requirements_hash": "sha256:d7244928da714bc5790275e1f0b972f3e6ca8841c04e5463d6cf35f5e8437259",
         "runtime_layer": "cpython-3.11",
         "target_platform": "win_amd64"
       },
@@ -42,7 +42,7 @@
           "framework-scipy@1",
           "framework-http-client"
         ],
-        "requirements_hash": "sha256:3bff0428616a2f1724732e78e7788e753dd5f1aa10aa5d3b87707b8dbde121de",
+        "requirements_hash": "sha256:b413e3b76a380a64e8b3838a8f6c468aa920ee3b518dc5cc514f3617fcba807d",
         "runtime_layer": "cpython-3.11",
         "target_platform": "win_amd64"
       }
@@ -62,7 +62,7 @@
         "locked_at": "2024-10-15T10:24:35.999197+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [],
-        "requirements_hash": "sha256:9aba38b5efe287f35d58825dce6b1c47ed556b930056e6edc00ca9e1a165796b",
+        "requirements_hash": "sha256:d7244928da714bc5790275e1f0b972f3e6ca8841c04e5463d6cf35f5e8437259",
         "runtime_layer": "cpython-3.11",
         "target_platform": "win_amd64"
       },
@@ -80,7 +80,7 @@
         "locked_at": "2024-10-15T10:24:36.193328+00:00",
         "python_implementation": "cpython@3.12.9",
         "required_layers": [],
-        "requirements_hash": "sha256:52d03445e70ccc0f6f3fe8523185f9f4b0b2795b83927d8703fba35fdc82bf62",
+        "requirements_hash": "sha256:3c1fe0f170bd58195285044fb36ff7ab759a50b685c9966fde53c1c71f2f3ed9",
         "runtime_layer": "cpython-3.12",
         "target_platform": "win_amd64"
       },
@@ -98,7 +98,7 @@
         "locked_at": "2024-10-15T10:24:36.316012+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [],
-        "requirements_hash": "sha256:71ba32717956dcf9c0d4e18b69061efbe53816f4b591ceb50553d6d3d12e1960",
+        "requirements_hash": "sha256:a444cdb32c1154b0b5deecf156272b4f29a5abaf05e9321db15adc89412216eb",
         "runtime_layer": "cpython-3.11",
         "target_platform": "win_amd64"
       }
@@ -117,7 +117,7 @@
         "lock_version": 1,
         "locked_at": "2024-11-12T07:33:26.947601+00:00",
         "python_implementation": "cpython@3.11.11",
-        "requirements_hash": "sha256:7306d3600f1528b8ad25eae3e51e282c2f5503a014433fb17e31da00789c84f3",
+        "requirements_hash": "sha256:26a1fa57e06c824b10bb490dce76bbb3cd31c40be424b64e447d184ca6096d82",
         "runtime_layer": "cpython-3.11",
         "target_platform": "win_amd64"
       },
@@ -134,7 +134,7 @@
         "lock_version": 1,
         "locked_at": "2024-11-12T07:33:27.121883+00:00",
         "python_implementation": "cpython@3.12.9",
-        "requirements_hash": "sha256:930cc6512e0b5c12785a190a0a70439bf609ffdaad03ed4495191969bb587b84",
+        "requirements_hash": "sha256:62386f81a8549121a8ecae7fc10bf8970356b255391fabe13fb55e6678a1fdbc",
         "runtime_layer": "cpython-3.12",
         "target_platform": "win_amd64"
       }
