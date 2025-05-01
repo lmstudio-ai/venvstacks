@@ -369,7 +369,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         lock_dir_path = build_env.requirements_dir_path
         for env in build_env.all_environments():
             env_spec = env.env_spec
-            env.env_lock.prepare_lock_inputs() # Also creates relevant subdir
+            env.env_lock.prepare_lock_inputs()  # Also creates relevant subdir
             requirements_path = env_spec.get_requirements_path(
                 build_platform, lock_dir_path
             )
