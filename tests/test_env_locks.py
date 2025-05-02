@@ -216,6 +216,7 @@ def _modified_file(file_path: Path, contents: str) -> Generator[Any, None, None]
         file_path.write_text(contents)
         yield
     finally:
+        file_path.unlink()
         backup_path.rename(file_path)
 
 
