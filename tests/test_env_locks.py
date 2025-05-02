@@ -168,13 +168,13 @@ requirements = []
 
 [[applications]]
 name = "to-be-modified"
-launch_module = "{EMPTY_SCRIPT_PATH}"
+launch_module = "{EMPTY_SCRIPT_PATH.as_posix()}"
 frameworks = ["other-app-dependency", "dependent"]
 requirements = []
 
 [[applications]]
 name = "unrelated"
-launch_module = "{EMPTY_SCRIPT_PATH}"
+launch_module = "{EMPTY_SCRIPT_PATH.as_posix()}"
 frameworks = ["unrelated"]
 requirements = []
 """
