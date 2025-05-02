@@ -2295,6 +2295,18 @@ class StackSpec:
         return runtime_dep, framework_deps
 
     @classmethod
+    def from_dict(cls, fname: StrPath, layer_data: dict[str, Any]) -> Self:
+        """Write stack specification to given path as TOML and then load it."""
+        # Lazy import as most venvstacks invocations don't need to *write* TOML files
+        import tomlkit
+
+        stack_spec_path = as_normalized_path(fname)
+        stack_spec_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(stack_spec_path, "w") as f:
+            tomlkit.dump(layer_data, f)
+        return cls.load(stack_spec_path)
+
+    @classmethod
     def load(cls, fname: StrPath) -> Self:
         """Load stack specification from given TOML file."""
         stack_spec_path = as_normalized_path(fname)
