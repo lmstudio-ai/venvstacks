@@ -224,6 +224,11 @@ class EnvironmentLock:
         self._lock_input_path = req_path.with_suffix(".in")
         self._update_hashes()
         self._lock_metadata_path = Path(f"{req_path}.json")
+        self._last_locked = None
+        self._lock_version = None
+        self._update_from_valid_lock_info()
+
+    def _update_from_valid_lock_info(self) -> None:
         self._last_locked = last_locked = self._get_last_locked_time()
         if last_locked:
             self._lock_version = self._get_last_locked_version()
@@ -251,11 +256,13 @@ class EnvironmentLock:
         """Supply an additional "other input" to use when determining lock validity."""
         self.other_inputs = (*self.other_inputs, other_input)
         self._update_other_inputs_hash()
+        self._update_from_valid_lock_info()
 
     def extend_other_inputs(self, other_inputs: Sequence[str]) -> None:
         """Supply additional "other inputs" to use when determining lock validity."""
         self.other_inputs = (*self.other_inputs, *other_inputs)
         self._update_other_inputs_hash()
+        self._update_from_valid_lock_info()
 
     def _fail_lock_metadata_query(self, message: str) -> NoReturn:
         req_path = self.locked_requirements_path
@@ -410,8 +417,8 @@ class EnvironmentLock:
         # Otherwise wait until the lock metadata is updated after the layer is locked
         return None
 
-    def _get_last_locked_version(self) -> int | None:
-        lock_metadata = self.load_valid_metadata()
+    def _get_last_locked_version(self, *, checked=True) -> int | None:
+        lock_metadata = self.load_valid_metadata() if checked else self._load_saved_metadata()
         if lock_metadata is not None:
             # Unversioned specs are always considered version 1
             return lock_metadata.get("lock_version", 1)
@@ -435,7 +442,7 @@ class EnvironmentLock:
                 "Environment must be locked before writing lock metadata"
             )
         if self.versioned:
-            last_version = self._get_last_locked_version() or 0
+            last_version = self._get_last_locked_version(checked=False) or 0
             lock_version = last_version + 1
         else:
             lock_version = 1
@@ -1523,7 +1530,7 @@ class LayerEnvBase(ABC):
             return True
         # If the lock is not to be reset, then locking is only needed
         # if there is no valid lock file metadata already available
-        return self.env_lock.load_valid_metadata() is None
+        return not self.env_lock.has_valid_lock
 
     @staticmethod
     @lru_cache(maxsize=None)
