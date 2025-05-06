@@ -1,7 +1,7 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "3b2e6f8f7cb42c9dc52a2a3d56ab371044983059dc47a9a3be91071e1e8467ca"
+    "sha256": "cf1f2d49a2ddb9f1f0fea2b0eb0a7239acc753c758269dd4457b9f37959d0768"
   },
   "archive_name": "framework-sklearn.zip",
   "archive_size": 56188836,
@@ -9,7 +9,7 @@
   "install_target": "framework-sklearn",
   "layer_name": "framework-sklearn",
   "lock_version": 1,
-  "locked_at": "2025-05-01T15:24:17.981010+00:00",
+  "locked_at": "2025-05-06T14:23:53.642461+00:00",
   "python_implementation": "cpython@3.12.9",
   "required_layers": [],
   "requirements_hash": "sha256:5600adcb820b3f27dd6434fcd83573d2feed718732092ebb1dcd16cebed9f017",

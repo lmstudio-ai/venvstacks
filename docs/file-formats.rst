@@ -338,6 +338,7 @@ Environment lock metadata files saved alongside the layer's transitively locked 
 
    requirements_hash: str  # Uses "algorithm:hexdigest" format
    lock_input_hash: str    # Uses "algorithm:hexdigest" format
+   other_inputs_hash: str  # Uses "algorithm:hexdigest" format
    lock_version: int       # Auto-incremented from previous lock metadata
    locked_at: str          # ISO formatted date/time value
 

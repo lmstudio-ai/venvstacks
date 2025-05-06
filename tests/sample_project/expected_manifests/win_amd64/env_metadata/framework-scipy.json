@@ -1,15 +1,15 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "1e3a2a8946b571a24f286aa41d206c9634064d0504610aab907df90ca850e391"
+    "sha256": "06e80a46baef9245014f11630ea903b7bcf820b6f4ef5589e2f5422ef2bc4be8"
   },
-  "archive_name": "framework-scipy@1.zip",
+  "archive_name": "framework-scipy@2.zip",
   "archive_size": 45087925,
   "bound_to_implementation": true,
-  "install_target": "framework-scipy@1",
+  "install_target": "framework-scipy@2",
   "layer_name": "framework-scipy",
-  "lock_version": 1,
-  "locked_at": "2025-05-01T15:24:17.869245+00:00",
+  "lock_version": 2,
+  "locked_at": "2025-05-06T14:23:53.550281+00:00",
   "python_implementation": "cpython@3.11.11",
   "required_layers": [],
   "requirements_hash": "sha256:c78a4c81c6bc9afb393badf3b7ae3ab21e9ac927cfd3ab1db96978ac5eaef217",
