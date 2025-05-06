@@ -417,8 +417,10 @@ class EnvironmentLock:
         # Otherwise wait until the lock metadata is updated after the layer is locked
         return None
 
-    def _get_last_locked_version(self, *, checked=True) -> int | None:
-        lock_metadata = self.load_valid_metadata() if checked else self._load_saved_metadata()
+    def _get_last_locked_version(self, *, checked: bool = True) -> int | None:
+        lock_metadata = (
+            self.load_valid_metadata() if checked else self._load_saved_metadata()
+        )
         if lock_metadata is not None:
             # Unversioned specs are always considered version 1
             return lock_metadata.get("lock_version", 1)
