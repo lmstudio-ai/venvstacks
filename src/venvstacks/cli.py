@@ -604,4 +604,4 @@ def main(args: Sequence[str] | None = None) -> None:
     """
     # Indirectly calls the relevant click.Command variant's `main` method
     # See https://click.palletsprojects.com/en/8.1.x/api/#click.BaseCommand.main
-    _cli(args)
+    _cli(args, windows_expand_args=False)
