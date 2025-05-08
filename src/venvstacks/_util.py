@@ -308,15 +308,14 @@ _IGNORED_SUFFIXES = frozenset(
 
 
 def find_shared_libraries(
-    py_version: str, base_path: Path, *, excluded: Iterable[str] = ()
+    py_version: tuple[str, str], base_path: Path, *, excluded: Iterable[str] = ()
 ) -> Generator[Path, None, None]:
     """Find non-extension-module shared libraries in specified directory."""
     exclusion_patterns = [
         re.compile(_translate_glob(f"/{trailing}", recursive=True))
         for trailing in excluded
     ]
-    py_version_short = py_version.rpartition(".")[0]
-    py_version_nodot = "".join(py_version_short.split("."))
+    py_version_nodot = "".join(py_version)
     running_py_version_nodot = "".join(map(str, sys.version_info[:2]))
     if py_version_nodot == running_py_version_nodot:
         ignored_suffixes = _IGNORED_SUFFIXES
@@ -339,3 +338,27 @@ def find_shared_libraries(
             if any(p.search(str(file_path)) for p in exclusion_patterns):
                 continue
             yield file_path
+
+
+def map_symlink_targets(
+    symlink_dir_path: Path, target_paths: Iterable[Path]
+) -> tuple[dict[Path, Path], dict[Path, set[Path]]]:
+    targets_to_link: dict[Path, Path] = {}
+    ambiguous_link_targets: dict[Path, set[Path]] = {}
+    for target_path in target_paths:
+        symlink_path = symlink_dir_path / target_path.name
+        if symlink_path in ambiguous_link_targets:
+            # Already ambiguous, record another potential target
+            ambiguous_link_targets[symlink_path].add(target_path)
+            continue
+        existing_path = targets_to_link.get(symlink_path, None)
+        if existing_path is not None:
+            # This name already has a target
+            if existing_path == target_path:
+                continue
+            # Mark the link as ambiguous
+            existing_path = targets_to_link.pop(symlink_path)
+            ambiguous_link_targets[symlink_path] = {existing_path, target_path}
+            continue
+        targets_to_link[symlink_path] = target_path
+    return targets_to_link, ambiguous_link_targets

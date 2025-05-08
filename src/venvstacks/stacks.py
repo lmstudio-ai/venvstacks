@@ -52,6 +52,7 @@ from ._util import (
     capture_python_output,
     default_tarfile_filter,
     find_shared_libraries,
+    map_symlink_targets,
     run_python_command,
     StrPath,
     WINDOWS_BUILD as _WINDOWS_BUILD,
@@ -1622,10 +1623,34 @@ class LayerEnvBase(ABC):
                 self._fail_build(
                     "Environments must be linked before installing dependencies"
                 )
-            for so_path in find_shared_libraries(
-                self.py_version, self.pylib_path, excluded=self.env_spec.dynlib_exclude
-            ):
-                symlink_path = symlink_dir_path / so_path.name
+            libraries_to_link, ambiguous_link_targets = map_symlink_targets(
+                symlink_dir_path,
+                find_shared_libraries(
+                    cast(tuple[str, str], tuple(self.py_version.split(".")[:2])),
+                    self.pylib_path,
+                    excluded=self.env_spec.dynlib_exclude,
+                ),
+            )
+            if ambiguous_link_targets:
+                err_lines = [
+                    "Ambiguous dynamic library link targets:",
+                    "",
+                ]
+                for symlink_path, so_paths in ambiguous_link_targets.items():
+                    symlink_info = str(self.get_relative_build_path(symlink_path))
+                    so_info = sorted(
+                        str(self.get_relative_build_path(so_path))
+                        for so_path in so_paths
+                    )
+                    err_lines.append(f"  {symlink_info} => {so_info}?")
+                err_lines.extend(
+                    [
+                        "",
+                        "Set `dynlib_exclude` in the layer definition to resolve this ambiguity.",
+                    ]
+                )
+                self._fail_build("\n".join(err_lines))
+            for symlink_path, dynlib_path in libraries_to_link.items():
                 if symlink_path.exists():
                     if not symlink_path.is_symlink():
                         self._fail_build(
@@ -1633,20 +1658,22 @@ class LayerEnvBase(ABC):
                         )
                     target_path = symlink_path.readlink()
                     abs_target_path = symlink_path.parent / target_path
-                    if not abs_target_path.samefile(so_path):
+                    if not abs_target_path.samefile(dynlib_path):
                         symlink_info = str(self.get_relative_build_path(symlink_path))
                         existing_info = str(
                             self.get_relative_build_path(abs_target_path)
                         )
-                        conflicting_info = str(self.get_relative_build_path(so_path))
+                        conflicting_info = str(
+                            self.get_relative_build_path(dynlib_path)
+                        )
                         self._fail_build(
                             f"{symlink_info!r} already exists, "
                             f"but links to {existing_info!r}, not {conflicting_info!r}.\n"
-                            "Set `dynlib_exclude` in the layer definition to resolve this conflict."
+                            "Cleaning the build environment may resolve this conflict."
                         )
                 else:
                     symlink_path.parent.mkdir(exist_ok=True, parents=True)
-                    symlink_path.symlink_to(so_path)
+                    symlink_path.symlink_to(dynlib_path)
         return install_result
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
