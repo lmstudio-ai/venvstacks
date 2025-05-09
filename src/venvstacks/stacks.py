@@ -1671,10 +1671,10 @@ class LayerEnvBase(ABC):
                     ]
                 )
                 self._fail_build("\n".join(err_lines))
-            for existing_path in symlink_dir_path.iterdir():
-                # Ensure previous symlinks are removed if the library no longer publishes them,
-                # or the layer's dynlib exclusion filters are updated
-                existing_path.unlink()
+            if symlink_dir_path.exists():
+                for existing_path in symlink_dir_path.iterdir():
+                    # Ensure only currently valid symlinks are included in the layer archive
+                    existing_path.unlink()
             for symlink_path, dynlib_path in libraries_to_link.items():
                 if symlink_path.exists():
                     if not symlink_path.is_symlink():
