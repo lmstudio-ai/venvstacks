@@ -6,15 +6,15 @@
         "app_launch_module_hash": "sha256:69545721a157f18d97c1e05b60d40f8e656f70d9c76748c912a38d9232877791",
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "873ba3fde061d3b5fca22cb45ce1d650ef2e92bbeb560ef4b9815b3700b92a1b"
+          "sha256": "90cc75dd003685006fcaf504a3ea148ebf717afc0fdb0fef699806995ccd7dd8"
         },
-        "archive_name": "app-scipy-import@1.tar.xz",
+        "archive_name": "app-scipy-import@2.tar.xz",
         "archive_size": 3600,
         "bound_to_implementation": false,
-        "install_target": "app-scipy-import@1",
+        "install_target": "app-scipy-import@2",
         "layer_name": "app-scipy-import",
-        "lock_version": 1,
-        "locked_at": "2025-05-06T13:02:26.827280+00:00",
+        "lock_version": 2,
+        "locked_at": "2025-05-09T18:45:52.792591+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [
           "framework-scipy@1"
@@ -28,7 +28,7 @@
         "app_launch_module_hash": "sha256/76d203dd6d3bb1fdb1117053c81590d42ef3f62b4b92b8d316b31f08334fbca6",
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "1b5748e30bc2c8e8dc995ba7dd6615c8520322895039846d388cbf95304a05a4"
+          "sha256": "172efd918520d9f2d4c694fccbba373db646e1c68cb2f6e3579167ca96222d0d"
         },
         "archive_name": "app-scipy-client.tar.xz",
         "archive_size": 3700,
@@ -36,7 +36,7 @@
         "install_target": "app-scipy-client",
         "layer_name": "app-scipy-client",
         "lock_version": 1,
-        "locked_at": "2025-05-06T13:02:26.857280+00:00",
+        "locked_at": "2025-05-09T18:45:52.926592+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [
           "framework-scipy@1",
@@ -51,15 +51,15 @@
         "app_launch_module_hash": "sha256:fcb2d3f009b6bd274509ed8830e4640aadeef0b726b6de833edc16b76a893530",
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "2a4472d350102d3e11dc752d544f45b04c31f7ca5aee9990b444631e3f5cfa02"
+          "sha256": "5915875bc1db519c0ffa53988dbd7b01ef42743031f7452831cab554c7879faf"
         },
         "archive_name": "app-sklearn-import.tar.xz",
-        "archive_size": 3604,
+        "archive_size": 3596,
         "bound_to_implementation": false,
         "install_target": "app-sklearn-import",
         "layer_name": "app-sklearn-import",
         "lock_version": 1,
-        "locked_at": "2025-05-06T13:02:26.887280+00:00",
+        "locked_at": "2025-05-09T18:45:53.095593+00:00",
         "python_implementation": "cpython@3.12.9",
         "required_layers": [
           "framework-sklearn"
