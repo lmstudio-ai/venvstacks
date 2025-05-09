@@ -817,7 +817,9 @@ class ArchiveBuildRequest:
     def _hash_archive(archive_path: Path) -> ArchiveHashes:
         hashes: dict[str, str] = {}
         for algorithm in ArchiveHashes.__required_keys__:
-            hashes[algorithm] = _hash_file(archive_path, algorithm, omit_prefix=True)
+            hashes[algorithm] = _hash_file_contents(
+                archive_path, algorithm, omit_prefix=True
+            )
         # The required keys have been set, but mypy can't prove that,
         # so use an explicit cast to allow it to make that assumption
         return cast(ArchiveHashes, hashes)
@@ -1097,7 +1099,7 @@ def _hash_strings(
     return f"{algorithm}:{strings_hash}"
 
 
-def _hash_file(
+def _hash_file_contents(
     path: Path, algorithm: str = "sha256", *, omit_prefix: bool = False
 ) -> str:
     if not path.exists():
@@ -1107,6 +1109,21 @@ def _hash_file(
     if omit_prefix:
         return file_hash
     return f"{algorithm}:{file_hash}"
+
+
+def _hash_file_name_and_contents(
+    path: Path, algorithm: str = "sha256", *, omit_prefix: bool = False
+) -> str:
+    if not path.exists():
+        return ""
+    incremental_hash = hashlib.new(algorithm)
+    incremental_hash.update(path.name.encode())
+    file_hash = _hash_file_contents(path, algorithm)
+    incremental_hash.update(file_hash.encode())
+    file_and_name_hash = incremental_hash.hexdigest()
+    if omit_prefix:
+        return file_and_name_hash
+    return f"{algorithm}:{file_and_name_hash}"
 
 
 def _hash_directory(
@@ -1124,7 +1141,7 @@ def _hash_directory(
         for file in sorted(files):
             file_path = dir_path / file
             incremental_hash.update(file_path.name.encode())
-            file_hash = _hash_file(file_path, algorithm)
+            file_hash = _hash_file_contents(file_path, algorithm)
             incremental_hash.update(file_hash.encode())
     dir_hash = incremental_hash.hexdigest()
     if omit_prefix:
@@ -2132,6 +2149,7 @@ class ApplicationEnv(LayeredEnvBase):
     category = LayerCategories.APPLICATIONS
 
     launch_module_name: str = field(init=False, repr=False)
+    _launch_module_hash: str = field(init=False, repr=False)
 
     @property
     def env_spec(self) -> ApplicationSpec:
@@ -2142,7 +2160,12 @@ class ApplicationEnv(LayeredEnvBase):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.launch_module_name = self.env_spec.launch_module_path.stem
+        launch_module_path = self.env_spec.launch_module_path
+        self.launch_module_name = launch_module_path.stem
+        if launch_module_path.is_file():
+            self._launch_module_hash = _hash_file_name_and_contents(launch_module_path)
+        else:
+            self._launch_module_hash = _hash_directory(launch_module_path)
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         super()._update_existing_environment(lock_only=lock_only)
@@ -2169,14 +2192,7 @@ class ApplicationEnv(LayeredEnvBase):
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
         super()._update_output_metadata(metadata)
         metadata["app_launch_module"] = self.launch_module_name
-        if self.env_spec.launch_module_path.is_file():
-            metadata["app_launch_module_hash"] = _hash_file(
-                self.env_spec.launch_module_path
-            )
-        else:
-            metadata["app_launch_module_hash"] = _hash_directory(
-                self.env_spec.launch_module_path
-            )
+        metadata["app_launch_module_hash"] = self._launch_module_hash
 
 
 ######################################################
