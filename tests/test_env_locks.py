@@ -1,5 +1,6 @@
 """Test cases for environment lock management."""
 
+import shutil
 import tempfile
 import tomllib
 
@@ -137,8 +138,7 @@ def test_requirements_file_hashing(temp_dir_path: Path) -> None:
 ##################################
 
 EMPTY_SCRIPT_PATH = Path(__file__).parent / "minimal_project/empty.py"
-EMPTY_SCRIPT_PATH_POSIX = EMPTY_SCRIPT_PATH.as_posix()
-EXAMPLE_STACK_SPEC = f"""\
+EXAMPLE_STACK_SPEC = """\
 [[runtimes]]
 name = "cpython-to-be-modified"
 python_implementation = "cpython@3.11.11"
@@ -178,7 +178,7 @@ requirements = []
 
 [[applications]]
 name = "to-be-modified"
-launch_module = "{EMPTY_SCRIPT_PATH_POSIX}"
+launch_module = "launch.py"
 # "dependent" must be first here to allow linearisation
 # when that layer also depends on "other-app-dependency"
 frameworks = ["dependent", "other-app-dependency"]
@@ -187,12 +187,12 @@ requirements = []
 [[applications]]
 name = "runtime-only"
 runtime = "cpython-to-be-modified"
-launch_module = "{EMPTY_SCRIPT_PATH_POSIX}"
+launch_module = "launch2.py"
 requirements = []
 
 [[applications]]
 name = "unaffected"
-launch_module = "{EMPTY_SCRIPT_PATH_POSIX}"
+launch_module = "launch2.py"
 frameworks = ["unaffected"]
 requirements = []
 """
@@ -243,6 +243,9 @@ def _modified_file(file_path: Path, contents: str) -> Generator[Any, None, None]
 def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
     # Built as a monolithic tests with subtests for performance reasons
     # (initial setup takes ~10 seconds, subsequent checks are fractions of a second)
+    launch_module_path = temp_dir_path / "launch.py"
+    shutil.copyfile(EMPTY_SCRIPT_PATH, launch_module_path)
+    shutil.copyfile(EMPTY_SCRIPT_PATH, temp_dir_path / "launch2.py")
     spec_path = temp_dir_path / "venvstacks.toml"
     updated_spec_path = temp_dir_path / "venvstacks_updated.toml"
     spec_data = tomllib.loads(EXAMPLE_STACK_SPEC)
@@ -505,6 +508,22 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         assert invalid_locks == expected_invalid_locks
         assert build_env._needs_lock()
         subtests_passed += 1
+    with subtests.test("Change launch module name at application layer"):
+        # Even if the locked requirements don't change, the layer needs updating
+        # This is due to the launch module needing to be invoked differently
+        subtests_started += 1
+        spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
+        env_spec_to_modify = spec_data_to_check["applications"][0]
+        assert env_spec_to_modify["name"] == "to-be-modified"
+        env_spec_to_modify["launch_module"] = "launch2.py"
+        build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
+        expected_invalid_locks = {"app-to-be-modified"}
+        expected_valid_locks = all_layer_names - expected_invalid_locks
+        valid_locks, invalid_locks = _partition_envs(build_env)
+        assert valid_locks == expected_valid_locks
+        assert invalid_locks == expected_invalid_locks
+        assert build_env._needs_lock()
+        subtests_passed += 1
     # Remaining subtests need to modify the actual envs, not just the layer specifications
     env_to_modify: LayerEnvBase
     with subtests.test("Change locked requirements at runtime layer"):
@@ -549,6 +568,22 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         env_to_modify = build_env_to_lock.applications[LayerBaseName("to-be-modified")]
         with _modified_file(
             env_to_modify.env_lock.locked_requirements_path, "pip==25.1"
+        ):
+            build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
+            expected_invalid_locks = {"app-to-be-modified"}
+            expected_valid_locks = all_layer_names - expected_invalid_locks
+            valid_locks, invalid_locks = _partition_envs(build_env)
+            assert valid_locks == expected_valid_locks
+            assert invalid_locks == expected_invalid_locks
+            assert build_env._needs_lock()
+        subtests_passed += 1
+    with subtests.test("Change launch module content at application layer"):
+        # Even if the locked requirements don't change, the layer needs updating
+        # This is due to the launch module needing to be invoked differently
+        subtests_started += 1
+        spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
+        with _modified_file(
+            launch_module_path, "# Changed launch module contents"
         ):
             build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
             expected_invalid_locks = {"app-to-be-modified"}
