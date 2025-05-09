@@ -1574,22 +1574,43 @@ class LayerEnvBase(ABC):
         summary_path = requirements_path.with_name(summary_fname)
         summary_path.write_text("\n".join(summary_lines), encoding="utf-8")
 
+    def _iter_dependencies(self) -> Iterator["LayerEnvBase"]:
+        return iter(())
+
+    def get_lock_inputs(self) -> tuple[Path, Path, list[Path]]:
+        """Ensure the inputs needed to lock this environment are defined and valid."""
+        unlocked_deps = [
+            env.env_name for env in self._iter_dependencies() if env.needs_lock()
+        ]
+        if unlocked_deps:
+            self._fail_build(f"Cannot lock with unlocked dependencies: {unlocked_deps}")
+        declared_requirements_path = self.env_lock.prepare_lock_inputs()
+        return (
+            self.requirements_path,
+            declared_requirements_path,
+            self.get_constraint_paths(),
+        )
+
     def lock_requirements(self) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
-        requirements_path = self.requirements_path
+        requirements_path, declared_requirements_path, constraint_paths = (
+            self.get_lock_inputs()
+        )
         if not self.want_lock and not self.needs_lock():
-            print(f"Using existing {str(requirements_path)!r}")
+            print(
+                f"Using existing lock for {self.env_name} ({str(requirements_path)!r})"
+            )
             # Ensure summary files are always emitted, even for existing layer locks
             self._write_package_summary()
             return self.env_lock
-        print(f"Generating {str(requirements_path)!r}")
-        constraints = self.get_constraint_paths()
+        print(f"Locking {self.env_name} (generating {str(requirements_path)!r})")
         if self.want_lock_reset and requirements_path.exists():
-            print(f"Removing previous {str(requirements_path)!r}")
+            print(
+                f"Resetting lock for {self.env_name} (removing {str(requirements_path)!r})"
+            )
             requirements_path.unlink()
-        declared_requirements_path = self.env_lock.prepare_lock_inputs()
         self._run_uv_pip_compile(
-            requirements_path, declared_requirements_path, constraints
+            requirements_path, declared_requirements_path, constraint_paths
         )
         if not requirements_path.exists():
             self._fail_build(f"Failed to generate {str(requirements_path)!r}")
@@ -1849,7 +1870,7 @@ class LayeredEnvBase(LayerEnvBase):
         assert isinstance(self._env_spec, LayeredSpecBase)
         return self._env_spec
 
-    def _linked_environments(self) -> Iterator[LayerEnvBase]:
+    def _iter_dependencies(self) -> Iterator[LayerEnvBase]:
         # Linked frameworks are emitted before the base runtime layer
         for fw_env in self.linked_frameworks:
             yield fw_env
@@ -1859,21 +1880,21 @@ class LayeredEnvBase(LayerEnvBase):
         yield runtime_env
 
     def _iter_build_pylib_dirs(self) -> Iterator[str]:
-        for env in self._linked_environments():
+        for env in self._iter_dependencies():
             yield str(self.get_relative_build_path(env.pylib_path))
 
     def _iter_build_dynlib_dirs(self) -> Iterator[str]:
-        for env in self._linked_environments():
+        for env in self._iter_dependencies():
             dynlib_path = env.dynlib_path
             if dynlib_path is not None:
                 yield str(self.get_relative_build_path(dynlib_path))
 
     def _iter_deployed_pylib_dirs(self) -> Iterator[str]:
-        for env in self._linked_environments():
+        for env in self._iter_dependencies():
             yield str(env.get_deployed_path(env.pylib_path))
 
     def _iter_deployed_dynlib_dirs(self) -> Iterator[str]:
-        for env in self._linked_environments():
+        for env in self._iter_dependencies():
             dynlib_path = env.dynlib_path
             if dynlib_path is not None:
                 yield str(env.get_deployed_path(dynlib_path))
@@ -1881,16 +1902,14 @@ class LayeredEnvBase(LayerEnvBase):
     def link_base_runtime(self, runtime: RuntimeEnv) -> None:
         """Link this layered environment to its base runtime environment."""
         if self.base_runtime is not None:
-            raise BuildEnvError(
-                f"Layered environment base runtime already linked {self}"
-            )
+            self._fail_build(f"Layered environment base runtime already linked {self}")
         # Link the runtime environment
         self.base_runtime = runtime
         # Link executable paths
         self.base_python_path = runtime.python_path
         # Link runtime layer dependency constraints
         if self.linked_constraints_paths:
-            self._fail_build("Layered environment base runtime already linked")
+            self._fail_build("Layered environment constraint paths already set")
         self.linked_constraints_paths[:] = [runtime.requirements_path]
         self.env_lock.append_other_input(runtime.env_name)
         print(f"Linked {self}")
@@ -1912,19 +1931,15 @@ class LayeredEnvBase(LayerEnvBase):
         for env_spec in self.env_spec.frameworks:
             fw_env_name = env_spec.name
             fw_env_names.append(fw_env_name)
-            env = frameworks[fw_env_name]
-            fw_envs.append(env)
-            constraints_paths.append(env.requirements_path)
+            fw_env = frameworks[fw_env_name]
+            fw_envs.append(fw_env)
+            constraints_paths.append(fw_env.requirements_path)
         self.env_lock.extend_other_inputs(fw_env_names)
         # Invalidate this environment's lock if any layer it depends on needs locking
-        if not self.needs_lock():
-            if runtime.needs_lock():
+        for env in self._iter_dependencies():
+            if env.needs_lock():
                 self.env_lock.invalidate_lock()
-            else:
-                for fw_env in fw_envs:
-                    if fw_env.needs_lock():
-                        self.env_lock.invalidate_lock()
-                        break
+                break
 
     def get_deployed_config(self) -> postinstall.LayerConfig:
         """Layer config to be published in `venvstacks_layer.json`."""

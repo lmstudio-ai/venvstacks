@@ -7,15 +7,17 @@ import pytest
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any, Generator, cast
 
 from pytest_subtests import SubTests
 
 from venvstacks.stacks import (
+    BuildEnvError,
     BuildEnvironment,
     EnvironmentLock,
     LayerBaseName,
     LayerEnvBase,
+    LayerVariants,
     StackSpec,
     _hash_strings,
 )
@@ -246,6 +248,7 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
     spec_data = tomllib.loads(EXAMPLE_STACK_SPEC)
     build_env_to_lock = _define_lock_testing_env(spec_path, spec_data)
     # Check for divergence between stack spec and the expected results
+    # This also keeps the test from trivially passing due to bugs in the iterators
     layer_names = tuple(env.env_name for env in build_env_to_lock.all_environments())
     assert layer_names == EXPECTED_LAYER_NAMES
     # Preliminary checks that locking the stack updates the state as expected
@@ -255,6 +258,31 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
     assert valid_locks == set()
     assert invalid_locks == all_layer_names
     assert all(env.needs_lock() for env in build_env_to_lock.all_environments())
+
+    # Check lock input file determination
+    layers_to_lock_names: list[str] = []
+    for runtime_env in build_env_to_lock.runtimes_to_lock():
+        # Runtime environments are always ready to be locked
+        assert runtime_env.kind == LayerVariants.RUNTIME
+        layers_to_lock_names.append(runtime_env.env_name)
+        runtime_lock_inputs = runtime_env.get_lock_inputs()
+        expected_runtime_lock_inputs = (
+            runtime_env.requirements_path,
+            runtime_env.requirements_path.with_suffix(".in"),
+            cast(list[Path], []),
+        )
+        assert runtime_lock_inputs == expected_runtime_lock_inputs
+    for unlocked_env in build_env_to_lock.environments_to_lock():
+        if unlocked_env.kind == LayerVariants.RUNTIME:
+            continue
+        # Layered environments can only be locked after the layers they depend on
+        layers_to_lock_names.append(unlocked_env.env_name)
+        with pytest.raises(BuildEnvError, match="unlocked dependencies"):
+            unlocked_env.get_lock_inputs()
+    # Ensure this check can't trivially pass due to bugs in the iterators
+    assert tuple(layers_to_lock_names) == EXPECTED_LAYER_NAMES
+
+    # Actually lock the environments
     build_env_to_lock.lock_environments()
     assert not build_env_to_lock._needs_lock()
     valid_locks, invalid_locks = _partition_envs(build_env_to_lock)
