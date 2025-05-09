@@ -2163,9 +2163,11 @@ class ApplicationEnv(LayeredEnvBase):
         launch_module_path = self.env_spec.launch_module_path
         self.launch_module_name = launch_module_path.stem
         if launch_module_path.is_file():
-            self._launch_module_hash = _hash_file_name_and_contents(launch_module_path)
+            launch_module_hash = _hash_file_name_and_contents(launch_module_path)
         else:
-            self._launch_module_hash = _hash_directory(launch_module_path)
+            launch_module_hash = _hash_directory(launch_module_path)
+        self._launch_module_hash = launch_module_hash
+        self.env_lock.append_other_input(launch_module_hash)
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         super()._update_existing_environment(lock_only=lock_only)
