@@ -1,7 +1,7 @@
 .. Included in published docs via docs/changelog.rst
 
 .. Temporary link target for next release
-.. _changelog-0.5.0:
+.. _changelog-0.6.0:
 
 Unreleased
 ==========
@@ -11,6 +11,44 @@ See the fragment files in the `changelog.d directory`_.
 .. _changelog.d directory: https://github.com/lmstudio-ai/venvstacks/tree/main/docs/changelog.d
 
 .. scriv-insert-here
+
+.. _changelog-0.5.0:
+
+0.5.0 — 2025-05-12
+==================
+
+Changed
+-------
+
+- Layer locks are now invalidated for launch module changes. This also means
+  that implicit versioning will update the layer version (resolves :issue:`89`).
+- The exception raised when reporting dynamic library symlink conflicts in
+  a layer now reports all ambiguous library targets in the layer instead of
+  only reporting the first ambiguity encountered (resolved in :pr:`158`).
+
+Fixed
+-----
+
+- Previously defined layer locks are now correctly invalidated in the following
+  cases (resolves :issue:`149`):
+
+   - the layer's declared input requirements have changed
+   - the major Python version of the layer's base runtime has changed
+   - the layer depends on a layer that does not currently have a valid layer lock
+   - the relative paths from the layer to the layers it depends have changed
+     (including additions and removals of layer dependencies)
+   - implicit layer versioning is enabled or disabled for the layer
+- Attempting to lock a layered environment now fails if any layer it depends
+  on does not have a currently valid layer lock (resolves :issue:`161`).
+- CLI arguments on Windows are no longer unexpectedly resolved as filesystem
+  glob patterns (resolved in :pr:`160`).
+- Dynamic library symlinks are now correctly removed if the dynamic library is no
+  longer included in the built layer (resolved in :pr:`163`).
+- As it affects launch module execution, application layer launch module hashes now
+  incorporate the file name in addition to the file contents (resolved in :pr:`164`).
+- Application layer launch packages are now consistently archived using the layer's
+  lock timestamp, even when that is more recent than the file's local modification time
+  (resolved in :pr:`148`).
 
 .. _changelog-0.4.1:
 
