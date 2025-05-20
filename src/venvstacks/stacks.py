@@ -2196,6 +2196,13 @@ class ApplicationEnv(LayeredEnvBase):
         metadata["app_launch_module"] = self.launch_module_name
         metadata["app_launch_module_hash"] = self._launch_module_hash
 
+    def get_deployed_config(
+        self,
+    ) -> postinstall.LayerConfig:
+        config = super().get_deployed_config()
+        if self.launch_module_name:
+            config["launch_module"] = self.launch_module_name
+        return config
 
 ######################################################
 # Building layered environments based on a TOML file
