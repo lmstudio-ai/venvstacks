@@ -2199,6 +2199,7 @@ class ApplicationEnv(LayeredEnvBase):
     def get_deployed_config(
         self,
     ) -> postinstall.LayerConfig:
+        """Layer config to be published in `venvstacks_layer.json`."""
         config = super().get_deployed_config()
         if self.launch_module_name:
             config["launch_module"] = self.launch_module_name
