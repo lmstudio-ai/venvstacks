@@ -419,10 +419,8 @@ class EnvironmentLock:
         # Otherwise wait until the lock metadata is updated after the layer is locked
         return None
 
-    def _get_last_locked_version(self, *, checked: bool = True) -> int | None:
-        lock_metadata = (
-            self.load_valid_metadata() if checked else self._load_saved_metadata()
-        )
+    def _get_last_locked_version(self) -> int | None:
+        lock_metadata = self.load_valid_metadata()
         if lock_metadata is not None:
             # Unversioned specs are always considered version 1
             return lock_metadata.get("lock_version", 1)
@@ -455,10 +453,13 @@ class EnvironmentLock:
             self._fail_lock_metadata_query(
                 "Environment must be locked before writing lock metadata"
             )
-        if self.versioned:
-            last_version = self._get_last_locked_version(checked=False) or 0
+        last_metadata = self._load_saved_metadata() if self.versioned else None
+        if last_metadata is not None:
+            # Bump the recorded lock version
+            last_version = last_metadata.get("lock_version", 0)
             lock_version = last_version + 1
         else:
+            # Defining a new lock or layer is not versioned
             lock_version = 1
         self._lock_version = lock_version
         lock_metadata = EnvironmentLockMetadata(
@@ -1200,7 +1201,7 @@ class LayerEnvBase(ABC):
     dynlib_path: Path | None = field(init=False, repr=False)
     executables_path: Path = field(init=False, repr=False)
     python_path: Path = field(init=False, repr=False)
-    env_lock: EnvironmentLock = field(init=False)
+    env_lock: EnvironmentLock = field(init=False, repr=False)
 
     # Derived from layer spec in subclass __post_init__
     py_version: str = field(init=False, repr=False)
@@ -1235,6 +1236,10 @@ class LayerEnvBase(ABC):
     def _get_python_dir_path(self) -> Path:
         # Dedicated method so subclasses can adjust this if needed
         return self._get_py_scheme_path("scripts")
+
+    def __str__(self) -> str:
+        env_name = self.env_name
+        return f"{type(self).__name__}({env_name=})"
 
     @property
     def env_name(self) -> EnvNameBuild:
@@ -2525,7 +2530,7 @@ class StackSpec:
             )
             build_env = env_class(spec, build_path, requirements_path, index_config)
             build_environments[name] = build_env
-            print(f"  Defined {name!r}: {build_env!r}")
+            print(f"  Defined {name!r}: {build_env}")
         return build_environments
 
     def resolve_lexical_path(self, related_location: StrPath, /) -> Path:

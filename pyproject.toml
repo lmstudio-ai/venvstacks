@@ -115,6 +115,9 @@ docs = [
 [tool.pdm]
 distribution = true
 
+[tool.pdm.scripts]
+migrate-hashes = "./misc/rehash_test_requirements.py"
+
 [tool.pytest.ini_options]
 # Allow skipping slow tests for local testing
 addopts = "--strict-markers"

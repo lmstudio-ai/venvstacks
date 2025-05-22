@@ -82,6 +82,11 @@ Tests which work this way must be marked as relying on expected outputs:
 Updating metadata and examining built artifacts
 -----------------------------------------------
 
+When only input metadata has changed (with no effect on the built artifacts),
+the command `pdm run migrate-hashes` may be executed to update the input hashes
+recorded for the sample project, potentially avoiding the need for a full expected
+output update build.
+
 To generate a full local sample project build to help debug failures:
 
     $ cd /path/to/repo/
