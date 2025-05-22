@@ -476,11 +476,10 @@ class EnvironmentLock:
         # Calculate current requirements hashes
         lock_input_hash = self._hash_req_file(self._lock_input_path)
         req_hash = self._hash_req_file(self.locked_requirements_path)
-        if lock_input_hash is None or req_hash is None:
+        if lock_input_hash != self._lock_input_hash or req_hash is None:
             self._fail_lock_metadata_query(
                 "Environment must be locked before updating lock metadata"
             )
-        self._lock_input_hash = lock_input_hash
         self._requirements_hash = req_hash
         # Only update and save the last locked time if
         # the lockfile contents have changed or if
@@ -495,6 +494,32 @@ class EnvironmentLock:
             self._write_lock_metadata()
             return True
         return False
+
+    def get_diagnostics(self) -> Mapping[str, Any]:
+        """Retrieve internal lock details for diagnostic purposes."""
+        last_metadata = self._load_saved_metadata()
+        locked_at = (
+            _format_as_utc(self._last_locked) if self._last_locked is not None else None
+        )
+        lock_metadata = {
+            "lock_input_hash": self._lock_input_hash,
+            "requirements_hash": self._requirements_hash,
+            "other_inputs_hash": self._other_inputs_hash,
+            "locked_at": locked_at,
+            "lock_version": self._lock_version,
+        }
+        changed_fields = set(lock_metadata)
+        if last_metadata is not None:
+            for k, v in lock_metadata.items():
+                if last_metadata.get(k, None) == v:
+                    changed_fields.remove(k)
+        diagnostics: dict[str, Any] = {
+            "last_metadata": last_metadata,
+            "lock_metadata": lock_metadata,
+            "changed_fields": sorted(changed_fields),
+        }
+
+        return diagnostics
 
 
 # Identify target platforms using strings based on
@@ -1664,9 +1689,13 @@ class LayerEnvBase(ABC):
         """
         # Run a pip dependency upgrade inside the target environment
         if not self.env_lock.has_valid_lock:
-            self._fail_build(
-                "Environment must be locked before installing dependencies"
-            )
+            lock_diagnostics = _format_json(self.env_lock.get_diagnostics())
+            failure_details = [
+                "Environment must be locked before installing dependencies",
+                "Invalid lock details:",
+                lock_diagnostics,
+            ]
+            self._fail_build("\n".join(failure_details))
         install_result = self._run_pip_install(
             "-r",
             str(self.requirements_path),
@@ -2502,7 +2531,7 @@ class StackSpec:
             stack_spec_path, runtimes, frameworks, applications, requirements_dir_path
         )
 
-    def all_environment_specs(self) -> Iterable[LayerSpecBase]:
+    def all_environment_specs(self) -> Iterator[LayerSpecBase]:
         """Iterate over the specifications for all defined environments.
 
         All runtimes are produced first, then frameworks, then applications.
@@ -2608,7 +2637,7 @@ class BuildEnvironment:
         return self.stack_spec.build_platform
 
     # Iterators over various categories of included environments
-    def all_environments(self) -> Iterable[LayerEnvBase]:
+    def all_environments(self) -> Iterator[LayerEnvBase]:
         """Iterate over all defined environments.
 
         All runtimes are produced first, then frameworks, then applications.
@@ -2617,7 +2646,7 @@ class BuildEnvironment:
             self.runtimes.values(), self.frameworks.values(), self.applications.values()
         )
 
-    def environments_to_lock(self) -> Iterable[LayerEnvBase]:
+    def environments_to_lock(self) -> Iterator[LayerEnvBase]:
         """Iterate over all environments where locking is requested or allowed.
 
         Runtimes are produced first, then frameworks, then applications.
@@ -2626,13 +2655,13 @@ class BuildEnvironment:
             if env.want_lock is not False:  # Accepts `None` as meaning "lock if needed"
                 yield env
 
-    def runtimes_to_lock(self) -> Iterable[RuntimeEnv]:
+    def runtimes_to_lock(self) -> Iterator[RuntimeEnv]:
         """Iterate over runtime environments where locking is requested or allowed."""
         for env in self.runtimes.values():
             if env.want_lock is not False:  # Accepts `None` as meaning "lock if needed"
                 yield env
 
-    def environments_to_build(self) -> Iterable[LayerEnvBase]:
+    def environments_to_build(self) -> Iterator[LayerEnvBase]:
         """Iterate over all environments where building is requested or allowed.
 
         Runtimes are produced first, then frameworks, then applications.
@@ -2643,7 +2672,7 @@ class BuildEnvironment:
             ):  # Accepts `None` as meaning "build if needed"
                 yield env
 
-    def runtimes_to_build(self) -> Iterable[RuntimeEnv]:
+    def runtimes_to_build(self) -> Iterator[RuntimeEnv]:
         """Iterate over runtime environments where building is requested or allowed."""
         for env in self.runtimes.values():
             if (
@@ -2651,7 +2680,7 @@ class BuildEnvironment:
             ):  # Accepts `None` as meaning "build if needed"
                 yield env
 
-    def venvstacks_to_build(self) -> Iterable[LayeredEnvBase]:
+    def venvstacks_to_build(self) -> Iterator[LayeredEnvBase]:
         """Iterate over non-runtime environments where building is requested or allowed.
 
         Frameworks are produced first, then applications.
@@ -2662,7 +2691,7 @@ class BuildEnvironment:
             ):  # Accepts `None` as meaning "build if needed"
                 yield env
 
-    def built_environments(self) -> Iterable[LayerEnvBase]:
+    def built_environments(self) -> Iterator[LayerEnvBase]:
         """Iterate over all environments that were built by this build process.
 
         Runtimes are produced first, then frameworks, then applications.
@@ -2671,7 +2700,7 @@ class BuildEnvironment:
             if env.was_built:
                 yield env
 
-    def environments_to_publish(self) -> Iterable[LayerEnvBase]:
+    def environments_to_publish(self) -> Iterator[LayerEnvBase]:
         """Iterate over all environments where publication is requested or allowed.
 
         Runtimes are produced first, then frameworks, then applications.
