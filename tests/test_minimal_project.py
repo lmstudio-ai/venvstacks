@@ -30,6 +30,7 @@ from venvstacks.stacks import (
     ArchiveBuildMetadata,
     ArchiveMetadata,
     StackPublishingRequest,
+    BuildEnvError,
     BuildEnvironment,
     EnvNameBuild,
     EnvNameDeploy,
@@ -712,6 +713,23 @@ class TestMinimalBuild(DeploymentTestCase):
         build_env = self.build_env
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
+
+    def test_build_with_invalid_locks(self) -> None:
+        # Ensure attempt to build without locking first raises a detailed exception
+        build_env = self.build_env
+        build_env.select_operations(lock=False, build=True, publish=False)
+        # Operation selection overrides the lock status check
+        self.assertFalse(build_env._needs_lock())
+        with pytest.raises(BuildEnvError, match="Invalid lock details"):
+            build_env.create_environments()
+        # Check lower level environment methods
+        runtime_env = next(build_env.runtimes_to_build())
+        self.assertFalse(runtime_env.needs_lock())  # Op selection override applies here
+        self.assertFalse(
+            runtime_env.env_lock.has_valid_lock
+        )  # But not to the lock itself
+        with pytest.raises(BuildEnvError, match="Invalid lock details"):
+            runtime_env.install_requirements()
 
     @pytest.mark.slow
     def test_locking_and_publishing(self) -> None:

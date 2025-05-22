@@ -15,7 +15,7 @@ import typing
 
 try:
     # Import the CLI module first to avoid the API stability warning
-    import venvstacks.cli # noqa
+    import venvstacks.cli  # noqa
     from venvstacks.stacks import EnvironmentLock, StackSpec
 except ImportError as exc:
     exc.add_note("Try 'pdm run migrate-hashes' if direct execution fails")
@@ -24,10 +24,12 @@ _THIS_DIR = pathlib.Path(__file__).parent
 _REPO_DIR = _THIS_DIR.parent
 _SPEC_PATH = _REPO_DIR / "tests/sample_project/venvstacks.toml"
 
+
 def _rehash_req_file(req_file: pathlib.Path) -> str:
     req_hash = EnvironmentLock._hash_req_file(req_file)
     assert req_hash is not None
     return req_hash
+
 
 def _rehash_layer_inputs() -> None:
     # Note: this does NOT bump the nominal version for implicit versioning
