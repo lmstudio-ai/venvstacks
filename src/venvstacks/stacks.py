@@ -223,8 +223,8 @@ class EnvironmentLock:
     def __post_init__(self) -> None:
         req_path = self.locked_requirements_path
         self._lock_input_path = req_path.with_suffix(".in")
-        self._update_hashes()
         self._lock_metadata_path = Path(f"{req_path}.json")
+        self._update_hashes()
         self._last_locked = None
         self._lock_version = None
         self._update_from_valid_lock_info()
@@ -338,11 +338,12 @@ class EnvironmentLock:
         self._update_other_inputs_hash()
         self._other_inputs_hash = _hash_strings(self.other_inputs)
         self._lock_input_hash = input_hash = self._hash_reqs(self.declared_requirements)
-        if self._hash_req_file(self._lock_input_path) != input_hash:
-            # Declared requirements input file is out of date, so locked output is not valid
+        last_metadata = self._load_saved_metadata()
+        if last_metadata is None or last_metadata.get("lock_input_hash") != input_hash:
+            # Declared requirements hash has changed, so locked output is not valid
             req_hash = None
         else:
-            # Input file is consistent, so also check the locked output hash
+            # Declared requirements hash is consistent, so also check the locked output hash
             req_hash = self._hash_req_file(self.locked_requirements_path)
         self._requirements_hash = req_hash
 
@@ -427,10 +428,20 @@ class EnvironmentLock:
             return lock_metadata.get("lock_version", 1)
         return None
 
+    def _clear_lock_input_cache(self) -> bool:
+        # Lock input path should serve as a pure cache of info from the TOML stack spec
+        # Allow the test suite to ensure nothing depends on the input file existing
+        path_to_remove = self._lock_input_path
+        if path_to_remove.exists():
+            path_to_remove.unlink()
+            return True
+        return False
+
     def _purge_lock(self) -> bool:
         # Currently a test suite helper, but may become a public API if it proves
         # useful when implementing https://github.com/lmstudio-ai/venvstacks/issues/10
-        files_removed = False
+        # However, a public version may need to preserve the lock version info by default
+        files_removed = self._clear_lock_input_cache()
         for path_to_remove in (self.locked_requirements_path, self._lock_metadata_path):
             if path_to_remove.exists():
                 path_to_remove.unlink()

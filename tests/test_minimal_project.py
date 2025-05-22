@@ -529,6 +529,25 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         self.assertTrue(all(env.needs_lock() for env in envs_to_lock))
         self.assertTrue(build_env._needs_lock())
 
+    def test_lock_input_cache_is_optional(self):
+        build_env = self.build_env
+        stack_spec = build_env.stack_spec
+        # Lock input files should serve as a pure cache
+        for env in build_env.all_environments():
+            env.env_lock._clear_lock_input_cache()
+        # Create a new instance using the same input and build folders
+        new_env = stack_spec.define_build_environment(build_env.build_path)
+        del build_env  # Ensure all checks are run against the new instance
+        expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
+        all_names = [env.env_name for env in new_env.all_environments()]
+        self.assertEqual(all_names, expected_names)
+        # Lock files still exist, so no envs should need locking
+        unlocked = [
+            env.env_name for env in new_env.all_environments() if env.needs_lock()
+        ]
+        self.assertEqual(unlocked, [])
+        self.assertFalse(new_env._needs_lock())
+
 
 class TestMinimalBuild(DeploymentTestCase):
     # Test cases that actually create the build environment folders
