@@ -582,9 +582,7 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         # This is due to the launch module needing to be invoked differently
         subtests_started += 1
         spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
-        with _modified_file(
-            launch_module_path, "# Changed launch module contents"
-        ):
+        with _modified_file(launch_module_path, "# Changed launch module contents"):
             build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
             expected_invalid_locks = {"app-to-be-modified"}
             expected_valid_locks = all_layer_names - expected_invalid_locks

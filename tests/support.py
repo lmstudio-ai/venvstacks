@@ -430,6 +430,8 @@ class DeploymentTestCase(unittest.TestCase):
             env_config = json.loads(env_config_path.read_text(encoding="utf-8"))
             env_python = env_path / env_config["python"]
             launch_module = app_env["app_launch_module"]
+            # Ensure the external and internal launch metadata is consistent
+            assert env_config["launch_module"] == launch_module
             try:
                 launch_result = run_module(env_python, launch_module)
             except subprocess.CalledProcessError as exc:
