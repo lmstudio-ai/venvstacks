@@ -723,13 +723,11 @@ class TestMinimalBuild(DeploymentTestCase):
         with pytest.raises(BuildEnvError, match="Invalid lock details"):
             build_env.create_environments()
         # Check lower level environment methods
-        runtime_env = next(build_env.runtimes_to_build())
-        self.assertFalse(runtime_env.needs_lock())  # Op selection override applies here
-        self.assertFalse(
-            runtime_env.env_lock.has_valid_lock
-        )  # But not to the lock itself
+        rt_env = next(build_env.runtimes_to_build())
+        self.assertFalse(rt_env.needs_lock())  # Op selection override applies here
+        self.assertFalse(rt_env.env_lock.has_valid_lock)  # But not to the lock itself
         with pytest.raises(BuildEnvError, match="Invalid lock details"):
-            runtime_env.install_requirements()
+            rt_env.install_requirements()
 
     @pytest.mark.slow
     def test_locking_and_publishing(self) -> None:
