@@ -295,9 +295,16 @@ class TestBuildEnvironment(DeploymentTestCase):
         # Don't even try to continue if the environments aren't properly linked
         self.check_build_environments(self.build_env.all_environments())
         # Test stage: ensure exported environments allow launch module execution
+        export_path = self.working_path / "_export🦎"
         subtests_started += 1
         with self.subTest("Check environment export"):
-            export_path = self.working_path / "_export🦎"
+            export_result = build_env.export_environments(export_path)
+            self.check_environment_exports(export_path, export_result)
+            subtests_passed += 1
+        # Rebuild the environments to ensure symlinks aren't corrupted by doing so
+        build_env.create_environments(lock=False)
+        subtests_started += 1
+        with self.subTest("Check rebuilt environment export"):
             export_result = build_env.export_environments(export_path)
             self.check_environment_exports(export_path, export_result)
             subtests_passed += 1

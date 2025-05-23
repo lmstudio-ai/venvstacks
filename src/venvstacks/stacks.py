@@ -2109,8 +2109,10 @@ class LayeredEnvBase(LayerEnvBase):
             *dynlib_content,
             f'script_path="$script_dir/{_sh_path(env_python_path)}"',
             f'symlink_path="$script_dir/{_sh_path(symlink_path)}"',
-            'test -f "$script_path" || echo 1>&2 "Invalid wrapper script path: $script_path"',
-            'test -L "$symlink_path" || echo 1>&2 "Invalid base Python symlink: $symlink_path"',
+            'test -f "$script_path" || { echo 1>&2 "Invalid wrapper script path: $script_path"; exit 1; }',
+            'test -L "$symlink_path" || { echo 1>&2 "Invalid base Python symlink: $symlink_path"; exit 2; }',
+            'test "$symlink_path" -ef "$script_path" && '
+            '{ echo 1>&2 "Symlink loop detected: $symlink_path -> $script_path"; exit 3; }',
             'exec -a "$script_path" "$symlink_path" "$@"',
         ]
         wrapper_script_contents = "\n".join(wrapper_script_lines)
@@ -2138,14 +2140,25 @@ class LayeredEnvBase(LayerEnvBase):
                 self._fail_build(
                     "Layered environments must at least link a base runtime environment"
                 )
+            # Replace the symlink with a wrapper script that runs the base Python
             sh_path = self.python_path
+            base_python_link = sh_path.readlink()
+            base_python_target = sh_path.parent / base_python_link
+            if not base_python_target.resolve().samefile(base_python_path.resolve()):
+                err_details = (
+                    f"{str(sh_path)!r} does not link to {str(base_python_path)!r}"
+                )
+                self._fail_build(
+                    f"Inconsistent symlink to base Python environment ({err_details})"
+                )
             wrapper_info = self._generate_python_sh(sh_path, build_dynlib_paths)
             assert wrapper_info is not None
             sh_contents, symlink_path = wrapper_info
             symlink_path.unlink(missing_ok=True)
-            print(f"Renaming {str(sh_path)!r} -> {str(symlink_path)!r}...")
-            sh_path.rename(symlink_path)
+            print(f"Linking {str(symlink_path)!r} -> {str(base_python_link)!r}...")
+            symlink_path.symlink_to(base_python_link)
             print(f"Generating {str(sh_path)!r}...")
+            sh_path.unlink()
             sh_path.write_text(sh_contents, encoding="utf-8")
             os.chmod(sh_path, 0x755)
 
