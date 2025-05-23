@@ -215,6 +215,7 @@ class EnvironmentLock:
     _lock_input_path: Path = field(init=False, repr=False)
     _lock_input_hash: str = field(init=False, repr=False)
     _requirements_hash: str | None = field(init=False, repr=False)
+    _legacy_req_hash: str | None = field(init=False, repr=False)
     _other_inputs_hash: str = field(init=False, repr=False)
     _lock_metadata_path: Path = field(init=False, repr=False)
     _last_locked: datetime | None = field(init=False, repr=False)
@@ -338,14 +339,26 @@ class EnvironmentLock:
         self._update_other_inputs_hash()
         self._other_inputs_hash = _hash_strings(self.other_inputs)
         self._lock_input_hash = input_hash = self._hash_reqs(self.declared_requirements)
+        req_hash = legacy_req_hash = None
         last_metadata = self._load_saved_metadata()
-        if last_metadata is None or last_metadata.get("lock_input_hash") != input_hash:
-            # Declared requirements hash has changed, so locked output is not valid
-            req_hash = None
-        else:
-            # Declared requirements hash is consistent, so also check the locked output hash
-            req_hash = self._hash_req_file(self.locked_requirements_path)
+        if last_metadata is not None:
+            missing = object()
+            last_lock_input_hash = last_metadata.get("lock_input_hash", missing)
+            set_locked_req_hash = False
+            if last_lock_input_hash is missing:
+                # Legacy lock metadata, consider it valid if the last hash matches the full file
+                # This is technically an unwarranted assumption, but it makes upgrades more flexible
+                legacy_req_hash = _hash_file_contents(self.locked_requirements_path)
+                set_locked_req_hash = legacy_req_hash == last_metadata.get(
+                    "requirements_hash", missing
+                )
+            else:
+                set_locked_req_hash = input_hash == last_lock_input_hash
+            if set_locked_req_hash:
+                # Declared requirements hash is consistent, so also check the locked output hash
+                req_hash = self._hash_req_file(self.locked_requirements_path)
         self._requirements_hash = req_hash
+        self._legacy_req_hash = legacy_req_hash
 
     @staticmethod
     def _write_declared_requirements(
@@ -389,17 +402,24 @@ class EnvironmentLock:
             return None
         # No locked requirements file -> metadata is not valid
         req_hash = self._requirements_hash
-        if req_hash is None:
+        legacy_req_hash = self._legacy_req_hash
+        if req_hash is None and legacy_req_hash is None:
             return None
         # Metadata is valid only if the recorded hashes match the files on disk
         lock_metadata = self._load_saved_metadata()
-        if (
-            not lock_metadata
-            or lock_input_hash != lock_metadata.get("lock_input_hash", None)
-            or req_hash != lock_metadata.get("requirements_hash", None)
-            or self._other_inputs_hash != lock_metadata.get("other_inputs_hash", None)
-        ):
+        if lock_metadata is None:
             return None
+        last_req_hash = lock_metadata.get("requirements_hash", None)
+        have_valid_lock = (
+            req_hash == last_req_hash
+            and lock_input_hash == lock_metadata.get("lock_input_hash", None)
+            and self._other_inputs_hash == lock_metadata.get("other_inputs_hash", None)
+        )
+        if not have_valid_lock:
+            # Also check for consistent legacy lock metadata
+            if legacy_req_hash != last_req_hash:
+                # This isn't consistent legacy metadata either
+                return None
         return lock_metadata
 
     def _get_last_locked_metadata(self) -> datetime | None:
@@ -505,6 +525,7 @@ class EnvironmentLock:
             "lock_input_hash": self._lock_input_hash,
             "requirements_hash": self._requirements_hash,
             "other_inputs_hash": self._other_inputs_hash,
+            "_legacy_requirements_hash": self._legacy_req_hash,
             "locked_at": locked_at,
             "lock_version": self._lock_version,
         }
@@ -1585,8 +1606,8 @@ class LayerEnvBase(ABC):
             # Locking step has been explicitly disabled, so override the check
             # Later build steps will fail if the lock file is needed but missing
             return False
-        if self.want_lock_reset:
-            # If the lock is to be reset, then locking is needed unless
+        if self.want_lock_reset and not self.was_locked:
+            # If the lock is still to be reset, then locking is needed unless
             # the lock operation has been explicitly disabled
             return True
         # If the lock is not to be reset, then locking is only needed
@@ -1661,12 +1682,12 @@ class LayerEnvBase(ABC):
             # Ensure summary files are always emitted, even for existing layer locks
             self._write_package_summary()
             return self.env_lock
-        print(f"Locking {self.env_name} (generating {str(requirements_path)!r})")
         if self.want_lock_reset and requirements_path.exists():
             print(
                 f"Resetting lock for {self.env_name} (removing {str(requirements_path)!r})"
             )
             requirements_path.unlink()
+        print(f"Locking {self.env_name} (generating {str(requirements_path)!r})")
         self._run_uv_pip_compile(
             requirements_path, declared_requirements_path, constraint_paths
         )
@@ -1680,6 +1701,7 @@ class LayerEnvBase(ABC):
             # Layer version may have changed -> rewrite the deployment config
             self._write_deployed_config()
         self.was_locked = True
+        assert not self.needs_lock()
         return self.env_lock
 
     def install_requirements(self) -> subprocess.CompletedProcess[str]:
