@@ -6,10 +6,10 @@
         "app_launch_module_hash": "sha256:69545721a157f18d97c1e05b60d40f8e656f70d9c76748c912a38d9232877791",
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "bf3346800ea9d51ed8f8db240f5082bf70f57051f4966a900c41ddd9ce2489c6"
+          "sha256": "d8988c2a7881f5e503daace7f778a03bb2a316867505940b27b1a2d5302740e8"
         },
         "archive_name": "app-scipy-import@3.tar.xz",
-        "archive_size": 3628,
+        "archive_size": 3632,
         "bound_to_implementation": false,
         "install_target": "app-scipy-import@3",
         "layer_name": "app-scipy-import",
@@ -28,7 +28,7 @@
         "app_launch_module_hash": "sha256/76d203dd6d3bb1fdb1117053c81590d42ef3f62b4b92b8d316b31f08334fbca6",
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "56d140f5584c6d360d631b953288eb6da45488fb3fb140d6a531e93daeafd5d1"
+          "sha256": "dec4dcf2a13c1dc69006505a2cec3649200747195102ef2c71cbeda38b3541a5"
         },
         "archive_name": "app-scipy-client.tar.xz",
         "archive_size": 3724,
@@ -51,10 +51,10 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "8e30239b8ea207af9d2ae362c59915fd7bbf53bcc5dc0296f93c79f1e6564673"
+          "sha256": "893d889e93d130ad826dffdc8399c988b14b7adafa95c71c5423d4c6df3a6f7b"
         },
         "archive_name": "framework-scipy@2.tar.xz",
-        "archive_size": 15082656,
+        "archive_size": 15085512,
         "bound_to_implementation": false,
         "install_target": "framework-scipy@2",
         "layer_name": "framework-scipy",
@@ -69,10 +69,10 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "4ab73fef1fc6c64e1aa071ff22971eb9f890bd7bd80ae7093344bc67f49d3c87"
+          "sha256": "c969d98eff1f8700f206b5cb7f9cc247f2f8069589ba487ce8eebc0c56e1b848"
         },
         "archive_name": "framework-sklearn.tar.xz",
-        "archive_size": 20687568,
+        "archive_size": 20685040,
         "bound_to_implementation": false,
         "install_target": "framework-sklearn",
         "layer_name": "framework-sklearn",
@@ -87,10 +87,10 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "1f362b5e6532df92a5b2f3335081621d93bd067c4fef7aa9031d81d097d7bc27"
+          "sha256": "37b3f6fad9b83031dfc51cf82a1fc538084339f8130995f5062164724ca32699"
         },
         "archive_name": "framework-http-client.tar.xz",
-        "archive_size": 351876,
+        "archive_size": 352100,
         "bound_to_implementation": false,
         "install_target": "framework-http-client",
         "layer_name": "framework-http-client",
