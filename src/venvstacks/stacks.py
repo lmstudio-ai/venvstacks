@@ -1249,6 +1249,9 @@ class LayerEnvBase(ABC):
     python_path: Path = field(init=False, repr=False)
     env_lock: EnvironmentLock = field(init=False, repr=False)
 
+    # Derived from subclass py_version in __post_init__
+    _py_version_info: tuple[str, str] = field(init=False, repr=False)
+
     # Derived from layer spec in subclass __post_init__
     py_version: str = field(init=False, repr=False)
 
@@ -1311,29 +1314,35 @@ class LayerEnvBase(ABC):
         # Concrete subclasses must set the version before finishing the base initialisation
         # Assert its existence here to make failures to do so easier to diagnose
         assert self.py_version is not None, "Subclass failed to set 'py_version'"
+        self._py_version_info = cast(
+            tuple[str, str], tuple(self.py_version.split(".")[:2])
+        )
         self.env_path = self.build_path / self.env_name
         # Note: purelib and platlib are the same location in virtual environments
         # (even when they have different names, platlib is a symlink to purelib)
         self.pylib_path = self._get_py_scheme_path("purelib")
         self.executables_path = self._get_py_scheme_path("scripts")
         env_python_dir_path = self._get_python_dir_path()
+        assert env_python_dir_path.is_absolute()
         env_python_path = env_python_dir_path / _binary_with_extension("python")
-        # Symlinked environments may technically vary in whether the link chain is:
+        # Symlinked environments may technically vary in whether the link setup is:
         #   python -> ./pythonX -> ./pythonX.Y -> base runtime Python
-        # or instead:
+        # or:
+        #   python -> base runtime Python
+        #   pythonX -> base runtime Python
+        #   pythonX.Y -> base runtime Python
+        # or:
+        #   python -> ./pythonX.Y
+        #   pythonX -> ./pythonX.Y
+        #   pythonX.Y -> base runtime Python
+        # or:
         #   python -> base runtime Python
         #   pythonX -> ./python
         #   pythonX.Y -> ./python
         #
-        # The stdlib venv does the latter, but this detail isn't formally standardised,
-        # so both potential cases are tolerated (setting whichever link actually targets
-        # the base runtime as the Python binary path for the environment layer)
-        while env_python_path.is_symlink():
-            symlink_target = env_python_dir_path / env_python_path.readlink()
-            if not symlink_target.is_relative_to(env_python_dir_path):
-                # Links out to the base Python environment, so use this path
-                break
-            env_python_path = symlink_target
+        # The stdlib venv does the latter for new environments, but this detail isn't
+        # formally standardised, so venvstacks ensures it when creating the venvs
+        # (this also ensures there is a single intercept point for a script wrapper)
         self.python_path = env_python_path
         if _WINDOWS_BUILD:
             # Windows DLL loading is typically handled via os.add_dll_directory()
@@ -1356,7 +1365,7 @@ class LayerEnvBase(ABC):
     def _get_common_lock_inputs(self) -> tuple[str, ...]:
         return (
             f"env_name={self.env_name}",
-            f"py_version={'.'.join(self.py_version.split('.')[:2])}",
+            f"py_version={'.'.join(self._py_version_info)}",
             f"is_versioned_layer={self.env_spec.versioned}",
         )
 
@@ -1731,7 +1740,7 @@ class LayerEnvBase(ABC):
             libraries_to_link, ambiguous_link_targets = map_symlink_targets(
                 symlink_dir_path,
                 find_shared_libraries(
-                    cast(tuple[str, str], tuple(self.py_version.split(".")[:2])),
+                    self._py_version_info,
                     self.pylib_path,
                     excluded=self.env_spec.dynlib_exclude,
                 ),
@@ -1994,7 +2003,10 @@ class LayeredEnvBase(LayerEnvBase):
         # Link the runtime environment
         self.base_runtime = runtime
         # Link executable paths
-        self.base_python_path = runtime.python_path
+        base_python_path = runtime.python_path
+        assert base_python_path.is_absolute()
+        assert not base_python_path.is_relative_to(self.env_path)
+        self.base_python_path = base_python_path
         # Link runtime layer dependency constraints
         if self.linked_constraints_paths:
             self._fail_build("Layered environment constraint paths already set")
@@ -2039,6 +2051,26 @@ class LayeredEnvBase(LayerEnvBase):
         """Get the lower level layer constraints imposed on this environment."""
         return self.linked_constraints_paths
 
+    def _symlink_base_python(self) -> None:
+        # TODO: Improve code sharing with _wrap_base_python below
+        # Make env python a direct symlink to the base Python runtime
+        env_python_path = self.python_path
+        base_python_path = self.base_python_path
+        assert base_python_path is not None
+        print(f"Linking {str(env_python_path)!r} -> {str(base_python_path)!r}...")
+        env_python_path.unlink(missing_ok=True)
+        env_python_path.symlink_to(base_python_path)
+        # Ensure python_, pythonX and pythonX.Y are relative links to ./python
+        env_python_dir = env_python_path.parent
+        py_major, py_minor = self._py_version_info
+        major_link = f"python{py_major}"
+        minor_link = f"python{py_major}.{py_minor}"
+        wrapper_bypass_link = "python_"
+        for alias_link in (major_link, minor_link, wrapper_bypass_link):
+            alias_path = env_python_dir / alias_link
+            alias_path.unlink(missing_ok=True)
+            alias_path.symlink_to("python")
+
     def _ensure_virtual_environment(self) -> subprocess.CompletedProcess[str]:
         # Use the base Python installation to create a new virtual environment
         if self.base_python_path is None:
@@ -2046,8 +2078,9 @@ class LayeredEnvBase(LayerEnvBase):
         options = ["--without-pip"]
         if self.env_path.exists():
             options.append("--upgrade")
-            # Ensure the wrapper script doesn't cause any update problems
-            self.python_path.unlink(missing_ok=True)
+            if not _WINDOWS_BUILD:
+                # Ensure dynlib loading script wrapper doesn't cause any update problems
+                self._symlink_base_python()
         if _WINDOWS_BUILD:
             options.append("--copies")
         else:
@@ -2071,16 +2104,11 @@ class LayeredEnvBase(LayerEnvBase):
     def _generate_python_sh(
         cls,
         env_python_path: Path,
+        wrapper_bypass_name: str,
         dynlib_paths: Sequence[Path],
-    ) -> tuple[str, Path] | None:
+    ) -> str:
         """Generate a Python wrapper script that sets the dynamic linking config appropriately."""
-        if not dynlib_paths:
-            # No need to wrap the link if the dynamic library loading doesn't need customisation
-            return None
-        if not env_python_path.is_symlink():
-            # Symlink has already been replaced, don't try to replace it again
-            return None
-        assert env_python_path.is_absolute()
+        assert dynlib_paths
         assert all(p.is_absolute() for p in dynlib_paths)
         # Use file relative paths so the wrapper script is portable (e.g. for local-export)
         # We avoid `walk_up=True` here to maintain Python 3.11 compatibility,
@@ -2121,7 +2149,6 @@ class LayeredEnvBase(LayerEnvBase):
             *(f'add_dynlib_dir "$script_dir/{_sh_path(p)}"' for p in dynlib_paths),
             f"export {dynlib_var}",
         ]
-        symlink_path = env_bin_dir_path / f"{env_python_path.name}_"
         wrapper_script_lines = [
             f"#!{shell}",
             "# Allow extension modules to find shared libraries published by lower layers",
@@ -2129,16 +2156,45 @@ class LayeredEnvBase(LayerEnvBase):
             "# Note: `readlink -f` (long available in GNU coreutils) is available on macOS 12.3 and later",
             'script_dir="$(cd "$(dirname "$(readlink -f "$0")")" 1> /dev/null 2>&1 && pwd)"',
             *dynlib_content,
-            f'script_path="$script_dir/{_sh_path(env_python_path)}"',
-            f'symlink_path="$script_dir/{_sh_path(symlink_path)}"',
+            f'script_path="$script_dir/{env_python_path.name}"',
+            f'symlink_path="$script_dir/{wrapper_bypass_name}"',
             'test -f "$script_path" || { echo 1>&2 "Invalid wrapper script path: $script_path"; exit 1; }',
             'test -L "$symlink_path" || { echo 1>&2 "Invalid base Python symlink: $symlink_path"; exit 2; }',
             'test "$symlink_path" -ef "$script_path" && '
             '{ echo 1>&2 "Symlink loop detected: $symlink_path -> $script_path"; exit 3; }',
             'exec -a "$script_path" "$symlink_path" "$@"',
+            "",
         ]
-        wrapper_script_contents = "\n".join(wrapper_script_lines)
-        return wrapper_script_contents, symlink_path
+        return "\n".join(wrapper_script_lines)
+
+    def _wrap_base_python(self, dynlib_paths: Sequence[Path]) -> None:
+        # TODO: Improve code sharing with _symlink_base_python above
+        # Make python_ a direct symlink to the base Python runtime
+        env_python_path = self.python_path
+        env_python_dir = env_python_path.parent
+        wrapper_bypass_path = env_python_dir / "python_"
+        base_python_path = self.base_python_path
+        assert base_python_path is not None
+        print(f"Linking {str(wrapper_bypass_path)!r} -> {str(base_python_path)!r}...")
+        wrapper_bypass_path.unlink(missing_ok=True)
+        wrapper_bypass_path.symlink_to(base_python_path)
+        # Ensure pythonX and pythonX.Y are relative links to ./python
+        py_major, py_minor = self._py_version_info
+        major_link = f"python{py_major}"
+        minor_link = f"python{py_major}.{py_minor}"
+        for alias_link in (major_link, minor_link):
+            alias_path = env_python_dir / alias_link
+            alias_path.unlink(missing_ok=True)
+            alias_path.symlink_to("python")
+        # Make env python a dynlib loading adjustment wrapper script
+        # to allow shared library loading in POSIX environments
+        sh_contents = self._generate_python_sh(
+            env_python_path, wrapper_bypass_path.name, dynlib_paths
+        )
+        print(f"Generating {str(env_python_path)!r}...")
+        env_python_path.unlink(missing_ok=True)
+        env_python_path.write_text(sh_contents, encoding="utf-8")
+        os.chmod(env_python_path, 0x755)
 
     def _link_build_environment(self) -> None:
         # Create sitecustomize file for the build environment
@@ -2155,34 +2211,11 @@ class LayeredEnvBase(LayerEnvBase):
         sc_path = self.pylib_path / "sitecustomize.py"
         print(f"Generating {str(sc_path)!r}...")
         sc_path.write_text(sc_contents, encoding="utf-8")
-        if not _WINDOWS_BUILD and build_dynlib_paths:
-            # Allow shared library loading in POSIX environments
-            base_python_path = self.base_python_path
-            if base_python_path is None:
-                self._fail_build(
-                    "Layered environments must at least link a base runtime environment"
-                )
-            # Replace the symlink with a wrapper script that runs the base Python
-            sh_path = self.python_path
-            base_python_link = sh_path.readlink()
-            base_python_target = sh_path.parent / base_python_link
-            if not base_python_target.resolve().samefile(base_python_path.resolve()):
-                err_details = (
-                    f"{str(sh_path)!r} does not link to {str(base_python_path)!r}"
-                )
-                self._fail_build(
-                    f"Inconsistent symlink to base Python environment ({err_details})"
-                )
-            wrapper_info = self._generate_python_sh(sh_path, build_dynlib_paths)
-            assert wrapper_info is not None
-            sh_contents, symlink_path = wrapper_info
-            symlink_path.unlink(missing_ok=True)
-            print(f"Linking {str(symlink_path)!r} -> {str(base_python_link)!r}...")
-            symlink_path.symlink_to(base_python_link)
-            print(f"Generating {str(sh_path)!r}...")
-            sh_path.unlink()
-            sh_path.write_text(sh_contents, encoding="utf-8")
-            os.chmod(sh_path, 0x755)
+        if not _WINDOWS_BUILD:
+            if build_dynlib_paths:
+                self._wrap_base_python(build_dynlib_paths)
+            else:
+                self._symlink_base_python()
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         if lock_only:
