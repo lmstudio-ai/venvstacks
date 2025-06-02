@@ -87,9 +87,13 @@ _CLI_OPT_FLAG_clean = Annotated[
     bool,
     typer.Option(help="Remove existing environments before building")
 ]  # fmt: skip
+_CLI_OPT_FLAG_lock_if_needed = Annotated[
+    bool,
+    typer.Option(help="Update stale layer lock files before building")
+]  # fmt: skip
 _CLI_OPT_FLAG_lock = Annotated[
     bool,
-    typer.Option(help="Update layer lock files before building")
+    typer.Option(help="(DEPRECATED) Compatibility alias for --lock-if-needed")
 ]  # fmt: skip
 _CLI_OPT_FLAG_build = Annotated[
     bool,
@@ -206,7 +210,7 @@ def _handle_layer_include_options(
     include: Sequence[str] | None,
     *,
     allow_missing: bool,
-    lock: bool,
+    lock: bool | None,
     build: bool,
     publish: bool,
     lock_dependencies: bool,
@@ -357,7 +361,7 @@ def build(
     output_dir: _CLI_OPT_STR_output_dir = "_artifacts",
     # Pipeline steps: cleaning, locking, building, and publishing archives
     clean: _CLI_OPT_FLAG_clean = False,
-    lock: _CLI_OPT_FLAG_lock = False,
+    lock_if_needed: _CLI_OPT_FLAG_lock_if_needed = False,
     build: _CLI_OPT_FLAG_build = True,
     publish: _CLI_OPT_FLAG_publish = False,
     # Package index access configuration
@@ -378,8 +382,13 @@ def build(
     # Note: when locking, layers that depend on included layers are *always* relocked
     build_derived: _CLI_OPT_FLAG_build_derived = False,
     publish_derived: _CLI_OPT_FLAG_publish_derived = False,
+    # Deprecated options
+    lock: _CLI_OPT_FLAG_lock = False,
 ) -> None:
     """Build (/lock/publish) Python virtual environment stacks."""
+    # Only update layer locks if the current lock is stale
+    # While "--lock" is deprecated, it's a soft deprecation, so no warning is emitted
+    want_lock = None if lock_if_needed or lock else False
     if include_dependencies is not None:
         # Override the per-operation settings
         lock_dependencies = build_dependencies = publish_dependencies = (
@@ -398,7 +407,7 @@ def build(
             build_env,
             include,
             allow_missing=allow_missing,
-            lock=lock,
+            lock=want_lock,
             build=build,
             publish=True,
             lock_dependencies=lock_dependencies,
@@ -410,11 +419,11 @@ def build(
         )
     else:
         build_env.select_operations(
-            lock=lock,
+            lock=want_lock,
             build=build,
             publish=True,
         )
-    build_env.create_environments(clean=clean, lock=lock)
+    build_env.create_environments(clean=clean, lock=want_lock)
     _publish_artifacts(
         build_env, output_dir, dry_run=not publish, force=clean, tag_outputs=tag_outputs
     )

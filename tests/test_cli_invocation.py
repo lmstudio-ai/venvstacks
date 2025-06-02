@@ -544,9 +544,15 @@ class TestSubcommands:
             dict(dry_run=True, tag_outputs=False),  # publish_artifacts
         ),
         (
-            ("--lock",),
-            dict(lock=True, build=True, publish=True),  # select_operations
-            dict(clean=False, lock=True),  # create_environments
+            ("--lock-if-needed",),
+            dict(lock=None, build=True, publish=True),  # select_operations
+            dict(clean=False, lock=None),  # create_environments
+            dict(dry_run=True, tag_outputs=False),  # publish_artifacts
+        ),
+        (
+            ("--lock",),  # Check legacy option name for --lock-if-needed
+            dict(lock=None, build=True, publish=True),  # select_operations
+            dict(clean=False, lock=None),  # create_environments
             dict(dry_run=True, tag_outputs=False),  # publish_artifacts
         ),
         (
@@ -577,14 +583,33 @@ class TestSubcommands:
             dict(dry_run=True, tag_outputs=True),  # publish_artifacts
         ),
         (
+            ("--lock-if-needed", "--build", "--publish", "--clean", "--tag-outputs"),
+            dict(lock=None, build=True, publish=True),  # select_operations
+            dict(clean=True, lock=None),  # create_environments
+            dict(force=True, tag_outputs=True),  # publish_artifacts
+        ),
+        (
+            # Check legacy option name for --lock-if-needed
             ("--lock", "--build", "--publish", "--clean", "--tag-outputs"),
-            dict(lock=True, build=True, publish=True),  # select_operations
-            dict(clean=True, lock=True),  # create_environments
+            dict(lock=None, build=True, publish=True),  # select_operations
+            dict(clean=True, lock=None),  # create_environments
             dict(force=True, tag_outputs=True),  # publish_artifacts
         ),
         (
             (
-                "--no-lock",
+                "--no-lock-if-needed",
+                "--no-build",
+                "--no-publish",
+                "--no-clean",
+                "--no-tag-outputs",
+            ),
+            dict(lock=False, build=False, publish=True),  # select_operations
+            dict(clean=False, lock=False),  # create_environments
+            dict(dry_run=True, tag_outputs=False),  # publish_artifacts
+        ),
+        (
+            (
+                "--no-lock",  # Check legacy option name for --no-lock-if-needed
                 "--no-build",
                 "--no-publish",
                 "--no-clean",
@@ -605,6 +630,8 @@ class TestSubcommands:
         )
         spec_path_to_mock = "/no/such/path/spec"
         result = mocked_runner.invoke(["build", *cli_flags, spec_path_to_mock])
+        if result.exception is None:
+            print(report_traceback(result.exception))
         # Always loads the stack spec and creates the build environment
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
@@ -627,7 +654,7 @@ class TestSubcommands:
             expected_output_dir, **expected_publish_args
         )
         # Check operation result last to ensure test results are as informative as possible
-        assert result.exception is None, report_traceback(result.exception)
+        assert result.exception is None
         assert result.exit_code == 0
 
     # Specific CLI option handling test cases for the "lock" subcommand
