@@ -36,14 +36,16 @@ jobs:
         persist-credentials: false
 
     - name: Build HTML
-      uses: ammaraskar/sphinx-action@8.0.2
+      # https://github.com/ammaraskar/sphinx-action/releases/tag/8.2.3
+      uses: ammaraskar/sphinx-action@54e52bfb642e9b60ea5b6bcb05fe3f74b40d290a
       with:
         docs-folder: "docs/"
         pre-build-command: "sphinx-build -W -b linkcheck . _build"
         build-command: "sphinx-build -W -b dirhtml . _build"
 
     - name: Deploy main docs
-      uses: JamesIves/github-pages-deploy-action@v4
+      # https://github.com/JamesIves/github-pages-deploy-action/releases/tag/v4.7.3
+      uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8
       if: github.ref == 'refs/heads/main'
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
