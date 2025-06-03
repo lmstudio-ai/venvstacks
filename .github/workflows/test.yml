@@ -42,7 +42,7 @@ jobs:
         # Note: while venvstacks nominally supports x86-64 macOS, the actual demand
         #       for that is unclear, so skip macos-12 testing until it is requested
         #       Linux and Windows aarch64 testing is more gated on runner availability
-        os: [ubuntu-22.04, windows-2019, macos-14]
+        os: [ubuntu-22.04, windows-2022, macos-14]
 
     # Check https://github.com/actions/action-versions/tree/main/config/actions
     # for latest versions if the standard actions start emitting warnings
