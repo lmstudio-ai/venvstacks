@@ -2954,7 +2954,9 @@ class BuildEnvironment:
             rt_env.create_build_environment(clean=clean)
         return [env.lock_requirements() for env in self.environments_to_lock()]
 
-    def create_environments(self, *, clean: bool = False, lock: bool = False) -> None:
+    def create_environments(
+        self, *, clean: bool = False, lock: bool | None = False
+    ) -> None:
         """Create build environments for specified layers."""
         # Base runtime environments need to exist before dependencies can be locked
         self.build_path.mkdir(parents=True, exist_ok=True)
