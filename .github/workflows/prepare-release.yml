@@ -21,7 +21,8 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
-      - uses: pandoc/actions/setup@v1
+      # https://github.com/pandoc/actions/releases/tag/v1.1.0
+      - uses: pandoc/actions/setup@54978b2465cef52a89f0e50a71d1397b1c25b469
         with:
           # Control when pandoc is updated
           version: 3.6.4
@@ -30,7 +31,9 @@ jobs:
         with:
           # Control when Python is updated to a new feature release
           python-version: "3.13"
-      - uses: hynek/setup-cached-uv@v2
+
+      # https://github.com/hynek/setup-cached-uv/releases/tag/v2.3.0
+      - uses: hynek/setup-cached-uv@757bedc3f972eb7227a1aa657651f15a8527c817
 
       - name: Create GitHub Release from latest release notes
         run:  |

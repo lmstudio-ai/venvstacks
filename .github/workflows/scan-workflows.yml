@@ -25,12 +25,13 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install zizmor
-        run: cargo install zizmor
+      - name: Install the latest version of uv
+        # https://github.com/astral-sh/setup-uv/releases/tag/v6.1.0
+        uses: astral-sh/setup-uv@f0ec1fc3b38f5e7cd731bb6ce540c5af426746bb
 
-      - name: Scan workflows
-        run:
-          zizmor --format=sarif . | tee workflow-scan.sarif
+      - name: Run zizmor 🌈
+        # Only scan this repo's workflows, not anything in submodules
+        run: uvx zizmor==1.8.0 --format sarif .github | tee workflow-scan.sarif
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     

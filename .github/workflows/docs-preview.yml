@@ -44,7 +44,8 @@ jobs:
         persist-credentials: false
 
     - name: Build HTML
-      uses: ammaraskar/sphinx-action@8.0.2
+      # https://github.com/ammaraskar/sphinx-action/releases/tag/8.2.3
+      uses: ammaraskar/sphinx-action@54e52bfb642e9b60ea5b6bcb05fe3f74b40d290a
       if: github.event.action != 'closed'
       with:
         docs-folder: "docs/"
@@ -52,7 +53,8 @@ jobs:
         build-command: "sphinx-build -W -b dirhtml . _build"
 
     - name: Deploy preview
-      uses: rossjrw/pr-preview-action@v1
+      # https://github.com/rossjrw/pr-preview-action/releases/tag/v1.6.1
+      uses: rossjrw/pr-preview-action@2fb559e4766555e23d07b73d313fe97c4f8c3cfe
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         source-dir: docs/_build/
