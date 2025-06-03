@@ -87,6 +87,10 @@ _CLI_OPT_FLAG_clean = Annotated[
     bool,
     typer.Option(help="Remove existing environments before building")
 ]  # fmt: skip
+_CLI_OPT_FLAG_if_needed = Annotated[
+    bool,
+    typer.Option(help="Skip locking layers that already have valid layer locks")
+]  # fmt: skip
 _CLI_OPT_FLAG_lock_if_needed = Annotated[
     bool,
     typer.Option(help="Update stale layer lock files before building")
@@ -435,8 +439,9 @@ def lock(
     spec_path: _CLI_ARG_spec_path,
     # Optional directory arguments: where to put build artifacts (must create envs to lock them)
     build_dir: _CLI_OPT_STR_build_dir = "_build",
-    # Pipeline steps: cleaning is the only optional step for this subcommand
+    # Pipeline steps: cleaning is optional, locking may be skipped for layers with valid locks
     clean: _CLI_OPT_FLAG_clean = False,
+    if_needed: _CLI_OPT_FLAG_if_needed = False,
     # Package index access configuration
     index: _CLI_OPT_FLAG_index = True,
     local_wheels: _CLI_OPT_STRLIST_local_wheels = None,
@@ -449,6 +454,7 @@ def lock(
     # When locking, layers that depend on included layers are *always* relocked
 ) -> None:
     """Lock layer requirements for Python virtual environment stacks."""
+    want_lock = None if if_needed else True
     build_env = _define_build_environment(
         spec_path,
         build_dir,
@@ -461,7 +467,7 @@ def lock(
             build_env,
             include,
             allow_missing=allow_missing,
-            lock=True,
+            lock=want_lock,
             build=False,
             publish=False,
             lock_dependencies=lock_dependencies,
@@ -473,7 +479,7 @@ def lock(
         )
     else:
         build_env.select_operations(
-            lock=True,
+            lock=want_lock,
             build=False,
             publish=False,
         )

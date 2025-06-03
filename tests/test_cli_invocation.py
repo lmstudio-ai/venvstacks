@@ -673,7 +673,12 @@ class TestSubcommands:
             dict(clean=True),  # lock_environments
         ),
         (
-            ("--no-clean",),
+            ("--if-needed",),
+            dict(lock=None, build=False, publish=False),  # select_operations
+            dict(clean=False),  # lock_environments
+        ),
+        (
+            ("--no-clean", "--no-if-needed",),
             dict(lock=True, build=False, publish=False),  # select_operations
             dict(clean=False),  # lock_environments
         ),
