@@ -31,7 +31,7 @@ jobs:
 
       - name: Run zizmor 🌈
         # Only scan this repo's workflows, not anything in submodules
-        run: uvx zizmor==1.8.0 --format sarif .github > results.sarif
+        run: uvx zizmor==1.8.0 --format sarif .github | tee workflow-scan.sarif
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
