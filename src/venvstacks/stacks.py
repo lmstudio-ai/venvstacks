@@ -369,7 +369,7 @@ class EnvironmentLock:
             # TODO: Introduce a cleaner migration mechanism for lock metadata updates
             missing = object()
             last_lock_input_hash = last_metadata.get("lock_input_hash", missing)
-            # 0.5.0 replaced the "requirements_hash" field with "lock_input_hash"
+            # 0.5.0 added "lock_input_hash" and changed how "requirements_hash" is calculated
             set_locked_req_hash = False
             if last_lock_input_hash is missing:
                 # Pre-0.5.0 lock metadata, consider it valid if the last hash matches the full file
@@ -384,7 +384,8 @@ class EnvironmentLock:
                 # Declared requirements hash is consistent, so also check the locked output hash
                 req_hash = self._hash_req_file(self.locked_requirements_path)
             # 0.6.0 split "version_inputs_hash" out from "other_inputs_hash"
-            # Exclude "other_inputs" from the metadata consistency check
+            # Exclude both "other_inputs_hash" and "version_inputs_hash" from the
+            # metadata consistency check if the latter is missing
             last_version_inputs_hash = last_metadata.get("version_inputs_hash", missing)
             migrate_other_inputs = last_version_inputs_hash is missing
         self._requirements_hash = req_hash
@@ -701,6 +702,10 @@ class LayerSpecBase(ABC):
         """Full path of locked requirements file for this layer specification."""
         requirements_fname = self.get_requirements_fname(platform)
         return Path(requirements_dir) / self.env_name / requirements_fname
+
+    def targets_platform(self, target_platform: str | TargetPlatform) -> bool:
+        """Returns `True` if the layer will be built for the given target platform."""
+        return target_platform in self.platforms
 
 
 @dataclass
@@ -2644,9 +2649,6 @@ class StackSpec:
                 msg = f"Application names must be distinct ({name!r} already defined)"
                 raise LayerSpecError(msg)
             launch_module_path = spec_dir_path / app.pop("launch_module")
-            if not launch_module_path.exists():
-                msg = f"Specified launch module {str(launch_module_path)!r} does not exist)"
-                raise LayerSpecError(msg)
             err_prefix = f"Application {name!r}"
             runtime_dep, framework_deps = cls._resolve_layer_deps(
                 err_prefix, app, runtimes, frameworks
@@ -2656,9 +2658,17 @@ class StackSpec:
             app["launch_module_path"] = launch_module_path
             ensure_optional_env_spec_fields(app)
             applications[name] = ApplicationSpec(**app)
-        return cls(
+        self = cls(
             stack_spec_path, runtimes, frameworks, applications, requirements_dir_path
         )
+        build_platform = self.build_platform
+        for app_spec in self.applications.values():
+            if not app_spec.targets_platform(build_platform):
+                continue
+            if not app_spec.launch_module_path.exists():
+                msg = f"Specified launch module {str(launch_module_path)!r} does not exist)"
+                raise LayerSpecError(msg)
+        return self
 
     def all_environment_specs(self) -> Iterator[LayerSpecBase]:
         """Iterate over the specifications for all defined environments.
@@ -2680,7 +2690,7 @@ class StackSpec:
         build_environments: dict[LayerBaseName, BuildEnv] = {}
         build_platform = self.build_platform
         for name, spec in specs.items():
-            if build_platform not in spec.platforms:
+            if not spec.targets_platform(build_platform):
                 print(f"  Skipping env {name!r} as it does not target this platform")
                 continue
             requirements_path = spec.get_requirements_path(

@@ -1,8 +1,13 @@
 # Ensure suitable error is raised for a missing launch module
 
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+
 [[applications]]
 name = "layer"
 # This will fail, since the launch module does not exist
 launch_module = "no_such_module.py"
-frameworks = "framework"
+runtime = "cpython-3.11"
 requirements = []
