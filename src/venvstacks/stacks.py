@@ -193,11 +193,12 @@ class EnvironmentLockMetadata(TypedDict):
     """Details of the last time this environment was locked."""
 
     # fmt: off
-    requirements_hash: str  # Uses "algorithm:hexdigest" format
-    lock_input_hash: str    # Uses "algorithm:hexdigest" format
-    other_inputs_hash: str  # Uses "algorithm:hexdigest" format
-    lock_version: int       # Auto-incremented from previous lock metadata
-    locked_at: str          # ISO formatted date/time value
+    requirements_hash: str    # Uses "algorithm:hexdigest" format
+    lock_input_hash: str      # Uses "algorithm:hexdigest" format
+    other_inputs_hash: str    # Uses "algorithm:hexdigest" format
+    version_inputs_hash: str  # Uses "algorithm:hexdigest" format
+    lock_version: int         # Auto-incremented from previous lock metadata
+    locked_at: str            # ISO formatted date/time value
     # fmt: on
 
 
@@ -211,12 +212,15 @@ class EnvironmentLock:
     locked_requirements_path: Path
     declared_requirements: tuple[str, ...]
     other_inputs: tuple[str, ...]
+    version_inputs: tuple[str, ...]
     versioned: bool = False
     _lock_input_path: Path = field(init=False, repr=False)
     _lock_input_hash: str = field(init=False, repr=False)
     _requirements_hash: str | None = field(init=False, repr=False)
     _legacy_req_hash: str | None = field(init=False, repr=False)
     _other_inputs_hash: str = field(init=False, repr=False)
+    _version_inputs_hash: str = field(init=False, repr=False)
+    _migrate_other_inputs: bool = field(init=False, repr=False)
     _lock_metadata_path: Path = field(init=False, repr=False)
     _last_locked: datetime | None = field(init=False, repr=False)
     _lock_version: int | None = field(init=False, repr=False)
@@ -258,6 +262,12 @@ class EnvironmentLock:
         """Supply an additional "other input" to use when determining lock validity."""
         self.other_inputs = (*self.other_inputs, other_input)
         self._update_other_inputs_hash()
+        self._update_from_valid_lock_info()
+
+    def append_version_input(self, version_input: str) -> None:
+        """Supply an additional "version input" to use when determining lock version validity."""
+        self.version_inputs = (*self.version_inputs, version_input)
+        self._update_version_inputs_hash()
         self._update_from_valid_lock_info()
 
     def extend_other_inputs(self, other_inputs: Sequence[str]) -> None:
@@ -304,7 +314,17 @@ class EnvironmentLock:
     @property
     def has_valid_lock(self) -> bool:
         """``True`` if layer has been locked and lock metadata is consistent."""
+        # For versioned layers, this also indicates the version metadata is up to date
         return self._last_locked is not None and self.load_valid_metadata() is not None
+
+    @property
+    def needs_full_lock(self) -> bool:
+        """``True`` if layer has not been locked or transitive lock metadata is inconsistent."""
+        # For versioned layers, skips checking whether the version metadata is up to date
+        return (
+            self._last_locked is None
+            or self.load_valid_metadata(ignore_version=True) is None
+        )
 
     @property
     def locked_at(self) -> str:
@@ -335,18 +355,24 @@ class EnvironmentLock:
     def _update_other_inputs_hash(self) -> None:
         self._other_inputs_hash = _hash_strings(self.other_inputs)
 
+    def _update_version_inputs_hash(self) -> None:
+        self._version_inputs_hash = _hash_strings(self.version_inputs)
+
     def _update_hashes(self) -> None:
         self._update_other_inputs_hash()
-        self._other_inputs_hash = _hash_strings(self.other_inputs)
+        self._update_version_inputs_hash()
         self._lock_input_hash = input_hash = self._hash_reqs(self.declared_requirements)
         req_hash = legacy_req_hash = None
+        migrate_other_inputs = False
         last_metadata = self._load_saved_metadata()
         if last_metadata is not None:
+            # TODO: Introduce a cleaner migration mechanism for lock metadata updates
             missing = object()
             last_lock_input_hash = last_metadata.get("lock_input_hash", missing)
+            # 0.5.0 replaced the "requirements_hash" field with "lock_input_hash"
             set_locked_req_hash = False
             if last_lock_input_hash is missing:
-                # Legacy lock metadata, consider it valid if the last hash matches the full file
+                # Pre-0.5.0 lock metadata, consider it valid if the last hash matches the full file
                 # This is technically an unwarranted assumption, but it makes upgrades more flexible
                 legacy_req_hash = _hash_file_contents(self.locked_requirements_path)
                 set_locked_req_hash = legacy_req_hash == last_metadata.get(
@@ -357,8 +383,13 @@ class EnvironmentLock:
             if set_locked_req_hash:
                 # Declared requirements hash is consistent, so also check the locked output hash
                 req_hash = self._hash_req_file(self.locked_requirements_path)
+            # 0.6.0 split "version_inputs_hash" out from "other_inputs_hash"
+            # Exclude "other_inputs" from the metadata consistency check
+            last_version_inputs_hash = last_metadata.get("version_inputs_hash", missing)
+            migrate_other_inputs = last_version_inputs_hash is missing
         self._requirements_hash = req_hash
         self._legacy_req_hash = legacy_req_hash
+        self._migrate_other_inputs = migrate_other_inputs
 
     @staticmethod
     def _write_declared_requirements(
@@ -394,7 +425,9 @@ class EnvironmentLock:
             # defined and used for validation when reading the metadata files.
             return cast(EnvironmentLockMetadata, json.load(f))
 
-    def load_valid_metadata(self) -> EnvironmentLockMetadata | None:
+    def load_valid_metadata(
+        self, ignore_version: bool = False
+    ) -> EnvironmentLockMetadata | None:
         """Loads last locked metadata only if the requirements hash matches."""
         # No requirements declaration file -> metadata is not valid
         lock_input_hash = self._lock_input_hash
@@ -410,10 +443,26 @@ class EnvironmentLock:
         if lock_metadata is None:
             return None
         last_req_hash = lock_metadata.get("requirements_hash", None)
+        check_version = (
+            not ignore_version and self.versioned and not self._migrate_other_inputs
+        )
         have_valid_lock = (
             req_hash == last_req_hash
             and lock_input_hash == lock_metadata.get("lock_input_hash", None)
-            and self._other_inputs_hash == lock_metadata.get("other_inputs_hash", None)
+            and (
+                self._migrate_other_inputs
+                or (
+                    self._other_inputs_hash
+                    == lock_metadata.get("other_inputs_hash", None)
+                )
+            )
+            and (
+                not check_version
+                or (
+                    self._version_inputs_hash
+                    == lock_metadata.get("version_inputs_hash", None)
+                )
+            )
         )
         if not have_valid_lock:
             # Also check for consistent legacy lock metadata
@@ -486,6 +535,7 @@ class EnvironmentLock:
             requirements_hash=req_hash,
             lock_input_hash=lock_input_hash,
             other_inputs_hash=self._other_inputs_hash,
+            version_inputs_hash=self._version_inputs_hash,
             lock_version=lock_version,
             locked_at=self.locked_at,
         )
@@ -525,6 +575,7 @@ class EnvironmentLock:
             "lock_input_hash": self._lock_input_hash,
             "requirements_hash": self._requirements_hash,
             "other_inputs_hash": self._other_inputs_hash,
+            "version_inputs_hash": self._version_inputs_hash,
             "_legacy_requirements_hash": self._legacy_req_hash,
             "locked_at": locked_at,
             "lock_version": self._lock_version,
@@ -1354,7 +1405,8 @@ class LayerEnvBase(ABC):
         self.env_lock = EnvironmentLock(
             self.requirements_path,
             (*self.env_spec.requirements,),
-            self._get_common_lock_inputs(),
+            self._get_other_lock_inputs(),
+            self._get_lock_version_inputs(),
             self.env_spec.versioned,
         )
         # Ensure symlinks in the environment paths aren't inadvertently resolved
@@ -1362,10 +1414,12 @@ class LayerEnvBase(ABC):
         assert self.executables_path.relative_to(self.env_path)
         assert self.dynlib_path.relative_to(self.env_path)
 
-    def _get_common_lock_inputs(self) -> tuple[str, ...]:
+    def _get_other_lock_inputs(self) -> tuple[str, ...]:
+        return (f"py_version={'.'.join(self._py_version_info)}",)
+
+    def _get_lock_version_inputs(self) -> tuple[str, ...]:
         return (
             f"env_name={self.env_name}",
-            f"py_version={'.'.join(self._py_version_info)}",
             f"is_versioned_layer={self.env_spec.versioned}",
         )
 
@@ -1488,9 +1542,9 @@ class LayerEnvBase(ABC):
         if create_env:
             self._create_new_environment(lock_only=lock_only)
         env_lock = self.env_lock
-        if env_lock.has_valid_lock or not env_lock.versioned:
-            # Versioned layers need an up to date lock to write the deployed config
+        if not env_lock.versioned or env_lock.has_valid_lock:
             # Unversioned deployed config can be written regardless of the lock status
+            # Versioned layers need an up to date version to write the deployed config
             self._write_deployed_config()
         self.was_created = create_env
         self.was_built = create_env or env_updated
@@ -1696,12 +1750,19 @@ class LayerEnvBase(ABC):
                 f"Resetting lock for {self.env_name} (removing {str(requirements_path)!r})"
             )
             requirements_path.unlink()
-        print(f"Locking {self.env_name} (generating {str(requirements_path)!r})")
-        self._run_uv_pip_compile(
-            requirements_path, declared_requirements_path, constraint_paths
+        want_full_lock = (
+            self.want_lock or self.want_lock_reset or self.env_lock.needs_full_lock
         )
-        if not requirements_path.exists():
-            self._fail_build(f"Failed to generate {str(requirements_path)!r}")
+        if want_full_lock:
+            print(f"Locking {self.env_name} (generating {str(requirements_path)!r})")
+            self._run_uv_pip_compile(
+                requirements_path, declared_requirements_path, constraint_paths
+            )
+            if not requirements_path.exists():
+                self._fail_build(f"Failed to generate {str(requirements_path)!r}")
+        else:
+            print(f"Incrementing layer version for {self.env_name}")
+            # Actually doing the update is handled in `update_lock_metadata`
         self._write_package_summary()
         if self.env_lock.update_lock_metadata():
             print(f"  Environment lock time set: {self.env_lock.locked_at!r}")
@@ -2280,7 +2341,7 @@ class ApplicationEnv(LayeredEnvBase):
         else:
             launch_module_hash = _hash_directory(launch_module_path)
         self._launch_module_hash = launch_module_hash
-        self.env_lock.append_other_input(launch_module_hash)
+        self.env_lock.append_version_input(launch_module_hash)
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         super()._update_existing_environment(lock_only=lock_only)
