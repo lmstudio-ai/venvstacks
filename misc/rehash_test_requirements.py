@@ -51,6 +51,7 @@ def _rehash_layer_inputs() -> None:
         env_lock = env_by_name[bundle_name].env_lock
         lock_metadata["lock_input_hash"] = env_lock._lock_input_hash
         lock_metadata["other_inputs_hash"] = env_lock._other_inputs_hash
+        lock_metadata["version_inputs_hash"] = env_lock._version_inputs_hash
         requirements_path = json_path.with_name(json_path.stem)
         requirements_hash = _rehash_req_file(requirements_path)
         lock_metadata["requirements_hash"] = requirements_hash

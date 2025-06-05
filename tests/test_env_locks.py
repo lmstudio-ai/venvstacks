@@ -37,7 +37,7 @@ def temp_dir_path() -> Generator[Path, None, None]:
 
 def test_default_state(temp_dir_path: Path) -> None:
     req_path = temp_dir_path / "requirements.txt"
-    env_lock = EnvironmentLock(req_path, (), ())
+    env_lock = EnvironmentLock(req_path, (), (), ())
     # Declared requirements file is only written when requested
     assert env_lock.declared_requirements == ()
     assert env_lock._lock_input_path == temp_dir_path / "requirements.in"
@@ -59,7 +59,7 @@ def test_default_state(temp_dir_path: Path) -> None:
 
 def test_load_with_consistent_file_hashes(temp_dir_path: Path) -> None:
     req_path = temp_dir_path / "requirements.txt"
-    env_lock = EnvironmentLock(req_path, (), ())
+    env_lock = EnvironmentLock(req_path, (), (), ())
     env_lock.prepare_lock_inputs()
     env_lock.locked_requirements_path.write_text("")
     env_lock.update_lock_metadata()
@@ -68,7 +68,7 @@ def test_load_with_consistent_file_hashes(temp_dir_path: Path) -> None:
     env_lock_metadata = env_lock.load_valid_metadata()
     assert env_lock_metadata is not None
     # Loading the lock without changes gives the same metadata
-    loaded_lock = EnvironmentLock(req_path, (), ())
+    loaded_lock = EnvironmentLock(req_path, (), (), ())
     assert loaded_lock._lock_input_hash == env_lock._lock_input_hash
     assert loaded_lock._requirements_hash == env_lock._requirements_hash
     assert loaded_lock.load_valid_metadata() == env_lock_metadata
@@ -76,7 +76,7 @@ def test_load_with_consistent_file_hashes(temp_dir_path: Path) -> None:
 
 def test_load_with_inconsistent_input_hash(temp_dir_path: Path) -> None:
     req_path = temp_dir_path / "requirements.txt"
-    env_lock = EnvironmentLock(req_path, (), ())
+    env_lock = EnvironmentLock(req_path, (), (), ())
     env_lock.prepare_lock_inputs()
     env_lock.locked_requirements_path.write_text("Hash fodder")
     env_lock.update_lock_metadata()
@@ -84,7 +84,7 @@ def test_load_with_inconsistent_input_hash(temp_dir_path: Path) -> None:
     assert env_lock._requirements_hash is not None
     assert env_lock.load_valid_metadata() is not None
     # Loading the lock with different requirements invalidates the metadata
-    loaded_lock = EnvironmentLock(req_path, ("some-requirement",), ())
+    loaded_lock = EnvironmentLock(req_path, ("some-requirement",), (), ())
     assert loaded_lock._lock_input_hash != env_lock._lock_input_hash
     assert loaded_lock._requirements_hash is None
     assert loaded_lock.load_valid_metadata() is None
@@ -92,7 +92,7 @@ def test_load_with_inconsistent_input_hash(temp_dir_path: Path) -> None:
 
 def test_load_with_inconsistent_output_hash(temp_dir_path: Path) -> None:
     req_path = temp_dir_path / "requirements.txt"
-    env_lock = EnvironmentLock(req_path, (), ())
+    env_lock = EnvironmentLock(req_path, (), (), ())
     env_lock.prepare_lock_inputs()
     env_lock.locked_requirements_path.write_text("Hash fodder")
     env_lock.update_lock_metadata()
@@ -101,7 +101,7 @@ def test_load_with_inconsistent_output_hash(temp_dir_path: Path) -> None:
     assert env_lock.load_valid_metadata() is not None
     # Loading the lock with a different lock file invalidates the metadata
     env_lock.locked_requirements_path.write_text("")
-    loaded_lock = EnvironmentLock(req_path, (), ())
+    loaded_lock = EnvironmentLock(req_path, (), (), ())
     assert loaded_lock._lock_input_hash == env_lock._lock_input_hash
     assert loaded_lock._requirements_hash != env_lock._requirements_hash
     assert loaded_lock.load_valid_metadata() is None
@@ -185,6 +185,15 @@ frameworks = ["dependent", "other-app-dependency"]
 requirements = []
 
 [[applications]]
+name = "to-be-modified-versioned"
+launch_module = "launch.py"
+# "dependent" must be first here to allow linearisation
+# when that layer also depends on "other-app-dependency"
+frameworks = ["dependent", "other-app-dependency"]
+requirements = []
+versioned = true
+
+[[applications]]
 name = "runtime-only"
 runtime = "cpython-to-be-modified"
 launch_module = "launch2.py"
@@ -206,6 +215,7 @@ EXPECTED_LAYER_NAMES = (
     "framework-dependent",
     "framework-unaffected",
     "app-to-be-modified",
+    "app-to-be-modified-versioned",
     "app-runtime-only",
     "app-unaffected",
 )
@@ -431,8 +441,8 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         assert build_env._needs_lock()
         subtests_passed += 1
     with subtests.test("Change declared runtime at framework layer"):
-        # Even if the major Python version doesn't change, the layer needs updating
-        # This is due to the relative path to the runtime saved in the deployed layer config
+        # Even if the major Python version doesn't change, the layer lock needs checking
+        # This is due to the selected runtime potentially imposing different constraints
         subtests_started += 1
         spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
         for env_spec_to_modify in spec_data_to_check["frameworks"]:
@@ -455,11 +465,11 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         assert build_env._needs_lock()
         subtests_passed += 1
     with subtests.test("Change declared runtime at application layer"):
-        # Even if the major Python version doesn't change, the layer needs updating
-        # This is due to the relative base runtime path saved in the deployed layer config
+        # Even if the major Python version doesn't change, the layer lock needs checking
+        # This is due to the selected runtime potentially imposing different constraints
         subtests_started += 1
         spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
-        env_spec_to_modify = spec_data_to_check["applications"][1]
+        env_spec_to_modify = spec_data_to_check["applications"][2]
         assert env_spec_to_modify["name"] == "runtime-only"
         env_spec_to_modify["runtime"] = "cpython-same-major-version-unaffected"
         build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
@@ -471,8 +481,8 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         assert build_env._needs_lock()
         subtests_passed += 1
     with subtests.test("Change framework dependencies at framework layer"):
-        # Even if the locked requirements don't change, the layer needs updating
-        # This is due to the relative framework paths saved in the deployed layer config
+        # Even if the locked requirements don't change, the layer lock needs checking
+        # This is due to the selected frameworks potentially imposing different constraints
         subtests_started += 1
         spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
         env_spec_to_modify = spec_data_to_check["frameworks"][2]
@@ -493,8 +503,8 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         assert build_env._needs_lock()
         subtests_passed += 1
     with subtests.test("Change framework dependencies at application layer"):
-        # Even if the locked requirements don't change, the layer needs updating
-        # This is due to the relative framework paths saved in the deployed layer config
+        # Even if the declared requirements don't change, the layer lock needs checking
+        # This is due to the selected frameworks potentially imposing different constraints
         subtests_started += 1
         spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
         env_spec_to_modify = spec_data_to_check["applications"][0]
@@ -508,16 +518,29 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         assert invalid_locks == expected_invalid_locks
         assert build_env._needs_lock()
         subtests_passed += 1
-    with subtests.test("Change launch module name at application layer"):
-        # Even if the locked requirements don't change, the layer needs updating
-        # This is due to the launch module needing to be invoked differently
+    with subtests.test("Change launch module name in unversioned application layer"):
+        # Even though the launch module needs to be invoked differently,
+        # there is no layer lock version update needed for explicit layer versioning
         subtests_started += 1
         spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
         env_spec_to_modify = spec_data_to_check["applications"][0]
         assert env_spec_to_modify["name"] == "to-be-modified"
         env_spec_to_modify["launch_module"] = "launch2.py"
         build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
-        expected_invalid_locks = {"app-to-be-modified"}
+        valid_locks, invalid_locks = _partition_envs(build_env)
+        assert valid_locks == all_layer_names
+        assert invalid_locks == set()
+        assert not build_env._needs_lock()
+        subtests_passed += 1
+    with subtests.test("Change launch module name in versioned application layer"):
+        # With implicit versioning enabled, the layer lock version needs updating
+        subtests_started += 1
+        spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
+        env_spec_to_modify = spec_data_to_check["applications"][1]
+        assert env_spec_to_modify["name"] == "to-be-modified-versioned"
+        env_spec_to_modify["launch_module"] = "launch2.py"
+        build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
+        expected_invalid_locks = {"app-to-be-modified-versioned"}
         expected_valid_locks = all_layer_names - expected_invalid_locks
         valid_locks, invalid_locks = _partition_envs(build_env)
         assert valid_locks == expected_valid_locks
@@ -577,14 +600,14 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
             assert invalid_locks == expected_invalid_locks
             assert build_env._needs_lock()
         subtests_passed += 1
-    with subtests.test("Change launch module content at application layer"):
-        # Even if the locked requirements don't change, the layer needs updating
-        # This is due to the launch module needing to be invoked differently
+    with subtests.test("Change launch module content in application layer"):
+        # The launch module is shared between the versioned and unversioned app layers
+        # Only the versioned layer will report an invalid lock when it changes
         subtests_started += 1
         spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
         with _modified_file(launch_module_path, "# Changed launch module contents"):
             build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
-            expected_invalid_locks = {"app-to-be-modified"}
+            expected_invalid_locks = {"app-to-be-modified-versioned"}
             expected_valid_locks = all_layer_names - expected_invalid_locks
             valid_locks, invalid_locks = _partition_envs(build_env)
             assert valid_locks == expected_valid_locks
