@@ -7,7 +7,7 @@ requirements = []
 
 [[applications]]
 name = "layer"
-# This will fail, since the launch module does not exist
-launch_module = "no_such_module.py"
 runtime = "cpython-3.11"
 requirements = []
+# This will fail, since the launch module does not exist
+launch_module = "no_such_module.py"

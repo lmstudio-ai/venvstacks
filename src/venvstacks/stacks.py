@@ -750,6 +750,14 @@ class ApplicationSpec(LayeredSpecBase):
     kind = LayerVariants.APPLICATION
     category = LayerCategories.APPLICATIONS
     launch_module_path: Path = field(repr=False)
+    support_module_paths: list[Path] = field(repr=False)
+
+
+class SupportModuleMetadata(TypedDict):
+    """Details of an unpackaged application support module."""
+
+    name: NotRequired[str]
+    hash: NotRequired[str]
 
 
 class LayerSpecMetadata(TypedDict):
@@ -779,6 +787,7 @@ class LayerSpecMetadata(TypedDict):
     # Extra fields only defined for application environments
     app_launch_module: NotRequired[str]
     app_launch_module_hash: NotRequired[str]
+    app_support_modules: NotRequired[Sequence[SupportModuleMetadata]]
     # fmt: on
 
     # Note: hashes of layered environment dependencies are intentionally NOT incorporated
@@ -1261,6 +1270,15 @@ def _hash_directory(
     if omit_prefix:
         return dir_hash
     return f"{algorithm}/{dir_hash}"
+
+
+def _hash_module(path: Path) -> str:
+    # Always use the default algorithm + algorithm prefix for module hashes
+    if path.is_file():
+        module_hash = _hash_file_name_and_contents(path)
+    else:
+        module_hash = _hash_directory(path)
+    return module_hash
 
 
 def get_build_platform() -> TargetPlatform:
@@ -2125,6 +2143,7 @@ class LayeredEnvBase(LayerEnvBase):
         assert base_python_path is not None
         print(f"Linking {str(env_python_path)!r} -> {str(base_python_path)!r}...")
         env_python_path.unlink(missing_ok=True)
+        env_python_path.parent.mkdir(parents=True, exist_ok=True)
         env_python_path.symlink_to(base_python_path)
         # Ensure python_, pythonX and pythonX.Y are relative links to ./python
         env_python_dir = env_python_path.parent
@@ -2243,6 +2262,7 @@ class LayeredEnvBase(LayerEnvBase):
         assert base_python_path is not None
         print(f"Linking {str(wrapper_bypass_path)!r} -> {str(base_python_path)!r}...")
         wrapper_bypass_path.unlink(missing_ok=True)
+        wrapper_bypass_path.parent.mkdir(parents=True, exist_ok=True)
         wrapper_bypass_path.symlink_to(base_python_path)
         # Ensure pythonX and pythonX.Y are relative links to ./python
         py_major, py_minor = self._py_version_info
@@ -2329,6 +2349,7 @@ class ApplicationEnv(LayeredEnvBase):
 
     launch_module_name: str = field(init=False, repr=False)
     _launch_module_hash: str = field(init=False, repr=False)
+    _support_module_info: list[SupportModuleMetadata] = field(init=False, repr=False)
 
     @property
     def env_spec(self) -> ApplicationSpec:
@@ -2339,41 +2360,68 @@ class ApplicationEnv(LayeredEnvBase):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        launch_module_path = self.env_spec.launch_module_path
+        env_spec = self.env_spec
+        # Launch module details
+        launch_module_path = env_spec.launch_module_path
         self.launch_module_name = launch_module_path.stem
-        if launch_module_path.is_file():
-            launch_module_hash = _hash_file_name_and_contents(launch_module_path)
-        else:
-            launch_module_hash = _hash_directory(launch_module_path)
+        launch_module_hash = _hash_module(launch_module_path)
         self._launch_module_hash = launch_module_hash
-        self.env_lock.append_version_input(launch_module_hash)
+        _append_version_input = self.env_lock.append_version_input
+        _append_version_input(launch_module_hash)
+        # Support module details
+        support_module_info: list[SupportModuleMetadata] = []
+        for support_module_path in env_spec.support_module_paths:
+            support_module_name = support_module_path.stem
+            support_module_hash = _hash_module(support_module_path)
+            _append_version_input(support_module_hash)
+            support_module_info.append(
+                {
+                    "name": support_module_name,
+                    "hash": support_module_hash,
+                }
+            )
+        self._support_module_info = support_module_info
 
-    def _update_existing_environment(self, *, lock_only: bool = False) -> None:
-        super()._update_existing_environment(lock_only=lock_only)
-        # Also publish the specified launch module as an importable top level module
-        launch_module_source_path = self.env_spec.launch_module_path
-        launch_module_env_path = self.pylib_path / launch_module_source_path.name
-        print(f"Including launch module {launch_module_source_path!r}...")
+    @classmethod
+    def _sync_app_module(cls, src: Path, dest: Path) -> None:
         # To ensure the timestamps in the layer archive are *always* clamped,
         # we intentionally *don't* copy the launch module file metadata here
-        if launch_module_source_path.is_file():
-            shutil.copyfile(launch_module_source_path, launch_module_env_path)
+        if src.is_file():
+            shutil.copyfile(src, dest)
         else:
             shutil.copytree(
-                launch_module_source_path,
-                launch_module_env_path,
+                src,
+                dest,
                 dirs_exist_ok=True,
                 copy_function=shutil.copyfile,
             )
             # Also override the copied directory timestamps
             # Python 3.11 compatibility: use os.walk instead of Path.walk
-            for this_dir, _subdirs, _files in os.walk(launch_module_env_path):
+            for this_dir, _subdirs, _files in os.walk(dest):
                 Path(this_dir).touch()
+
+    def _update_existing_environment(self, *, lock_only: bool = False) -> None:
+        super()._update_existing_environment(lock_only=lock_only)
+        # Also publish the specified launch module and any
+        # support modules as importable top level modules
+        env_spec = self.env_spec
+        pylib_path = self.pylib_path
+        launch_module_source_path = env_spec.launch_module_path
+        launch_module_env_path = pylib_path / launch_module_source_path.name
+        print(f"Including launch module {launch_module_source_path!r}...")
+        self._sync_app_module(launch_module_source_path, launch_module_env_path)
+        for support_module_source_path in env_spec.support_module_paths:
+            support_module_env_path = pylib_path / support_module_source_path.name
+            print(f"Including support module {support_module_source_path!r}...")
+            self._sync_app_module(support_module_source_path, support_module_env_path)
 
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
         super()._update_output_metadata(metadata)
         metadata["app_launch_module"] = self.launch_module_name
         metadata["app_launch_module_hash"] = self._launch_module_hash
+        if self._support_module_info:
+            # Only include this field if the layer defines support modules
+            metadata["app_support_modules"] = self._support_module_info
 
     def get_deployed_config(
         self,
@@ -2648,14 +2696,27 @@ class StackSpec:
             if name in applications:
                 msg = f"Application names must be distinct ({name!r} already defined)"
                 raise LayerSpecError(msg)
-            launch_module_path = spec_dir_path / app.pop("launch_module")
             err_prefix = f"Application {name!r}"
             runtime_dep, framework_deps = cls._resolve_layer_deps(
                 err_prefix, app, runtimes, frameworks
             )
             app["runtime"] = runtime_dep
             app["frameworks"] = framework_deps
+            launch_module = app.pop("launch_module")
+            launch_module_path = spec_dir_path / launch_module
+            launch_module_name = launch_module_path.stem
+            support_modules = sorted(app.pop("support_modules", ()))
+            support_module_paths = [spec_dir_path / m for m in support_modules]
+            support_module_names = [p.stem for p in support_module_paths]
+            unique_support_module_names = set(support_module_names)
+            if launch_module_name in support_module_names:
+                msg = f"Launch module {launch_module_name!r} conflicts with support module in app layer {name!r}"
+                raise LayerSpecError(msg)
+            if len(unique_support_module_names) < len(support_module_names):
+                msg = f"Conflicting support module names in app layer {name!r}"
+                raise LayerSpecError(msg)
             app["launch_module_path"] = launch_module_path
+            app["support_module_paths"] = support_module_paths
             ensure_optional_env_spec_fields(app)
             applications[name] = ApplicationSpec(**app)
         self = cls(
@@ -2666,7 +2727,12 @@ class StackSpec:
             if not app_spec.targets_platform(build_platform):
                 continue
             if not app_spec.launch_module_path.exists():
-                msg = f"Specified launch module {str(launch_module_path)!r} does not exist)"
+                msg = f"Specified launch module {str(launch_module_path)!r} does not exist"
+                raise LayerSpecError(msg)
+            missing_paths = [p for p in app_spec.support_module_paths if not p.exists()]
+            if missing_paths:
+                missing_module_info = "\n    ".join(map(str, missing_paths))
+                msg = f"Specified support modules do not exist:\n    {missing_module_info}"
                 raise LayerSpecError(msg)
         return self
 

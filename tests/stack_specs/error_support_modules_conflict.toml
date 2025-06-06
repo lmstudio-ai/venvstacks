@@ -1,0 +1,18 @@
+# Ensure suitable error is raised for support module name conflicts
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+
+[[applications]]
+name = "layer"
+runtime = "cpython-3.11"
+requirements = []
+launch_module = "../minimal_project/empty.py"
+# This will fail, since both paths map to an import name of "name"
+# (this also ensure conflicts are checked before filesystem existence)
+support_modules = [
+    "name.py",
+    "conflicting/name",
+]
