@@ -503,16 +503,25 @@ on how the relative order of the application layer <code class="docutils literal
 the stack specification file) that specifies a Python module or import package that will
 be included in the built environment for execution with the <a class="reference external" href="https://docs.python.org/3/using/cmdline.html#cmdoption-m" title="(in Python v3.13)"><code class="xref std std-option docutils literal notranslate"><span class="pre">-m</span></code></a> switch.</p></li>
 </ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>updating the launch module contents does <em>not</em> implicitly update the lock version
-for implicitly versioned environments (but it does update the <code class="docutils literal notranslate"><span class="pre">archive_build</span></code>
-field for published artifacts).</p>
-</div>
+<p>Application layer specifications may also contain the following optional field:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">support_modules</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
+an array of relative paths (each starting from the folder containing the stack specification
+file) that specify Python modules or import packages that will be included in the built
+environment for use by the application launch module.</p></li>
+</ul>
 <div class="versionchanged">
 <p><span class="versionmodified changed">Changed in version 0.4.0: </span>Added the ability for application layers to depend directly on a runtime layer instead
 of declaring that they depend on one or more framework layers
 (<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.5.0: </span>Updating the name or contents of a launch module also updates the layer version
+for implicitly versioned layers
+(<a class="reference internal" href="../changelog/#changelog-0-5-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.6.0: </span>Added the <code class="docutils literal notranslate"><span class="pre">support_modules</span></code> field (<a class="reference internal" href="../changelog/#changelog-0-6-0"><span class="std std-ref">release details</span></a>).</p>
 </div>
 </section>
 <section id="linearizing-the-python-import-path">
