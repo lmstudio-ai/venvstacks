@@ -1,17 +1,27 @@
 {
   "app_launch_module": "scipy_import",
   "app_launch_module_hash": "sha256:69545721a157f18d97c1e05b60d40f8e656f70d9c76748c912a38d9232877791",
+  "app_support_modules": [
+    {
+      "hash": "sha256:f0db47066ec1e276e17579c221969006dde88da71e26bf5ddbfae356fa7c8fe7",
+      "name": "empty"
+    },
+    {
+      "hash": "sha256:00e03ab6300d0b5c87c8ddd650e8e94b1b079faa2d106be90e2c64a54b712125",
+      "name": "app_support"
+    }
+  ],
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "d8988c2a7881f5e503daace7f778a03bb2a316867505940b27b1a2d5302740e8"
+    "sha256": "6c45dbbfc675278f6dd79511dea51e3947365a6fb05a794150a962e18f748d5e"
   },
-  "archive_name": "app-scipy-import@3.tar.xz",
-  "archive_size": 3632,
+  "archive_name": "app-scipy-import@4.tar.xz",
+  "archive_size": 3660,
   "bound_to_implementation": false,
-  "install_target": "app-scipy-import@3",
+  "install_target": "app-scipy-import@4",
   "layer_name": "app-scipy-import",
-  "lock_version": 3,
-  "locked_at": "2025-05-09T18:45:06.003081+00:00",
+  "lock_version": 4,
+  "locked_at": "2025-06-06T15:43:10.992120+00:00",
   "python_implementation": "cpython@3.11.11",
   "required_layers": [
     "framework-scipy@2"
