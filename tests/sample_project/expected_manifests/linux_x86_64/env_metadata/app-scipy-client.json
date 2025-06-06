@@ -1,12 +1,22 @@
 {
   "app_launch_module": "scipy_client",
   "app_launch_module_hash": "sha256/76d203dd6d3bb1fdb1117053c81590d42ef3f62b4b92b8d316b31f08334fbca6",
+  "app_support_modules": [
+    {
+      "hash": "sha256:f0db47066ec1e276e17579c221969006dde88da71e26bf5ddbfae356fa7c8fe7",
+      "name": "empty"
+    },
+    {
+      "hash": "sha256:00e03ab6300d0b5c87c8ddd650e8e94b1b079faa2d106be90e2c64a54b712125",
+      "name": "app_support"
+    }
+  ],
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "90bde5e02931310e277a6d6dcdc782b7cff1b653e1439d928be93b0c0b370912"
+    "sha256": "bb6805d811907e99178460ae7249a88fecdecbf0b18630933b1769de10d93c90"
   },
   "archive_name": "app-scipy-client.tar.xz",
-  "archive_size": 3748,
+  "archive_size": 3784,
   "bound_to_implementation": false,
   "install_target": "app-scipy-client",
   "layer_name": "app-scipy-client",

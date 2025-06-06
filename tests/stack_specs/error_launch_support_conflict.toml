@@ -1,0 +1,17 @@
+# Ensure suitable error is raised for launch module/support module conflict
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+
+[[applications]]
+name = "layer"
+runtime = "cpython-3.11"
+requirements = []
+# This will fail, since both paths map to an import name of "name"
+# (this also ensure conflicts are checked before filesystem existence)
+launch_module = "name.py"
+support_modules = [
+    "conflicting/name",
+]

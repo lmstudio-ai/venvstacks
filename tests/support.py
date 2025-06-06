@@ -226,7 +226,13 @@ def get_sys_path(env_python: Path) -> list[str]:
 
 def run_module(env_python: Path, module_name: str) -> subprocess.CompletedProcess[str]:
     command = [str(env_python), "-X", "utf8", "-Im", module_name]
-    return capture_python_output(command)
+    try:
+        return capture_python_output(command)
+    except subprocess.CalledProcessError as exc:
+        print(exc)
+        print(exc.stdout)
+        print(exc.stderr)
+        raise
 
 
 #######################################################
@@ -432,17 +438,21 @@ class DeploymentTestCase(unittest.TestCase):
             launch_module = app_env["app_launch_module"]
             # Ensure the external and internal launch metadata is consistent
             assert env_config["launch_module"] == launch_module
-            try:
-                launch_result = run_module(env_python, launch_module)
-            except subprocess.CalledProcessError as exc:
-                print(exc)
-                print(exc.stdout)
-                print(exc.stderr)
-                raise
+            launch_result = run_module(env_python, launch_module)
             # Tolerate extra trailing whitespace on stdout
             self.assertEqual(launch_result.stdout.rstrip(), self.EXPECTED_APP_OUTPUT)
             # Nothing at all should be emitted on stderr
             self.assertEqual(launch_result.stderr, "")
+            # Support modules should be available for import
+            support_module_info = app_env.get("app_support_modules")
+            if support_module_info is not None:
+                self.assertGreater(len(support_module_info), 0)
+                for module_info in support_module_info:
+                    # Any support modules used in test cases produce no output
+                    # (other than potentially a newline indicator)
+                    mod_exec_result = run_module(env_python, module_info["name"])
+                    self.assertEqual(mod_exec_result.stdout.rstrip(), "")
+                    self.assertEqual(mod_exec_result.stderr, "")
 
     def check_environment_exports(
         self, export_path: Path, export_paths: ExportedEnvironmentPaths

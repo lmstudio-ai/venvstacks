@@ -64,6 +64,10 @@ def test_future_warning_for_build_requirements() -> None:
 
 EXPECTED_ERRORS = {
     "error_inconsistent_runtimes.toml": (LayerSpecError, "inconsistent frameworks"),
+    "error_launch_support_conflict.toml": (
+        LayerSpecError,
+        "'name'.*conflicts with.*'layer'",
+    ),
     "error_layer_dep_C3_conflict.toml": (
         LayerSpecError,
         "linearization failed.*['layerC', 'layerD'].*['layerD', 'layerC']",
@@ -73,6 +77,14 @@ EXPECTED_ERRORS = {
     "error_missing_launch_module.toml": (
         LayerSpecError,
         "launch module.*does not exist",
+    ),
+    "error_missing_support_modules.toml": (
+        LayerSpecError,
+        "support modules do not exist",
+    ),
+    "error_support_modules_conflict.toml": (
+        LayerSpecError,
+        "Conflicting support module names.*'layer'",
     ),
     "error_unknown_framework.toml": (LayerSpecError, "unknown framework"),
     "error_unknown_runtime.toml": (LayerSpecError, "unknown runtime"),

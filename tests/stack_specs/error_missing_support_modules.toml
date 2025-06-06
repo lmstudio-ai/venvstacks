@@ -1,0 +1,16 @@
+# Ensure suitable error is raised for  missing support modules
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+
+[[applications]]
+name = "layer"
+runtime = "cpython-3.11"
+requirements = []
+launch_module = "../minimal_project/empty.py"
+# This will fail, since the support module does not exist
+support_modules = [
+    "no_such_module.py",
+]

@@ -98,6 +98,10 @@ requirements = [
 name = "scipy-import"
 versioned = true
 launch_module = "launch_modules/scipy_import.py"
+support_modules = [
+    "../minimal_project/empty.py",
+    "support_modules/app_support.py",
+]
 frameworks = ["scipy"]
 requirements = [
     "scipy"
@@ -106,6 +110,10 @@ requirements = [
 [[applications]]
 name = "scipy-client"
 launch_module = "launch_modules/scipy_client"
+support_modules = [
+    "../minimal_project/empty.py",
+    "support_modules/app_support.py",
+]
 frameworks = ["scipy", "http-client"]
 requirements = [
     "scipy",
