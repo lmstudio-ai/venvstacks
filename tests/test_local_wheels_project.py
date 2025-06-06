@@ -156,6 +156,8 @@ def _define_build_env(
 ) -> BuildEnvironment:
     """Define a build environment for the sample project in a temporary folder."""
     # To avoid side effects from lock file creation, copy input files to the working path
+    # This also means these tests cover the "export to the same filesystem" case
+    # on all systems (temp folder -> temp folder)
     for src_path in WHEEL_PROJECT_PATHS:
         dest_path = working_path / src_path.name
         shutil.copyfile(src_path, dest_path)

@@ -174,12 +174,23 @@ def export_venv(
     # Otherwise, assume symlinks have already been converted with convert_symlinks
     target_path.mkdir(parents=True, exist_ok=True)
     publish_symlinks = not _WINDOWS_BUILD and _supports_symlinks(target_path)
+    _copy_func: Callable[[StrPath, StrPath], Any] = shutil.copy2
+    if _WINDOWS_BUILD:
+        if source_path.anchor == target_path.anchor:
+            # Same root + drive details
+            # Note: mixing UNC paths with drive paths will result in a copy
+            _copy_func = os.link
+    elif source_path.stat().st_dev == target_path.stat().st_dev:
+        # Same device ID -> same filesystem
+        _copy_func = os.link
+
     shutil.copytree(
         source_path,
         target_path,
         ignore=excluded,
         symlinks=publish_symlinks,
         dirs_exist_ok=True,
+        copy_function=_copy_func,
     )
     postinstall_path = _inject_postinstall_script(target_path)
     if run_postinstall is not None:
