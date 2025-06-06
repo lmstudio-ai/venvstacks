@@ -51,6 +51,8 @@ def _define_build_env(working_path: Path) -> BuildEnvironment:
     """Define a build environment for the sample project in a temporary folder."""
     # To simplify regeneration of committed lockfiles and metadata,
     # use the spec file directly from its checked out location
+    # This also means these tests cover the "export to a different filesystem" case
+    # on non-Windows systems (and potentially on Windows as well)
     stack_spec = StackSpec.load(SAMPLE_PROJECT_STACK_SPEC_PATH)
     build_path = working_path / "_build🐸"
     return stack_spec.define_build_environment(build_path)

@@ -57,6 +57,8 @@ MINIMAL_PROJECT_PATHS = (
 def _copy_project_input_files(working_path: Path) -> None:
     """Copy the input files for the project to the given temporary folder."""
     # To avoid side effects from lock file creation, copy project files to the working path
+    # This also means these tests cover the "export to the same filesystem" case
+    # on all systems (temp folder -> temp folder)
     for src_path in MINIMAL_PROJECT_PATHS:
         dest_path = working_path / src_path.name
         shutil.copyfile(src_path, dest_path)
