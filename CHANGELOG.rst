@@ -1,7 +1,7 @@
 .. Included in published docs via docs/changelog.rst
 
 .. Temporary link target for next release
-.. _changelog-0.6.0:
+.. _changelog-0.7.0:
 
 Unreleased
 ==========
@@ -11,6 +11,41 @@ See the fragment files in the `changelog.d directory`_.
 .. _changelog.d directory: https://github.com/lmstudio-ai/venvstacks/tree/main/docs/changelog.d
 
 .. scriv-insert-here
+
+.. _changelog-0.6.0:
+
+0.6.0 — 2025-06-07
+==================
+
+Added
+-----
+
+- A new optional field, `support_modules`, has been added to application layer specifications.
+  This field allows application layers to embed copies of common unpackaged support libraries
+  without needing to duplicate that code in the source tree (proposed in :issue:`202`).
+- The `lock` subcommand now accepts an `--if-needed` option that skips locking
+  layers that already have a valid layer lock (added in :pr:`200`).
+
+Changed
+-------
+
+- Added a `--lock-if-needed` option to the `build` subcommand that ensures layers
+  are only locked if they don't already have valid transitive environment locks.
+  `--lock` is now a deprecated alias for this option rather than being equivalent
+  to running the `lock` subcommand (proposed in :issue:`196`).
+- Changes to lock inputs that only affect the implicit layer versioning are now
+  tracked separately from changes to the additional inputs that affect the result
+  of the transitive dependency lock generation step. These changes are now ignored
+  for layers that do not use implicit layer versioning (proposed in :issue:`201`).
+- Prefer the creation of hardlinks over full copies when locally exporting environments.
+  Depending on the filesystem, this can make local exports significantly faster when
+  the installed packages contain large files (proposed in :issue:`205`).
+
+Fixed
+-----
+
+- Launch module existence checks are now skipped for layers that will not
+  be built for the target build platform (reported in :issue:`204`).
 
 .. _changelog-0.5.1:
 
