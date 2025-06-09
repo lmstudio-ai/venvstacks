@@ -1,0 +1,11 @@
+[[runtimes]]
+name = "cpython3.11"
+python_implementation = "cpython@3.11.13"
+requirements = []
+
+[[applications]]
+# No framework layers in the initial version of the example
+name = "jupyterlab"
+launch_module = "run_jupyterlab.py"
+runtime = "cpython3.11"
+requirements = ["jupyterlab"]
