@@ -4,7 +4,6 @@
 Creates Python runtime, framework, and app environments based on ``venvstacks.toml``
 """
 
-import hashlib
 import json
 import os
 import shlex
@@ -41,12 +40,15 @@ from typing import (
     Self,
     Sequence,
     Set,
+    Type,
     TypeVar,
     TypedDict,
 )
 
 from . import pack_venv
+from ._hash_content import hash_file_contents, hash_module, hash_strings
 from ._injected import postinstall
+from ._source_tree import SourceTreeContentFilter, SourceTreeIgnorePycache
 from ._util import (
     as_normalized_path,
     capture_python_output,
@@ -54,6 +56,7 @@ from ._util import (
     find_shared_libraries,
     map_symlink_targets,
     run_python_command,
+    walk_path,
     StrPath,
     WINDOWS_BUILD as _WINDOWS_BUILD,
 )
@@ -344,7 +347,7 @@ class EnvironmentLock:
 
     @classmethod
     def _hash_reqs(cls, requirements: Iterable[str]) -> str:
-        return _hash_strings(cls._clean_reqs(requirements))
+        return hash_strings(cls._clean_reqs(requirements))
 
     @classmethod
     def _hash_req_file(cls, requirements_path: Path) -> str | None:
@@ -353,10 +356,10 @@ class EnvironmentLock:
         return cls._hash_reqs(requirements_path.read_text().splitlines())
 
     def _update_other_inputs_hash(self) -> None:
-        self._other_inputs_hash = _hash_strings(self.other_inputs)
+        self._other_inputs_hash = hash_strings(self.other_inputs)
 
     def _update_version_inputs_hash(self) -> None:
-        self._version_inputs_hash = _hash_strings(self.version_inputs)
+        self._version_inputs_hash = hash_strings(self.version_inputs)
 
     def _update_hashes(self) -> None:
         self._update_other_inputs_hash()
@@ -374,7 +377,7 @@ class EnvironmentLock:
             if last_lock_input_hash is missing:
                 # Pre-0.5.0 lock metadata, consider it valid if the last hash matches the full file
                 # This is technically an unwarranted assumption, but it makes upgrades more flexible
-                legacy_req_hash = _hash_file_contents(self.locked_requirements_path)
+                legacy_req_hash = hash_file_contents(self.locked_requirements_path)
                 set_locked_req_hash = legacy_req_hash == last_metadata.get(
                     "requirements_hash", missing
                 )
@@ -940,7 +943,7 @@ class ArchiveBuildRequest:
     def _hash_archive(archive_path: Path) -> ArchiveHashes:
         hashes: dict[str, str] = {}
         for algorithm in ArchiveHashes.__required_keys__:
-            hashes[algorithm] = _hash_file_contents(
+            hashes[algorithm] = hash_file_contents(
                 archive_path, algorithm, omit_prefix=True
             )
         # The required keys have been set, but mypy can't prove that,
@@ -1210,77 +1213,6 @@ def _binary_with_extension(name: str) -> str:
     return f"{name}{binary_suffix}"
 
 
-def _hash_strings(
-    items: Iterable[str], algorithm: str = "sha256", *, omit_prefix: bool = False
-) -> str:
-    incremental_hash = hashlib.new(algorithm)
-    for item in items:
-        incremental_hash.update(item.encode())
-    strings_hash = incremental_hash.hexdigest()
-    if omit_prefix:
-        return strings_hash
-    return f"{algorithm}:{strings_hash}"
-
-
-def _hash_file_contents(
-    path: Path, algorithm: str = "sha256", *, omit_prefix: bool = False
-) -> str:
-    if not path.exists():
-        return ""
-    with path.open("rb", buffering=0) as f:
-        file_hash = hashlib.file_digest(f, algorithm).hexdigest()
-    if omit_prefix:
-        return file_hash
-    return f"{algorithm}:{file_hash}"
-
-
-def _hash_file_name_and_contents(
-    path: Path, algorithm: str = "sha256", *, omit_prefix: bool = False
-) -> str:
-    if not path.exists():
-        return ""
-    incremental_hash = hashlib.new(algorithm)
-    incremental_hash.update(path.name.encode())
-    file_hash = _hash_file_contents(path, algorithm)
-    incremental_hash.update(file_hash.encode())
-    file_and_name_hash = incremental_hash.hexdigest()
-    if omit_prefix:
-        return file_and_name_hash
-    return f"{algorithm}:{file_and_name_hash}"
-
-
-def _hash_directory(
-    path: Path, algorithm: str = "sha256", *, omit_prefix: bool = False
-) -> str:
-    incremental_hash = hashlib.new(algorithm)
-    # Python 3.11 compatibility: use os.walk instead of Path.walk
-    for this_dir, subdirs, files in os.walk(path):
-        if not files:
-            continue
-        dir_path = Path(this_dir)
-        incremental_hash.update(dir_path.name.encode())
-        # Ensure directory tree iteration order is deterministic
-        subdirs.sort()
-        for file in sorted(files):
-            file_path = dir_path / file
-            incremental_hash.update(file_path.name.encode())
-            file_hash = _hash_file_contents(file_path, algorithm)
-            incremental_hash.update(file_hash.encode())
-    dir_hash = incremental_hash.hexdigest()
-    if omit_prefix:
-        return dir_hash
-    return f"{algorithm}/{dir_hash}"
-
-
-def _hash_module(path: Path) -> str:
-    # Always use the default algorithm + algorithm prefix for module hashes
-    if path.is_file():
-        module_hash = _hash_file_name_and_contents(path)
-    else:
-        module_hash = _hash_directory(path)
-    return module_hash
-
-
 def get_build_platform() -> TargetPlatform:
     """Report target platform that matches the currently running system."""
     # Currently no need for cross-build support, so always query the running system
@@ -1314,6 +1246,7 @@ class LayerEnvBase(ABC):
     build_path: Path = field(repr=False)
     requirements_path: Path = field(repr=False)
     index_config: PackageIndexConfig = field(repr=False)
+    source_filter: Type[SourceTreeContentFilter] = field(repr=False)
 
     # Derived from target path and spec in __post_init__
     env_path: Path = field(init=False)
@@ -2364,7 +2297,9 @@ class ApplicationEnv(LayeredEnvBase):
         # Launch module details
         launch_module_path = env_spec.launch_module_path
         self.launch_module_name = launch_module_path.stem
-        launch_module_hash = _hash_module(launch_module_path)
+        launch_module_hash = hash_module(
+            launch_module_path, walk_iter=self.source_filter.walk
+        )
         self._launch_module_hash = launch_module_hash
         _append_version_input = self.env_lock.append_version_input
         _append_version_input(launch_module_hash)
@@ -2372,7 +2307,9 @@ class ApplicationEnv(LayeredEnvBase):
         support_module_info: list[SupportModuleMetadata] = []
         for support_module_path in env_spec.support_module_paths:
             support_module_name = support_module_path.stem
-            support_module_hash = _hash_module(support_module_path)
+            support_module_hash = hash_module(
+                support_module_path, walk_iter=self.source_filter.walk
+            )
             _append_version_input(support_module_hash)
             support_module_info.append(
                 {
@@ -2382,8 +2319,7 @@ class ApplicationEnv(LayeredEnvBase):
             )
         self._support_module_info = support_module_info
 
-    @classmethod
-    def _sync_app_module(cls, src: Path, dest: Path) -> None:
+    def _sync_app_module(self, src: Path, dest: Path) -> None:
         # To ensure the timestamps in the layer archive are *always* clamped,
         # we intentionally *don't* copy the launch module file metadata here
         if src.is_file():
@@ -2394,11 +2330,11 @@ class ApplicationEnv(LayeredEnvBase):
                 dest,
                 dirs_exist_ok=True,
                 copy_function=shutil.copyfile,
+                ignore=self.source_filter.ignore,
             )
             # Also override the copied directory timestamps
-            # Python 3.11 compatibility: use os.walk instead of Path.walk
-            for this_dir, _subdirs, _files in os.walk(dest):
-                Path(this_dir).touch()
+            for copied_path, _subdirs, _files in walk_path(dest):
+                copied_path.touch()
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         super()._update_existing_environment(lock_only=lock_only)
@@ -2762,7 +2698,14 @@ class StackSpec:
             requirements_path = spec.get_requirements_path(
                 build_platform, requirements_dir
             )
-            build_env = env_class(spec, build_path, requirements_path, index_config)
+            # TODO: Make "source_filter" configurable once there is more than one filter defined
+            build_env = env_class(
+                spec,
+                build_path,
+                requirements_path,
+                index_config,
+                SourceTreeIgnorePycache,
+            )
             build_environments[name] = build_env
             print(f"  Defined {name!r}: {build_env}")
         return build_environments

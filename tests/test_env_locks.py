@@ -12,6 +12,8 @@ from typing import Any, Generator, cast
 
 from pytest_subtests import SubTests
 
+from venvstacks._hash_content import hash_strings
+
 from venvstacks.stacks import (
     BuildEnvError,
     BuildEnvironment,
@@ -20,7 +22,6 @@ from venvstacks.stacks import (
     LayerEnvBase,
     LayerVariants,
     StackSpec,
-    _hash_strings,
 )
 
 
@@ -125,7 +126,7 @@ def test_requirements_file_hashing(temp_dir_path: Path) -> None:
         "d==4.5.6",
     ]
     assert clean_requirements == expected_requirements
-    expected_hash = _hash_strings(expected_requirements)
+    expected_hash = hash_strings(expected_requirements)
     assert EnvironmentLock._hash_reqs(messy_requirements) == expected_hash
     req_input_path = temp_dir_path / "requirements.in"
     req_input_path.write_text("\n".join(messy_requirements))
@@ -250,9 +251,10 @@ def _modified_file(file_path: Path, contents: str) -> Generator[Any, None, None]
         backup_path.rename(file_path)
 
 
+@pytest.mark.slow
 def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
     # Built as a monolithic tests with subtests for performance reasons
-    # (initial setup takes ~10 seconds, subsequent checks are fractions of a second)
+    # (initial setup takes 10+ seconds, subsequent checks are fractions of a second)
     launch_module_path = temp_dir_path / "launch.py"
     shutil.copyfile(EMPTY_SCRIPT_PATH, launch_module_path)
     shutil.copyfile(EMPTY_SCRIPT_PATH, temp_dir_path / "launch2.py")
