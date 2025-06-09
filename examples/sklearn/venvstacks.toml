@@ -1,0 +1,42 @@
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.10"
+requirements = [
+    "numpy",
+    "matplotlib",
+]
+
+[[frameworks]]
+name = "sklearn"
+runtime = "cpython-3.11"
+requirements = [
+    "scikit-learn",
+]
+
+[[frameworks]]
+# Use a non-default GUI due to problems with Tcl/Tk in python-build-standalone:
+# https://github.com/astral-sh/uv/issues/6893
+name = "gui"
+runtime = "cpython-3.11"
+requirements = [
+    "pyside6",
+]
+
+
+[[applications]]
+name = "classification-demo"
+launch_module = "launch_modules/sklearn_classification.py"
+frameworks = ["sklearn", "gui"]
+requirements = [
+    "scikit-learn",
+    "pyside6",
+]
+
+[[applications]]
+name = "clustering-demo"
+launch_module = "launch_modules/sklearn_clustering.py"
+frameworks = ["sklearn", "gui"]
+requirements = [
+    "scikit-learn",
+    "pyside6",
+]

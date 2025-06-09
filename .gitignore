@@ -1,3 +1,8 @@
+# Ignore default local stack builds and exports
+*_artifacts*
+*_build*
+*_export*
+
 # Artifacts exported from CI by test suite
 /export/
 *.sarif
