@@ -326,14 +326,16 @@
 <p>The environment layers to be published are defined in a <code class="docutils literal notranslate"><span class="pre">venvstacks.toml</span></code> stack specification,
 with a separate array of tables for each kind of layer definition.</p>
 <p>For example, the following specification defines a pair of applications which use
-<a class="reference external" href="https://scikit-learn.org/">scikit-learn</a> as a shared framework layer with
-<a class="reference external" href="https://numpy.org/">numpy</a> preinstalled in the runtime layer,
-all running in a controlled Python 3.11 base runtime:</p>
-<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[[runtimes]]</span>
+<a class="reference external" href="https://scikit-learn.org/">scikit-learn</a> and
+<a class="reference external" href="https://doc.qt.io/qtforpython-6/">Qt for Python</a> (wrapping Qt 6) as shared framework layers
+with <a class="reference external" href="https://numpy.org/">numpy</a> and <a class="reference external" href="https://matplotlib.org/">matplotlib</a> preinstalled
+in the runtime layer, all running in a controlled Python 3.11 base runtime:</p>
+<div class="highlight-TOML notranslate"><div class="highlight"><pre><span></span><span class="k">[[runtimes]]</span>
 <span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython-3.11&quot;</span>
 <span class="n">python_implementation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython@3.11.10&quot;</span>
 <span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="s2">&quot;numpy&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;matplotlib&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="k">[[frameworks]]</span>
@@ -343,27 +345,39 @@ all running in a controlled Python 3.11 base runtime:</p>
 <span class="w">    </span><span class="s2">&quot;scikit-learn&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
+<span class="k">[[frameworks]]</span>
+<span class="c1"># Use a non-default GUI due to problems with Tcl/Tk in python-build-standalone:</span>
+<span class="c1"># https://github.com/astral-sh/uv/issues/6893</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;gui&quot;</span>
+<span class="n">runtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython-3.11&quot;</span>
+<span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;pyside6&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
 <span class="k">[[applications]]</span>
 <span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;classification-demo&quot;</span>
 <span class="n">launch_module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;launch_modules/sklearn_classification.py&quot;</span>
-<span class="n">frameworks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;sklearn&quot;</span><span class="p">]</span>
+<span class="n">frameworks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;sklearn&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;gui&quot;</span><span class="p">]</span>
 <span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="s2">&quot;scikit-learn&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;pyside6&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="k">[[applications]]</span>
 <span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;clustering-demo&quot;</span>
 <span class="n">launch_module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;launch_modules/sklearn_clustering.py&quot;</span>
-<span class="n">frameworks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;sklearn&quot;</span><span class="p">]</span>
+<span class="n">frameworks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;sklearn&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;gui&quot;</span><span class="p">]</span>
 <span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="s2">&quot;scikit-learn&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;pyside6&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 </pre></div>
 </div>
 </section>
 <section id="locking-environment-stacks">
 <h3>Locking environment stacks<a class="headerlink" href="#locking-environment-stacks" title="Link to this heading">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>lock<span class="w"> </span>sklearn_demo/venvstacks.toml
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>lock<span class="w"> </span>examples/sklearn/venvstacks.toml
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">lock</span></code> subcommand takes the defined layer requirements from the specification,
@@ -376,7 +390,7 @@ rather than upper layers needing to be rebuilt for <em>every</em> change to a lo
 </section>
 <section id="building-environment-stacks">
 <h3>Building environment stacks<a class="headerlink" href="#building-environment-stacks" title="Link to this heading">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>build<span class="w"> </span>sklearn_demo/venvstacks.toml
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>build<span class="w"> </span>examples/sklearn/venvstacks.toml
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">build</span></code> subcommand performs the step of converting the layer specifications
@@ -390,7 +404,7 @@ and publishing to be performed in a single step (see the command line help for d
 </section>
 <section id="publishing-environment-layer-archives">
 <h3>Publishing environment layer archives<a class="headerlink" href="#publishing-environment-layer-archives" title="Link to this heading">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>publish<span class="w"> </span>--tag-outputs<span class="w"> </span>--output-dir<span class="w"> </span>demo_artifacts<span class="w"> </span>sklearn_demo/venvstacks.toml
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>publish<span class="w"> </span>--tag-outputs<span class="w"> </span>--output-dir<span class="w"> </span>demo_artifacts<span class="w"> </span>examples/sklearn/venvstacks.toml
 </pre></div>
 </div>
 <p>Once the environments have been successfully built,
@@ -408,7 +422,7 @@ and the included launch modules) and output details
 </section>
 <section id="locally-exporting-environment-stacks">
 <h3>Locally exporting environment stacks<a class="headerlink" href="#locally-exporting-environment-stacks" title="Link to this heading">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>local-export<span class="w"> </span>--output-dir<span class="w"> </span>demo_export<span class="w"> </span>sklearn_demo/venvstacks.toml
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>local-export<span class="w"> </span>--output-dir<span class="w"> </span>demo_export<span class="w"> </span>examples/sklearn/venvstacks.toml
 </pre></div>
 </div>
 <p>Given that even considering the use of <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> implies that some layer archives may be of

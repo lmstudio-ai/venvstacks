@@ -44,48 +44,20 @@ The environment layers to be published are defined in a ``venvstacks.toml`` stac
 with a separate array of tables for each kind of layer definition.
 
 For example, the following specification defines a pair of applications which use
-`scikit-learn <https://scikit-learn.org/>`__ as a shared framework layer with
-`numpy <https://numpy.org/>`__ preinstalled in the runtime layer,
-all running in a controlled Python 3.11 base runtime:
+`scikit-learn <https://scikit-learn.org/>`__ and
+`Qt for Python <https://doc.qt.io/qtforpython-6/>`__ (wrapping Qt 6) as shared framework layers
+with `numpy <https://numpy.org/>`__ and `matplotlib <https://matplotlib.org/>`__ preinstalled
+in the runtime layer, all running in a controlled Python 3.11 base runtime:
 
-.. code-block:: toml
-
-   [[runtimes]]
-   name = "cpython-3.11"
-   python_implementation = "cpython@3.11.10"
-   requirements = [
-       "numpy",
-   ]
-
-   [[frameworks]]
-   name = "sklearn"
-   runtime = "cpython-3.11"
-   requirements = [
-       "scikit-learn",
-   ]
-
-   [[applications]]
-   name = "classification-demo"
-   launch_module = "launch_modules/sklearn_classification.py"
-   frameworks = ["sklearn"]
-   requirements = [
-       "scikit-learn",
-   ]
-
-   [[applications]]
-   name = "clustering-demo"
-   launch_module = "launch_modules/sklearn_clustering.py"
-   frameworks = ["sklearn"]
-   requirements = [
-       "scikit-learn",
-   ]
+.. literalinclude:: ../examples/sklearn/venvstacks.toml
+  :language: TOML
 
 Locking environment stacks
 --------------------------
 
 .. code-block:: console
 
-   $ venvstacks lock sklearn_demo/venvstacks.toml
+   $ venvstacks lock examples/sklearn/venvstacks.toml
 
 The ``lock`` subcommand takes the defined layer requirements from the specification,
 and uses them to perform a complete combined resolution of all of the environment stacks
@@ -101,7 +73,7 @@ Building environment stacks
 
 .. code-block:: console
 
-   $ venvstacks build sklearn_demo/venvstacks.toml
+   $ venvstacks build examples/sklearn/venvstacks.toml
 
 The ``build`` subcommand performs the step of converting the layer specifications
 and their locked requirements into a working Python environment
@@ -118,7 +90,7 @@ Publishing environment layer archives
 
 .. code-block:: console
 
-   $ venvstacks publish --tag-outputs --output-dir demo_artifacts sklearn_demo/venvstacks.toml
+   $ venvstacks publish --tag-outputs --output-dir demo_artifacts examples/sklearn/venvstacks.toml
 
 Once the environments have been successfully built,
 the ``publish`` command allows each layer to be converted to a separate
@@ -139,7 +111,7 @@ Locally exporting environment stacks
 
 .. code-block:: console
 
-   $ venvstacks local-export --output-dir demo_export sklearn_demo/venvstacks.toml 
+   $ venvstacks local-export --output-dir demo_export examples/sklearn/venvstacks.toml 
 
 Given that even considering the use of ``venvstacks`` implies that some layer archives may be of
 significant size (a fully built :pypi:`PyTorch <torch>` archive weighs in at multiple gigabytes,
