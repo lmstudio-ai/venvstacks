@@ -40,7 +40,6 @@ from typing import (
     Self,
     Sequence,
     Set,
-    Type,
     TypeVar,
     TypedDict,
 )
@@ -1246,7 +1245,7 @@ class LayerEnvBase(ABC):
     build_path: Path = field(repr=False)
     requirements_path: Path = field(repr=False)
     index_config: PackageIndexConfig = field(repr=False)
-    source_filter: Type[SourceTreeContentFilter] = field(repr=False)
+    source_filter: SourceTreeContentFilter = field(repr=False)
 
     # Derived from target path and spec in __post_init__
     env_path: Path = field(init=False)

@@ -1,29 +1,25 @@
-"""Utilities for processing source tree content."""
+"""Utilities for filtering source tree content."""
 
 import os.path
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from pathlib import Path
-from typing import Sequence
+from typing import Protocol, Sequence
 
 from ._util import WalkIterator, walk_path
 
-############################################################################
-#  Class based API to handle source content management during tree traversal
-#  (allows `venvstacks` to be relatively transparently made "git aware")
-##############################################################################
 
+class SourceTreeContentFilter(Protocol):
+    # Making this a protocol rather than an ABC allows for both stateless
+    # class based implementations and stateful instance based implementations
 
-class SourceTreeContentFilter(ABC):
-    @classmethod
     @abstractmethod
-    def walk(cls, top: Path) -> WalkIterator:
+    def walk(self, top: Path) -> WalkIterator:
         """Path.walk replacement with source tree content filtering."""
         raise NotImplementedError
 
-    @classmethod
     @abstractmethod
-    def ignore(cls, src_dir: str, entries: Sequence[str]) -> Sequence[str]:
+    def ignore(self, src_dir: str, entries: Sequence[str]) -> Sequence[str]:
         """shutil.copytree 'ignore' callback with source tree content filtering."""
         raise NotImplementedError
 
