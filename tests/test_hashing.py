@@ -1,11 +1,13 @@
-"""Test cases for hashing utility functions."""
+"""Test cases for hashing and content filtering utility functions."""
 
 import hashlib
 import shutil
 import tempfile
 
+from dulwich.repo import Repo
 import pytest
 
+from contextlib import closing
 from pathlib import Path
 from typing import Generator, Mapping
 
@@ -14,6 +16,11 @@ from venvstacks._hash_content import (
     hash_file_contents,
     hash_file_name_and_contents,
     hash_strings,
+)
+from venvstacks._source_tree import (
+    SourceTreeIgnorePycache,
+    SourceTreeGit,
+    get_default_source_filter,
 )
 
 ##################################
@@ -261,3 +268,89 @@ class TestDirectoryHashing:
         file_path.write_text("This changes the directory hash")
         unmodified_hash = EXPECTED_DIR_HASHES[DEFAULT_ALGORITHM]
         assert hash_directory(cloned_dir_path, omit_prefix=True) != unmodified_hash
+
+
+class TestSourceTreeContentFiltering:
+    def _make_subdir(self, dir_path: Path) -> Path:
+        subdir_path = dir_path / "__pycache__/nested/subdir"
+        subdir_path.mkdir(parents=True)
+        return subdir_path
+
+    def test_pycache_filter(self, cloned_dir_path: Path) -> None:
+        dir_path = cloned_dir_path
+        subdir_path = self._make_subdir(dir_path)
+        # Default filter just returns the given path when queried
+        assert SourceTreeIgnorePycache.get_source_path(dir_path) == dir_path
+        assert SourceTreeIgnorePycache.get_source_path(subdir_path) == subdir_path
+        # No git metadata -> stateless default filter
+        source_filter = get_default_source_filter(subdir_path)
+        assert source_filter is SourceTreeIgnorePycache
+        # Check __pycache__ is ignored as both a dir name and dir entry name
+        entries = ["a", "b", "c"]
+        with_pycache = ["a", "b", "__pycache__"]
+        assert source_filter.ignore("", entries) == []
+        assert source_filter.ignore("__pycache__", entries) == entries
+        assert source_filter.ignore("/absolute/__pycache__", entries) == entries
+        assert source_filter.ignore("", with_pycache) == ["__pycache__"]
+        assert source_filter.ignore(str(dir_path), entries) == []
+        assert source_filter.ignore(str(dir_path), with_pycache) == ["__pycache__"]
+        assert source_filter.ignore(str(subdir_path), entries) == entries
+        assert source_filter.ignore(str(subdir_path), with_pycache) == with_pycache
+        # Subdir starts with __pycache__ and should be ignored
+        expected_hash = f"{DEFAULT_ALGORITHM}/{EXPECTED_DIR_HASHES[DEFAULT_ALGORITHM]}"
+        assert hash_directory(dir_path, walk_iter=source_filter.walk) == expected_hash
+
+    def test_gitignore_filter(self, cloned_dir_path: Path) -> None:
+        dir_path = cloned_dir_path
+        subdir_path = self._make_subdir(dir_path)
+        # Git filter reports None when there is no containing repository
+        assert SourceTreeGit.get_source_path(dir_path) is None
+        assert SourceTreeGit.get_source_path(subdir_path) is None
+        with closing(Repo.init(dir_path.as_posix())):
+            # Git filter finds the containing repository when queried
+            assert SourceTreeGit.get_source_path(dir_path) == dir_path
+            assert SourceTreeGit.get_source_path(subdir_path) == dir_path
+            # Git metadata -> git based filter
+            source_filter = get_default_source_filter(subdir_path)
+            assert isinstance(source_filter, SourceTreeGit)
+            assert source_filter.repo_path == dir_path
+            # __pycache__ isn't ignored yet, but paths outside the tree are
+            # Git metadata files are also all ignored by default
+            entries = ["a", "b", "c"]
+            with_pycache = ["a", "b", "__pycache__"]
+            git_meta = [".git", ".gitignore"]
+            assert source_filter.ignore("", entries) == entries
+            assert source_filter.ignore("__pycache__", entries) == entries
+            assert source_filter.ignore("/absolute/__pycache__", entries) == entries
+            assert source_filter.ignore("", with_pycache) == with_pycache
+            assert source_filter.ignore(str(dir_path), entries) == []
+            assert source_filter.ignore(str(dir_path), with_pycache) == []
+            assert source_filter.ignore(str(dir_path), git_meta) == git_meta
+            assert source_filter.ignore(str(subdir_path), entries) == []
+            assert source_filter.ignore(str(subdir_path), with_pycache) == []
+            assert source_filter.ignore(str(subdir_path), git_meta) == git_meta
+            # Subdir starts with __pycache__, but isn't ignored yet
+            expected_hash = (
+                f"{DEFAULT_ALGORITHM}/{EXPECTED_DIR_HASHES[DEFAULT_ALGORITHM]}"
+            )
+            assert (
+                hash_directory(dir_path, walk_iter=source_filter.walk) != expected_hash
+            )
+            # Updating .gitignore updates the filtering
+            ignore_path = dir_path / ".gitignore"
+            ignore_path.write_text("__pycache__")
+            # Check __pycache__ is ignored as both a dir name and dir entry name
+            assert source_filter.ignore("", entries) == entries
+            assert source_filter.ignore("__pycache__", entries) == entries
+            assert source_filter.ignore("/absolute/__pycache__", entries) == entries
+            assert source_filter.ignore("", with_pycache) == with_pycache
+            assert source_filter.ignore(str(dir_path), entries) == []
+            assert source_filter.ignore(str(dir_path), with_pycache) == ["__pycache__"]
+            assert source_filter.ignore(str(dir_path), git_meta) == git_meta
+            assert source_filter.ignore(str(subdir_path), entries) == entries
+            assert source_filter.ignore(str(subdir_path), with_pycache) == with_pycache
+            assert source_filter.ignore(str(subdir_path), git_meta) == git_meta
+            # Subdir should now be ignored when hashing
+            assert (
+                hash_directory(dir_path, walk_iter=source_filter.walk) == expected_hash
+            )

@@ -59,8 +59,8 @@ def hash_directory(
     incremental_hash = hashlib.new(algorithm)
     # Python 3.11 compatibility: use os.walk instead of Path.walk
     for this_dir, subdirs, files in walk_iter(path):
-        if not files:
-            continue
+        # shutil.copytree will copy empty folders,
+        # so we also include them when hashing directories
         dir_path = Path(this_dir)
         incremental_hash.update(dir_path.name.encode())
         # Ensure directory tree iteration order is deterministic
