@@ -47,7 +47,7 @@ from typing import (
 from . import pack_venv
 from ._hash_content import hash_file_contents, hash_module, hash_strings
 from ._injected import postinstall
-from ._source_tree import SourceTreeContentFilter, SourceTreeIgnorePycache
+from ._source_tree import SourceTreeContentFilter, get_default_source_filter
 from ._util import (
     as_normalized_path,
     capture_python_output,
@@ -2684,6 +2684,7 @@ class StackSpec:
         self,
         build_path: Path,
         index_config: PackageIndexConfig,
+        source_filter: SourceTreeContentFilter,
         env_class: type[BuildEnv],
         specs: Mapping[LayerBaseName, LayerSpecBase],
     ) -> MutableMapping[LayerBaseName, BuildEnv]:
@@ -2703,7 +2704,7 @@ class StackSpec:
                 build_path,
                 requirements_path,
                 index_config,
-                SourceTreeIgnorePycache,
+                source_filter,
             )
             build_environments[name] = build_env
             print(f"  Defined {name!r}: {build_env}")
@@ -2723,20 +2724,21 @@ class StackSpec:
         if index_config is None:
             index_config = PackageIndexConfig()
         index_config.resolve_lexical_paths(self.spec_path.parent)
+        source_filter = get_default_source_filter(self.spec_path.parent)
         print("Defining runtime environments:")
         runtimes = self._define_envs(
-            build_path, index_config, RuntimeEnv, self.runtimes
+            build_path, index_config, source_filter, RuntimeEnv, self.runtimes
         )
         print("Defining framework environments:")
         frameworks = self._define_envs(
-            build_path, index_config, FrameworkEnv, self.frameworks
+            build_path, index_config, source_filter, FrameworkEnv, self.frameworks
         )
         for fw_env in frameworks.values():
             runtime = runtimes[fw_env.env_spec.runtime.name]
             fw_env.link_layered_environments(runtime, frameworks)
         print("Defining application environments:")
         applications = self._define_envs(
-            build_path, index_config, ApplicationEnv, self.applications
+            build_path, index_config, source_filter, ApplicationEnv, self.applications
         )
         for app_env in applications.values():
             runtime = runtimes[app_env.env_spec.runtime.name]

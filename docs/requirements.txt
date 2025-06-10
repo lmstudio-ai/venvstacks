@@ -15,7 +15,7 @@ jinja2==3.1.6
 markupsafe==3.0.2
 packaging==25.0
 pygments==2.19.1
-requests==2.32.3
+requests==2.32.4
 roman-numerals-py==3.1.0
 snowballstemmer==3.0.1
 soupsieve==2.7
@@ -27,6 +27,6 @@ sphinxcontrib-htmlhelp==2.1.0
 sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==2.0.0
 sphinxcontrib-serializinghtml==2.0.0
-typing-extensions==4.13.2
+typing-extensions==4.14.0
 urllib3==2.4.0
 .  # this package
