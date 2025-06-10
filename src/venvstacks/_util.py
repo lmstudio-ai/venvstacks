@@ -10,7 +10,18 @@ import tarfile
 from contextlib import contextmanager
 from importlib.machinery import EXTENSION_SUFFIXES
 from pathlib import Path
-from typing import Any, Generator, Iterable, Literal, Mapping, Sequence, overload
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Iterable,
+    Iterator,
+    Literal,
+    Mapping,
+    Sequence,
+    TypeAlias,
+    overload,
+)
 
 WINDOWS_BUILD = hasattr(os, "add_dll_directory")
 
@@ -49,6 +60,17 @@ def default_tarfile_filter(filter: str) -> Generator[None, None, None]:
         yield
     finally:
         tarfile.TarFile.extraction_filter = old_filter
+
+
+# Simplify type hints for `os.walk` and `Path.walk` alternatives
+WalkIterator: TypeAlias = Iterator[tuple[Path, list[str], list[str]]]
+WalkCallable: TypeAlias = Callable[[Path], WalkIterator]
+
+
+def walk_path(top: Path) -> WalkIterator:
+    # Python 3.11 compatibility: use os.walk instead of Path.walk
+    for this_dir, subdirs, files in os.walk(top):
+        yield Path(this_dir), subdirs, files
 
 
 ##############################################################################
@@ -308,9 +330,15 @@ _IGNORED_SUFFIXES = frozenset(
 
 
 def find_shared_libraries(
-    py_version: tuple[str, str], base_path: Path, *, excluded: Iterable[str] = ()
+    py_version: tuple[str, str],
+    base_path: Path,
+    *,
+    excluded: Iterable[str] = (),
+    walk_iter: WalkCallable | None = None,
 ) -> Generator[Path, None, None]:
     """Find non-extension-module shared libraries in specified directory."""
+    if walk_iter is None:
+        walk_iter = walk_path
     exclusion_patterns = [
         re.compile(_translate_glob(f"/{trailing}", recursive=True))
         for trailing in excluded
@@ -326,8 +354,7 @@ def find_shared_libraries(
             if ext != _PYLIB_SUFFIX
         )
 
-    # Python 3.11 compatibility: use os.walk instead of Path.walk
-    for this_dir, _, files in os.walk(base_path):
+    for this_dir, _, files in walk_iter(base_path):
         dir_path = Path(this_dir)
         for fname in files:
             file_path = dir_path / fname

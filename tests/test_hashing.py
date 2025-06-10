@@ -9,11 +9,11 @@ import pytest
 from pathlib import Path
 from typing import Generator, Mapping
 
-from venvstacks.stacks import (
-    _hash_directory,
-    _hash_file_contents,
-    _hash_file_name_and_contents,
-    _hash_strings,
+from venvstacks._hash_content import (
+    hash_directory,
+    hash_file_contents,
+    hash_file_name_and_contents,
+    hash_strings,
 )
 
 ##################################
@@ -104,15 +104,15 @@ class TestStringIterableHashing:
     def test_default_hash(self) -> None:
         hash_fodder = STRINGS_TO_HASH
         expected_hash = EXPECTED_STRING_ITERABLE_HASHES[DEFAULT_ALGORITHM]
-        assert _hash_strings(hash_fodder) == f"{DEFAULT_ALGORITHM}:{expected_hash}"
-        assert _hash_strings(hash_fodder, omit_prefix=True) == expected_hash
+        assert hash_strings(hash_fodder) == f"{DEFAULT_ALGORITHM}:{expected_hash}"
+        assert hash_strings(hash_fodder, omit_prefix=True) == expected_hash
 
     @pytest.mark.parametrize("algorithm", ALGORITHMS_TO_EXPECTED_CONTENT_HASHES)
     def test_algorithm_selection(self, algorithm: str) -> None:
         hash_fodder = STRINGS_TO_HASH
         expected_hash = EXPECTED_STRING_ITERABLE_HASHES[algorithm]
-        assert _hash_strings(hash_fodder, algorithm) == f"{algorithm}:{expected_hash}"
-        assert _hash_strings(hash_fodder, algorithm, omit_prefix=True) == expected_hash
+        assert hash_strings(hash_fodder, algorithm) == f"{algorithm}:{expected_hash}"
+        assert hash_strings(hash_fodder, algorithm, omit_prefix=True) == expected_hash
 
 
 class TestFileContentHashing:
@@ -121,8 +121,8 @@ class TestFileContentHashing:
     )
     def test_default_hash(self, fname: str, expected_hash: str) -> None:
         file_path = HASH_FODDER_PATH / fname
-        assert _hash_file_contents(file_path) == f"{DEFAULT_ALGORITHM}:{expected_hash}"
-        assert _hash_file_contents(file_path, omit_prefix=True) == expected_hash
+        assert hash_file_contents(file_path) == f"{DEFAULT_ALGORITHM}:{expected_hash}"
+        assert hash_file_contents(file_path, omit_prefix=True) == expected_hash
 
     @pytest.mark.parametrize("algorithm,fname,expected_hash", EXPECTED_CONTENT_HASHES)
     def test_algorithm_selection(
@@ -130,10 +130,10 @@ class TestFileContentHashing:
     ) -> None:
         file_path = HASH_FODDER_PATH / fname
         assert (
-            _hash_file_contents(file_path, algorithm) == f"{algorithm}:{expected_hash}"
+            hash_file_contents(file_path, algorithm) == f"{algorithm}:{expected_hash}"
         )
         assert (
-            _hash_file_contents(file_path, algorithm, omit_prefix=True) == expected_hash
+            hash_file_contents(file_path, algorithm, omit_prefix=True) == expected_hash
         )
 
 
@@ -144,12 +144,10 @@ class TestFileNameAndContentHashing:
     def test_default_hash(self, fname: str, expected_hash: str) -> None:
         file_path = HASH_FODDER_PATH / fname
         assert (
-            _hash_file_name_and_contents(file_path)
+            hash_file_name_and_contents(file_path)
             == f"{DEFAULT_ALGORITHM}:{expected_hash}"
         )
-        assert (
-            _hash_file_name_and_contents(file_path, omit_prefix=True) == expected_hash
-        )
+        assert hash_file_name_and_contents(file_path, omit_prefix=True) == expected_hash
 
     @pytest.mark.parametrize("algorithm,fname,expected_hash", EXPECTED_COMBINED_HASHES)
     def test_algorithm_selection(
@@ -157,11 +155,11 @@ class TestFileNameAndContentHashing:
     ) -> None:
         file_path = HASH_FODDER_PATH / fname
         assert (
-            _hash_file_name_and_contents(file_path, algorithm)
+            hash_file_name_and_contents(file_path, algorithm)
             == f"{algorithm}:{expected_hash}"
         )
         assert (
-            _hash_file_name_and_contents(file_path, algorithm, omit_prefix=True)
+            hash_file_name_and_contents(file_path, algorithm, omit_prefix=True)
             == expected_hash
         )
 
@@ -229,37 +227,37 @@ class TestDirectoryHashing:
     def test_default_hash(self) -> None:
         dir_path = HASH_FODDER_PATH
         expected_hash = EXPECTED_DIR_HASHES[DEFAULT_ALGORITHM]
-        assert _hash_directory(dir_path) == f"{DEFAULT_ALGORITHM}/{expected_hash}"
-        assert _hash_directory(dir_path, omit_prefix=True) == expected_hash
+        assert hash_directory(dir_path) == f"{DEFAULT_ALGORITHM}/{expected_hash}"
+        assert hash_directory(dir_path, omit_prefix=True) == expected_hash
 
     @pytest.mark.parametrize("algorithm,expected_hash", EXPECTED_DIR_HASHES.items())
     def test_algorithm_selection(self, algorithm: str, expected_hash: str) -> None:
         dir_path = HASH_FODDER_PATH
-        assert _hash_directory(dir_path, algorithm) == f"{algorithm}/{expected_hash}"
-        assert _hash_directory(dir_path, algorithm, omit_prefix=True) == expected_hash
+        assert hash_directory(dir_path, algorithm) == f"{algorithm}/{expected_hash}"
+        assert hash_directory(dir_path, algorithm, omit_prefix=True) == expected_hash
 
     def test_root_dir_name_change_detected(self, cloned_dir_path: Path) -> None:
         renamed_dir_path = cloned_dir_path.with_name("something_completely_different")
         cloned_dir_path.rename(renamed_dir_path)
         unmodified_hash = EXPECTED_DIR_HASHES[DEFAULT_ALGORITHM]
-        assert _hash_directory(renamed_dir_path, omit_prefix=True) != unmodified_hash
+        assert hash_directory(renamed_dir_path, omit_prefix=True) != unmodified_hash
 
     def test_subdir_name_change_detected(self, cloned_dir_path: Path) -> None:
         subfolder_path = cloned_dir_path / "folder1"
         renamed_dir_path = subfolder_path.with_name("something_completely_different")
         subfolder_path.rename(renamed_dir_path)
         unmodified_hash = EXPECTED_DIR_HASHES[DEFAULT_ALGORITHM]
-        assert _hash_directory(cloned_dir_path, omit_prefix=True) != unmodified_hash
+        assert hash_directory(cloned_dir_path, omit_prefix=True) != unmodified_hash
 
     def test_file_name_change_detected(self, cloned_dir_path: Path) -> None:
         file_path = cloned_dir_path / "folder1/subfolder/file.txt"
         renamed_file_path = file_path.with_name("something_completely_different")
         file_path.rename(renamed_file_path)
         unmodified_hash = EXPECTED_DIR_HASHES[DEFAULT_ALGORITHM]
-        assert _hash_directory(cloned_dir_path, omit_prefix=True) != unmodified_hash
+        assert hash_directory(cloned_dir_path, omit_prefix=True) != unmodified_hash
 
     def test_file_contents_change_detected(self, cloned_dir_path: Path) -> None:
         file_path = cloned_dir_path / "folder1/subfolder/file.txt"
         file_path.write_text("This changes the directory hash")
         unmodified_hash = EXPECTED_DIR_HASHES[DEFAULT_ALGORITHM]
-        assert _hash_directory(cloned_dir_path, omit_prefix=True) != unmodified_hash
+        assert hash_directory(cloned_dir_path, omit_prefix=True) != unmodified_hash
