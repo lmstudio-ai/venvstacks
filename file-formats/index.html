@@ -510,6 +510,8 @@ an array of relative paths (each starting from the folder containing the stack s
 file) that specify Python modules or import packages that will be included in the built
 environment for use by the application launch module.</p></li>
 </ul>
+<p>Refer to <a class="reference internal" href="#source-tree-content-filtering"><span class="std std-ref">Source tree content filtering</span></a> for details on exactly which files will be
+included in the application layer from referenced launch modules and support modules.</p>
 <div class="versionchanged">
 <p><span class="versionmodified changed">Changed in version 0.4.0: </span>Added the ability for application layers to depend directly on a runtime layer instead
 of declaring that they depend on one or more framework layers
@@ -522,6 +524,10 @@ for implicitly versioned layers
 </div>
 <div class="versionadded">
 <p><span class="versionmodified added">Added in version 0.6.0: </span>Added the <code class="docutils literal notranslate"><span class="pre">support_modules</span></code> field (<a class="reference internal" href="../changelog/#changelog-0-6-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.6.0: </span>Source tree content filtering for launch modules and support modules
+(<a class="reference internal" href="../changelog/#changelog-0-6-0"><span class="std std-ref">release details</span></a>).</p>
 </div>
 </section>
 <section id="linearizing-the-python-import-path">
@@ -576,6 +582,21 @@ configuration and output metadata</p></li>
 </ul>
 <p>Layers with implicit lock versioning enabled will instead use
 <code class="docutils literal notranslate"><span class="pre">&quot;{layer_name}&#64;{lock_version}&quot;</span></code> for these deployment related purposes.</p>
+</section>
+<section id="source-tree-content-filtering">
+<span id="id1"></span><h3>Source tree content filtering<a class="headerlink" href="#source-tree-content-filtering" title="Link to this heading">¶</a></h3>
+<p>Application layer launch modules and support modules may be either single
+files or directories defining a Python import package. In the latter
+case, the contents of the source tree are filtered to exclude unwanted files
+rather than including every file in the specified directory.</p>
+<p>When git source control information is available, any files explicitly
+excluded from source control will also be omitted from the application
+layers (that is, the exclusions are based on <code class="docutils literal notranslate"><span class="pre">.gitignore</span></code> patterns).
+Any files or folders with names starting with <code class="docutils literal notranslate"><span class="pre">.git</span></code> are also excluded.</p>
+<p>If no recognised source control information is found, the source tree
+content filtering defaults to simply excluding <code class="docutils literal notranslate"><span class="pre">__pycache__</span></code> folders
+(as these may be generated if the launch modules or support modules are
+imported for testing purposes from their source tree location).</p>
 </section>
 <section id="deprecated-fields">
 <h3>Deprecated fields<a class="headerlink" href="#deprecated-fields" title="Link to this heading">¶</a></h3>
@@ -736,6 +757,7 @@ including the effects of the <code class="docutils literal notranslate"><span cl
 <li><a class="reference internal" href="#application-layer-specification-fields">Application layer specification fields</a></li>
 <li><a class="reference internal" href="#linearizing-the-python-import-path">Linearizing the Python import path</a></li>
 <li><a class="reference internal" href="#layer-names-and-versioning">Layer names and versioning</a></li>
+<li><a class="reference internal" href="#source-tree-content-filtering">Source tree content filtering</a></li>
 <li><a class="reference internal" href="#deprecated-fields">Deprecated fields</a></li>
 </ul>
 </li>

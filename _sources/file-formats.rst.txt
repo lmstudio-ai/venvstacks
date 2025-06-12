@@ -248,6 +248,9 @@ Application layer specifications may also contain the following optional field:
   file) that specify Python modules or import packages that will be included in the built
   environment for use by the application launch module.
 
+Refer to :ref:`source-tree-content-filtering` for details on exactly which files will be
+included in the application layer from referenced launch modules and support modules.
+
 .. versionchanged:: 0.4.0
    Added the ability for application layers to depend directly on a runtime layer instead
    of declaring that they depend on one or more framework layers
@@ -260,6 +263,11 @@ Application layer specifications may also contain the following optional field:
 
 .. versionadded:: 0.6.0
    Added the ``support_modules`` field (:ref:`release details <changelog-0.6.0>`).
+
+.. versionadded:: 0.6.0
+   Source tree content filtering for launch modules and support modules
+   (:ref:`release details <changelog-0.6.0>`).
+
 
 .. _layer-dependency-linearization:
 
@@ -291,6 +299,7 @@ includes additional details on the C3 algorithm and the assurances it provides.
 .. versionadded:: 0.4.0
    In previous versions, frameworks were not permitted to declare dependencies on other
    framework layers, so linearization was not required.
+
 
 .. _layer-names:
 
@@ -325,6 +334,27 @@ Layers with implicit lock versioning disabled use their layer name directly
 
 Layers with implicit lock versioning enabled will instead use
 ``"{layer_name}@{lock_version}"`` for these deployment related purposes.
+
+
+.. _source-tree-content-filtering:
+
+Source tree content filtering
+-----------------------------
+
+Application layer launch modules and support modules may be either single
+files or directories defining a Python import package. In the latter
+case, the contents of the source tree are filtered to exclude unwanted files
+rather than including every file in the specified directory.
+
+When git source control information is available, any files explicitly
+excluded from source control will also be omitted from the application
+layers (that is, the exclusions are based on `.gitignore` patterns).
+Any files or folders with names starting with `.git` are also excluded.
+
+If no recognised source control information is found, the source tree
+content filtering defaults to simply excluding ``__pycache__`` folders
+(as these may be generated if the launch modules or support modules are
+imported for testing purposes from their source tree location).
 
 
 Deprecated fields
