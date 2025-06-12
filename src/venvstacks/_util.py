@@ -340,7 +340,7 @@ def find_shared_libraries(
     if walk_iter is None:
         walk_iter = walk_path
     exclusion_patterns = [
-        re.compile(_translate_glob(f"/{trailing}", recursive=True))
+        re.compile(_translate_glob(f"/{trailing}", recursive=True, include_hidden=True))
         for trailing in excluded
     ]
     py_version_nodot = "".join(py_version)
