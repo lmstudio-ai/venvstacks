@@ -57,10 +57,19 @@ jobs:
       run: |
         echo "minutes=$(date '+%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
 
+    # Python setup shenanigans to ensure we don't get 3.13.4
+    # (avoids https://github.com/python/cpython/issues/135151)
     - name: Set up Python ${{ matrix.python-version }}
+      if: matrix.python-version != '3.13'
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+
+    - name: Set up Python ${{ matrix.python-version }}
+      if: matrix.python-version == '3.13'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ">=3.13.5"
 
     - name: Get pip cache dir
       id: pip-cache
