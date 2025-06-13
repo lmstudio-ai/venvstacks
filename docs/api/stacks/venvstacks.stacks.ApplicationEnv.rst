@@ -9,7 +9,7 @@ venvstacks.stacks.ApplicationEnv
 
    .. autosummary::
 
-      ~FrameworkEnv.base_runtime
+      ~ApplicationEnv.base_runtime
       ~ApplicationEnv.category
       ~ApplicationEnv.env_name
       ~ApplicationEnv.env_spec

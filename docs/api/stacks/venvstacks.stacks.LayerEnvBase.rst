@@ -15,6 +15,8 @@ venvstacks.stacks.LayerEnvBase
       ~LayerEnvBase.get_constraint_paths
       ~LayerEnvBase.install_requirements
       ~LayerEnvBase.lock_requirements
+      ~LayerEnvBase.needs_build
+      ~LayerEnvBase.needs_lock
       ~LayerEnvBase.report_python_site_details
       ~LayerEnvBase.request_export
       ~LayerEnvBase.select_operations

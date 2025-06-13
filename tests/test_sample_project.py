@@ -253,6 +253,12 @@ class TestBuildEnvironment(DeploymentTestCase):
         # Faster test to check the links between build envs are set up correctly
         # (if this fails, there's no point even trying the full slow test case)
         build_env = self.build_env
+        already_built = [
+            env.env_name
+            for env in build_env.all_environments()
+            if not env.needs_build()
+        ]
+        self.assertEqual(already_built, [])
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
 

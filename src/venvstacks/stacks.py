@@ -4,6 +4,7 @@
 Creates Python runtime, framework, and app environments based on ``venvstacks.toml``
 """
 
+import dataclasses
 import json
 import os
 import shlex
@@ -709,6 +710,29 @@ class LayerSpecBase(ABC):
         """Returns `True` if the layer will be built for the given target platform."""
         return target_platform in self.platforms
 
+    def to_dict(self) -> Mapping[str, Any]:
+        """Convert spec details to a JSON-compatible dict."""
+        # No hidden fields in the specification dataclasses
+        result = dataclasses.asdict(self)
+        # Remove nesting and ensure values round-trip through JSON files
+        for k, v in result.items():
+            match v:
+                case {"name": layer_name}:
+                    result[k] = layer_name
+                case [{"name": _}, *_] as layer_seq:
+                    result[k] = [layer["name"] for layer in layer_seq]
+                case Path() as path_value:
+                    result[k] = path_value.as_posix()
+                case [Path(), *_] as path_seq:
+                    result[k] = [p.as_posix() for p in path_seq]
+                case StrEnum():
+                    result[k] = str(v)
+                case [StrEnum(), *_]:
+                    result[k] = [str(s) for s in v]
+                case []:
+                    result[k] = []
+        return result
+
 
 @dataclass
 class RuntimeSpec(LayerSpecBase):
@@ -1247,13 +1271,14 @@ class LayerEnvBase(ABC):
     index_config: PackageIndexConfig = field(repr=False)
     source_filter: SourceTreeContentFilter = field(repr=False)
 
-    # Derived from target path and spec in __post_init__
+    # Derived from build path and spec in __post_init__
     env_path: Path = field(init=False)
     pylib_path: Path = field(init=False, repr=False)
     dynlib_path: Path | None = field(init=False, repr=False)
     executables_path: Path = field(init=False, repr=False)
     python_path: Path = field(init=False, repr=False)
     env_lock: EnvironmentLock = field(init=False, repr=False)
+    _build_metadata_path: Path = field(init=False, repr=False)
 
     # Derived from subclass py_version in __post_init__
     _py_version_info: tuple[str, str] = field(init=False, repr=False)
@@ -1323,7 +1348,10 @@ class LayerEnvBase(ABC):
         self._py_version_info = cast(
             tuple[str, str], tuple(self.py_version.split(".")[:2])
         )
-        self.env_path = self.build_path / self.env_name
+        self.env_path = env_path = self.build_path / self.env_name
+        self._build_metadata_path = env_path.with_name(
+            f"{env_path.name}.last-build.json"
+        )
         # Note: purelib and platlib are the same location in virtual environments
         # (even when they have different names, platlib is a symlink to purelib)
         self.pylib_path = self._get_py_scheme_path("purelib")
@@ -1486,8 +1514,9 @@ class LayerEnvBase(ABC):
             print(f"{str(env_path)!r} exists, replacing...")
             shutil.rmtree(self.env_path)
         else:
-            if self.want_build or self.was_created:
-                # Run the update if requested, or if env was created earlier in the build
+            if self.want_build or self.was_created or self.needs_build():
+                # Run the update if requested, if the env was created earlier in the build,
+                # or if the build env is otherwise outdated
                 print(f"{str(env_path)!r} exists, updating...")
                 self._update_existing_environment(lock_only=lock_only)
                 env_updated = True
@@ -1502,7 +1531,9 @@ class LayerEnvBase(ABC):
             # Versioned layers need an up to date version to write the deployed config
             self._write_deployed_config()
         self.was_created = create_env
-        self.was_built = create_env or env_updated
+        self.was_built = was_built = not lock_only and (create_env or env_updated)
+        if was_built:
+            self._write_last_build_metadata()
 
     def create_environment(self, clean: bool = False) -> None:
         """Create or update specified environment. Returns True if env is new or updated."""
@@ -1622,7 +1653,8 @@ class LayerEnvBase(ABC):
         """Returns true if this environment needs to be locked."""
         if self.want_lock is False:
             # Locking step has been explicitly disabled, so override the check
-            # Later build steps will fail if the lock file is needed but missing
+            # Later process steps will fail if the lock file is needed but missing
+            # TODO?: emit a runtime warning about possible inconsistencies
             return False
         if self.want_lock_reset and not self.was_locked:
             # If the lock is still to be reset, then locking is needed unless
@@ -1631,6 +1663,45 @@ class LayerEnvBase(ABC):
         # If the lock is not to be reset, then locking is only needed
         # if there is no valid lock file metadata already available
         return not self.env_lock.has_valid_lock
+
+    def _get_build_metadata(self) -> Mapping[str, Any]:
+        env_name = self.env_name
+        env_lock = self.env_lock
+        layer_details = LayerSpecMetadata(
+            layer_name=env_name,
+            install_target=env_lock.get_deployed_name(env_name),
+            requirements_hash=env_lock.requirements_hash,
+            lock_version=env_lock.lock_version,
+            locked_at=env_lock.locked_at,
+        )
+        self._update_output_metadata(layer_details)
+        return {
+            "layer_spec": self.env_spec.to_dict(),
+            "layer_details": layer_details,
+        }
+
+    def _load_last_build_metadata(self) -> Any:
+        build_metadata_path = self._build_metadata_path
+        if not build_metadata_path.exists():
+            return None
+        return json.loads(build_metadata_path.read_text(encoding="utf-8"))
+
+    def _write_last_build_metadata(self) -> None:
+        _write_json(self._build_metadata_path, self._get_build_metadata())
+
+    def needs_build(self) -> bool:
+        """Returns true if the build environment needs to be created or updated."""
+        if self.want_build is False:
+            # Building step has been explicitly disabled, so override the check
+            # Later process steps will fail if the environment is needed but missing
+            # TODO?: emit a runtime warning about possible inconsistencies
+            return False
+        last_build_metadata = self._load_last_build_metadata()
+        if last_build_metadata is None:
+            # Build env is outdated if there is no recorded build metadata
+            return True
+        # Build env is outdated if the metadata has changed since the last build
+        return bool(self._get_build_metadata() != last_build_metadata)
 
     @staticmethod
     @lru_cache(maxsize=None)

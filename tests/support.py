@@ -394,6 +394,15 @@ class DeploymentTestCase(unittest.TestCase):
             self.check_env_sys_path(
                 env_path, env_sys_path, self_contained=is_runtime_env
             )
+            if env.needs_build():
+                # Check the individual elements of the build validity check
+                build_metadata_path = env._build_metadata_path
+                self.assertTrue(build_metadata_path.exists())
+                last_metadata = env._load_last_build_metadata()
+                self.assertEqual(last_metadata, env._get_build_metadata())
+                self.fail(
+                    f"Layer {env.env_name!r} still needs building for an unknown reason"
+                )
 
     def check_deployed_environments(
         self,

@@ -564,6 +564,7 @@ class TestMinimalBuild(DeploymentTestCase):
         self.addCleanup(working_dir.cleanup)
         self.working_path = working_path = Path(working_dir.name)
         self.build_env = _define_build_env(working_path)
+        self.maxDiff = None
 
     def assertRecentlyLocked(
         self, last_locked_times: LastLockedTimes, minimum_lock_time: datetime
@@ -713,6 +714,12 @@ class TestMinimalBuild(DeploymentTestCase):
         # Faster test to check the links between build envs are set up correctly
         # (if this fails, there's no point even trying the full slow test case)
         build_env = self.build_env
+        already_built = [
+            env.env_name
+            for env in build_env.all_environments()
+            if not env.needs_build()
+        ]
+        self.assertEqual(already_built, [])
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
 
