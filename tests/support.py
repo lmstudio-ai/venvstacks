@@ -394,6 +394,20 @@ class DeploymentTestCase(unittest.TestCase):
             self.check_env_sys_path(
                 env_path, env_sys_path, self_contained=is_runtime_env
             )
+            # Only Python executables, links and/or wrapper scripts should be present
+            bin_path = env.executables_path
+            self.assertEqual(list(bin_path.iterdir()), list(bin_path.glob("python*")))
+            # RECORD files should exist, *without* any entries for executables
+            pylib_path = env.pylib_path
+            if next(pylib_path.glob("*.dist-info"), None) is not None:
+                # Env has at least one package installed, so RECORD files should exist
+                record_paths = [*pylib_path.rglob("RECORD")]
+                self.assertNotEqual(record_paths, [])
+                # No executables should be listed in any RECORD file
+                bin_pattern = f"/../{bin_path.name}/"
+                for record_path in record_paths:
+                    if bin_pattern in record_path.read_text(encoding="utf-8"):
+                        self.fail(f"{bin_pattern!r} found in {str(record_path)!r}")
             if env.needs_build():
                 # Check the individual elements of the build validity check
                 self.assertTrue(env.env_path.exists())
