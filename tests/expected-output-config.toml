@@ -31,6 +31,6 @@ UV_EXCLUDE_NEWER="2025-04-27 00:00:00+00:00"
 # for new feature additions to the output metadata
 
 # Metadata updates can also be requested when the
-# launch module content in the sample project changes
+# expected layer content in the sample project changes
 
-# Last requested update: add app support modules field
+# Last requested update: retain RECORD files
