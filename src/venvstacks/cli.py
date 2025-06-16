@@ -93,7 +93,7 @@ _CLI_OPT_FLAG_if_needed = Annotated[
 ]  # fmt: skip
 _CLI_OPT_FLAG_lock_if_needed = Annotated[
     bool,
-    typer.Option(help="Update stale layer lock files before building")
+    typer.Option(help="Update outdated layer lock files before building")
 ]  # fmt: skip
 _CLI_OPT_FLAG_lock = Annotated[
     bool,
@@ -390,7 +390,7 @@ def build(
     lock: _CLI_OPT_FLAG_lock = False,
 ) -> None:
     """Build (/lock/publish) Python virtual environment stacks."""
-    # Only update layer locks if the current lock is stale
+    # Only update layer locks if the current lock is outdated
     # While "--lock" is deprecated, it's a soft deprecation, so no warning is emitted
     want_lock = None if lock_if_needed or lock else False
     if include_dependencies is not None:
