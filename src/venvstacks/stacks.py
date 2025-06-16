@@ -1512,7 +1512,6 @@ class LayerEnvBase(ABC):
             print(f"{str(env_path)!r} does not exist, creating...")
         elif clean:
             print(f"{str(env_path)!r} exists, replacing...")
-            shutil.rmtree(self.env_path)
         else:
             if self.want_build or self.was_created or self.needs_build():
                 # Run the update if requested, if the env was created earlier in the build,
@@ -1889,6 +1888,12 @@ class LayerEnvBase(ABC):
     def _create_new_environment(self, *, lock_only: bool = False) -> None:
         raise NotImplementedError
 
+    def _clean_environment(self) -> None:
+        self._build_metadata_path.unlink(missing_ok=True)
+        env_path = self.env_path
+        if env_path.exists():
+            shutil.rmtree(env_path)
+
     def _ensure_portability(self) -> None:
         # Wrapper and activation scripts are not used on deployment targets,
         # so drop them entirely rather than making them portable
@@ -2003,6 +2008,7 @@ class RuntimeEnv(LayerEnvBase):
         return self._run_pip(pip_args)
 
     def _create_new_environment(self, *, lock_only: bool = False) -> None:
+        self._clean_environment()
         python_runtime = self.env_spec.python_implementation
         install_path = _pdm_python_install(self.build_path, python_runtime)
         if install_path is None:
@@ -2315,6 +2321,7 @@ class LayeredEnvBase(LayerEnvBase):
         super()._update_existing_environment()
 
     def _create_new_environment(self, *, lock_only: bool = False) -> None:
+        self._clean_environment()
         self._update_existing_environment(lock_only=lock_only)
 
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
