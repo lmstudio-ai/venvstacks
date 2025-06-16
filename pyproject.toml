@@ -23,6 +23,8 @@ dependencies = [
     # replace `python -Im venv` with `uv venv` at this point since we want explicit
     # control over whether files are symlinked or copied between the environments
     "uv>=0.2.33",
+    # Installer is used for RECORD file editing
+    "installer>=0.7.0",
     # Typer is used for the CLI interface. Install 'rich-cli' extra for enhanced features.
     "typer-slim>=0.12.4",
     # Typer 0.16.0 is nominally compatible with click 8.2+, but it still fails in CI

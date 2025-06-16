@@ -4,6 +4,7 @@
 Creates Python runtime, framework, and app environments based on ``venvstacks.toml``
 """
 
+import csv
 import dataclasses
 import json
 import os
@@ -44,6 +45,8 @@ from typing import (
     TypeVar,
     TypedDict,
 )
+
+from installer.records import parse_record_file
 
 from . import pack_venv
 from ._hash_content import hash_file_contents, hash_module, hash_strings
@@ -1897,9 +1900,32 @@ class LayerEnvBase(ABC):
         if env_path.exists():
             shutil.rmtree(env_path)
 
+    def _update_record_file(self, record_path: Path, removed_paths: set[Path]) -> bool:
+        entries = parse_record_file(
+            record_path.read_text(encoding="utf-8").splitlines()
+        )
+        included: list[tuple[str, str, str]] = []
+        update_needed = False
+        for entry in entries:
+            entry_path = _resolve_lexical_path(entry[0], self.pylib_path)
+            if entry_path in removed_paths:
+                update_needed = True
+                continue
+            included.append(entry)
+        if not update_needed:
+            # No files excluded -> existing RECORD file can be left alone
+            return False
+        # Rewrite the RECORD file without the removed entries
+        with record_path.open("w", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f, delimiter=",", quotechar='"', lineterminator="\n")
+            for entry in included:
+                writer.writerow(entry)
+        return True
+
     def _ensure_portability(self) -> None:
         # Wrapper and activation scripts are not used on deployment targets,
         # so drop them entirely rather than making them portable
+        removed_paths: set[Path] = set()
         for item in self.executables_path.iterdir():
             if item.is_dir():
                 print(f"    Dropping directory {str(item)!r}")
@@ -1907,6 +1933,14 @@ class LayerEnvBase(ABC):
             elif not item.name.lower().startswith("python"):
                 print(f"    Dropping potentially non-portable file {str(item)!r}")
                 item.unlink()
+            else:
+                continue
+            removed_paths.add(item)
+        if removed_paths:
+            # Also remove any dropped files from installation RECORD files
+            for record_path in self.pylib_path.rglob("RECORD"):
+                if self._update_record_file(record_path, removed_paths):
+                    print(f"    Removed dropped files from {str(record_path)!r}")
         # Symlinks within the build folder should be relative
         # Symlinks outside the build folder shouldn't exist
         build_path = self.build_path
