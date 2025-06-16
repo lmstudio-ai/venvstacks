@@ -1695,6 +1695,9 @@ class LayerEnvBase(ABC):
             # Later process steps will fail if the environment is needed but missing
             # TODO?: emit a runtime warning about possible inconsistencies
             return False
+        if not self.env_path.exists():
+            # Build env is necessarily outdated if it doesn't exist yet
+            return True
         last_build_metadata = self._load_last_build_metadata()
         if last_build_metadata is None:
             # Build env is outdated if there is no recorded build metadata

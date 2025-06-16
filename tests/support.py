@@ -396,8 +396,8 @@ class DeploymentTestCase(unittest.TestCase):
             )
             if env.needs_build():
                 # Check the individual elements of the build validity check
-                build_metadata_path = env._build_metadata_path
-                self.assertTrue(build_metadata_path.exists())
+                self.assertTrue(env.env_path.exists())
+                self.assertTrue(env._build_metadata_path.exists())
                 last_metadata = env._load_last_build_metadata()
                 self.assertEqual(last_metadata, env._get_build_metadata())
                 self.fail(
