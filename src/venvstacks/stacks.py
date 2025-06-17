@@ -29,6 +29,7 @@ from typing import (
     cast,
     overload,
     Any,
+    Callable,
     ClassVar,
     Iterable,
     Iterator,
@@ -869,6 +870,9 @@ class ArchiveBuildRequest:
     needs_build: bool = field(repr=False)
     # Previously built metadata when a new build is not needed
     archive_metadata: ArchiveMetadata | None = None
+    _prepare_deployed_env: Callable[[Path], None] | None = field(
+        repr=False, default=None
+    )
 
     @staticmethod
     def _needs_archive_build(
@@ -901,6 +905,7 @@ class ArchiveBuildRequest:
         tag_output: bool = False,
         previous_metadata: ArchiveMetadata | None = None,
         force: bool = False,
+        prepare_deployed_env: Callable[[Path], None] | None = None,
     ) -> Self:
         """Define a new archive build request for the given environment."""
         # Bump or set the archive build version
@@ -963,6 +968,7 @@ class ArchiveBuildRequest:
             build_metadata,
             needs_build,
             archive_metadata,
+            prepare_deployed_env,
         )
 
     @staticmethod
@@ -1009,6 +1015,7 @@ class ArchiveBuildRequest:
             clamp_mtime=last_locked,
             work_dir=work_path,
             install_target=build_metadata["install_target"],
+            prepare_deployed_env=self._prepare_deployed_env,
         )
         assert built_archive_path == archive_path  # pack_venv ensures this is true
         print(f"Created {str(archive_path)!r} from {str(env_path)!r}")
@@ -1065,6 +1072,9 @@ class LayerExportRequest:
     export_path: Path
     export_metadata: ExportMetadata = field(repr=False)
     needs_export: bool = field(repr=False)
+    _prepare_deployed_env: Callable[[Path], None] | None = field(
+        repr=False, default=None
+    )
 
     @staticmethod
     def _needs_new_export(
@@ -1094,6 +1104,7 @@ class LayerExportRequest:
         output_path: Path,
         previous_metadata: ExportMetadata | None = None,
         force: bool = False,
+        prepare_deployed_env: Callable[[Path], None] | None = None,
     ) -> Self:
         """Define a new layer export request for the given environment."""
         # Work out the details of the export request
@@ -1111,7 +1122,13 @@ class LayerExportRequest:
         )
         env_path = source_path / env_name
         return cls(
-            env_name, env_lock, env_path, export_path, export_metadata, needs_export
+            env_name,
+            env_lock,
+            env_path,
+            export_path,
+            export_metadata,
+            needs_export,
+            prepare_deployed_env,
         )
 
     @staticmethod
@@ -1136,7 +1153,7 @@ class LayerExportRequest:
             return self.export_metadata, export_path
         if export_path.exists():
             print(f"Removing outdated environment at {str(export_path)!r}")
-            export_path.unlink()
+            shutil.rmtree(export_path)
         print(f"Exporting {str(env_path)!r} to {str(export_path)!r}")
 
         def _run_postinstall(_export_path: Path, postinstall_path: Path) -> None:
@@ -1145,7 +1162,8 @@ class LayerExportRequest:
         exported_path = pack_venv.export_venv(
             env_path,
             export_path,
-            _run_postinstall,
+            prepare_deployed_env=self._prepare_deployed_env,
+            run_postinstall=_run_postinstall,
         )
         assert self.export_path == exported_path  # pack_venv ensures this is true
         print(f"Created {str(export_path)!r} from {str(env_path)!r}")
@@ -1334,16 +1352,6 @@ class LayerEnvBase(ABC):
         """The environment name used for this layer when deployed."""
         return self.env_lock.get_deployed_name(self.env_spec.env_name)
 
-    def get_relative_build_path(self, build_env_path: Path) -> Path:
-        """Get relative build location for a build path (includes layer's build name)."""
-        return build_env_path.relative_to(self.build_path)
-
-    def get_deployed_path(self, build_env_path: Path) -> Path:
-        """Get relative deployment location for a build path (includes layer's deployed name)."""
-        env_deployed_path = Path(self.install_target)
-        relative_path = build_env_path.relative_to(self.env_path)
-        return env_deployed_path / relative_path
-
     def __post_init__(self) -> None:
         # Concrete subclasses must set the version before finishing the base initialisation
         # Assert its existence here to make failures to do so easier to diagnose
@@ -1420,61 +1428,64 @@ class LayerEnvBase(ABC):
         """Layer config to be published in `venvstacks_layer.json`."""
         raise NotImplementedError
 
+    def get_relative_build_path(self, build_env_path: Path) -> Path:
+        """Get relative build location for a build path (includes layer's build name)."""
+        return build_env_path.relative_to(self.build_path)
+
+    def get_deployed_path(self, build_env_path: Path) -> Path:
+        """Get relative deployment location for a build path (includes layer's deployed name)."""
+        env_deployed_path = Path(self.install_target)
+        relative_path = build_env_path.relative_to(self.env_path)
+        return env_deployed_path / relative_path
+
+    def _relative_to_env(self, relative_build_path: Path) -> Path:
+        # Input path is relative to the base of the build directory
+        # Output path is relative to the base of the environment
+        # Note: we avoid `walk_up=True` here, firstly to maintain
+        #       Python 3.11 compatibility, but also to limit the
+        #       the relative paths to *peer* environments, rather
+        #       than all potentially valid relative path calculations
+        if relative_build_path.is_absolute():
+            self._fail_build(f"{relative_build_path} is not a relative path")
+        if relative_build_path.parts[0] == self.env_name:
+            # Emit internally relative path
+            return Path(*relative_build_path.parts[1:])
+        # Emit relative reference to peer environment
+        return Path("..", *relative_build_path.parts)
+
+    def _relative_internal_path(self, absolute_build_path: Path) -> Path:
+        # Input path is an absolute path inside the environment
+        # Output path is relative to the base of the environment
+        assert absolute_build_path.is_absolute()
+        return absolute_build_path.relative_to(self.env_path)
+
+    def _relative_peer_path(self, absolute_build_path: Path) -> Path:
+        # Input path is an absolute path, potentially from a peer environment
+        # Output path is relative to the base of the environment
+        assert absolute_build_path.is_absolute()
+        relative_build_path = absolute_build_path.relative_to(self.build_path)
+        return self._relative_to_env(relative_build_path)
+
+    def _get_relative_deployed_base_python(self) -> Path | None:
+        raise NotImplementedError
+
     def _get_deployed_config(
         self,
         pylib_dirs: Iterable[str],
         dynlib_dirs: Iterable[str],
-        link_external_base: bool = True,
     ) -> postinstall.LayerConfig:
         # Helper for subclass get_deployed_config implementations
-        base_python_path = self.base_python_path
+        base_python_path = self._get_relative_deployed_base_python()
         if base_python_path is None:
             self._fail_build("Cannot get deployment config for unlinked layer")
-        build_env_path = self.env_path
-        build_env_name = build_env_path.name
-        build_path = build_env_path.parent
-
-        def relative_to_env(relative_build_path: Path) -> str:
-            # Input path is relative to the base of the build directory
-            # Output path is relative to the base of the environment
-            # Note: we avoid `walk_up=True` here, firstly to maintain
-            #       Python 3.11 compatibility, but also to limit the
-            #       the relative paths to *peer* environments, rather
-            #       than all potentially valid relative path calculations
-            if relative_build_path.is_absolute():
-                self._fail_build(f"{relative_build_path} is not a relative path")
-            if relative_build_path.parts[0] == build_env_name:
-                # Emit internally relative path
-                return str(Path(*relative_build_path.parts[1:]))
-            # Emit relative reference to peer environment
-            return str(Path("..", *relative_build_path.parts))
-
-        def from_internal_path(target_build_path: Path) -> str:
-            # Input path is an absolute path inside the environment
-            # Output path is relative to the base of the environment
-            return str(target_build_path.relative_to(build_env_path))
-
-        def from_external_path(target_build_path: Path) -> str:
-            # Input path is an absolute path, potentially from a peer environment
-            # Output path is relative to the base of the environment
-            relative_build_path = target_build_path.relative_to(build_path)
-            return relative_to_env(relative_build_path)
-
-        layer_python = from_internal_path(self.python_path)
-        if link_external_base:
-            base_python = from_external_path(base_python_path)
-        else:
-            # "base_python" in a runtime layer refers to the layer itself
-            assert layer_python == from_internal_path(base_python_path)
-            base_python = layer_python
 
         return postinstall.LayerConfig(
-            python=layer_python,
+            python=str(self._relative_internal_path(self.python_path)),
             py_version=self.py_version,
-            base_python=base_python,
-            site_dir=from_internal_path(self.pylib_path),
-            pylib_dirs=[relative_to_env(Path(d)) for d in pylib_dirs],
-            dynlib_dirs=[relative_to_env(Path(d)) for d in dynlib_dirs],
+            base_python=str(base_python_path),
+            site_dir=str(self._relative_internal_path(self.pylib_path)),
+            pylib_dirs=[str(self._relative_to_env(Path(d))) for d in pylib_dirs],
+            dynlib_dirs=[str(self._relative_to_env(Path(d))) for d in dynlib_dirs],
         )
 
     def _write_deployed_config(self) -> None:
@@ -1959,8 +1970,12 @@ class LayerEnvBase(ABC):
             print("\n".join(msg_lines))
 
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
-        # Hook for subclasses to override
-        assert metadata is not None  # Avoid linter complaints about unused parameters
+        # Hook for subclasses to optionally override
+        assert metadata is not None
+
+    def _prepare_deployed_env(self, deployed_env_path: Path) -> None:
+        # Hook for subclasses to optionally override
+        assert deployed_env_path.is_absolute()
 
     def define_archive_build(
         self,
@@ -1980,6 +1995,7 @@ class LayerEnvBase(ABC):
             tag_output,
             previous_metadata,
             force,
+            self._prepare_deployed_env,
         )
         self._update_output_metadata(request.build_metadata)
         return request
@@ -1998,6 +2014,7 @@ class LayerEnvBase(ABC):
             output_path,
             previous_metadata,
             force,
+            self._prepare_deployed_env,
         )
         self._update_output_metadata(request.export_metadata)
         return request
@@ -2029,9 +2046,14 @@ class RuntimeEnv(LayerEnvBase):
         assert isinstance(self._env_spec, RuntimeSpec)
         return self._env_spec
 
+    def _get_relative_deployed_base_python(self) -> Path:
+        base_python_path = self.base_python_path
+        assert base_python_path is not None
+        return Path(self._relative_internal_path(base_python_path))
+
     def get_deployed_config(self) -> postinstall.LayerConfig:
         """Layer config to be published in `venvstacks_layer.json`."""
-        return self._get_deployed_config([], [], link_external_base=False)
+        return self._get_deployed_config([], [])
 
     def _remove_pip(self) -> subprocess.CompletedProcess[str] | None:
         to_be_checked = ["pip", "wheel", "setuptools"]
@@ -2171,6 +2193,17 @@ class LayeredEnvBase(LayerEnvBase):
                 self.env_lock.invalidate_lock()
                 break
 
+    def _get_relative_deployed_base_python(self) -> Path | None:
+        base_runtime = self.base_runtime
+        if base_runtime is None:
+            return None
+        base_python_path = base_runtime.base_python_path
+        assert base_python_path is not None
+        assert base_python_path == self.base_python_path
+        deployed_base_runtime = base_runtime.install_target
+        relative_base_python = base_python_path.relative_to(base_runtime.env_path)
+        return Path("..", deployed_base_runtime, relative_base_python)
+
     def get_deployed_config(self) -> postinstall.LayerConfig:
         """Layer config to be published in `venvstacks_layer.json`."""
         return self._get_deployed_config(
@@ -2181,13 +2214,42 @@ class LayeredEnvBase(LayerEnvBase):
         """Get the lower level layer constraints imposed on this environment."""
         return self.linked_constraints_paths
 
-    def _symlink_base_python(self) -> None:
+    def _resolve_base_python(
+        self, deployed_path: Path | None = None
+    ) -> tuple[Path, Path]:
+        if deployed_path is None:
+            # pack_venv will make the generated base Python link relative
+            env_python_path = self.python_path
+            base_python_path = self.base_python_path
+            assert base_python_path is not None
+        else:
+            # Deployment environment is prepared *after* absolute symlinks
+            # are cleaned up, so emit a relative path to the base Python
+            # starting from the folder containing the layer's Python link
+            venv_base_python_path = self._get_relative_deployed_base_python()
+            assert venv_base_python_path is not None
+            prefix = [".."] * len(
+                self._relative_internal_path(self.python_path.parent).parts
+            )
+            base_python_path = Path(*prefix, venv_base_python_path)
+            env_python_path = deployed_path / self._relative_internal_path(
+                self.python_path
+            )
+        return base_python_path, env_python_path
+
+    def _symlink_base_python(self, deployed_path: Path | None = None) -> None:
         # TODO: Improve code sharing with _wrap_base_python below
         # Make env python a direct symlink to the base Python runtime
-        env_python_path = self.python_path
-        base_python_path = self.base_python_path
-        assert base_python_path is not None
-        print(f"Linking {str(env_python_path)!r} -> {str(base_python_path)!r}...")
+        base_python_path, env_python_path = self._resolve_base_python(deployed_path)
+        if deployed_path is None:
+            print(f"Linking {str(env_python_path)!r} -> {str(base_python_path)!r}...")
+        elif base_python_path == self.base_python_path:
+            # No change to the base Python path -> nothing to do
+            return
+        else:
+            print(
+                f"Linking {str(env_python_path)!r} -> {str(base_python_path)!r} for deployment..."
+            )
         env_python_path.unlink(missing_ok=True)
         env_python_path.parent.mkdir(parents=True, exist_ok=True)
         env_python_path.symlink_to(base_python_path)
@@ -2298,14 +2360,25 @@ class LayeredEnvBase(LayerEnvBase):
         ]
         return "\n".join(wrapper_script_lines)
 
-    def _wrap_base_python(self, dynlib_paths: Sequence[Path]) -> None:
+    def _wrap_base_python(
+        self, dynlib_paths: Sequence[Path], deployed_path: Path | None = None
+    ) -> None:
         # TODO: Improve code sharing with _symlink_base_python above
         # Make python_ a direct symlink to the base Python runtime
-        env_python_path = self.python_path
+        base_python_path, env_python_path = self._resolve_base_python(deployed_path)
+        if deployed_path is None:
+            print(
+                f"Wrapping {str(env_python_path)!r} -> {str(base_python_path)!r} link..."
+            )
+        elif base_python_path == self.base_python_path and not dynlib_paths:
+            # No change to the base Python path -> nothing to do
+            return
+        else:
+            print(
+                f"Wrapping {str(env_python_path)!r} -> {str(base_python_path)!r} for deployment..."
+            )
         env_python_dir = env_python_path.parent
         wrapper_bypass_path = env_python_dir / "python_"
-        base_python_path = self.base_python_path
-        assert base_python_path is not None
         print(f"Linking {str(wrapper_bypass_path)!r} -> {str(base_python_path)!r}...")
         wrapper_bypass_path.unlink(missing_ok=True)
         wrapper_bypass_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2326,9 +2399,27 @@ class LayeredEnvBase(LayerEnvBase):
         print(f"Generating {str(env_python_path)!r}...")
         env_python_path.unlink(missing_ok=True)
         env_python_path.write_text(sh_contents, encoding="utf-8")
-        os.chmod(env_python_path, 0x755)
+        os.chmod(env_python_path, 0o755)
+
+    def _link_base_python(self, deployed_path: Path | None = None) -> None:
+        if _WINDOWS_BUILD:
+            # venv creation in build step handles build environments
+            # postinstall script handles deployed environments
+            return
+        if deployed_path is None:
+            target_path = self.build_path
+            dynlib_paths = [target_path / d for d in self._iter_build_dynlib_dirs()]
+        else:
+            target_path = deployed_path.parent
+            dynlib_paths = [target_path / d for d in self._iter_deployed_dynlib_dirs()]
+        if dynlib_paths:
+            self._wrap_base_python(dynlib_paths, deployed_path)
+        else:
+            self._symlink_base_python(deployed_path)
 
     def _link_build_environment(self) -> None:
+        # Ensure Python is executable in the build environment
+        self._link_base_python()
         # Create sitecustomize file for the build environment
         build_path = self.build_path
         build_pylib_paths = [build_path / d for d in self._iter_build_pylib_dirs()]
@@ -2343,11 +2434,6 @@ class LayeredEnvBase(LayerEnvBase):
         sc_path = self.pylib_path / "sitecustomize.py"
         print(f"Generating {str(sc_path)!r}...")
         sc_path.write_text(sc_contents, encoding="utf-8")
-        if not _WINDOWS_BUILD:
-            if build_dynlib_paths:
-                self._wrap_base_python(build_dynlib_paths)
-            else:
-                self._symlink_base_python()
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
         if lock_only:
@@ -2360,6 +2446,9 @@ class LayeredEnvBase(LayerEnvBase):
     def _create_new_environment(self, *, lock_only: bool = False) -> None:
         self._clean_environment()
         self._update_existing_environment(lock_only=lock_only)
+
+    def _prepare_deployed_env(self, deployed_env_path: Path) -> None:
+        self._link_base_python(deployed_env_path)
 
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
         super()._update_output_metadata(metadata)
