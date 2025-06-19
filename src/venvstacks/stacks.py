@@ -254,7 +254,7 @@ class EnvironmentLock:
         # The lock file is left on disk (a lock *reset* will clear it completely)
         self._requirements_hash = None
         self._last_locked = None
-        self._last_version = None
+        self._lock_version = None
 
     def get_deployed_name(self, env_name: EnvNameBuild) -> EnvNameDeploy:
         """Report layer name with lock version (if any) appended.
@@ -549,6 +549,13 @@ class EnvironmentLock:
         )
         _write_json(self._lock_metadata_path, lock_metadata)
 
+    def _sync_cached_lock_metadata(
+        self, lock_metadata: EnvironmentLockMetadata
+    ) -> None:
+        # If lock was previously invalidated, update any affected fields
+        self._last_locked = datetime.fromisoformat(lock_metadata["locked_at"])
+        self._lock_version = lock_metadata.get("lock_version", 1)
+
     def update_lock_metadata(self) -> bool:
         """Update the recorded lock metadata for this environment lock."""
         # Calculate current requirements hashes
@@ -571,6 +578,8 @@ class EnvironmentLock:
             )
             self._write_lock_metadata()
             return True
+        else:
+            self._sync_cached_lock_metadata(lock_metadata)
         return False
 
     def get_diagnostics(self) -> Mapping[str, Any]:
@@ -1731,7 +1740,6 @@ class LayerEnvBase(ABC):
         if constraints:
             # Exclude lines that appear in a constraining layers
             for constraints_path in constraints:
-                print(constraints_path)
                 shared_packages.update(self._simplify_requirements(constraints_path))
             required_packages = [
                 line for line in required_packages if line not in shared_packages
