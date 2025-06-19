@@ -1459,13 +1459,6 @@ class LayerEnvBase(ABC):
         assert absolute_build_path.is_absolute()
         return absolute_build_path.relative_to(self.env_path)
 
-    def _relative_peer_path(self, absolute_build_path: Path) -> Path:
-        # Input path is an absolute path, potentially from a peer environment
-        # Output path is relative to the base of the environment
-        assert absolute_build_path.is_absolute()
-        relative_build_path = absolute_build_path.relative_to(self.build_path)
-        return self._relative_to_env(relative_build_path)
-
     def _get_relative_deployed_base_python(self) -> Path | None:
         raise NotImplementedError
 
