@@ -8,7 +8,7 @@ threadpoolctl==3.6.0
 # Shared packages inherited from other layers
 contourpy==1.3.2
 cycler==0.12.1
-fonttools==4.58.2
+fonttools==4.58.4
 kiwisolver==1.4.8
 matplotlib==3.10.3
 numpy==2.3.0
