@@ -13,10 +13,10 @@
   ],
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "08a4a6c3b13ab9ce502ffe25b5c21c7fe8a69a796758777f8bb7f4228ad644ed"
+    "sha256": "de15e61bb666255d91aeb204eb481dc2eb4d35268df52ef0fd4a9bde9d2e6cf6"
   },
   "archive_name": "app-scipy-client.tar.xz",
-  "archive_size": 3768,
+  "archive_size": 3756,
   "bound_to_implementation": false,
   "install_target": "app-scipy-client",
   "layer_name": "app-scipy-client",

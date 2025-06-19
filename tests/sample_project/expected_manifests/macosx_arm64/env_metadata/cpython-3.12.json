@@ -1,17 +1,17 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "776dd84820268d11a460ac6d41b70fb0b4a3e946ca5af3b2c993bd92952da94c"
+    "sha256": "f346249ff881f9333127206250b51254b49e90f4986aaffd50aa03f671c33db5"
   },
-  "archive_name": "cpython-3.12.tar.xz",
-  "archive_size": 13706124,
+  "archive_name": "cpython-3.12@2.tar.xz",
+  "archive_size": 13706280,
   "bound_to_implementation": true,
-  "install_target": "cpython-3.12",
+  "install_target": "cpython-3.12@2",
   "layer_name": "cpython-3.12",
-  "lock_version": 1,
-  "locked_at": "2025-05-06T14:22:40.497966+00:00",
+  "lock_version": 2,
+  "locked_at": "2025-06-19T06:23:12.305108+00:00",
   "python_implementation": "cpython@3.12.9",
   "requirements_hash": "sha256:4571d3f97153fc0051c989ff51b621de29854c2018b765fba6e877015a64c697",
-  "runtime_layer": "cpython-3.12",
+  "runtime_layer": "cpython-3.12@2",
   "target_platform": "macosx_arm64"
 }

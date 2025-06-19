@@ -49,11 +49,14 @@ requirements = [
 ]
 
 [[runtimes]]
-# Same spec as the Python 3.11 runtime, just for a newer Python version
+# Check having layers depend on two different Python runtime versions
 name = "cpython-3.12"
 python_implementation = "cpython@3.12.9"
+# Check implicit layer versioning works for runtime layers
+versioned = true
 requirements = [
-    # Omit dlltracer, as it doesn't publish 3.12 binaries (as of 2024-10-15)
+    # Omit dlltracer, as it didn't publish 3.12 binaries (as of 2024-10-15)
+    # Could be included now (binaries available since 2024-11-15)
     "numpy",
 ]
 

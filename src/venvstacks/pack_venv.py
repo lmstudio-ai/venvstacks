@@ -148,6 +148,8 @@ def _supports_symlinks(target_path: Path) -> bool:
 def export_venv(
     source_dir: StrPath,
     target_dir: StrPath,
+    *,
+    prepare_deployed_env: Callable[[Path], None] | None = None,
     run_postinstall: Callable[[Path, Path], None] | None = None,
 ) -> Path:
     """Export the given build environment, skipping archive creation and unpacking.
@@ -192,6 +194,8 @@ def export_venv(
         dirs_exist_ok=True,
         copy_function=_copy_func,
     )
+    if prepare_deployed_env is not None:
+        prepare_deployed_env(target_path)
     postinstall_path = _inject_postinstall_script(target_path)
     if run_postinstall is not None:
         run_postinstall(target_path, postinstall_path)
@@ -269,6 +273,7 @@ def create_archive(
     work_dir: StrPath | None = None,
     show_progress: bool = True,
     format: CompressionFormat | None = None,
+    prepare_deployed_env: Callable[[Path], None] | None = None,
 ) -> Path:
     """shutil.make_archive replacement, tailored for Python virtual environments.
 
@@ -291,7 +296,9 @@ def create_archive(
         install_target = source_path.name
     with tempfile.TemporaryDirectory(dir=work_dir) as tmp_dir:
         target_path = Path(tmp_dir) / install_target
-        env_path = export_venv(source_path, target_path)
+        env_path = export_venv(
+            source_path, target_path, prepare_deployed_env=prepare_deployed_env
+        )
         if not show_progress:
 
             def report_progress(_: Any) -> None:

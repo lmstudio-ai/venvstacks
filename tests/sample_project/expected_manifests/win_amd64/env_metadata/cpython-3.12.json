@@ -1,17 +1,17 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "41892be9460c66cc686cab230a9b40ce17acf4e8c4e67a6cddfe41168ecccbb3"
+    "sha256": "271c3906dfea7cdf795645f676d5a36fdcad752e7a1b7c61e1ba5b22bddbb303"
   },
-  "archive_name": "cpython-3.12.zip",
-  "archive_size": 49963370,
+  "archive_name": "cpython-3.12@2.zip",
+  "archive_size": 49976894,
   "bound_to_implementation": true,
-  "install_target": "cpython-3.12",
+  "install_target": "cpython-3.12@2",
   "layer_name": "cpython-3.12",
-  "lock_version": 1,
-  "locked_at": "2025-05-06T14:23:53.458220+00:00",
+  "lock_version": 2,
+  "locked_at": "2025-06-19T06:25:50.875839+00:00",
   "python_implementation": "cpython@3.12.9",
   "requirements_hash": "sha256:4571d3f97153fc0051c989ff51b621de29854c2018b765fba6e877015a64c697",
-  "runtime_layer": "cpython-3.12",
+  "runtime_layer": "cpython-3.12@2",
   "target_platform": "win_amd64"
 }

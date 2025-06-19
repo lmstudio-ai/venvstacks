@@ -24,6 +24,7 @@ from venvstacks.stacks import (
     ExportMetadata,
     LayerBaseName,
     LayerEnvBase,
+    LayeredEnvBase,
     LayerVariants,
     PackageIndexConfig,
     StackSpec,
@@ -381,13 +382,19 @@ class DeploymentTestCase(unittest.TestCase):
             is_runtime_env = env.kind == LayerVariants.RUNTIME
             if is_runtime_env:
                 # base_python should refer to the runtime layer itself
+                # without any normalisation of parent folder references
                 expected_base_python_path = expected_python_path
             else:
-                # base_python should refer to the venv's base Python runtime
-                self.assertIsNotNone(env.base_python_path)
-                assert env.base_python_path is not None
-                base_python_path = Path(os.path.normpath(base_python_path))
-                expected_base_python_path = env.base_python_path
+                # base_python should refer to the venv's deployed base Python runtime
+                base_runtime = cast(LayeredEnvBase, env).base_runtime
+                self.assertIsNotNone(base_runtime)
+                assert base_runtime is not None
+                relative_base_python = base_runtime.python_path.relative_to(
+                    base_runtime.env_path
+                )
+                expected_base_python_path = Path(
+                    env_path, "..", base_runtime.install_target, relative_base_python
+                )
             self.assertEqual(str(base_python_path), str(expected_base_python_path))
             env_sys_path = get_sys_path(env_python)
             # Base runtime environments are expected to be self-contained

@@ -30,9 +30,13 @@ frameworks = ["both-wheels"]
 requirements = []
 
 # Test splitting the dynlib publisher and consumer across layers
+# Uses implicit layer versioning, as that's the more complex case
+# (if it works when the build env name and deployed env name differ,
+# it isn't going to fail when they happen to be the same)
 [[frameworks]]
 name = "only-publisher"
 runtime = "cpython-3.11"
+versioned = true
 requirements = [
     "venvstacks-testing-dynlib-publisher",
 ]
