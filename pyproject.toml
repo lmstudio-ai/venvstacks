@@ -25,7 +25,9 @@ dependencies = [
     "uv>=0.2.33",
     # Installer is used for RECORD file editing
     "installer>=0.7.0",
-    # Typer is used for the CLI interface. Install 'rich-cli' extra for enhanced features.
+    # rich is used for the CLI console display
+    "rich>=13.6.0",
+    # Typer is used for the CLI arg parsing. Install 'rich-cli' extra for enhanced features.
     "typer-slim>=0.12.4",
     # Typer 0.16.0 is nominally compatible with click 8.2+, but it still fails in CI
     # This *appears* to be due to a compatibility issue with typer.testing.CliRunner,

@@ -53,6 +53,7 @@ from . import pack_venv
 from ._hash_content import hash_file_contents, hash_module, hash_strings
 from ._injected import postinstall
 from ._source_tree import SourceTreeContentFilter, get_default_source_filter
+from ._ui import termui
 from ._util import (
     as_normalized_path,
     capture_python_output,
@@ -85,6 +86,12 @@ class LayerSpecError(EnvStackError):
 class BuildEnvError(EnvStackError):
     """Raised when a build environment doesn't comply with process restrictions."""
 
+
+######################################################
+# Console output
+######################################################
+# TODO: make the UI settings configurable at runtime
+_UI = termui.UI()
 
 ######################################################
 # Filesystem and git helpers
@@ -1006,14 +1013,14 @@ class ArchiveBuildRequest:
         built_archive_path = archive_base_path.parent / build_metadata["archive_name"]
         if not self.needs_build:
             # Already built archive looks OK, so just return the same metadata as last build
-            print(f"Using previously built archive at {str(built_archive_path)!r}")
+            _UI.echo(f"Using previously built archive at {str(built_archive_path)!r}")
             previous_metadata = self.archive_metadata
             assert previous_metadata is not None
             return previous_metadata, built_archive_path
         if built_archive_path.exists():
-            print(f"Removing outdated archive at {str(built_archive_path)!r}")
+            _UI.echo(f"Removing outdated archive at {str(built_archive_path)!r}")
             built_archive_path.unlink()
-        print(f"Creating archive for {str(env_path)!r}")
+        _UI.echo(f"Creating archive for {str(env_path)!r}")
         last_locked = self.env_lock.last_locked
         if work_path is None:
             # /tmp is likely too small for ML/AI environments
@@ -1027,7 +1034,7 @@ class ArchiveBuildRequest:
             prepare_deployed_env=self._prepare_deployed_env,
         )
         assert built_archive_path == archive_path  # pack_venv ensures this is true
-        print(f"Created {str(archive_path)!r} from {str(env_path)!r}")
+        _UI.echo(f"Created {str(archive_path)!r} from {str(env_path)!r}")
 
         metadata = ArchiveMetadata(
             archive_size=archive_path.stat().st_size,
@@ -1158,12 +1165,12 @@ class LayerExportRequest:
         export_path = self.export_path
         if not self.needs_export:
             # Previous export looks OK, so just return the same metadata as last time
-            print(f"Using previously exported environment at {str(export_path)!r}")
+            _UI.echo(f"Using previously exported environment at {str(export_path)!r}")
             return self.export_metadata, export_path
         if export_path.exists():
-            print(f"Removing outdated environment at {str(export_path)!r}")
+            _UI.echo(f"Removing outdated environment at {str(export_path)!r}")
             shutil.rmtree(export_path)
-        print(f"Exporting {str(env_path)!r} to {str(export_path)!r}")
+        _UI.echo(f"Exporting {str(env_path)!r} to {str(export_path)!r}")
 
         def _run_postinstall(_export_path: Path, postinstall_path: Path) -> None:
             self._run_postinstall(postinstall_path)
@@ -1175,7 +1182,7 @@ class LayerExportRequest:
             run_postinstall=_run_postinstall,
         )
         assert self.export_path == exported_path  # pack_venv ensures this is true
-        print(f"Created {str(export_path)!r} from {str(env_path)!r}")
+        _UI.echo(f"Created {str(export_path)!r} from {str(env_path)!r}")
         return export_metadata, export_path
 
 
@@ -1493,7 +1500,7 @@ class LayerEnvBase(ABC):
     def _write_deployed_config(self) -> None:
         # This is written as part of creating/updating the build environments
         config_path = self.env_path / postinstall.DEPLOYED_LAYER_CONFIG
-        print(f"Generating {str(config_path)!r}...")
+        _UI.echo(f"Generating {str(config_path)!r}...")
         config_path.parent.mkdir(parents=True, exist_ok=True)
         _write_json(config_path, self.get_deployed_config())
 
@@ -1525,18 +1532,18 @@ class LayerEnvBase(ABC):
         env_updated = False
         create_env = True
         if not env_path.exists():
-            print(f"{str(env_path)!r} does not exist, creating...")
+            _UI.echo(f"{str(env_path)!r} does not exist, creating...")
         elif clean:
-            print(f"{str(env_path)!r} exists, replacing...")
+            _UI.echo(f"{str(env_path)!r} exists, replacing...")
         else:
             if self.want_build or self.was_created or self.needs_build():
                 # Run the update if requested, if the env was created earlier in the build,
                 # or if the build env is otherwise outdated
-                print(f"{str(env_path)!r} exists, updating...")
+                _UI.echo(f"{str(env_path)!r} exists, updating...")
                 self._update_existing_environment(lock_only=lock_only)
                 env_updated = True
             else:
-                print(f"{str(env_path)!r} exists, reusing without updating...")
+                _UI.echo(f"{str(env_path)!r} exists, reusing without updating...")
             create_env = False
         if create_env:
             self._create_new_environment(lock_only=lock_only)
@@ -1557,7 +1564,7 @@ class LayerEnvBase(ABC):
 
     def report_python_site_details(self) -> subprocess.CompletedProcess[str]:
         """Print the results of running ``python -m site`` in this environment."""
-        print(f"Reporting environment details for {str(self.env_path)!r}")
+        _UI.echo(f"Reporting environment details for {str(self.env_path)!r}")
         command = [
             str(self.python_path),
             "-X",
@@ -1656,7 +1663,7 @@ class LayerEnvBase(ABC):
             *pip_install_args,
         ]
         result = self._run_pip(pip_args)
-        print(f"Dependencies installed and updated in {str(self.env_path)!r}")
+        _UI.echo(f"Dependencies installed and updated in {str(self.env_path)!r}")
         return result
 
     def get_constraint_paths(self) -> list[Path]:
@@ -1782,14 +1789,14 @@ class LayerEnvBase(ABC):
             self.get_lock_inputs()
         )
         if not self.want_lock and not self.needs_lock():
-            print(
+            _UI.echo(
                 f"Using existing lock for {self.env_name} ({str(requirements_path)!r})"
             )
             # Ensure summary files are always emitted, even for existing layer locks
             self._write_package_summary()
             return self.env_lock
         if self.want_lock_reset and requirements_path.exists():
-            print(
+            _UI.echo(
                 f"Resetting lock for {self.env_name} (removing {str(requirements_path)!r})"
             )
             requirements_path.unlink()
@@ -1797,18 +1804,18 @@ class LayerEnvBase(ABC):
             self.want_lock or self.want_lock_reset or self.env_lock.needs_full_lock
         )
         if want_full_lock:
-            print(f"Locking {self.env_name} (generating {str(requirements_path)!r})")
+            _UI.echo(f"Locking {self.env_name} (generating {str(requirements_path)!r})")
             self._run_uv_pip_compile(
                 requirements_path, declared_requirements_path, constraint_paths
             )
             if not requirements_path.exists():
                 self._fail_build(f"Failed to generate {str(requirements_path)!r}")
         else:
-            print(f"Incrementing layer version for {self.env_name}")
+            _UI.echo(f"Incrementing layer version for {self.env_name}")
             # Actually doing the update is handled in `update_lock_metadata`
         self._write_package_summary()
         if self.env_lock.update_lock_metadata():
-            print(f"  Environment lock time set: {self.env_lock.locked_at!r}")
+            _UI.echo(f"  Environment lock time set: {self.env_lock.locked_at!r}")
         assert self.env_lock.has_valid_lock
         if self.env_lock.versioned:
             # Layer version may have changed -> rewrite the deployment config
@@ -1940,10 +1947,10 @@ class LayerEnvBase(ABC):
         removed_paths: set[Path] = set()
         for item in self.executables_path.iterdir():
             if item.is_dir():
-                print(f"    Dropping directory {str(item)!r}")
+                _UI.echo(f"    Dropping directory {str(item)!r}")
                 shutil.rmtree(item)
             elif not item.name.lower().startswith("python"):
-                print(f"    Dropping potentially non-portable file {str(item)!r}")
+                _UI.echo(f"    Dropping potentially non-portable file {str(item)!r}")
                 item.unlink()
             else:
                 continue
@@ -1952,7 +1959,7 @@ class LayerEnvBase(ABC):
             # Also remove any dropped files from installation RECORD files
             for record_path in self.pylib_path.rglob("RECORD"):
                 if self._update_record_file(record_path, removed_paths):
-                    print(f"    Removed dropped files from {str(record_path)!r}")
+                    _UI.echo(f"    Removed dropped files from {str(record_path)!r}")
         # Symlinks within the build folder should be relative
         # Symlinks outside the build folder shouldn't exist
         build_path = self.build_path
@@ -1962,13 +1969,13 @@ class LayerEnvBase(ABC):
             for file_path, target_path in relative:
                 link_info = f"{str(file_path)!r} -> {str(target_path)!r}"
                 msg_lines.append(f"  {link_info}")
-            print("\n".join(msg_lines))
+            _UI.echo("\n".join(msg_lines))
         if external:
             msg_lines = ["Converted absolute external symlinks to hard links:\n"]
             for file_path, target_path in external:
                 link_info = f"{str(file_path)!r} -> {str(target_path)!r}"
                 msg_lines.append(f"  {link_info}")
-            print("\n".join(msg_lines))
+            _UI.echo("\n".join(msg_lines))
 
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
         # Hook for subclasses to optionally override
@@ -2080,7 +2087,7 @@ class RuntimeEnv(LayerEnvBase):
         self._remove_pip()
         _fs_sync()
         if not lock_only:
-            print(
+            _UI.echo(
                 f"Using {str(self.python_path)!r} as runtime environment layer in {self}"
             )
             self.install_requirements()
@@ -2165,7 +2172,7 @@ class LayeredEnvBase(LayerEnvBase):
             self._fail_build("Layered environment constraint paths already set")
         self.linked_constraints_paths[:] = [runtime.requirements_path]
         self.env_lock.append_other_input(runtime.env_name)
-        print(f"Linked {self}")
+        _UI.echo(f"Linked {self}")
 
     def link_layered_environments(
         self, runtime: RuntimeEnv, frameworks: Mapping[LayerBaseName, "FrameworkEnv"]
@@ -2243,12 +2250,14 @@ class LayeredEnvBase(LayerEnvBase):
         # Make env python a direct symlink to the base Python runtime
         base_python_path, env_python_path = self._resolve_base_python(deployed_path)
         if deployed_path is None:
-            print(f"Linking {str(env_python_path)!r} -> {str(base_python_path)!r}...")
+            _UI.echo(
+                f"Linking {str(env_python_path)!r} -> {str(base_python_path)!r}..."
+            )
         elif base_python_path == self.base_python_path:
             # No change to the base Python path -> nothing to do
             return
         else:
-            print(
+            _UI.echo(
                 f"Linking {str(env_python_path)!r} -> {str(base_python_path)!r} for deployment..."
             )
         env_python_path.unlink(missing_ok=True)
@@ -2291,7 +2300,7 @@ class LayeredEnvBase(LayerEnvBase):
         result = run_python_command(command)
         self._link_build_environment()
         _fs_sync()
-        print(f"Virtual environment configured in {str(self.env_path)!r}")
+        _UI.echo(f"Virtual environment configured in {str(self.env_path)!r}")
         return result
 
     @classmethod
@@ -2368,19 +2377,21 @@ class LayeredEnvBase(LayerEnvBase):
         # Make python_ a direct symlink to the base Python runtime
         base_python_path, env_python_path = self._resolve_base_python(deployed_path)
         if deployed_path is None:
-            print(
+            _UI.echo(
                 f"Wrapping {str(env_python_path)!r} -> {str(base_python_path)!r} link..."
             )
         elif base_python_path == self.base_python_path and not dynlib_paths:
             # No change to the base Python path -> nothing to do
             return
         else:
-            print(
+            _UI.echo(
                 f"Wrapping {str(env_python_path)!r} -> {str(base_python_path)!r} for deployment..."
             )
         env_python_dir = env_python_path.parent
         wrapper_bypass_path = env_python_dir / "python_"
-        print(f"Linking {str(wrapper_bypass_path)!r} -> {str(base_python_path)!r}...")
+        _UI.echo(
+            f"Linking {str(wrapper_bypass_path)!r} -> {str(base_python_path)!r}..."
+        )
         wrapper_bypass_path.unlink(missing_ok=True)
         wrapper_bypass_path.parent.mkdir(parents=True, exist_ok=True)
         wrapper_bypass_path.symlink_to(base_python_path)
@@ -2397,7 +2408,7 @@ class LayeredEnvBase(LayerEnvBase):
         sh_contents = self._generate_python_sh(
             env_python_path, wrapper_bypass_path.name, dynlib_paths
         )
-        print(f"Generating {str(env_python_path)!r}...")
+        _UI.echo(f"Generating {str(env_python_path)!r}...")
         env_python_path.unlink(missing_ok=True)
         env_python_path.write_text(sh_contents, encoding="utf-8")
         os.chmod(env_python_path, 0o755)
@@ -2433,7 +2444,7 @@ class LayeredEnvBase(LayerEnvBase):
                 "Layered environments must at least link a base runtime environment"
             )
         sc_path = self.pylib_path / "sitecustomize.py"
-        print(f"Generating {str(sc_path)!r}...")
+        _UI.echo(f"Generating {str(sc_path)!r}...")
         sc_path.write_text(sc_contents, encoding="utf-8")
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
@@ -2548,11 +2559,11 @@ class ApplicationEnv(LayeredEnvBase):
         pylib_path = self.pylib_path
         launch_module_source_path = env_spec.launch_module_path
         launch_module_env_path = pylib_path / launch_module_source_path.name
-        print(f"Including launch module {launch_module_source_path!r}...")
+        _UI.echo(f"Including launch module {launch_module_source_path!r}...")
         self._sync_app_module(launch_module_source_path, launch_module_env_path)
         for support_module_source_path in env_spec.support_module_paths:
             support_module_env_path = pylib_path / support_module_source_path.name
-            print(f"Including support module {support_module_source_path!r}...")
+            _UI.echo(f"Including support module {support_module_source_path!r}...")
             self._sync_app_module(support_module_source_path, support_module_env_path)
 
     def _update_output_metadata(self, metadata: LayerSpecMetadata) -> None:
@@ -2898,7 +2909,7 @@ class StackSpec:
         build_platform = self.build_platform
         for name, spec in specs.items():
             if not spec.targets_platform(build_platform):
-                print(f"  Skipping env {name!r} as it does not target this platform")
+                _UI.echo(f"  Skipping env {name!r} as it does not target this platform")
                 continue
             requirements_path = spec.get_requirements_path(
                 build_platform, requirements_dir
@@ -2912,7 +2923,7 @@ class StackSpec:
                 source_filter,
             )
             build_environments[name] = build_env
-            print(f"  Defined {name!r}: {build_env}")
+            _UI.echo(f"  Defined {name!r}: {build_env}")
         return build_environments
 
     def resolve_lexical_path(self, related_location: StrPath, /) -> Path:
@@ -2930,18 +2941,18 @@ class StackSpec:
             index_config = PackageIndexConfig()
         index_config.resolve_lexical_paths(self.spec_path.parent)
         source_filter = get_default_source_filter(self.spec_path.parent)
-        print("Defining runtime environments:")
+        _UI.echo("Defining runtime environments:")
         runtimes = self._define_envs(
             build_path, index_config, source_filter, RuntimeEnv, self.runtimes
         )
-        print("Defining framework environments:")
+        _UI.echo("Defining framework environments:")
         frameworks = self._define_envs(
             build_path, index_config, source_filter, FrameworkEnv, self.frameworks
         )
         for fw_env in frameworks.values():
             runtime = runtimes[fw_env.env_spec.runtime.name]
             fw_env.link_layered_environments(runtime, frameworks)
-        print("Defining application environments:")
+        _UI.echo("Defining application environments:")
         applications = self._define_envs(
             build_path, index_config, source_filter, ApplicationEnv, self.applications
         )

@@ -13,6 +13,7 @@ from .stacks import (
     _format_json,
     PackageIndexConfig,
     EnvNameBuild,
+    _UI,
 )
 
 # Inspired by the Python 3.13+ `argparse` feature,
@@ -233,10 +234,10 @@ def _handle_layer_include_options(
         if unmatched_patterns:
             err_details = f"No matching layers found for: {unmatched_patterns!r}"
             if allow_missing:
-                print(f"WARNING: {err_details}")
+                _UI.warn(err_details)
             else:
                 warning_hint = "Pass '--allow-missing' to convert to warning"
-                print(f"ERROR: {err_details}\n  {warning_hint}")
+                _UI.error(f"{err_details}\n  {warning_hint}")
                 raise typer.Exit(code=1)
     layers_to_reset: Iterable[EnvNameBuild]
     if not reset_locks:
@@ -247,10 +248,10 @@ def _handle_layer_include_options(
         if unmatched:
             err_details = f"No matching layers found for upgrade: {unmatched!r}"
             if allow_missing:
-                print(f"WARNING: {err_details}")
+                _UI.warn(err_details)
             else:
                 warning_hint = "Pass '--allow-missing' to convert to warning"
-                print(f"ERROR: {err_details}\n  {warning_hint}")
+                _UI.error(f"{err_details}\n  {warning_hint}")
                 raise typer.Exit(code=1)
     # Layer lock files are only reset if the layer actually gets locked,
     # so there's no explicit cross-check between included and reset layers
@@ -278,10 +279,10 @@ def _publication_dry_run(
         dry_run=True,
         tag_outputs=tag_outputs,
     )
-    print("Archive creation skipped, reporting publishing request details:")
-    print(_format_json(dry_run_result))
-    print(f"Archives and metadata will be published to {base_output_path}")
-    print("Archive creation skipped (specify --publish to request archive build)")
+    _UI.echo("Archive creation skipped, reporting publishing request details:")
+    _UI.echo(_format_json(dry_run_result))
+    _UI.echo(f"Archives and metadata will be published to {base_output_path}")
+    _UI.echo("Archive creation skipped (specify --publish to request archive build)")
 
 
 def _publish_artifacts(
@@ -302,17 +303,17 @@ def _publish_artifacts(
     base_output_path = os.path.commonpath(
         [manifest_path, *snippet_paths, *archive_paths]
     )
-    print(manifest_path.read_text(encoding="utf-8"))
-    print(
+    _UI.echo(manifest_path.read_text(encoding="utf-8"))
+    _UI.echo(
         f"Full stack manifest saved to: {manifest_path.relative_to(base_output_path)}"
     )
-    print("Individual layer manifests:")
+    _UI.echo("Individual layer manifests:")
     for snippet_path in snippet_paths:
-        print(f"  {snippet_path.relative_to(base_output_path)}")
-    print("Generated artifacts:")
+        _UI.echo(f"  {snippet_path.relative_to(base_output_path)}")
+    _UI.echo("Generated artifacts:")
     for archive_path in archive_paths:
-        print(f"  {archive_path.relative_to(base_output_path)}")
-    print(f"All paths reported relative to {base_output_path}")
+        _UI.echo(f"  {archive_path.relative_to(base_output_path)}")
+    _UI.echo(f"All paths reported relative to {base_output_path}")
 
 
 def _export_dry_run(
@@ -323,10 +324,10 @@ def _export_dry_run(
         output_dir,
         dry_run=True,
     )
-    print("Environment export skipped, reporting local export request details:")
-    print(_format_json(dry_run_result))
-    print(f"Environments will be exported to {base_output_path}")
-    print("Environment export skipped (specify --publish to request local export)")
+    _UI.echo("Environment export skipped, reporting local export request details:")
+    _UI.echo(_format_json(dry_run_result))
+    _UI.echo(f"Environments will be exported to {base_output_path}")
+    _UI.echo("Environment export skipped (specify --publish to request local export)")
 
 
 def _export_environments(
@@ -343,17 +344,17 @@ def _export_environments(
         force=force,
     )
     base_output_path = os.path.commonpath([manifest_path, *snippet_paths, *env_paths])
-    print(manifest_path.read_text(encoding="utf-8"))
-    print(
+    _UI.echo(manifest_path.read_text(encoding="utf-8"))
+    _UI.echo(
         f"Full export manifest saved to: {manifest_path.relative_to(base_output_path)}"
     )
-    print("Individual manifests:")
+    _UI.echo("Individual manifests:")
     for snippet_path in snippet_paths:
-        print(f"  {snippet_path.relative_to(base_output_path)}")
-    print("Exported environments:")
+        _UI.echo(f"  {snippet_path.relative_to(base_output_path)}")
+    _UI.echo("Exported environments:")
     for env_path in env_paths:
-        print(f"  {env_path.relative_to(base_output_path)}")
-    print(f"All paths reported relative to {base_output_path}")
+        _UI.echo(f"  {env_path.relative_to(base_output_path)}")
+    _UI.echo(f"All paths reported relative to {base_output_path}")
 
 
 @_cli.command()
@@ -485,18 +486,18 @@ def lock(
         )
     lock_results = build_env.lock_environments(clean=clean)
     if not lock_results:
-        print("No environments found to lock")
+        _UI.echo("No environments found to lock")
     else:
         base_output_path = os.path.commonpath(
             [env.locked_requirements_path for env in lock_results]
         )
-        print("Locked environments:")
+        _UI.echo("Locked environments:")
         for env_lock in lock_results:
             relative_path = env_lock.locked_requirements_path.relative_to(
                 base_output_path
             )
-            print(f"  {relative_path} (locked at: {env_lock.locked_at})")
-        print(f"All paths reported relative to {base_output_path}")
+            _UI.echo(f"  {relative_path} (locked at: {env_lock.locked_at})")
+        _UI.echo(f"All paths reported relative to {base_output_path}")
 
 
 @_cli.command()
