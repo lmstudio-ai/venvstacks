@@ -565,6 +565,9 @@ def _make_zipfile(
 # Archiving pytorch (and similarly large AI/ML libraries) takes a long time,
 # so you really need some assurance that progress is being made.
 #
+# TODO: Replace this with https://rich.readthedocs.io/en/stable/progress.html
+#       now that rich has been adopted as a direct project CLI dependency
+#
 # If compression times are a significant problem, it would be worth moving in the same
 # direction as conda-pack did, and implementing support for parallel compression (the
 # compression libraries all drop the GIL when compressing data chunks, so this approach
