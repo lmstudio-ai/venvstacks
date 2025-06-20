@@ -29,10 +29,6 @@ dependencies = [
     "rich>=13.6.0",
     # Typer is used for the CLI arg parsing. Install 'rich-cli' extra for enhanced features.
     "typer-slim>=0.12.4",
-    # Typer 0.16.0 is nominally compatible with click 8.2+, but it still fails in CI
-    # This *appears* to be due to a compatibility issue with typer.testing.CliRunner,
-    # but that isn't certain yet, so conservatively limit app installations as well
-    "click<8.2.0",
     # Library supports *writing* stack specification TOML files
     # (choice of tomlkit is due to PDM already using it and the
     # potential for non-intrusively updating *existing* specs)
@@ -102,6 +98,9 @@ test = [
     "pytest>=8.3.1",
     "pytest-subtests>=0.13.1",
     "coverage[toml]>=7.6.4",
+    # click changed the way CliRunner works in 8.2.0 and tests now rely
+    # on stdout and stderr being kept separate by default
+    "click>=8.2.0",
     # Exact pin for tests as runtime environments are sensitive to the pbs version
     "pbs-installer==2025.3.17",
     # Exact pin for tests as lock file regeneration is sensitive to the uv version
