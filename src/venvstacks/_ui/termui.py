@@ -2,23 +2,17 @@ import contextlib
 import enum
 import logging
 import os
-import tempfile
+import sys
 import warnings
-from typing import Any, Iterator, Literal, Sequence
+from typing import Any
 
 import rich
-from rich.box import ROUNDED
 from rich.console import Console
 from rich.progress import Progress, ProgressColumn
 from rich.prompt import Confirm, IntPrompt, Prompt
-from rich.table import Table
 from rich.theme import Theme
 
 from ._types import RichProtocol, Spinner, SpinnerT
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.NullHandler())
 
 DEFAULT_THEME = {
     "primary": "cyan",
@@ -92,6 +86,8 @@ class Verbosity(enum.IntEnum):
     DEBUG = 2
 
 
+MAX_VERBOSITY = Verbosity.DEBUG
+
 LOG_LEVELS = {
     Verbosity.NORMAL: logging.WARN,
     Verbosity.DETAIL: logging.INFO,
@@ -162,11 +158,10 @@ class UI:
     ) -> None:
         self.verbosity = verbosity
         self.exit_stack = exit_stack or contextlib.ExitStack()
-        self.log_dir: str | None = None
 
     def set_verbosity(self, verbosity: int) -> None:
-        self.verbosity = Verbosity(verbosity)
-        if self.verbosity == Verbosity.QUIET:
+        self.verbosity = Verbosity(min(verbosity, MAX_VERBOSITY))
+        if self.verbosity < Verbosity.NORMAL:
             self.exit_stack.enter_context(warnings.catch_warnings())
             warnings.simplefilter("ignore", FutureWarning, append=True)
 
@@ -182,14 +177,14 @@ class UI:
         self,
         message: str | RichProtocol = "",
         err: bool = False,
-        verbosity: Verbosity = Verbosity.QUIET,
+        verbosity: Verbosity = Verbosity.NORMAL,
         **kwargs: Any,
     ) -> None:
         """Print message using rich console.
 
         :param message: message with rich markup, defaults to "".
         :param err: if true print to stderr, defaults to False.
-        :param verbosity: verbosity level, defaults to QUIET.
+        :param verbosity: verbosity level, defaults to NORMAL.
         """
         if self.verbosity >= verbosity:
             console = _err_console if err else rich.get_console()
@@ -198,74 +193,34 @@ class UI:
                 kwargs.setdefault("overflow", "ignore")
             console.print(message, **kwargs)
 
-    def display_columns(
-        self, rows: Sequence[Sequence[str]], header: list[str] | None = None
-    ) -> None:
-        """Print rows in aligned columns.
+    def always_echo(self, message: str) -> None:
+        """Print a message to stdout, even in quiet mode."""
+        self.echo(message, verbosity=Verbosity.QUIET)
 
-        :param rows: a rows of data to be displayed.
-        :param header: a list of header strings.
-        """
-        if header:
-            table = Table(box=ROUNDED)
-            for title in header:
-                justify: Literal["center", "right", "left"]
-                if title[0] == "^":
-                    title, justify = title[1:], "center"
-                elif title[0] == ">":
-                    title, justify = title[1:], "right"
-                else:
-                    title, justify = title, "left"
-                table.add_column(title, justify=justify)
-        else:
-            table = Table.grid(padding=(0, 1))
-            for _ in rows[0]:
-                table.add_column()
-        for row in rows:
-            table.add_row(*row)
-
-        rich.print(table)
-
-    @contextlib.contextmanager
-    def logging(self, type_: str = "install") -> Iterator[logging.Logger]:
-        """CM that logs to console for DETAIL verbosity, a file otherwise."""
-        log_file: str | None = None
-        if self.verbosity >= Verbosity.DETAIL:
-            handler: logging.Handler = logging.StreamHandler()
-            handler.setLevel(LOG_LEVELS[self.verbosity])
-        else:
-            if self.log_dir and not os.path.exists(self.log_dir):
-                os.makedirs(self.log_dir, exist_ok=True)
-            self._clean_logs()
-            log_file = tempfile.mktemp(".log", f"venvstacks-{type_}-", self.log_dir)
-            handler = logging.FileHandler(log_file, encoding="utf-8")
-            handler.setLevel(logging.DEBUG)
-
-        handler.setFormatter(logging.Formatter("%(name)s: %(message)s"))
-        logger.addHandler(handler)
-
-        def cleanup() -> None:
-            if not log_file:
-                return
-            with contextlib.suppress(OSError):
-                os.unlink(log_file)
-
-        try:
-            yield logger
-        except Exception:
-            if self.verbosity < Verbosity.DETAIL:
-                logger.exception("Error occurs")
-                self.echo(
-                    f"See [warning]{log_file}[/] for detailed debug log.",
-                    style="error",
-                    err=True,
-                )
-            raise
-        else:
-            self.exit_stack.callback(cleanup)
-        finally:
-            logger.removeHandler(handler)
-            handler.close()
+    def configure_app_logging(self) -> None:
+        """Set up basic logging configuration for the running application."""
+        # In quiet mode, only log actual errors
+        if self.verbosity < Verbosity.NORMAL:
+            logging.basicConfig(level=logging.ERROR, stream=sys.stderr)
+            return
+        # Otherwise, log warnings from any module to the console
+        logging.basicConfig(level=logging.WARN, stream=sys.stderr)
+        if self.verbosity == Verbosity.NORMAL:
+            # At normal verbosity, only show warnings and UI messages
+            return
+        # Otherwise, display the package's own log messages based on the verbosity
+        base_package_name = __name__.partition(".")[0]
+        app_logger = logging.getLogger(base_package_name)
+        app_logger.setLevel(LOG_LEVELS[self.verbosity])
+        app_logger.propagate = False
+        info_handler = logging.StreamHandler(stream=sys.stdout)
+        info_handler.setLevel(logging.DEBUG)
+        info_handler.addFilter(lambda record: record.levelno < logging.WARN)
+        info_handler.setFormatter(logging.Formatter("%(message)s"))
+        app_logger.addHandler(info_handler)
+        err_handler = logging.StreamHandler(stream=sys.stderr)
+        err_handler.setLevel(logging.WARN)
+        app_logger.addHandler(err_handler)
 
     def open_spinner(self, title: str) -> Spinner:
         """Open a spinner as a context manager."""
@@ -279,31 +234,19 @@ class UI:
         return Progress(*columns, disable=self.verbosity >= Verbosity.DETAIL, **kwargs)
 
     def info(self, message: str, verbosity: Verbosity = Verbosity.NORMAL) -> None:
-        """Print an info message to stdout."""
+        """Print an info message to stderr."""
         self.echo(f"[info]INFO:[/] [dim]{message}[/]", err=True, verbosity=verbosity)
 
     def deprecated(self, message: str, verbosity: Verbosity = Verbosity.NORMAL) -> None:
-        """Print a deprecation message to stdout."""
+        """Print a deprecation message to stderr."""
         self.echo(
             f"[warning]DEPRECATED:[/] [dim]{message}[/]", err=True, verbosity=verbosity
         )
 
     def warn(self, message: str, verbosity: Verbosity = Verbosity.NORMAL) -> None:
-        """Print a warning message to stdout."""
+        """Print a warning message to stderr."""
         self.echo(f"[warning]WARNING:[/] {message}", err=True, verbosity=verbosity)
 
     def error(self, message: str, verbosity: Verbosity = Verbosity.QUIET) -> None:
         """Print an error message to stderr."""
         self.echo(f"[error]ERROR:[/] {message}", err=True, verbosity=verbosity)
-
-    def _clean_logs(self) -> None:
-        import time
-        from pathlib import Path
-
-        if self.log_dir is None:
-            return
-        for file in Path(self.log_dir).iterdir():
-            if not file.is_file():
-                continue
-            if file.stat().st_ctime < time.time() - 7 * 24 * 60 * 60:  # 7 days
-                file.unlink()
