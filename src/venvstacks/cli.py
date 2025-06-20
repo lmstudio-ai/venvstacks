@@ -45,12 +45,27 @@ _cli = typer.Typer(
 
 
 @_cli.callback(invoke_without_command=True, no_args_is_help=False)
-def handle_app_options(ctx: typer.Context) -> None:
+def handle_app_options(
+    ctx: typer.Context,
+    version: Annotated[bool, typer.Option("--version", "-V", is_eager=True)] = False,
+    verbose: Annotated[int, typer.Option("--verbose", "-v", count=True)] = 0,
+    quiet: Annotated[bool, typer.Option("--quiet", "-q")] = False,
+) -> None:
     """Lock, build, and publish Python virtual environment stacks."""
     # Work around for https://github.com/fastapi/typer/discussions/1233
+    if version:
+        from importlib.metadata import version as get_version
+
+        # Distribution name is the same as the top level package import name
+        package_name = __name__.partition(".")[0]
+        version_info = get_version(package_name)
+        print(f"{package_name}: {version_info}")
+        raise typer.Exit()
     if ctx.invoked_subcommand is None:
         print(ctx.get_help())
         raise typer.Exit()
+    _UI.set_verbosity(-1 if quiet else verbose)
+    _UI.configure_app_logging()
     # TODO: Handle app logging config via main command level options
     #       Part of https://github.com/lmstudio-ai/venvstacks/issues/5
 
