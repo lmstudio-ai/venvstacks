@@ -15,6 +15,8 @@ if [ "${1:-}" != "--skip-lock" ]; then
     pdm lock --dev --append --platform=macos_x86_64
     pdm lock --dev --append --platform=macos_arm64
 fi
+pdm sync --dev
+echo "Updated .venv"
 # Allow bootstrapping `pdm` in CI environments
 # with the command `pip install --upgrade -r ci-bootstrap-requirements.txt`
 ci_bootstrap_file="ci-bootstrap-requirements.txt"

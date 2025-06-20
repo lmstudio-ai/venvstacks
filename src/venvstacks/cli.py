@@ -40,17 +40,22 @@ _cli = typer.Typer(
     name=_get_usage_name(),
     add_completion=False,
     pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
+    no_args_is_help=False,
 )
 
 
-@_cli.callback()
-def handle_app_options() -> None:
+@_cli.callback(invoke_without_command=True, no_args_is_help=False)
+def handle_app_options(ctx: typer.Context) -> None:
     """Lock, build, and publish Python virtual environment stacks."""
+    # Work around for https://github.com/fastapi/typer/discussions/1233
+    if ctx.invoked_subcommand is None:
+        print(ctx.get_help())
+        raise typer.Exit()
     # TODO: Handle app logging config via main command level options
     #       Part of https://github.com/lmstudio-ai/venvstacks/issues/5
-    pass
 
+
+_cli_subcommand = _cli.command(no_args_is_help=False)
 
 # The shared CLI argument and option annotations have to be module level globals,
 # otherwise pylance complains about runtime variable use in type annotations
@@ -357,7 +362,7 @@ def _export_environments(
     _UI.echo(f"All paths reported relative to {base_output_path}")
 
 
-@_cli.command()
+@_cli_subcommand
 def build(
     # Required arguments: where to find the stack spec
     spec_path: _CLI_ARG_spec_path,
@@ -434,7 +439,7 @@ def build(
     )
 
 
-@_cli.command()
+@_cli_subcommand
 def lock(
     # Required arguments: where to find the stack spec, and where to emit any output files
     spec_path: _CLI_ARG_spec_path,
@@ -500,7 +505,7 @@ def lock(
         _UI.echo(f"All paths reported relative to {base_output_path}")
 
 
-@_cli.command()
+@_cli_subcommand
 def publish(
     # Required arguments: where to find the stack spec, and where to emit any output files
     spec_path: _CLI_ARG_spec_path,
@@ -556,7 +561,7 @@ def publish(
     )
 
 
-@_cli.command()
+@_cli_subcommand
 def local_export(
     # Required arguments: where to find the stack spec, and where to emit any output files
     spec_path: _CLI_ARG_spec_path,

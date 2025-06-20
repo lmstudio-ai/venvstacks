@@ -101,7 +101,7 @@ class MockedRunner:
         #       (see https://github.com/python/cpython/issues/124176 for details)
         #       However, the CLI doesn't currently try to access any of the missing
         #       attributes, so the autospec mocking here is sufficient in practice.
-        self.runner = CliRunner()
+        self.runner = CliRunner(catch_exceptions=False)
         mocked_stack_spec = self.mocked_stack_spec
         # Use the patched in mock as the sole defined spec instance
         mocked_stack_spec.load.return_value = mocked_stack_spec
@@ -186,24 +186,26 @@ class TestTopLevelCommand:
         # Check operation result last to ensure test results are as informative as possible
         assert result.exception is None, report_traceback(result.exception)
         assert result.exit_code == 0
+        assert not result.stderr
 
     @requires_venv("Entry point test")
     def test_entry_point_help_raw(self) -> None:
         expected_entry_point = Path(sys.executable).parent / "venvstacks"
         command = [str(expected_entry_point), "--help"]
-        result = run_python_command_unchecked(
+        subprocess_result = run_python_command_unchecked(
             command, text=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        if result.stdout is not None:
+        if subprocess_result.stdout:
             # Usage message should suggest direct execution
-            assert b"Usage: venvstacks [" in result.stdout
+            assert b"Usage: venvstacks [" in subprocess_result.stdout
             # Top-level callback docstring is used as the overall CLI help text
             cli_help = cli.handle_app_options.__doc__
             assert cli_help is not None
-            assert cli_help.strip().encode() in result.stdout
+            assert cli_help.strip().encode() in subprocess_result.stdout
         # Check operation result last to ensure test results are as informative as possible
-        assert result.returncode == 0
-        assert result.stdout is not None
+        assert subprocess_result.returncode == 0
+        assert subprocess_result.stdout
+        assert not subprocess_result.stderr
 
     @requires_venv("Entry point test")
     def test_entry_point_help(self) -> None:
@@ -221,7 +223,8 @@ class TestTopLevelCommand:
             assert cli_help.strip() in result.stdout
         # Check operation result last to ensure test results are as informative as possible
         assert result.returncode == 0
-        assert result.stdout is not None
+        assert result.stdout
+        assert not result.stderr
 
     def test_module_execution(self) -> None:
         # TODO: `coverage.py` isn't picking this up as executing `venvstacks/__main__.py`
@@ -230,7 +233,7 @@ class TestTopLevelCommand:
         result = run_python_command_unchecked(
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        if result.stdout is not None:
+        if result.stdout:
             # Usage message should suggest indirect execution
             assert "Usage: python -m venvstacks [" in result.stdout
             # Top-level callback docstring is used as the overall CLI help text
@@ -239,7 +242,8 @@ class TestTopLevelCommand:
             assert cli_help.strip() in result.stdout
         # Check operation result last to ensure test results are as informative as possible
         assert result.returncode == 0
-        assert result.stdout is not None
+        assert result.stdout
+        assert not result.stderr
 
 
 EXPECTED_USAGE_PREFIX = "Usage: python -m venvstacks "
@@ -312,6 +316,7 @@ class TestSubcommands:
         # Check operation result last to ensure test results are as informative as possible
         assert result.exception is None, report_traceback(result.exception)
         assert result.exit_code == 0
+        assert not result.stderr
 
     @pytest.mark.parametrize("command", NEEDS_SPEC_PATH)
     def test_usage_error(self, mocked_runner: MockedRunner, command: str) -> None:
@@ -321,10 +326,10 @@ class TestSubcommands:
         command_impl = getattr(cli, command_impl_name)
         cli_help = command_impl.__doc__
         assert cli_help is not None
-        assert cli_help.strip() not in result.stdout
+        assert cli_help.strip() not in result.stderr
         # Should complain about the missing required argument
-        assert result.stdout[: len(EXPECTED_USAGE_PREFIX)] == EXPECTED_USAGE_PREFIX
-        assert "Missing argument 'SPEC_PATH'" in result.stdout
+        assert result.stderr[: len(EXPECTED_USAGE_PREFIX)] == EXPECTED_USAGE_PREFIX
+        assert "Missing argument 'SPEC_PATH'" in result.stderr
         # No stack spec should be created
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
@@ -335,6 +340,7 @@ class TestSubcommands:
             result.exception
         )
         assert result.exit_code == 2
+        assert not result.stdout
 
     @pytest.mark.parametrize("command", ACCEPTS_BUILD_DIR)
     def test_build_dir_configuration(
@@ -730,8 +736,8 @@ class TestSubcommands:
         mocked_spec_path = "/no/such/path/spec"
         result = mocked_runner.invoke(["lock", invalid_flag, mocked_spec_path])
         # Should complain about the invalid flag
-        assert result.stdout[: len(EXPECTED_USAGE_PREFIX)] == EXPECTED_USAGE_PREFIX
-        assert "Try 'python -m venvstacks lock --help' for help." in result.stdout
+        assert result.stderr[: len(EXPECTED_USAGE_PREFIX)] == EXPECTED_USAGE_PREFIX
+        assert "Try 'python -m venvstacks lock --help' for help." in result.stderr
         # No stack spec should be created
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
@@ -742,6 +748,7 @@ class TestSubcommands:
             result.exception
         )
         assert result.exit_code == 2
+        assert not result.stdout
 
     # Specific CLI option handling test cases for the "publish" subcommand
     PublishFlagCase = tuple[tuple[str, ...], dict[str, bool], dict[str, bool]]
@@ -826,8 +833,8 @@ class TestSubcommands:
         spec_path_to_mock = "/no/such/path/spec"
         result = mocked_runner.invoke(["publish", invalid_flag, spec_path_to_mock])
         # Should complain about the invalid flag
-        assert result.stdout[: len(EXPECTED_USAGE_PREFIX)] == EXPECTED_USAGE_PREFIX
-        assert "Try 'python -m venvstacks publish --help' for help." in result.stdout
+        assert result.stderr[: len(EXPECTED_USAGE_PREFIX)] == EXPECTED_USAGE_PREFIX
+        assert "Try 'python -m venvstacks publish --help' for help." in result.stderr
         # No stack spec should be created
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
@@ -838,6 +845,7 @@ class TestSubcommands:
             result.exception
         )
         assert result.exit_code == 2
+        assert not result.stdout
 
     # Specific CLI option handling test cases for the "publish" subcommand
     ExportFlagCase = tuple[tuple[str, ...], dict[str, bool], dict[str, bool]]
@@ -916,9 +924,9 @@ class TestSubcommands:
         spec_path_to_mock = "/no/such/path/spec"
         result = mocked_runner.invoke(["local-export", invalid_flag, spec_path_to_mock])
         # Should complain about the invalid flag
-        assert result.stdout[: len(EXPECTED_USAGE_PREFIX)] == EXPECTED_USAGE_PREFIX
+        assert result.stderr[: len(EXPECTED_USAGE_PREFIX)] == EXPECTED_USAGE_PREFIX
         assert (
-            "Try 'python -m venvstacks local-export --help' for help." in result.stdout
+            "Try 'python -m venvstacks local-export --help' for help." in result.stderr
         )
         # No stack spec should be created
         mocked_stack_spec = mocked_runner.mocked_stack_spec
@@ -930,3 +938,4 @@ class TestSubcommands:
             result.exception
         )
         assert result.exit_code == 2
+        assert not result.stdout

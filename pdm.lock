@@ -5,7 +5,7 @@
 groups = ["default", "bootstrap", "dev", "docs", "dynlib-wheel-build", "lint", "task-runner", "test", "typecheck"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:e10e794bf60819782b2f7e29ff37346f707aa97d5007d5d88d92b9626c00f8d1"
+content_hash = "sha256:f8a02518ec7be47a0f390afdd6b2f9ce5f474c244a75d2995ba2e31d3fcb7fa8"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -172,17 +172,16 @@ files = [
 
 [[package]]
 name = "click"
-version = "8.1.8"
-requires_python = ">=3.7"
+version = "8.2.1"
+requires_python = ">=3.10"
 summary = "Composable command line interface toolkit"
-groups = ["default", "dev"]
+groups = ["default", "dev", "test"]
 dependencies = [
     "colorama; platform_system == \"Windows\"",
-    "importlib-metadata; python_version < \"3.8\"",
 ]
 files = [
-    {file = "click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2"},
-    {file = "click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a"},
+    {file = "click-8.2.1-py3-none-any.whl", hash = "sha256:61a3265b914e850b85317d0b3109c7f8cd35a670f963866005d6ef1d5175a12b"},
+    {file = "click-8.2.1.tar.gz", hash = "sha256:27c491cc05d968d271d5a1db13e3b5a184636d9d930f148c50b038f0d0646202"},
 ]
 
 [[package]]
