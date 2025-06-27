@@ -7,12 +7,18 @@ import warnings
 from typing import Any
 
 import rich
-from rich.console import Console
+from rich.console import Console, RenderableType
 from rich.progress import Progress, ProgressColumn
 from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.theme import Theme
+from rich.tree import Tree
 
 from ._types import RichProtocol, Spinner, SpinnerT
+
+__all__ = [
+    "Tree",
+    "UI",
+]
 
 DEFAULT_THEME = {
     "primary": "cyan",
@@ -175,7 +181,7 @@ class UI:
 
     def echo(
         self,
-        message: str | RichProtocol = "",
+        message: str | RichProtocol | RenderableType = "",
         err: bool = False,
         verbosity: Verbosity = Verbosity.NORMAL,
         **kwargs: Any,

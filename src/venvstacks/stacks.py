@@ -94,6 +94,10 @@ class BuildEnvError(EnvStackError):
 _UI = termui.UI()
 _LOG = logging.getLogger(__name__)
 
+# General logging levels:
+# Per-environment notices -> INFO
+# Per-file (or other steps within environment) -> DEBUG
+
 ######################################################
 # Filesystem and git helpers
 ######################################################
@@ -264,13 +268,23 @@ class EnvironmentLock:
         self._last_locked = None
         self._lock_version = None
 
-    def get_deployed_name(self, env_name: EnvNameBuild) -> EnvNameDeploy:
+    def get_deployed_name(
+        self, env_name: EnvNameBuild, *, placeholder: str | None = None
+    ) -> EnvNameDeploy:
         """Report layer name with lock version (if any) appended.
 
         Deployed name matches the build name if automatic lock versioning is disabled.
         """
         if self.versioned:
-            return EnvNameDeploy(f"{env_name}@{self.lock_version}")
+            version_text: str
+            if self.has_valid_lock:
+                version_text = str(self.lock_version)
+            elif placeholder is None:
+                msg = "Must specify placeholder to query deployed name of unlocked versioned layer"
+                self._fail_lock_metadata_query(msg)
+            else:
+                version_text = placeholder
+            return EnvNameDeploy(f"{env_name}@{version_text}")
         return EnvNameDeploy(env_name)
 
     def append_other_input(self, other_input: str) -> None:
@@ -1356,8 +1370,46 @@ class LayerEnvBase(ABC):
         return self._get_py_scheme_path("scripts")
 
     def __str__(self) -> str:
+        return self.get_env_summary()
+
+    @staticmethod
+    def _op_state_to_str(op_name: str, op_status: bool | None) -> str | None:
+        if op_status:
+            return op_name
+        if op_status is None:
+            return f"{op_name}-if-needed"
+        return None
+
+    def _get_selected_ops(self) -> list[str]:
+        op_states = (
+            ("reset-lock", self.want_lock_reset),
+            ("lock", self.want_lock),
+            ("build", self.want_build),
+            ("publish", self.want_publish),
+        )
+        op_text = [
+            self._op_state_to_str(op_name, op_state) for op_name, op_state in op_states
+        ]
+        return [op for op in op_text if op]
+
+    def get_env_summary(self, *, report_ops: bool = True) -> str:
+        """Get formatted text summary of the environment and selected operations."""
+        # Valid lock: "env_name [reset-lock lock build publish]"
+        # Outdated lock: "*env_name [reset-lock lock build publish]"
+        lock_status = "*" if not self.env_lock.has_valid_lock else ""
         env_name = self.env_name
-        return f"{type(self).__name__}({env_name=})"
+        deployed_name = self.env_lock.get_deployed_name(env_name, placeholder="???")
+        if cast(str, env_name) != cast(str, deployed_name):
+            env_summary = f"{env_name} -> {deployed_name}"
+        else:
+            env_summary = env_name
+        selected_ops = self._get_selected_ops() if report_ops else None
+        op_summary = f" ({', '.join(selected_ops)})" if selected_ops else ""
+        return f"{lock_status}{env_summary}{op_summary}"
+
+    def _as_ui_tree(self, *, include_deps: bool = False) -> termui.Tree:
+        env_tree = termui.Tree(self.get_env_summary())
+        return env_tree
 
     @property
     def env_name(self) -> EnvNameBuild:
@@ -2124,6 +2176,13 @@ class LayeredEnvBase(LayerEnvBase):
         self.base_runtime = None
         self.linked_constraints_paths = []
         self.linked_frameworks = []
+
+    def _as_ui_tree(self, *, include_deps: bool = False) -> termui.Tree:
+        env_tree = super()._as_ui_tree()
+        if include_deps:
+            for env in self._iter_dependencies():
+                env_tree.add(env.get_env_summary(report_ops=False))
+        return env_tree
 
     @property
     def env_spec(self) -> LayeredSpecBase:
@@ -3081,6 +3140,32 @@ class BuildEnvironment:
         for env in self.all_environments():
             if env.want_publish:  # There's no "if needed" option for publication
                 yield env
+
+    def get_stack_summary(self) -> str:
+        """Get formatted text summary of the environment stack and selected operations."""
+        return "\n".join(env.get_env_summary() for env in self.all_environments())
+
+    @staticmethod
+    def _add_envs_to_ui_tree(
+        tree: termui.Tree,
+        branch_label: str,
+        envs: Iterable[LayerEnvBase],
+        include_deps: bool,
+    ) -> None:
+        env_branch = tree.add(branch_label)
+        for env in envs:
+            env_branch.add(env._as_ui_tree(include_deps=include_deps))
+
+    def _as_ui_tree(self, include_deps: bool = False) -> termui.Tree:
+        stack_tree = termui.Tree(str(self.stack_spec.spec_path))
+        env_branches = (
+            ("Runtimes", self.runtimes.values()),
+            ("Frameworks", self.frameworks.values()),
+            ("Applications", self.applications.values()),
+        )
+        for branch_label, envs in env_branches:
+            self._add_envs_to_ui_tree(stack_tree, branch_label, envs, include_deps)
+        return stack_tree
 
     # Assign environments to the different operation categories
     def select_operations(
