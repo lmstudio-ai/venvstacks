@@ -2884,7 +2884,7 @@ class StackSpec:
             if not app_spec.targets_platform(build_platform):
                 continue
             if not app_spec.launch_module_path.exists():
-                msg = f"Specified launch module {str(launch_module_path)!r} does not exist"
+                msg = f"Specified launch module {str(app_spec.launch_module_path)!r} does not exist"
                 raise LayerSpecError(msg)
             missing_paths = [p for p in app_spec.support_module_paths if not p.exists()]
             if missing_paths:
