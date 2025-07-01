@@ -15,6 +15,7 @@ from .stacks import (
     EnvNameBuild,
     _UI,
 )
+from ._ui.render import format_stack_status
 
 # Inspired by the Python 3.13+ `argparse` feature,
 # but reports `python -m venvstacks` whenever `__main__`
@@ -220,6 +221,10 @@ _CLI_OPT_FLAG_show_only = Annotated[
     bool,
     typer.Option(help="*Only* show stack specification and selected operations"),
 ]  # fmt: skip
+_CLI_OPT_FLAG_json = Annotated[
+    bool,
+    typer.Option(help="Emit stack info as JSON rather than as formatted text"),
+]  # fmt: skip
 
 
 def _define_build_environment(
@@ -385,6 +390,24 @@ def _export_environments(
     _UI.echo(f"All paths reported relative to {base_output_path}")
 
 
+def _show_stack_status(
+    build_env: BuildEnvironment,
+    *,
+    show_stack: bool = True,
+    show_only: bool = False,
+    json: bool = False,
+    include_deps: bool = False,
+) -> bool:
+    if not (show_stack or show_only or json):
+        # Skip showing the stack, continue processing the running command
+        return False
+    stack_status = build_env.get_stack_status(include_deps=include_deps)
+    _UI.echo(format_stack_status(stack_status, json=json))
+    # Indicate whether the running command should terminate without further processing
+    # json implies show_only if show is not set
+    return show_only or (json and not show_stack)
+
+
 @_cli_subcommand
 def show(
     # Required arguments: where to find the stack spec
@@ -394,6 +417,8 @@ def show(
     # Selective processing of defined layers
     include: _CLI_OPT_STRLIST_include = None,
     allow_missing: _CLI_OPT_FLAG_allow_missing = False,
+    # Additional console output control
+    json: _CLI_OPT_FLAG_json = False,
 ) -> None:
     """Show summary of given virtual environment stack."""
     build_env = _define_build_environment(
@@ -423,7 +448,7 @@ def show(
             build=False,
             publish=False,
         )
-    _UI.echo(build_env._as_ui_tree(include_deps=True))
+    _show_stack_status(build_env, json=json, include_deps=True)
 
 
 @_cli_subcommand
@@ -459,6 +484,7 @@ def build(
     # Additional console output control
     show_stack: _CLI_OPT_FLAG_show_stack = False,
     show_only: _CLI_OPT_FLAG_show_only = False,
+    json: _CLI_OPT_FLAG_json = False,
     # Deprecated options
     lock: _CLI_OPT_FLAG_lock = False,
 ) -> None:
@@ -500,10 +526,10 @@ def build(
             build=build,
             publish=True,
         )
-    if show_stack or show_only:
-        _UI.echo(build_env._as_ui_tree())
-        if show_only:
-            return
+    if _show_stack_status(
+        build_env, show_stack=show_stack, show_only=show_only, json=json
+    ):
+        return
     build_env.create_environments(clean=clean, lock=want_lock)
     _publish_artifacts(
         build_env, output_dir, dry_run=not publish, force=clean, tag_outputs=tag_outputs
@@ -532,6 +558,7 @@ def lock(
     # Additional console output control
     show_stack: _CLI_OPT_FLAG_show_stack = False,
     show_only: _CLI_OPT_FLAG_show_only = False,
+    json: _CLI_OPT_FLAG_json = False,
 ) -> None:
     """Lock layer requirements for Python virtual environment stacks."""
     want_lock = None if if_needed else True
@@ -563,10 +590,10 @@ def lock(
             build=False,
             publish=False,
         )
-    if show_stack or show_only:
-        _UI.echo(build_env._as_ui_tree())
-        if show_only:
-            return
+    if _show_stack_status(
+        build_env, show_stack=show_stack, show_only=show_only, json=json
+    ):
+        return
     lock_results = build_env.lock_environments(clean=clean)
     if not lock_results:
         _UI.echo("No environments found to lock")
@@ -605,6 +632,7 @@ def publish(
     # Additional console output control
     show_stack: _CLI_OPT_FLAG_show_stack = False,
     show_only: _CLI_OPT_FLAG_show_only = False,
+    json: _CLI_OPT_FLAG_json = False,
 ) -> None:
     """Publish layer archives for Python virtual environment stacks."""
     build_env = _define_build_environment(
@@ -637,10 +665,10 @@ def publish(
             build=False,
             publish=True,
         )
-    if show_stack or show_only:
-        _UI.echo(build_env._as_ui_tree())
-        if show_only:
-            return
+    if _show_stack_status(
+        build_env, show_stack=show_stack, show_only=show_only, json=json
+    ):
+        return
     _publish_artifacts(
         build_env, output_dir, force=force, dry_run=dry_run, tag_outputs=tag_outputs
     )
@@ -666,6 +694,7 @@ def local_export(
     # Additional console output control
     show_stack: _CLI_OPT_FLAG_show_stack = False,
     show_only: _CLI_OPT_FLAG_show_only = False,
+    json: _CLI_OPT_FLAG_json = False,
 ) -> None:
     """Export layer environments for Python virtual environment stacks."""
     build_env = _define_build_environment(
@@ -698,10 +727,10 @@ def local_export(
             build=False,
             publish=True,
         )
-    if show_stack or show_only:
-        _UI.echo(build_env._as_ui_tree())
-        if show_only:
-            return
+    if _show_stack_status(
+        build_env, show_stack=show_stack, show_only=show_only, json=json
+    ):
+        return
     _export_environments(
         build_env,
         output_dir,

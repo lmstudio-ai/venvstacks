@@ -1,3 +1,5 @@
+"""Terminal/console user interface elements."""
+
 import contextlib
 import enum
 import logging
@@ -11,12 +13,10 @@ from rich.console import Console, RenderableType
 from rich.progress import Progress, ProgressColumn
 from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.theme import Theme
-from rich.tree import Tree
 
 from ._types import RichProtocol, Spinner, SpinnerT
 
 __all__ = [
-    "Tree",
     "UI",
 ]
 

@@ -1223,6 +1223,42 @@ class ExportedEnvironmentPaths(NamedTuple):
 ######################################################
 
 
+class LayerStatus(TypedDict):
+    """Summary of a layer environment's current status."""
+
+    name: EnvNameBuild
+    install_target: EnvNameDeploy
+    has_valid_lock: bool
+    selected_operations: list[str] | None
+    dependencies: NotRequired[list["LayerStatus"]]
+
+
+class StackStatus(TypedDict):
+    """Summary of a stack build environment's current status."""
+
+    spec_name: str
+    runtimes: list[LayerStatus]
+    frameworks: list[LayerStatus]
+    applications: list[LayerStatus]
+
+
+def format_env_status(status: LayerStatus) -> str:
+    """Format given status as a string."""
+    # Valid lock: "env_name [reset-lock lock build publish]"
+    # Outdated lock: "*env_name [reset-lock lock build publish]"
+    # Standalone function because env status is just a regular dict at runtime
+    lock_status = "" if status["has_valid_lock"] else "*"
+    env_name = status["name"]
+    deployed_name = status["install_target"]
+    if cast(str, env_name) != cast(str, deployed_name):
+        env_summary = f"{env_name} -> {deployed_name}"
+    else:
+        env_summary = env_name
+    selected_ops = status.get("selected_operations", None)
+    op_summary = f" ({', '.join(selected_ops)})" if selected_ops else ""
+    return f"{lock_status}{env_summary}{op_summary}"
+
+
 def _pdm_python_install(target_path: Path, request: str) -> Path | None:
     # from https://github.com/pdm-project/pdm/blob/ce60c223bbf8b5ab2bdb94bf8fa6409b9b16c409/src/pdm/cli/commands/python.py#L122
     # to work around https://github.com/Textualize/rich/issues/3437
@@ -1370,7 +1406,7 @@ class LayerEnvBase(ABC):
         return self._get_py_scheme_path("scripts")
 
     def __str__(self) -> str:
-        return self.get_env_summary()
+        return format_env_status(self.get_env_status())
 
     @staticmethod
     def _op_state_to_str(op_name: str, op_status: bool | None) -> str | None:
@@ -1392,24 +1428,19 @@ class LayerEnvBase(ABC):
         ]
         return [op for op in op_text if op]
 
-    def get_env_summary(self, *, report_ops: bool = True) -> str:
-        """Get formatted text summary of the environment and selected operations."""
+    def get_env_status(self, *, report_ops: bool = True) -> LayerStatus:
+        """Get JSON-compatible summary of the environment status and selected operations."""
         # Valid lock: "env_name [reset-lock lock build publish]"
         # Outdated lock: "*env_name [reset-lock lock build publish]"
-        lock_status = "*" if not self.env_lock.has_valid_lock else ""
         env_name = self.env_name
         deployed_name = self.env_lock.get_deployed_name(env_name, placeholder="???")
-        if cast(str, env_name) != cast(str, deployed_name):
-            env_summary = f"{env_name} -> {deployed_name}"
-        else:
-            env_summary = env_name
         selected_ops = self._get_selected_ops() if report_ops else None
-        op_summary = f" ({', '.join(selected_ops)})" if selected_ops else ""
-        return f"{lock_status}{env_summary}{op_summary}"
-
-    def _as_ui_tree(self, *, include_deps: bool = False) -> termui.Tree:
-        env_tree = termui.Tree(self.get_env_summary())
-        return env_tree
+        return LayerStatus(
+            name=env_name,
+            install_target=deployed_name,
+            has_valid_lock=self.env_lock.has_valid_lock,
+            selected_operations=selected_ops,
+        )
 
     @property
     def env_name(self) -> EnvNameBuild:
@@ -2177,12 +2208,19 @@ class LayeredEnvBase(LayerEnvBase):
         self.linked_constraints_paths = []
         self.linked_frameworks = []
 
-    def _as_ui_tree(self, *, include_deps: bool = False) -> termui.Tree:
-        env_tree = super()._as_ui_tree()
+    def get_env_status(
+        self, *, report_ops: bool = True, include_deps: bool = False
+    ) -> LayerStatus:
+        """Get JSON-compatible summary of the environment status and selected operations."""
+        # Deps are omitted by default for consistency with the base method behaviour
+        env_status = super().get_env_status()
         if include_deps:
-            for env in self._iter_dependencies():
-                env_tree.add(env.get_env_summary(report_ops=False))
-        return env_tree
+            deps = [
+                env.get_env_status(report_ops=False)
+                for env in self._iter_dependencies()
+            ]
+            env_status["dependencies"] = deps
+        return env_status
 
     @property
     def env_spec(self) -> LayeredSpecBase:
@@ -3141,31 +3179,20 @@ class BuildEnvironment:
             if env.want_publish:  # There's no "if needed" option for publication
                 yield env
 
-    def get_stack_summary(self) -> str:
-        """Get formatted text summary of the environment stack and selected operations."""
-        return "\n".join(env.get_env_summary() for env in self.all_environments())
-
-    @staticmethod
-    def _add_envs_to_ui_tree(
-        tree: termui.Tree,
-        branch_label: str,
-        envs: Iterable[LayerEnvBase],
-        include_deps: bool,
-    ) -> None:
-        env_branch = tree.add(branch_label)
-        for env in envs:
-            env_branch.add(env._as_ui_tree(include_deps=include_deps))
-
-    def _as_ui_tree(self, include_deps: bool = False) -> termui.Tree:
-        stack_tree = termui.Tree(str(self.stack_spec.spec_path))
-        env_branches = (
-            ("Runtimes", self.runtimes.values()),
-            ("Frameworks", self.frameworks.values()),
-            ("Applications", self.applications.values()),
+    def get_stack_status(self, include_deps: bool = False) -> StackStatus:
+        """Get JSON-compatible summary of the environment stack and selected operations."""
+        return StackStatus(
+            spec_name=str(self.stack_spec.spec_path),
+            runtimes=[env.get_env_status() for env in self.runtimes.values()],
+            frameworks=[
+                env.get_env_status(include_deps=include_deps)
+                for env in self.frameworks.values()
+            ],
+            applications=[
+                env.get_env_status(include_deps=include_deps)
+                for env in self.applications.values()
+            ],
         )
-        for branch_label, envs in env_branches:
-            self._add_envs_to_ui_tree(stack_tree, branch_label, envs, include_deps)
-        return stack_tree
 
     # Assign environments to the different operation categories
     def select_operations(
