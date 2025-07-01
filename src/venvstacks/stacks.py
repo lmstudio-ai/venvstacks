@@ -2213,13 +2213,13 @@ class LayeredEnvBase(LayerEnvBase):
     ) -> LayerStatus:
         """Get JSON-compatible summary of the environment status and selected operations."""
         # Deps are omitted by default for consistency with the base method behaviour
-        env_status = super().get_env_status()
+        env_status = super().get_env_status(report_ops=report_ops)
         if include_deps:
-            deps = [
-                env.get_env_status(report_ops=False)
-                for env in self._iter_dependencies()
+            dep_statuses = [
+                dep.get_env_status(report_ops=False)
+                for dep in self._iter_dependencies()
             ]
-            env_status["dependencies"] = deps
+            env_status["dependencies"] = dep_statuses
         return env_status
 
     @property
