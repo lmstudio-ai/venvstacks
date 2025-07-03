@@ -5,7 +5,7 @@
 groups = ["default", "bootstrap", "dev", "docs", "dynlib-wheel-build", "lint", "task-runner", "test", "typecheck"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:f8a02518ec7be47a0f390afdd6b2f9ce5f474c244a75d2995ba2e31d3fcb7fa8"
+content_hash = "sha256:c2b9e1134c2a7f9e4d5b56f404ab91b9789666dcc4409d5d59cce3a8fa7fa4cc"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -297,6 +297,20 @@ dependencies = [
 files = [
     {file = "dep_logic-0.5.1-py3-none-any.whl", hash = "sha256:6073e955945a0224440465f9382f4bf5b4be4c630c6f412bf9506639c13a3d22"},
     {file = "dep_logic-0.5.1.tar.gz", hash = "sha256:cfd10877277d3cbb6e66fd48f316ba6c284701af0e67d52eaaf10275753354a7"},
+]
+
+[[package]]
+name = "dissolve"
+version = "0.1.1"
+requires_python = ">=3.9"
+summary = "Automatically replace use of deprecated APIs"
+groups = ["dev", "test"]
+dependencies = [
+    "packaging",
+]
+files = [
+    {file = "dissolve-0.1.1-py3-none-any.whl", hash = "sha256:88be228d861495f8113bd1bd3446263bf89ec2c5bdd0186723cc06b3de943886"},
+    {file = "dissolve-0.1.1.tar.gz", hash = "sha256:850b5a084a4257848170d53f5298832b1b8d27676c62d92260aa906a2178a698"},
 ]
 
 [[package]]
