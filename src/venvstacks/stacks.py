@@ -3188,22 +3188,24 @@ class BuildEnvironment:
             if env.want_publish:  # There's no "if needed" option for publication
                 yield env
 
-    def get_stack_status(self, include_deps: bool = False) -> StackStatus:
+    def get_stack_status(
+        self, *, report_ops: bool = True, include_deps: bool = False
+    ) -> StackStatus:
         """Get JSON-compatible summary of the environment stack and selected operations."""
         return StackStatus(
             spec_name=str(self.stack_spec.spec_path),
             runtimes=[
-                env.get_env_status()
+                env.get_env_status(report_ops=report_ops)
                 for env in self.runtimes.values()
                 if not env.excluded
             ],
             frameworks=[
-                env.get_env_status(include_deps=include_deps)
+                env.get_env_status(report_ops=report_ops, include_deps=include_deps)
                 for env in self.frameworks.values()
                 if not env.excluded
             ],
             applications=[
-                env.get_env_status(include_deps=include_deps)
+                env.get_env_status(report_ops=report_ops, include_deps=include_deps)
                 for env in self.applications.values()
                 if not env.excluded
             ],

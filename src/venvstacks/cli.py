@@ -396,12 +396,15 @@ def _show_stack_status(
     show_stack: bool = True,
     show_only: bool = False,
     json: bool = False,
+    report_ops: bool = False,
     include_deps: bool = False,
 ) -> bool:
     if not (show_stack or show_only or json):
         # Skip showing the stack, continue processing the running command
         return False
-    stack_status = build_env.get_stack_status(include_deps=include_deps)
+    stack_status = build_env.get_stack_status(
+        report_ops=report_ops, include_deps=include_deps
+    )
     _UI.echo(format_stack_status(stack_status, json=json))
     # Indicate whether the running command should terminate without further processing
     # json implies show_only if show is not set
@@ -448,7 +451,9 @@ def show(
             build=False,
             publish=False,
         )
-    _show_stack_status(build_env, json=json, include_deps=True)
+    # Some layers may implicitly have "lock-if-needed" and/or "build-if-needed" set
+    # Explicitly skip displaying those for the dedicated "show" subcommand
+    _show_stack_status(build_env, json=json, report_ops=False, include_deps=True)
 
 
 @_cli_subcommand
