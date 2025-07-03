@@ -5,9 +5,10 @@ import shutil
 import sys
 import tempfile
 
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 # Use unittest for consistency with test_sample_project (which needs the better diff support)
 import unittest
@@ -35,6 +36,7 @@ from venvstacks.stacks import (
     EnvNameBuild,
     EnvNameDeploy,
     StackSpec,
+    StackStatus,
     PackageIndexConfig,
     PublishedArchivePaths,
     get_build_platform,
@@ -110,6 +112,106 @@ EXPECTED_APPLICATIONS = [
 EXPECTED_ENVIRONMENTS = EXPECTED_RUNTIMES.copy()
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_FRAMEWORKS)
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_APPLICATIONS)
+
+EXPECTED_STACK_STATUS: StackStatus = {
+  "applications": [
+    {
+      "has_valid_lock": False,
+      "install_target": EnvNameDeploy("app-empty"),
+      "name": EnvNameBuild("app-empty"),
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    },
+    {
+      "has_valid_lock": False,
+      "install_target": EnvNameDeploy("app-no-framework"),
+      "name": EnvNameBuild("app-no-framework"),
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    },
+  ],
+  "frameworks": [
+    {
+      "has_valid_lock": False,
+      "install_target": EnvNameDeploy("framework-layerA"),
+      "name": EnvNameBuild("framework-layerA"),
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    },
+    {
+      "has_valid_lock": False,
+      "install_target": EnvNameDeploy("framework-layerB"),
+      "name": EnvNameBuild("framework-layerB"),
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    },
+    {
+      "has_valid_lock": False,
+      "install_target": EnvNameDeploy("framework-layerC"),
+      "name": EnvNameBuild("framework-layerC"),
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    },
+    {
+      "has_valid_lock": False,
+      "install_target": EnvNameDeploy("framework-layerD"),
+      "name": EnvNameBuild("framework-layerD"),
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    },
+    {
+      "has_valid_lock": False,
+      "install_target": EnvNameDeploy("framework-layerE"),
+      "name": EnvNameBuild("framework-layerE"),
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    },
+    {
+      "has_valid_lock": False,
+      "install_target": EnvNameDeploy("framework-layerF"),
+      "name": EnvNameBuild("framework-layerF"),
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    },
+  ],
+  "runtimes": [
+    {
+      "has_valid_lock": False,
+      "install_target": EnvNameDeploy("cpython-3.11"),
+      "name": EnvNameBuild("cpython-3.11"),
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    },
+  ],
+  "spec_name": str(MINIMAL_PROJECT_STACK_SPEC_PATH),
+}
 
 # The expected manifest here omits all content dependent fields
 # (those are checked when testing the full sample project)
@@ -356,6 +458,23 @@ class TestMinimalBuildConfig(unittest.TestCase):
         # No envs should be flagged for publishing
         self.assertEqual(list(build_env.environments_to_publish()), [])
 
+    def test_get_stack_status(self) -> None:
+        # Also covers testing get_env_status on the individual layers
+        self.maxDiff = None
+        # Test stack status summary
+        stack_spec = self.stack_spec
+        build_env = stack_spec.define_build_environment()
+        # Default status: report ops, omit layer deps
+        expected_stack_status = deepcopy(EXPECTED_STACK_STATUS)
+        stack_status = build_env.get_stack_status()
+        self.assertEqual(expected_stack_status, stack_status)
+        # Minimal status: omit ops, omit layer deps
+        expected_stack_status_no_ops = deepcopy(EXPECTED_STACK_STATUS)
+        for category in ("applications", "frameworks", "runtimes"):
+            for layer_status in expected_stack_status_no_ops[category]:
+                layer_status["selected_operations"] = None
+        stack_status_no_ops = build_env.get_stack_status(report_ops=False)
+        self.assertEqual(stack_status_no_ops, expected_stack_status_no_ops)
 
 class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
     # These test cases don't need the build environment to actually exist
