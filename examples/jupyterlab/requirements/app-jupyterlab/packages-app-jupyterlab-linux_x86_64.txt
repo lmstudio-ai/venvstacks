@@ -25,7 +25,7 @@ httpcore==1.0.9
 httpx==0.28.1
 idna==3.10
 ipykernel==6.29.5
-ipython==9.3.0
+ipython==9.4.0
 ipython-pygments-lexers==1.1.1
 isoduration==20.11.0
 jedi==0.19.2
@@ -40,7 +40,7 @@ jupyter-events==0.12.0
 jupyter-lsp==2.2.5
 jupyter-server==2.16.0
 jupyter-server-terminals==0.5.3
-jupyterlab==4.4.3
+jupyterlab==4.4.4
 jupyterlab-pygments==0.3.0
 jupyterlab-server==2.27.3
 markupsafe==3.0.2
@@ -63,7 +63,7 @@ psutil==7.0.0
 ptyprocess==0.7.0
 pure-eval==0.2.3
 pycparser==2.22
-pygments==2.19.1
+pygments==2.19.2
 python-dateutil==2.9.0.post0
 python-json-logger==3.3.0
 pyyaml==6.0.2
@@ -72,7 +72,7 @@ referencing==0.36.2
 requests==2.32.4
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
-rpds-py==0.25.1
+rpds-py==0.26.0
 send2trash==1.8.3
 setuptools==80.9.0
 six==1.17.0
