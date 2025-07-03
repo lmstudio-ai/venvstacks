@@ -213,7 +213,7 @@ _CLI_OPT_FLAG_publish_derived = Annotated[
 ]  # fmt: skip
 
 # Additional console output control
-_CLI_OPT_FLAG_show_stack = Annotated[
+_CLI_OPT_FLAG_show = Annotated[
     bool,
     typer.Option(help="Show stack specification and selected operations"),
 ]  # fmt: skip
@@ -390,16 +390,16 @@ def _export_environments(
     _UI.echo(f"All paths reported relative to {base_output_path}")
 
 
-def _show_stack_status(
+def _show_status(
     build_env: BuildEnvironment,
     *,
-    show_stack: bool = True,
+    show: bool = True,
     show_only: bool = False,
     json: bool = False,
-    report_ops: bool = False,
+    report_ops: bool = True,
     include_deps: bool = False,
 ) -> bool:
-    if not (show_stack or show_only or json):
+    if not (show or show_only or json):
         # Skip showing the stack, continue processing the running command
         return False
     stack_status = build_env.get_stack_status(
@@ -408,7 +408,7 @@ def _show_stack_status(
     _UI.echo(format_stack_status(stack_status, json=json))
     # Indicate whether the running command should terminate without further processing
     # json implies show_only if show is not set
-    return show_only or (json and not show_stack)
+    return show_only or (json and not show)
 
 
 @_cli_subcommand
@@ -453,7 +453,7 @@ def show(
         )
     # Some layers may implicitly have "lock-if-needed" and/or "build-if-needed" set
     # Explicitly skip displaying those for the dedicated "show" subcommand
-    _show_stack_status(build_env, json=json, report_ops=False, include_deps=True)
+    _show_status(build_env, json=json, report_ops=False, include_deps=True)
 
 
 @_cli_subcommand
@@ -487,7 +487,7 @@ def build(
     build_derived: _CLI_OPT_FLAG_build_derived = False,
     publish_derived: _CLI_OPT_FLAG_publish_derived = False,
     # Additional console output control
-    show_stack: _CLI_OPT_FLAG_show_stack = False,
+    show: _CLI_OPT_FLAG_show = False,
     show_only: _CLI_OPT_FLAG_show_only = False,
     json: _CLI_OPT_FLAG_json = False,
     # Deprecated options
@@ -531,9 +531,7 @@ def build(
             build=build,
             publish=True,
         )
-    if _show_stack_status(
-        build_env, show_stack=show_stack, show_only=show_only, json=json
-    ):
+    if _show_status(build_env, show=show, show_only=show_only, json=json):
         return
     build_env.create_environments(clean=clean, lock=want_lock)
     _publish_artifacts(
@@ -561,7 +559,7 @@ def lock(
     lock_dependencies: _CLI_OPT_FLAG_lock_dependencies = False,
     # When locking, layers that depend on included layers are *always* relocked
     # Additional console output control
-    show_stack: _CLI_OPT_FLAG_show_stack = False,
+    show: _CLI_OPT_FLAG_show = False,
     show_only: _CLI_OPT_FLAG_show_only = False,
     json: _CLI_OPT_FLAG_json = False,
 ) -> None:
@@ -595,9 +593,7 @@ def lock(
             build=False,
             publish=False,
         )
-    if _show_stack_status(
-        build_env, show_stack=show_stack, show_only=show_only, json=json
-    ):
+    if _show_status(build_env, show=show, show_only=show_only, json=json):
         return
     lock_results = build_env.lock_environments(clean=clean)
     if not lock_results:
@@ -635,7 +631,7 @@ def publish(
     # Handling layers that depend on included layers
     publish_derived: _CLI_OPT_FLAG_publish_derived = False,
     # Additional console output control
-    show_stack: _CLI_OPT_FLAG_show_stack = False,
+    show: _CLI_OPT_FLAG_show = False,
     show_only: _CLI_OPT_FLAG_show_only = False,
     json: _CLI_OPT_FLAG_json = False,
 ) -> None:
@@ -670,9 +666,7 @@ def publish(
             build=False,
             publish=True,
         )
-    if _show_stack_status(
-        build_env, show_stack=show_stack, show_only=show_only, json=json
-    ):
+    if _show_status(build_env, show=show, show_only=show_only, json=json):
         return
     _publish_artifacts(
         build_env, output_dir, force=force, dry_run=dry_run, tag_outputs=tag_outputs
@@ -697,7 +691,7 @@ def local_export(
     # Handling layers that depend on included layers
     publish_derived: _CLI_OPT_FLAG_publish_derived = False,
     # Additional console output control
-    show_stack: _CLI_OPT_FLAG_show_stack = False,
+    show: _CLI_OPT_FLAG_show = False,
     show_only: _CLI_OPT_FLAG_show_only = False,
     json: _CLI_OPT_FLAG_json = False,
 ) -> None:
@@ -732,9 +726,7 @@ def local_export(
             build=False,
             publish=True,
         )
-    if _show_stack_status(
-        build_env, show_stack=show_stack, show_only=show_only, json=json
-    ):
+    if _show_status(build_env, show=show, show_only=show_only, json=json):
         return
     _export_environments(
         build_env,

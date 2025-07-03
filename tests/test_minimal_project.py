@@ -8,7 +8,7 @@ import tempfile
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, cast
 
 # Use unittest for consistency with test_sample_project (which needs the better diff support)
 import unittest
@@ -114,103 +114,67 @@ EXPECTED_ENVIRONMENTS.extend(EXPECTED_FRAMEWORKS)
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_APPLICATIONS)
 
 EXPECTED_STACK_STATUS: StackStatus = {
-  "applications": [
-    {
-      "has_valid_lock": False,
-      "install_target": EnvNameDeploy("app-empty"),
-      "name": EnvNameBuild("app-empty"),
-      "selected_operations": [
-        "lock-if-needed",
-        "build",
-        "publish"
-      ]
-    },
-    {
-      "has_valid_lock": False,
-      "install_target": EnvNameDeploy("app-no-framework"),
-      "name": EnvNameBuild("app-no-framework"),
-      "selected_operations": [
-        "lock-if-needed",
-        "build",
-        "publish"
-      ]
-    },
-  ],
-  "frameworks": [
-    {
-      "has_valid_lock": False,
-      "install_target": EnvNameDeploy("framework-layerA"),
-      "name": EnvNameBuild("framework-layerA"),
-      "selected_operations": [
-        "lock-if-needed",
-        "build",
-        "publish"
-      ]
-    },
-    {
-      "has_valid_lock": False,
-      "install_target": EnvNameDeploy("framework-layerB"),
-      "name": EnvNameBuild("framework-layerB"),
-      "selected_operations": [
-        "lock-if-needed",
-        "build",
-        "publish"
-      ]
-    },
-    {
-      "has_valid_lock": False,
-      "install_target": EnvNameDeploy("framework-layerC"),
-      "name": EnvNameBuild("framework-layerC"),
-      "selected_operations": [
-        "lock-if-needed",
-        "build",
-        "publish"
-      ]
-    },
-    {
-      "has_valid_lock": False,
-      "install_target": EnvNameDeploy("framework-layerD"),
-      "name": EnvNameBuild("framework-layerD"),
-      "selected_operations": [
-        "lock-if-needed",
-        "build",
-        "publish"
-      ]
-    },
-    {
-      "has_valid_lock": False,
-      "install_target": EnvNameDeploy("framework-layerE"),
-      "name": EnvNameBuild("framework-layerE"),
-      "selected_operations": [
-        "lock-if-needed",
-        "build",
-        "publish"
-      ]
-    },
-    {
-      "has_valid_lock": False,
-      "install_target": EnvNameDeploy("framework-layerF"),
-      "name": EnvNameBuild("framework-layerF"),
-      "selected_operations": [
-        "lock-if-needed",
-        "build",
-        "publish"
-      ]
-    },
-  ],
-  "runtimes": [
-    {
-      "has_valid_lock": False,
-      "install_target": EnvNameDeploy("cpython-3.11"),
-      "name": EnvNameBuild("cpython-3.11"),
-      "selected_operations": [
-        "lock-if-needed",
-        "build",
-        "publish"
-      ]
-    },
-  ],
-  "spec_name": str(MINIMAL_PROJECT_STACK_SPEC_PATH),
+    "applications": [
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("app-empty"),
+            "name": EnvNameBuild("app-empty"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("app-no-framework"),
+            "name": EnvNameBuild("app-no-framework"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+    ],
+    "frameworks": [
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerA"),
+            "name": EnvNameBuild("framework-layerA"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerB"),
+            "name": EnvNameBuild("framework-layerB"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerC"),
+            "name": EnvNameBuild("framework-layerC"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerD"),
+            "name": EnvNameBuild("framework-layerD"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerE"),
+            "name": EnvNameBuild("framework-layerE"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerF"),
+            "name": EnvNameBuild("framework-layerF"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+    ],
+    "runtimes": [
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("cpython-3.11"),
+            "name": EnvNameBuild("cpython-3.11"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+    ],
+    "spec_name": str(MINIMAL_PROJECT_STACK_SPEC_PATH),
 }
 
 # The expected manifest here omits all content dependent fields
@@ -475,6 +439,7 @@ class TestMinimalBuildConfig(unittest.TestCase):
                 layer_status["selected_operations"] = None
         stack_status_no_ops = build_env.get_stack_status(report_ops=False)
         self.assertEqual(stack_status_no_ops, expected_stack_status_no_ops)
+
 
 class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
     # These test cases don't need the build environment to actually exist
