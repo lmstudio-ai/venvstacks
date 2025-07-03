@@ -1392,6 +1392,9 @@ class LayerEnvBase(ABC):
         default=True, init=False, repr=False
     )  # Default: build
     want_publish: bool = field(default=True, init=False, repr=False)  # Default: publish
+    # Allow layers to be excluded completely (even from the stack status summary)
+    # Excluding a layer also clears the other operation flags
+    excluded: bool = field(default=False, init=False, repr=False)
 
     # State flags used to selectively execute some cleanup operations
     was_created: bool = field(default=False, init=False, repr=False)
@@ -1601,6 +1604,7 @@ class LayerEnvBase(ABC):
         reset_lock: bool = False,
     ) -> None:
         """Enable the selected operations for this environment."""
+        self.excluded = False
         self.want_lock = lock
         self.want_lock_reset = reset_lock
         self.want_build = build
@@ -1608,6 +1612,11 @@ class LayerEnvBase(ABC):
         # Also reset operation state tracking
         self.was_created = False
         self.was_built = False
+
+    def exclude_layer(self) -> None:
+        """Exclude the layer from all operations (including stack status reporting)."""
+        self.select_operations(False, False, False)
+        self.excluded = True
 
     def _create_environment(
         self, *, clean: bool = False, lock_only: bool = False
@@ -3183,14 +3192,20 @@ class BuildEnvironment:
         """Get JSON-compatible summary of the environment stack and selected operations."""
         return StackStatus(
             spec_name=str(self.stack_spec.spec_path),
-            runtimes=[env.get_env_status() for env in self.runtimes.values()],
+            runtimes=[
+                env.get_env_status()
+                for env in self.runtimes.values()
+                if not env.excluded
+            ],
             frameworks=[
                 env.get_env_status(include_deps=include_deps)
                 for env in self.frameworks.values()
+                if not env.excluded
             ],
             applications=[
                 env.get_env_status(include_deps=include_deps)
                 for env in self.applications.values()
+                if not env.excluded
             ],
         )
 
@@ -3289,8 +3304,8 @@ class BuildEnvironment:
                 )
             else:
                 # Skip running operations on this environment
-                # (Note: this selection may be overridden on related layers below)
-                env.select_operations(lock=False, build=False, publish=False)
+                # (Note: this exclusion may be overridden on related layers below)
+                env.exclude_layer()
         # Enable operations on related layers if requested
         # Dependencies are always checked so they can be set to "if needed" locks & builds
         check_derived = lock_derived or build_derived or publish_derived
