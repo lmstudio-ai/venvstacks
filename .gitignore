@@ -21,3 +21,7 @@ __pycache__
 *.dist-info
 /dist/
 .coverage*
+
+# All change log notes that happen to match a pattern
+!docs/changelog.d/*.rst
+
