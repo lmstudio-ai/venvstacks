@@ -1,7 +1,7 @@
 .. Included in published docs via docs/changelog.rst
 
 .. Temporary link target for next release
-.. _changelog-0.7.0:
+.. _changelog-0.8.0:
 
 Unreleased
 ==========
@@ -11,6 +11,57 @@ See the fragment files in the `changelog.d directory`_.
 .. _changelog.d directory: https://github.com/lmstudio-ai/venvstacks/tree/main/docs/changelog.d
 
 .. scriv-insert-here
+
+.. _changelog-0.7.0:
+
+0.7.0 — 2025-07-05
+==================
+
+Added
+-----
+
+- `show` :ref:`subcommand <command-show>` to display layer definitions (added in :issue:`159`).
+- `--show` :ref:`option <option-show>` on subcommands (other than `show`) to display the selected
+  layers and operations before executing the command (added in :issue:`159`).
+- `--show-only` :ref:`option <option-show-only>` on subcommands (other than `show`) to display the
+  selected layers and operations *without* executing the command (added in :issue:`159`).
+- `--json` :ref:`option <option-json>` on subcommands to display the selected layers
+  and operations as JSON rather than as a human-readable tree. For commands other than `show`,
+  implies `--show-only` if `--show` is not passed explicitly (added in :issue:`159`).
+
+Changed
+-------
+
+- Recursive source tree processing now excludes files excluded from version control
+  when building from a git repository, and excludes `__pycache__` folders otherwise.
+  This exclusion affects both module hash calculations and the inclusion of files
+  in built environments (resolves :issue:`203`).
+- `RECORD` files for installed packages are now largely retained in published
+  artifacts and locally exported environments, with only the entries
+  corresponding to omitted files removed (resolved in :issue:`28`). This
+  allows packages that inspect the metadata for installed packages at runtime
+  to work correctly when deployed with `venvstacks`.
+- Default CLI console output has been substantially reduced, with new `-q/--quiet`
+  and `-v/--verbose` options added to adjust the message volume (changed in :issue:`5`).
+- Library level messages are now emitted via the `logging` module rather than being written
+  directly to `stdout`. The CLI configures the logging subsystem appropriately based on
+  the given verbosity options (changed in :issue:`5`).
+
+Fixed
+-----
+
+- When using the `--include` filtering option for layer builds, existing "build if needed"
+  environments are now correctly updated if they have not previously been successfully
+  built with the current layer specification and environment lock details
+  (reported in :issue:`222`).
+- Implicit versioning of runtime layers no longer breaks deployed
+  layered environments using that layer (reported in :issue:`188`).
+- Implicit versioning of framework layers no longer breaks loading
+  dynamic libraries from those layers on non-Windows systems
+  (reported in :issue:`189`)
+- Layer locks are now marked as valid if the lock is successfully
+  regenerated without changes after being marked as invalid due
+  to a lower layer having an invalid lock (resolved in :pr:`227`)
 
 .. _changelog-0.6.0:
 
