@@ -94,6 +94,10 @@ class BuildEnvError(EnvStackError):
 _UI = termui.UI()
 _LOG = logging.getLogger(__name__)
 
+# General logging levels:
+# Per-environment notices -> INFO
+# Per-file (or other steps within environment) -> DEBUG
+
 ######################################################
 # Filesystem and git helpers
 ######################################################
@@ -264,13 +268,23 @@ class EnvironmentLock:
         self._last_locked = None
         self._lock_version = None
 
-    def get_deployed_name(self, env_name: EnvNameBuild) -> EnvNameDeploy:
+    def get_deployed_name(
+        self, env_name: EnvNameBuild, *, placeholder: str | None = None
+    ) -> EnvNameDeploy:
         """Report layer name with lock version (if any) appended.
 
         Deployed name matches the build name if automatic lock versioning is disabled.
         """
         if self.versioned:
-            return EnvNameDeploy(f"{env_name}@{self.lock_version}")
+            version_text: str
+            if self.has_valid_lock:
+                version_text = str(self.lock_version)
+            elif placeholder is None:
+                msg = "Must specify placeholder to query deployed name of unlocked versioned layer"
+                self._fail_lock_metadata_query(msg)
+            else:
+                version_text = placeholder
+            return EnvNameDeploy(f"{env_name}@{version_text}")
         return EnvNameDeploy(env_name)
 
     def append_other_input(self, other_input: str) -> None:
@@ -1209,6 +1223,42 @@ class ExportedEnvironmentPaths(NamedTuple):
 ######################################################
 
 
+class LayerStatus(TypedDict):
+    """Summary of a layer environment's current status."""
+
+    name: EnvNameBuild
+    install_target: EnvNameDeploy
+    has_valid_lock: bool
+    selected_operations: list[str] | None
+    dependencies: NotRequired[list["LayerStatus"]]
+
+
+class StackStatus(TypedDict):
+    """Summary of a stack build environment's current status."""
+
+    spec_name: str
+    runtimes: list[LayerStatus]
+    frameworks: list[LayerStatus]
+    applications: list[LayerStatus]
+
+
+def format_env_status(status: LayerStatus) -> str:
+    """Format given status as a string."""
+    # Valid lock: "env_name [reset-lock lock build publish]"
+    # Outdated lock: "*env_name [reset-lock lock build publish]"
+    # Standalone function because env status is just a regular dict at runtime
+    lock_status = "" if status["has_valid_lock"] else "*"
+    env_name = status["name"]
+    deployed_name = status["install_target"]
+    if cast(str, env_name) != cast(str, deployed_name):
+        env_summary = f"{env_name} -> {deployed_name}"
+    else:
+        env_summary = env_name
+    selected_ops = status.get("selected_operations", None)
+    op_summary = f" ({', '.join(selected_ops)})" if selected_ops else ""
+    return f"{lock_status}{env_summary}{op_summary}"
+
+
 def _pdm_python_install(target_path: Path, request: str) -> Path | None:
     # from https://github.com/pdm-project/pdm/blob/ce60c223bbf8b5ab2bdb94bf8fa6409b9b16c409/src/pdm/cli/commands/python.py#L122
     # to work around https://github.com/Textualize/rich/issues/3437
@@ -1342,6 +1392,9 @@ class LayerEnvBase(ABC):
         default=True, init=False, repr=False
     )  # Default: build
     want_publish: bool = field(default=True, init=False, repr=False)  # Default: publish
+    # Allow layers to be excluded completely (even from the stack status summary)
+    # Excluding a layer also clears the other operation flags
+    excluded: bool = field(default=False, init=False, repr=False)
 
     # State flags used to selectively execute some cleanup operations
     was_created: bool = field(default=False, init=False, repr=False)
@@ -1356,8 +1409,41 @@ class LayerEnvBase(ABC):
         return self._get_py_scheme_path("scripts")
 
     def __str__(self) -> str:
+        return format_env_status(self.get_env_status())
+
+    @staticmethod
+    def _op_state_to_str(op_name: str, op_status: bool | None) -> str | None:
+        if op_status:
+            return op_name
+        if op_status is None:
+            return f"{op_name}-if-needed"
+        return None
+
+    def _get_selected_ops(self) -> list[str]:
+        op_states = (
+            ("reset-lock", self.want_lock_reset),
+            ("lock", self.want_lock),
+            ("build", self.want_build),
+            ("publish", self.want_publish),
+        )
+        op_text = [
+            self._op_state_to_str(op_name, op_state) for op_name, op_state in op_states
+        ]
+        return [op for op in op_text if op]
+
+    def get_env_status(self, *, report_ops: bool = True) -> LayerStatus:
+        """Get JSON-compatible summary of the environment status and selected operations."""
+        # Valid lock: "env_name [reset-lock lock build publish]"
+        # Outdated lock: "*env_name [reset-lock lock build publish]"
         env_name = self.env_name
-        return f"{type(self).__name__}({env_name=})"
+        deployed_name = self.env_lock.get_deployed_name(env_name, placeholder="???")
+        selected_ops = self._get_selected_ops() if report_ops else None
+        return LayerStatus(
+            name=env_name,
+            install_target=deployed_name,
+            has_valid_lock=self.env_lock.has_valid_lock,
+            selected_operations=selected_ops,
+        )
 
     @property
     def env_name(self) -> EnvNameBuild:
@@ -1518,6 +1604,7 @@ class LayerEnvBase(ABC):
         reset_lock: bool = False,
     ) -> None:
         """Enable the selected operations for this environment."""
+        self.excluded = False
         self.want_lock = lock
         self.want_lock_reset = reset_lock
         self.want_build = build
@@ -1525,6 +1612,11 @@ class LayerEnvBase(ABC):
         # Also reset operation state tracking
         self.was_created = False
         self.was_built = False
+
+    def exclude_layer(self) -> None:
+        """Exclude the layer from all operations (including stack status reporting)."""
+        self.select_operations(False, False, False)
+        self.excluded = True
 
     def _create_environment(
         self, *, clean: bool = False, lock_only: bool = False
@@ -2124,6 +2216,20 @@ class LayeredEnvBase(LayerEnvBase):
         self.base_runtime = None
         self.linked_constraints_paths = []
         self.linked_frameworks = []
+
+    def get_env_status(
+        self, *, report_ops: bool = True, include_deps: bool = False
+    ) -> LayerStatus:
+        """Get JSON-compatible summary of the environment status and selected operations."""
+        # Deps are omitted by default for consistency with the base method behaviour
+        env_status = super().get_env_status(report_ops=report_ops)
+        if include_deps:
+            dep_statuses = [
+                dep.get_env_status(report_ops=False)
+                for dep in self._iter_dependencies()
+            ]
+            env_status["dependencies"] = dep_statuses
+        return env_status
 
     @property
     def env_spec(self) -> LayeredSpecBase:
@@ -3082,6 +3188,29 @@ class BuildEnvironment:
             if env.want_publish:  # There's no "if needed" option for publication
                 yield env
 
+    def get_stack_status(
+        self, *, report_ops: bool = True, include_deps: bool = False
+    ) -> StackStatus:
+        """Get JSON-compatible summary of the environment stack and selected operations."""
+        return StackStatus(
+            spec_name=str(self.stack_spec.spec_path),
+            runtimes=[
+                env.get_env_status(report_ops=report_ops)
+                for env in self.runtimes.values()
+                if not env.excluded
+            ],
+            frameworks=[
+                env.get_env_status(report_ops=report_ops, include_deps=include_deps)
+                for env in self.frameworks.values()
+                if not env.excluded
+            ],
+            applications=[
+                env.get_env_status(report_ops=report_ops, include_deps=include_deps)
+                for env in self.applications.values()
+                if not env.excluded
+            ],
+        )
+
     # Assign environments to the different operation categories
     def select_operations(
         self,
@@ -3177,8 +3306,8 @@ class BuildEnvironment:
                 )
             else:
                 # Skip running operations on this environment
-                # (Note: this selection may be overridden on related layers below)
-                env.select_operations(lock=False, build=False, publish=False)
+                # (Note: this exclusion may be overridden on related layers below)
+                env.exclude_layer()
         # Enable operations on related layers if requested
         # Dependencies are always checked so they can be set to "if needed" locks & builds
         check_derived = lock_derived or build_derived or publish_derived

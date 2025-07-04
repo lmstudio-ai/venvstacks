@@ -5,15 +5,18 @@ import shutil
 import sys
 import tempfile
 
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Iterable, cast
 
 # Use unittest for consistency with test_sample_project (which needs the better diff support)
 import unittest
 from unittest.mock import Mock
 
+import click.testing
 import pytest  # To mark slow test cases
+from typer.testing import CliRunner
 
 from support import (
     ApplicationEnvSummary,
@@ -24,8 +27,10 @@ from support import (
     SpecLoadingTestCase,
     make_mock_index_config,
     get_sys_path,
+    report_traceback,
 )
 
+from venvstacks import cli
 from venvstacks.stacks import (
     ArchiveBuildMetadata,
     ArchiveMetadata,
@@ -35,6 +40,7 @@ from venvstacks.stacks import (
     EnvNameBuild,
     EnvNameDeploy,
     StackSpec,
+    StackStatus,
     PackageIndexConfig,
     PublishedArchivePaths,
     get_build_platform,
@@ -110,6 +116,136 @@ EXPECTED_APPLICATIONS = [
 EXPECTED_ENVIRONMENTS = EXPECTED_RUNTIMES.copy()
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_FRAMEWORKS)
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_APPLICATIONS)
+
+EXPECTED_STACK_STATUS: StackStatus = {
+    "applications": [
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("app-empty"),
+            "name": EnvNameBuild("app-empty"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("app-no-framework"),
+            "name": EnvNameBuild("app-no-framework"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+    ],
+    "frameworks": [
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerA"),
+            "name": EnvNameBuild("framework-layerA"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerB"),
+            "name": EnvNameBuild("framework-layerB"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerC"),
+            "name": EnvNameBuild("framework-layerC"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerD"),
+            "name": EnvNameBuild("framework-layerD"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerE"),
+            "name": EnvNameBuild("framework-layerE"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("framework-layerF"),
+            "name": EnvNameBuild("framework-layerF"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+    ],
+    "runtimes": [
+        {
+            "has_valid_lock": False,
+            "install_target": EnvNameDeploy("cpython-3.11"),
+            "name": EnvNameBuild("cpython-3.11"),
+            "selected_operations": ["lock-if-needed", "build", "publish"],
+        },
+    ],
+    "spec_name": str(MINIMAL_PROJECT_STACK_SPEC_PATH),
+}
+
+EXPECTED_SHOW_RESULT = f"""\
+{str(MINIMAL_PROJECT_STACK_SPEC_PATH)}
+├── Runtimes
+│   └── *cpython-3.11
+├── Frameworks
+│   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   ├── *framework-layerB
+│   │   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   ├── *framework-layerC
+│   │   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   ├── *framework-layerD
+│   │   ├── *framework-layerB
+│   │   ├── *framework-layerC
+│   │   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   ├── *framework-layerE
+│   │   ├── *framework-layerB
+│   │   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   └── *framework-layerF
+│       ├── *framework-layerE
+│       ├── *framework-layerB
+│       ├── *framework-layerA
+│       └── *cpython-3.11
+└── Applications
+    ├── *app-empty
+    │   ├── *framework-layerD
+    │   ├── *framework-layerF
+    │   ├── *framework-layerE
+    │   ├── *framework-layerB
+    │   ├── *framework-layerC
+    │   ├── *framework-layerA
+    │   └── *cpython-3.11
+    └── *app-no-framework
+        └── *cpython-3.11
+"""
+
+EXPECTED_SHOW_LAYER_C_RESULT = f"""\
+{str(MINIMAL_PROJECT_STACK_SPEC_PATH)}
+├── Runtimes
+│   └── *cpython-3.11
+├── Frameworks
+│   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   ├── *framework-layerC
+│   │   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   └── *framework-layerD
+│       ├── *framework-layerB
+│       ├── *framework-layerC
+│       ├── *framework-layerA
+│       └── *cpython-3.11
+└── Applications
+    └── *app-empty
+        ├── *framework-layerD
+        ├── *framework-layerF
+        ├── *framework-layerE
+        ├── *framework-layerB
+        ├── *framework-layerC
+        ├── *framework-layerA
+        └── *cpython-3.11
+"""
 
 # The expected manifest here omits all content dependent fields
 # (those are checked when testing the full sample project)
@@ -355,6 +491,24 @@ class TestMinimalBuildConfig(unittest.TestCase):
         self.assertEqual(list(build_env.environments_to_build()), [])
         # No envs should be flagged for publishing
         self.assertEqual(list(build_env.environments_to_publish()), [])
+
+    def test_get_stack_status(self) -> None:
+        # Also covers testing get_env_status on the individual layers
+        self.maxDiff = None
+        # Test stack status summary
+        stack_spec = self.stack_spec
+        build_env = stack_spec.define_build_environment()
+        # Default status: report ops, omit layer deps
+        expected_stack_status = deepcopy(EXPECTED_STACK_STATUS)
+        stack_status = build_env.get_stack_status()
+        self.assertEqual(expected_stack_status, stack_status)
+        # Minimal status: omit ops, omit layer deps
+        expected_stack_status_no_ops = deepcopy(EXPECTED_STACK_STATUS)
+        for category in ("applications", "frameworks", "runtimes"):
+            for layer_status in expected_stack_status_no_ops[category]:
+                layer_status["selected_operations"] = None
+        stack_status_no_ops = build_env.get_stack_status(report_ops=False)
+        self.assertEqual(stack_status_no_ops, expected_stack_status_no_ops)
 
 
 class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
@@ -869,3 +1023,27 @@ class TestMinimalBuild(DeploymentTestCase):
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
         )
+
+
+class TestShowStack:
+    def invoke_cli(self, options: Iterable[str] = ()) -> click.testing.Result:
+        cli_runner = CliRunner(catch_exceptions=False)
+        spec_path = str(MINIMAL_PROJECT_STACK_SPEC_PATH)
+        result = cli_runner.invoke(cli._cli, ["show", *options, spec_path])
+        if result.exception is not None:
+            print(report_traceback(result.exception))
+        return result
+
+    def test_show_unlocked(self):
+        result = self.invoke_cli()
+        assert EXPECTED_SHOW_RESULT.strip() in result.stdout
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.exception is None, report_traceback(result.exception)
+        assert result.exit_code == 0
+
+    def test_show_filtered(self):
+        result = self.invoke_cli(("--include", "*-layerC"))
+        assert EXPECTED_SHOW_LAYER_C_RESULT.strip() in result.stdout
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.exception is None, report_traceback(result.exception)
+        assert result.exit_code == 0

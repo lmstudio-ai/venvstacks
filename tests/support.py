@@ -9,6 +9,7 @@ import unittest
 
 from dataclasses import dataclass, fields
 from pathlib import Path
+from traceback import format_exception
 from typing import Any, Callable, cast, Iterable, Mapping, Sequence, TypeVar
 from unittest.mock import create_autospec
 
@@ -46,6 +47,17 @@ def requires_venv(description: str) -> pytest.MarkDecorator:
         sys.prefix == sys.base_prefix,
         reason=f"{description} requires test execution in venv",
     )
+
+
+##################################
+# General reporting utilities
+##################################
+
+
+def report_traceback(exc: BaseException | None) -> str:
+    if exc is None:
+        return "Expected exception was not raised"
+    return "\n".join(format_exception(exc))
 
 
 ##################################

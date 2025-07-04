@@ -15,6 +15,7 @@ from .stacks import (
     EnvNameBuild,
     _UI,
 )
+from ._ui.render import format_stack_status
 
 # Inspired by the Python 3.13+ `argparse` feature,
 # but reports `python -m venvstacks` whenever `__main__`
@@ -66,8 +67,6 @@ def handle_app_options(
         raise typer.Exit()
     _UI.set_verbosity(-1 if quiet else verbose)
     _UI.configure_app_logging()
-    # TODO: Handle app logging config via main command level options
-    #       Part of https://github.com/lmstudio-ai/venvstacks/issues/5
 
 
 _cli_subcommand = _cli.command(no_args_is_help=False)
@@ -181,21 +180,21 @@ _CLI_OPT_STRLIST_reset_lock = Annotated[
 ]
 _CLI_OPT_FLAG_allow_missing = Annotated[
     bool,
-    typer.Option(help="Allow layer filtering entries that do not match any layers")
+    typer.Option(help="Allow layer filtering entries that do not match any layers"),
 ]  # fmt: skip
 
 # Handling layers that included layers depend on
 _CLI_OPT_FLAG_lock_dependencies = Annotated[
     bool,
-    typer.Option(help="Also lock dependencies of included layers")
+    typer.Option(help="Also lock dependencies of included layers"),
 ]  # fmt: skip
 _CLI_OPT_FLAG_build_dependencies = Annotated[
     bool,
-    typer.Option(help="Also build dependencies of included layers")
+    typer.Option(help="Also build dependencies of included layers"),
 ]  # fmt: skip
 _CLI_OPT_FLAG_publish_dependencies = Annotated[
     bool,
-    typer.Option(help="Also publish dependencies of included layers")
+    typer.Option(help="Also publish dependencies of included layers"),
 ]  # fmt: skip
 _CLI_OPT_TRISTATE_include_dependencies = Annotated[
     bool | None,
@@ -206,11 +205,25 @@ _CLI_OPT_TRISTATE_include_dependencies = Annotated[
 # Note: when locking, layers that depend on included layers are *always* relocked
 _CLI_OPT_FLAG_build_derived = Annotated[
     bool,
-    typer.Option(help="Also build environments that depend on included layers")
+    typer.Option(help="Also build environments that depend on included layers"),
 ]  # fmt: skip
 _CLI_OPT_FLAG_publish_derived = Annotated[
     bool,
-    typer.Option(help="Also publish archives that depend on included layers")
+    typer.Option(help="Also publish archives that depend on included layers"),
+]  # fmt: skip
+
+# Additional console output control
+_CLI_OPT_FLAG_show = Annotated[
+    bool,
+    typer.Option(help="Show stack specification and selected operations"),
+]  # fmt: skip
+_CLI_OPT_FLAG_show_only = Annotated[
+    bool,
+    typer.Option(help="*Only* show stack specification and selected operations"),
+]  # fmt: skip
+_CLI_OPT_FLAG_json = Annotated[
+    bool,
+    typer.Option(help="Emit stack info as JSON rather than as formatted text"),
 ]  # fmt: skip
 
 
@@ -218,8 +231,8 @@ def _define_build_environment(
     spec_path: str,
     build_path: str,
     *,
-    index: bool,
-    local_wheels: Sequence[str] | None,
+    index: bool = False,
+    local_wheels: Sequence[str] | None = None,
 ) -> BuildEnvironment:
     """Load given stack specification and define a build environment."""
     stack_spec = StackSpec.load(spec_path)
@@ -377,6 +390,74 @@ def _export_environments(
     _UI.echo(f"All paths reported relative to {base_output_path}")
 
 
+def _show_status(
+    build_env: BuildEnvironment,
+    *,
+    show: bool = True,
+    show_only: bool = False,
+    json: bool = False,
+    report_ops: bool = True,
+    include_deps: bool = False,
+) -> bool:
+    if not (show or show_only or json):
+        # Skip showing the stack, continue processing the running command
+        return False
+    stack_status = build_env.get_stack_status(
+        report_ops=report_ops, include_deps=include_deps
+    )
+    _UI.echo(format_stack_status(stack_status, json=json))
+    # Indicate whether the running command should terminate without further processing
+    # json implies show_only if show is not set
+    return show_only or (json and not show)
+
+
+@_cli_subcommand
+def show(
+    # Required arguments: where to find the stack spec
+    spec_path: _CLI_ARG_spec_path,
+    # Optional directory arguments: where to find build artifacts
+    build_dir: _CLI_OPT_STR_build_dir = "_build",
+    # Selective processing of defined layers
+    include: _CLI_OPT_STRLIST_include = None,
+    allow_missing: _CLI_OPT_FLAG_allow_missing = False,
+    # Additional console output control
+    json: _CLI_OPT_FLAG_json = False,
+) -> None:
+    """Show summary of given virtual environment stack."""
+    build_env = _define_build_environment(
+        spec_path,
+        build_dir,
+    )
+    # Update the various `want_*` flags on each environment
+    # Note: CLI `publish` controls the `dry_run` flag on the `publish_artifacts` method call
+    # We specify this as a `lock` command so both dependencies and derived layers are included,
+    # but suppress actually displaying the enabled operations when reporting the stack status
+    if include:
+        _handle_layer_include_options(
+            build_env,
+            include,
+            allow_missing=allow_missing,
+            lock=True,
+            build=False,
+            publish=False,
+            lock_dependencies=True,
+            build_dependencies=False,
+            publish_dependencies=False,
+            build_derived=False,
+            publish_derived=False,
+            reset_locks=None,
+        )
+    else:
+        build_env.select_operations(
+            lock=True,
+            build=False,
+            publish=False,
+        )
+    # Some layers may implicitly have "lock-if-needed" and/or "build-if-needed" set
+    # Explicitly skip displaying those for the dedicated "show" subcommand
+    _show_status(build_env, json=json, report_ops=False, include_deps=True)
+
+
 @_cli_subcommand
 def build(
     # Required arguments: where to find the stack spec
@@ -407,6 +488,10 @@ def build(
     # Note: when locking, layers that depend on included layers are *always* relocked
     build_derived: _CLI_OPT_FLAG_build_derived = False,
     publish_derived: _CLI_OPT_FLAG_publish_derived = False,
+    # Additional console output control
+    show: _CLI_OPT_FLAG_show = False,
+    show_only: _CLI_OPT_FLAG_show_only = False,
+    json: _CLI_OPT_FLAG_json = False,
     # Deprecated options
     lock: _CLI_OPT_FLAG_lock = False,
 ) -> None:
@@ -448,6 +533,8 @@ def build(
             build=build,
             publish=True,
         )
+    if _show_status(build_env, show=show, show_only=show_only, json=json):
+        return
     build_env.create_environments(clean=clean, lock=want_lock)
     _publish_artifacts(
         build_env, output_dir, dry_run=not publish, force=clean, tag_outputs=tag_outputs
@@ -473,6 +560,10 @@ def lock(
     # Whether to lock the layers that the included layers depend on
     lock_dependencies: _CLI_OPT_FLAG_lock_dependencies = False,
     # When locking, layers that depend on included layers are *always* relocked
+    # Additional console output control
+    show: _CLI_OPT_FLAG_show = False,
+    show_only: _CLI_OPT_FLAG_show_only = False,
+    json: _CLI_OPT_FLAG_json = False,
 ) -> None:
     """Lock layer requirements for Python virtual environment stacks."""
     want_lock = None if if_needed else True
@@ -504,6 +595,8 @@ def lock(
             build=False,
             publish=False,
         )
+    if _show_status(build_env, show=show, show_only=show_only, json=json):
+        return
     lock_results = build_env.lock_environments(clean=clean)
     if not lock_results:
         _UI.echo("No environments found to lock")
@@ -539,6 +632,10 @@ def publish(
     publish_dependencies: _CLI_OPT_FLAG_publish_dependencies = False,
     # Handling layers that depend on included layers
     publish_derived: _CLI_OPT_FLAG_publish_derived = False,
+    # Additional console output control
+    show: _CLI_OPT_FLAG_show = False,
+    show_only: _CLI_OPT_FLAG_show_only = False,
+    json: _CLI_OPT_FLAG_json = False,
 ) -> None:
     """Publish layer archives for Python virtual environment stacks."""
     build_env = _define_build_environment(
@@ -571,6 +668,8 @@ def publish(
             build=False,
             publish=True,
         )
+    if _show_status(build_env, show=show, show_only=show_only, json=json):
+        return
     _publish_artifacts(
         build_env, output_dir, force=force, dry_run=dry_run, tag_outputs=tag_outputs
     )
@@ -593,6 +692,10 @@ def local_export(
     publish_dependencies: _CLI_OPT_FLAG_publish_dependencies = False,
     # Handling layers that depend on included layers
     publish_derived: _CLI_OPT_FLAG_publish_derived = False,
+    # Additional console output control
+    show: _CLI_OPT_FLAG_show = False,
+    show_only: _CLI_OPT_FLAG_show_only = False,
+    json: _CLI_OPT_FLAG_json = False,
 ) -> None:
     """Export layer environments for Python virtual environment stacks."""
     build_env = _define_build_environment(
@@ -625,6 +728,8 @@ def local_export(
             build=False,
             publish=True,
         )
+    if _show_status(build_env, show=show, show_only=show_only, json=json):
+        return
     _export_environments(
         build_env,
         output_dir,

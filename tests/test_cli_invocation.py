@@ -8,7 +8,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from fnmatch import fnmatch
 from pathlib import Path
-from traceback import format_exception
 from types import ModuleType
 from typing import (
     Any,
@@ -36,16 +35,11 @@ from venvstacks.stacks import (
     EnvNameBuild,
     EnvironmentLock,
     PackageIndexConfig,
+    StackStatus,
 )
 from venvstacks._util import run_python_command_unchecked
 
-from support import requires_venv
-
-
-def report_traceback(exc: BaseException | None) -> str:
-    if exc is None:
-        return "Expected exception was not raised"
-    return "\n".join(format_exception(exc))
+from support import report_traceback, requires_venv
 
 
 def _mock_path(contents: str | None = None) -> Any:
@@ -88,6 +82,17 @@ def mock_layer_filtering(patterns: Iterable[str]) -> tuple[Set[EnvNameBuild], Se
     return cast(Set[EnvNameBuild], matching), set()
 
 
+def mock_stack_status(
+    *, report_ops: bool = True, include_deps: bool = False
+) -> StackStatus:
+    return {
+        "applications": [],
+        "frameworks": [],
+        "runtimes": [],
+        "spec_name": "/no/such/spec",
+    }
+
+
 @dataclass(repr=False, eq=False)
 class MockedRunner:
     app: typer.Typer
@@ -120,6 +125,8 @@ class MockedRunner:
         # Control the result of artifact publication and environment exports
         mocked_build_env.publish_artifacts.side_effect = mock_output_generation
         mocked_build_env.export_environments.side_effect = mock_output_generation
+        # Control the result of stack status queries
+        mocked_build_env.get_stack_status.side_effect = mock_stack_status
 
     @classmethod
     @contextmanager
@@ -247,13 +254,14 @@ class TestTopLevelCommand:
 
 
 EXPECTED_USAGE_PREFIX = "Usage: python -m venvstacks "
-EXPECTED_SUBCOMMANDS = ["lock", "build", "local-export", "publish"]
+EXPECTED_SUBCOMMANDS = ["show", "lock", "build", "local-export", "publish"]
 NO_SPEC_PATH: list[str] = []
 NEEDS_SPEC_PATH = sorted(set(EXPECTED_SUBCOMMANDS) - set(NO_SPEC_PATH))
-ACCEPTS_BUILD_DIR = ["lock", "build", "local-export", "publish"]
+ACCEPTS_BUILD_DIR = ["show", "lock", "build", "local-export", "publish"]
 ACCEPTS_OUTPUT_DIR = ["build", "local-export", "publish"]
 ACCEPTS_INDEX_CONFIG = ["lock", "build"]
 ACCEPTS_RESET_LOCK = ["lock", "build"]
+ACCEPTS_SHOW_ONLY = ["lock", "build", "local-export", "publish"]
 
 
 def _get_default_index_config(command: str) -> PackageIndexConfig:
@@ -534,6 +542,56 @@ class TestSubcommands:
         assert result.exception is None, report_traceback(result.exception)
         assert result.exit_code == 0
 
+    @pytest.mark.parametrize("command", ACCEPTS_SHOW_ONLY)
+    def test_show_only_option(self, mocked_runner: MockedRunner, command: str) -> None:
+        spec_path_to_mock = "/no/such/path/spec"
+        result = mocked_runner.invoke([command, "--show-only", spec_path_to_mock])
+        if result.exception is not None:
+            print(report_traceback(result.exception))
+        # Always loads the stack spec and creates the build environment
+        mocked_stack_spec = mocked_runner.mocked_stack_spec
+        mocked_stack_spec.assert_not_called()
+        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
+        # Op selection details are checked elsewhere
+        mocked_build_env = mocked_runner.mocked_build_env
+        mocked_build_env.select_operations.assert_called_once()
+        mocked_build_env.select_layers.assert_not_called()
+        mocked_build_env.get_stack_status.assert_called_once_with(
+            report_ops=True, include_deps=False
+        )
+        # Doesn't perform any actual operations on the environment
+        mocked_build_env.lock_environments.assert_not_called()
+        mocked_build_env.create_environments.assert_not_called()
+        mocked_build_env.publish_artifacts.assert_not_called()
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.exception is None, report_traceback(result.exception)
+        assert result.exit_code == 0
+
+    def test_mock_show(self, mocked_runner: MockedRunner) -> None:
+        # Note: unmocked `show` invocation is checked in test_minimal_project
+        spec_path_to_mock = "/no/such/path/spec"
+        result = mocked_runner.invoke(["show", spec_path_to_mock])
+        if result.exception is not None:
+            print(report_traceback(result.exception))
+        # Always loads the stack spec and creates the build environment
+        mocked_stack_spec = mocked_runner.mocked_stack_spec
+        mocked_stack_spec.assert_not_called()
+        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
+        # Op selection details are checked elsewhere
+        mocked_build_env = mocked_runner.mocked_build_env
+        mocked_build_env.select_operations.assert_called_once()
+        mocked_build_env.select_layers.assert_not_called()
+        mocked_build_env.get_stack_status.assert_called_once_with(
+            report_ops=False, include_deps=True
+        )
+        # Doesn't perform any actual operations on the environment
+        mocked_build_env.lock_environments.assert_not_called()
+        mocked_build_env.create_environments.assert_not_called()
+        mocked_build_env.publish_artifacts.assert_not_called()
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.exception is None, report_traceback(result.exception)
+        assert result.exit_code == 0
+
     # Specific CLI option handling test cases for the "build" subcommand
     BuildFlagCase = tuple[
         tuple[str, ...], dict[str, bool], dict[str, bool], dict[str, bool]
@@ -545,6 +603,18 @@ class TestSubcommands:
         # `--include` and its related options are tested separately
         (
             (),
+            dict(lock=False, build=True, publish=True),  # select_operations
+            dict(clean=False, lock=False),  # create_environments
+            dict(dry_run=True, tag_outputs=False),  # publish_artifacts
+        ),
+        (
+            ("--show",),
+            dict(lock=False, build=True, publish=True),  # select_operations
+            dict(clean=False, lock=False),  # create_environments
+            dict(dry_run=True, tag_outputs=False),  # publish_artifacts
+        ),
+        (
+            ("--show", "--json"),
             dict(lock=False, build=True, publish=True),  # select_operations
             dict(clean=False, lock=False),  # create_environments
             dict(dry_run=True, tag_outputs=False),  # publish_artifacts
@@ -574,10 +644,7 @@ class TestSubcommands:
             dict(dry_run=True, tag_outputs=False),  # publish_artifacts
         ),
         (
-            (
-                "--publish",
-                "--clean",
-            ),
+            ("--publish", "--clean"),
             dict(lock=False, build=True, publish=True),  # select_operations
             dict(clean=True, lock=False),  # create_environments
             dict(force=True, tag_outputs=False),  # publish_artifacts
@@ -636,7 +703,7 @@ class TestSubcommands:
         )
         spec_path_to_mock = "/no/such/path/spec"
         result = mocked_runner.invoke(["build", *cli_flags, spec_path_to_mock])
-        if result.exception is None:
+        if result.exception is not None:
             print(report_traceback(result.exception))
         # Always loads the stack spec and creates the build environment
         mocked_stack_spec = mocked_runner.mocked_stack_spec
@@ -645,12 +712,18 @@ class TestSubcommands:
         expected_output_dir = "_artifacts"
         mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
         mocked_runner.assert_build_config(expected_build_dir, PackageIndexConfig())
-        # Defaults to selecting operations rather than stacks
+        # Defaults to selecting operations rather than layers
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once_with(
             **expected_select_args
         )
         mocked_build_env.select_layers.assert_not_called()
+        if "--show" in cli_flags or "--json" in cli_flags:
+            mocked_build_env.get_stack_status.assert_called_once_with(
+                report_ops=True, include_deps=False
+            )
+        else:
+            mocked_build_env.get_stack_status.assert_not_called()
         # Always creates the environments to perform the requested operations
         mocked_build_env.create_environments.assert_called_once_with(
             **expected_create_args
@@ -670,6 +743,16 @@ class TestSubcommands:
         # `--include` and its related options are tested separately
         (
             (),
+            dict(lock=True, build=False, publish=False),  # select_operations
+            dict(clean=False),  # lock_environments
+        ),
+        (
+            ("--show",),
+            dict(lock=True, build=False, publish=False),  # select_operations
+            dict(clean=False),  # lock_environments
+        ),
+        (
+            ("--show", "--json"),
             dict(lock=True, build=False, publish=False),  # select_operations
             dict(clean=False),  # lock_environments
         ),
@@ -700,18 +783,26 @@ class TestSubcommands:
         cli_flags, expected_select_args, expected_lock_args = cli_test_case
         spec_path_to_mock = "/no/such/path/spec"
         result = mocked_runner.invoke(["lock", *cli_flags, spec_path_to_mock])
+        if result.exception is not None:
+            print(report_traceback(result.exception))
         # Always loads the stack spec and creates the build environment
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "_build"
         mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
         mocked_runner.assert_build_config(expected_build_dir, PackageIndexConfig())
-        # Defaults to selecting operations rather than stacks
+        # Defaults to selecting operations rather than layers
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once_with(
             **expected_select_args
         )
         mocked_build_env.select_layers.assert_not_called()
+        if "--show" in cli_flags or "--json" in cli_flags:
+            mocked_build_env.get_stack_status.assert_called_once_with(
+                report_ops=True, include_deps=False
+            )
+        else:
+            mocked_build_env.get_stack_status.assert_not_called()
         # Only locks the environments without fully building them
         mocked_build_env.lock_environments.assert_called_once_with(**expected_lock_args)
         mocked_build_env.create_environments.assert_not_called()
@@ -761,6 +852,16 @@ class TestSubcommands:
             dict(force=False, tag_outputs=False),  # publish_artifacts
         ),
         (
+            ("--show",),
+            dict(lock=False, build=False, publish=True),  # select_operations
+            dict(force=False, tag_outputs=False),  # publish_artifacts
+        ),
+        (
+            ("--show", "--json"),
+            dict(lock=False, build=False, publish=True),  # select_operations
+            dict(force=False, tag_outputs=False),  # publish_artifacts
+        ),
+        (
             ("--force",),
             dict(lock=False, build=False, publish=True),  # select_operations
             dict(force=True, tag_outputs=False),  # publish_artifacts
@@ -793,6 +894,8 @@ class TestSubcommands:
         cli_flags, expected_select_args, expected_publish_args = cli_test_case
         spec_path_to_mock = "/no/such/path/spec"
         result = mocked_runner.invoke(["publish", *cli_flags, spec_path_to_mock])
+        if result.exception is not None:
+            print(report_traceback(result.exception))
         # Always loads the stack spec and creates the build environment
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
@@ -802,12 +905,18 @@ class TestSubcommands:
         mocked_runner.assert_build_config(
             expected_build_dir, PackageIndexConfig.disabled()
         )
-        # Defaults to selecting operations rather than stacks
+        # Defaults to selecting operations rather than layers
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once_with(
             **expected_select_args
         )
         mocked_build_env.select_layers.assert_not_called()
+        if "--show" in cli_flags or "--json" in cli_flags:
+            mocked_build_env.get_stack_status.assert_called_once_with(
+                report_ops=True, include_deps=False
+            )
+        else:
+            mocked_build_env.get_stack_status.assert_not_called()
         # The publish subcommand assumes the environments are already created
         mocked_build_env.create_environments.assert_not_called()
         # The publish subcommand always attempts to publish the artifacts
