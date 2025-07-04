@@ -375,6 +375,68 @@ in the runtime layer, all running in a controlled Python 3.11 base runtime:</p>
 </pre></div>
 </div>
 </section>
+<section id="viewing-environment-stack-status">
+<span id="option-json"></span><span id="option-show-only"></span><span id="option-show"></span><span id="command-show"></span><h3>Viewing environment stack status<a class="headerlink" href="#viewing-environment-stack-status" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">show</span></code> subcommand displays the current status of the layers in the given
+environment stack specification.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>show<span class="w"> </span>examples/sklearn/venvstacks.toml
+<span class="go">/absolute/path/to/examples/sklearn/venvstacks.toml</span>
+<span class="go">├── Runtimes</span>
+<span class="go">│   └── cpython-3.11</span>
+<span class="go">├── Frameworks</span>
+<span class="go">│   ├── framework-sklearn</span>
+<span class="go">│   │   └── cpython-3.11</span>
+<span class="go">│   └── framework-gui</span>
+<span class="go">│       └── cpython-3.11</span>
+<span class="go">└── Applications</span>
+<span class="go">   ├── app-classification-demo</span>
+<span class="go">   │   ├── framework-sklearn</span>
+<span class="go">   │   ├── framework-gui</span>
+<span class="go">   │   └── cpython-3.11</span>
+<span class="go">   └── app-clustering-demo</span>
+<span class="go">      ├── framework-sklearn</span>
+<span class="go">      ├── framework-gui</span>
+<span class="go">      └── cpython-3.11</span>
+</pre></div>
+</div>
+<p>Each environment is listed within its category in definition order. The
+declared dependencies of each environment (both direct and indirect)
+are listed in the order in which they will appear on <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> for
+that environment.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--include</span></code> option allows the displayed tree to be filtered to just
+the layers matching the given wildcard patterns, together with the layers
+that those layers depend on and the layers that depend on the included layers.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pdm<span class="w"> </span>run<span class="w"> </span>venvstacks<span class="w"> </span>show<span class="w"> </span>--include<span class="w"> </span><span class="s1">&#39;app-cluster*&#39;</span><span class="w"> </span>examples/sklearn/venvstacks.toml
+<span class="go">/home/acoghlan/devel/venvstacks/examples/sklearn/venvstacks.toml</span>
+<span class="go">├── Runtimes</span>
+<span class="go">│   └── cpython-3.11</span>
+<span class="go">├── Frameworks</span>
+<span class="go">│   ├── framework-sklearn</span>
+<span class="go">│   │   └── cpython-3.11</span>
+<span class="go">│   └── framework-gui</span>
+<span class="go">│       └── cpython-3.11</span>
+<span class="go">└── Applications</span>
+<span class="go">   └── app-clustering-demo</span>
+<span class="go">      ├── framework-sklearn</span>
+<span class="go">      ├── framework-gui</span>
+<span class="go">      └── cpython-3.11</span>
+</pre></div>
+</div>
+<p>Any layers that do not currently have a valid lock file are shown with a
+leading <code class="docutils literal notranslate"><span class="pre">*</span></code>. Layers which are deployed to a target folder other than the
+name used for their build folder (for example, due to the use of implicit layer
+versioning) are shown using a “build-name -&gt; deployment-name” notation.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--json</span></code> option can be used to emit a JSON data structure instead of
+a human readable tree.</p>
+<p>The operation subcommands support a <code class="docutils literal notranslate"><span class="pre">--show</span></code> option to display the layers
+affected by the command and the operations that will be performed on those
+layers before proceeding on to the requested operation. These subcommands
+also support a <code class="docutils literal notranslate"><span class="pre">--show-only</span></code> option that displays the included layers and
+operations <em>without</em> continuing on with the operation itself.</p>
+<p>The operation subcommands also support the <code class="docutils literal notranslate"><span class="pre">--include</span></code> and <code class="docutils literal notranslate"><span class="pre">--json</span></code> options
+supported by <code class="docutils literal notranslate"><span class="pre">show</span></code>. If <code class="docutils literal notranslate"><span class="pre">--json</span></code> is specified, it implies <code class="docutils literal notranslate"><span class="pre">--show-only</span></code>
+unless <code class="docutils literal notranslate"><span class="pre">--show</span></code> is specified explicitly on the command line.</p>
+</section>
 <section id="locking-environment-stacks">
 <h3>Locking environment stacks<a class="headerlink" href="#locking-environment-stacks" title="Link to this heading">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>venvstacks<span class="w"> </span>lock<span class="w"> </span>examples/sklearn/venvstacks.toml
@@ -521,6 +583,7 @@ the following Discord channels are the best way to get directly in touch with th
 <li><a class="reference internal" href="#command-line-interface">Command line interface</a></li>
 <li><a class="reference internal" href="#working-with-environment-stacks">Working with environment stacks</a><ul>
 <li><a class="reference internal" href="#defining-environment-stacks">Defining environment stacks</a></li>
+<li><a class="reference internal" href="#viewing-environment-stack-status">Viewing environment stack status</a></li>
 <li><a class="reference internal" href="#locking-environment-stacks">Locking environment stacks</a></li>
 <li><a class="reference internal" href="#building-environment-stacks">Building environment stacks</a></li>
 <li><a class="reference internal" href="#publishing-environment-layer-archives">Publishing environment layer archives</a></li>
