@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="search" title="Search" href="../../search/" />
-        <link rel="canonical" href="https://venvstacks.lmstudio.ai/changelog.d/20250628_032914_ncoghlan_basic_show_command/" />
+        <link rel="canonical" href="https://venvstacks.lmstudio.ai/changelog.d/20250614_035420_ncoghlan_improve_stale_build_detection/" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>Added - venvstacks documentation</title>
+        <title>Fixed - venvstacks documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
@@ -268,12 +268,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/blob/main/docs/changelog.d/20250628_032914_ncoghlan_basic_show_command.rst?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/blob/main/docs/changelog.d/20250614_035420_ncoghlan_improve_stale_build_detection.rst?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/edit/main/docs/changelog.d/20250628_032914_ncoghlan_basic_show_command.rst" title="Edit this page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/edit/main/docs/changelog.d/20250614_035420_ncoghlan_improve_stale_build_detection.rst" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -292,17 +292,13 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="added">
-<h1>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h1>
+          <section id="fixed">
+<h1>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">¶</a></h1>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">show</span></code> <a class="reference internal" href="../../overview/#command-show"><span class="std std-ref">subcommand</span></a> to display layer definitions (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/159">#159</a>).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--show</span></code> <a class="reference internal" href="../../overview/#option-show"><span class="std std-ref">option</span></a> on subcommands (other than <code class="docutils literal notranslate"><span class="pre">show</span></code>) to display the selected
-layers and operations before executing the command (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/159">#159</a>).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--show-only</span></code> <a class="reference internal" href="../../overview/#option-show-only"><span class="std std-ref">option</span></a> on subcommands (other than <code class="docutils literal notranslate"><span class="pre">show</span></code>) to display the
-selected layers and operations <em>without</em> executing the command (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/159">#159</a>).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--json</span></code> <a class="reference internal" href="../../overview/#option-json"><span class="std std-ref">option</span></a> on subcommands to display the selected layers
-and operations as JSON rather than as a human-readable tree. For commands other than <code class="docutils literal notranslate"><span class="pre">show</span></code>,
-implies <code class="docutils literal notranslate"><span class="pre">--show-only</span></code> if <code class="docutils literal notranslate"><span class="pre">--show</span></code> is not pass explicitly (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/159">#159</a>).</p></li>
+<li><p>When using the <code class="docutils literal notranslate"><span class="pre">--include</span></code> filtering option for layer builds, existing “build if needed”
+environments are now correctly updated if they have not previously been successfully
+built with the current layer specification and environment lock details
+(reported in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/222">#222</a>).</p></li>
 </ul>
 </section>
 

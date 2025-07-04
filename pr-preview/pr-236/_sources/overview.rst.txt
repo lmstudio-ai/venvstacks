@@ -52,6 +52,82 @@ in the runtime layer, all running in a controlled Python 3.11 base runtime:
 .. literalinclude:: ../examples/sklearn/venvstacks.toml
   :language: TOML
 
+.. _command-show:
+.. _option-show:
+.. _option-show-only:
+.. _option-json:
+
+Viewing environment stack status
+--------------------------------
+
+The `show` subcommand displays the current status of the layers in the given
+environment stack specification.
+
+.. code-block:: console
+
+   $ venvstacks show examples/sklearn/venvstacks.toml
+   /absolute/path/to/examples/sklearn/venvstacks.toml
+   ├── Runtimes
+   │   └── cpython-3.11
+   ├── Frameworks
+   │   ├── framework-sklearn
+   │   │   └── cpython-3.11
+   │   └── framework-gui
+   │       └── cpython-3.11
+   └── Applications
+      ├── app-classification-demo
+      │   ├── framework-sklearn
+      │   ├── framework-gui
+      │   └── cpython-3.11
+      └── app-clustering-demo
+         ├── framework-sklearn
+         ├── framework-gui
+         └── cpython-3.11
+
+Each environment is listed within its category in definition order. The
+declared dependencies of each environment (both direct and indirect)
+are listed in the order in which they will appear on ``sys.path`` for
+that environment.
+
+The ``--include`` option allows the displayed tree to be filtered to just
+the layers matching the given wildcard patterns, together with the layers
+that those layers depend on and the layers that depend on the included layers.
+
+.. code-block:: console
+
+   $ pdm run venvstacks show --include 'app-cluster*' examples/sklearn/venvstacks.toml
+   /home/acoghlan/devel/venvstacks/examples/sklearn/venvstacks.toml
+   ├── Runtimes
+   │   └── cpython-3.11
+   ├── Frameworks
+   │   ├── framework-sklearn
+   │   │   └── cpython-3.11
+   │   └── framework-gui
+   │       └── cpython-3.11
+   └── Applications
+      └── app-clustering-demo
+         ├── framework-sklearn
+         ├── framework-gui
+         └── cpython-3.11
+
+Any layers that do not currently have a valid lock file are shown with a
+leading ``*``. Layers which are deployed to a target folder other than the
+name used for their build folder (for example, due to the use of implicit layer
+versioning) are shown using a "build-name -> deployment-name" notation.
+
+The ``--json`` option can be used to emit a JSON data structure instead of
+a human readable tree.
+
+The operation subcommands support a ``--show`` option to display the layers
+affected by the command and the operations that will be performed on those
+layers before proceeding on to the requested operation. These subcommands
+also support a ``--show-only`` option that displays the included layers and
+operations *without* continuing on with the operation itself.
+
+The operation subcommands also support the ``--include`` and ``--json`` options
+supported by ``show``. If ``--json`` is specified, it implies ``--show-only``
+unless ``--show`` is specified explicitly on the command line.
+
 Locking environment stacks
 --------------------------
 
