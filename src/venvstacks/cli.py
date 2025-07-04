@@ -430,15 +430,17 @@ def show(
     )
     # Update the various `want_*` flags on each environment
     # Note: CLI `publish` controls the `dry_run` flag on the `publish_artifacts` method call
+    # We specify this as a `lock` command so both dependencies and derived layers are included,
+    # but suppress actually displaying the enabled operations when reporting the stack status
     if include:
         _handle_layer_include_options(
             build_env,
             include,
             allow_missing=allow_missing,
-            lock=False,
+            lock=True,
             build=False,
             publish=False,
-            lock_dependencies=False,
+            lock_dependencies=True,
             build_dependencies=False,
             publish_dependencies=False,
             build_derived=False,
@@ -447,7 +449,7 @@ def show(
         )
     else:
         build_env.select_operations(
-            lock=False,
+            lock=True,
             build=False,
             publish=False,
         )

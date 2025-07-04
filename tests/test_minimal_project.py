@@ -8,13 +8,15 @@ import tempfile
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Iterable, cast
 
 # Use unittest for consistency with test_sample_project (which needs the better diff support)
 import unittest
 from unittest.mock import Mock
 
+import click.testing
 import pytest  # To mark slow test cases
+from typer.testing import CliRunner
 
 from support import (
     ApplicationEnvSummary,
@@ -25,8 +27,10 @@ from support import (
     SpecLoadingTestCase,
     make_mock_index_config,
     get_sys_path,
+    report_traceback,
 )
 
+from venvstacks import cli
 from venvstacks.stacks import (
     ArchiveBuildMetadata,
     ArchiveMetadata,
@@ -176,6 +180,72 @@ EXPECTED_STACK_STATUS: StackStatus = {
     ],
     "spec_name": str(MINIMAL_PROJECT_STACK_SPEC_PATH),
 }
+
+EXPECTED_SHOW_RESULT = f"""\
+{str(MINIMAL_PROJECT_STACK_SPEC_PATH)}
+├── Runtimes
+│   └── *cpython-3.11
+├── Frameworks
+│   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   ├── *framework-layerB
+│   │   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   ├── *framework-layerC
+│   │   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   ├── *framework-layerD
+│   │   ├── *framework-layerB
+│   │   ├── *framework-layerC
+│   │   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   ├── *framework-layerE
+│   │   ├── *framework-layerB
+│   │   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   └── *framework-layerF
+│       ├── *framework-layerE
+│       ├── *framework-layerB
+│       ├── *framework-layerA
+│       └── *cpython-3.11
+└── Applications
+    ├── *app-empty
+    │   ├── *framework-layerD
+    │   ├── *framework-layerF
+    │   ├── *framework-layerE
+    │   ├── *framework-layerB
+    │   ├── *framework-layerC
+    │   ├── *framework-layerA
+    │   └── *cpython-3.11
+    └── *app-no-framework
+        └── *cpython-3.11
+"""
+
+EXPECTED_SHOW_LAYER_C_RESULT = f"""\
+{str(MINIMAL_PROJECT_STACK_SPEC_PATH)}
+├── Runtimes
+│   └── *cpython-3.11
+├── Frameworks
+│   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   ├── *framework-layerC
+│   │   ├── *framework-layerA
+│   │   └── *cpython-3.11
+│   └── *framework-layerD
+│       ├── *framework-layerB
+│       ├── *framework-layerC
+│       ├── *framework-layerA
+│       └── *cpython-3.11
+└── Applications
+    └── *app-empty
+        ├── *framework-layerD
+        ├── *framework-layerF
+        ├── *framework-layerE
+        ├── *framework-layerB
+        ├── *framework-layerC
+        ├── *framework-layerA
+        └── *cpython-3.11
+"""
 
 # The expected manifest here omits all content dependent fields
 # (those are checked when testing the full sample project)
@@ -953,3 +1023,27 @@ class TestMinimalBuild(DeploymentTestCase):
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
         )
+
+
+class TestShowStack:
+    def invoke_cli(self, options: Iterable[str] = ()) -> click.testing.Result:
+        cli_runner = CliRunner(catch_exceptions=False)
+        spec_path = str(MINIMAL_PROJECT_STACK_SPEC_PATH)
+        result = cli_runner.invoke(cli._cli, ["show", *options, spec_path])
+        if result.exception is not None:
+            print(report_traceback(result.exception))
+        return result
+
+    def test_show_unlocked(self):
+        result = self.invoke_cli()
+        assert EXPECTED_SHOW_RESULT.strip() in result.stdout
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.exception is None, report_traceback(result.exception)
+        assert result.exit_code == 0
+
+    def test_show_filtered(self):
+        result = self.invoke_cli(("--include", "*-layerC"))
+        assert EXPECTED_SHOW_LAYER_C_RESULT.strip() in result.stdout
+        # Check operation result last to ensure test results are as informative as possible
+        assert result.exception is None, report_traceback(result.exception)
+        assert result.exit_code == 0

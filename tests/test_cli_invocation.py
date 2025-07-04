@@ -8,7 +8,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from fnmatch import fnmatch
 from pathlib import Path
-from traceback import format_exception
 from types import ModuleType
 from typing import (
     Any,
@@ -40,13 +39,7 @@ from venvstacks.stacks import (
 )
 from venvstacks._util import run_python_command_unchecked
 
-from support import requires_venv
-
-
-def report_traceback(exc: BaseException | None) -> str:
-    if exc is None:
-        return "Expected exception was not raised"
-    return "\n".join(format_exception(exc))
+from support import report_traceback, requires_venv
 
 
 def _mock_path(contents: str | None = None) -> Any:
@@ -575,6 +568,7 @@ class TestSubcommands:
         assert result.exit_code == 0
 
     def test_mock_show(self, mocked_runner: MockedRunner) -> None:
+        # Note: unmocked `show` invocation is checked in test_minimal_project
         spec_path_to_mock = "/no/such/path/spec"
         result = mocked_runner.invoke(["show", spec_path_to_mock])
         if result.exception is not None:
