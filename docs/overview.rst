@@ -128,6 +128,8 @@ The operation subcommands also support the ``--include`` and ``--json`` options
 supported by ``show``. If ``--json`` is specified, it implies ``--show-only``
 unless ``--show`` is specified explicitly on the command line.
 
+.. versionadded:: 0.7.0
+
 Locking environment stacks
 --------------------------
 
