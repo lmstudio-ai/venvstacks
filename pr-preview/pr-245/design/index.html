@@ -1,0 +1,538 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="venvstacks Design - venvstacks Documentation" name="og:title" />
+<meta content="website" name="og:type" />
+<meta content="https://venvstacks.lmstudio.ai/design/" name="og:url" />
+<meta content="venvstacks Design Discussion - venvstacks Documentation" name="og:description" />
+<link rel="search" title="Search" href="../search/" /><link rel="next" title="Python API" href="../api/" /><link rel="prev" title="Environment Stack File Formats" href="../file-formats/" />
+        <link rel="canonical" href="https://venvstacks.lmstudio.ai/design/" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>Design Discussion - venvstacks documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #eeffcc;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../"><div class="brand">venvstacks documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../">
+  
+  
+  <span class="sidebar-brand-text">venvstacks documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search/" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview/">Project Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary/">Essential Terms and Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../file-formats/">Environment Stack File Formats</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Design Discussion</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/">Python API</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Python API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/cli/">venvstacks.cli</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/pack_venv/">venvstacks.pack_venv</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/stacks/">venvstacks.stacks</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of venvstacks.stacks</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.StackSpec/">venvstacks.stacks.StackSpec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.BuildEnvironment/">venvstacks.stacks.BuildEnvironment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerCategories/">venvstacks.stacks.LayerCategories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerSpecMetadata/">venvstacks.stacks.LayerSpecMetadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerVariants/">venvstacks.stacks.LayerVariants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.TargetPlatform/">venvstacks.stacks.TargetPlatform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.TargetPlatforms/">venvstacks.stacks.TargetPlatforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.ArchiveBuildMetadata/">venvstacks.stacks.ArchiveBuildMetadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.ArchiveBuildRequest/">venvstacks.stacks.ArchiveBuildRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.ArchiveHashes/">venvstacks.stacks.ArchiveHashes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.ArchiveMetadata/">venvstacks.stacks.ArchiveMetadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.PublishedArchivePaths/">venvstacks.stacks.PublishedArchivePaths</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.StackPublishingRequest/">venvstacks.stacks.StackPublishingRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.StackPublishingResult/">venvstacks.stacks.StackPublishingResult</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerExportRequest/">venvstacks.stacks.LayerExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.ExportMetadata/">venvstacks.stacks.ExportMetadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.ExportedEnvironmentPaths/">venvstacks.stacks.ExportedEnvironmentPaths</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.StackExportRequest/">venvstacks.stacks.StackExportRequest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerSpecBase/">venvstacks.stacks.LayerSpecBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.RuntimeSpec/">venvstacks.stacks.RuntimeSpec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayeredSpecBase/">venvstacks.stacks.LayeredSpecBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.FrameworkSpec/">venvstacks.stacks.FrameworkSpec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.ApplicationSpec/">venvstacks.stacks.ApplicationSpec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerEnvBase/">venvstacks.stacks.LayerEnvBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.RuntimeEnv/">venvstacks.stacks.RuntimeEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayeredEnvBase/">venvstacks.stacks.LayeredEnvBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.FrameworkEnv/">venvstacks.stacks.FrameworkEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.ApplicationEnv/">venvstacks.stacks.ApplicationEnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.EnvironmentLock/">venvstacks.stacks.EnvironmentLock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.EnvironmentLockMetadata/">venvstacks.stacks.EnvironmentLockMetadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.PackageIndexConfig/">venvstacks.stacks.PackageIndexConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.BuildEnvError/">venvstacks.stacks.BuildEnvError</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.EnvStackError/">venvstacks.stacks.EnvStackError</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerSpecError/">venvstacks.stacks.LayerSpecError</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../development/">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog/">Changelog</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/blob/main/docs/design.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/edit/main/docs/design.rst" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="design-discussion">
+<h1>Design Discussion<a class="headerlink" href="#design-discussion" title="Link to this heading">¶</a></h1>
+<section id="project">
+<h2>Project<a class="headerlink" href="#project" title="Link to this heading">¶</a></h2>
+<section id="why-does-venvstacks-exist">
+<h3>Why does <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> exist?<a class="headerlink" href="#why-does-venvstacks-exist" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> exists because LM Studio were looking for a way
+to integrate Python based AI projects into their cross-platform
+desktop application, and after trialling other potential mechanisms,
+decided that there was a genuine gap in the Python packaging tooling
+landscape, and invested in building something new to fill that need.</p>
+</section>
+<section id="what-other-existing-projects-were-considered">
+<h3>What other existing projects were considered?<a class="headerlink" href="#what-other-existing-projects-were-considered" title="Link to this heading">¶</a></h3>
+<p>There were two primary existing projects considered as potential
+solutions:</p>
+<ul class="simple">
+<li><p><a class="extlink-pypi reference external" href="https://pypi.org/project/wagon/">wagon</a></p></li>
+<li><p><a class="extlink-pypi reference external" href="https://pypi.org/project/conda-pack/">conda-pack</a></p></li>
+</ul>
+<p>Similar to <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code>, <code class="docutils literal notranslate"><span class="pre">wagon</span></code> aims to avoid needing to download
+Python packages on the target deployment system. However, it does
+this by shipping the individual packages and creating fresh virtual
+environments on the target system, which means much more work has to
+happen at installation time. While <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> isn’t able to completely
+eliminate the need to adjust the deployed environments post-installation,
+the amount of work needed is substantially less than if the environments
+were being assembled from individual wheels on the target systems.</p>
+<p><code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> proved unsuitable not because of any limitations in
+<code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> itself, but because <code class="docutils literal notranslate"><span class="pre">conda</span></code>’s notion of
+<a class="reference external" href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#nested-activation">environment stacking</a>
+refers specifically to accessing the <code class="docutils literal notranslate"><span class="pre">PATH</span></code> entries for other
+environments, it doesn’t refer to being able combine <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>
+across multiple environments.</p>
+<p>Splitting environments into layers the way <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> does
+also doesn’t align well with the way the <code class="docutils literal notranslate"><span class="pre">conda</span></code> dependency
+resolver works, so it ended up making more sense to design
+<code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> to work with <code class="docutils literal notranslate"><span class="pre">venv</span></code> and <code class="docutils literal notranslate"><span class="pre">pip</span></code>-style dependency
+resolution.</p>
+<p>The assorted “Python application packaging” utilities that produce
+standalone platform native executables or Python <a class="reference external" href="https://docs.python.org/3/library/zipapp.html#module-zipapp" title="(in Python v3.13)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">zipapp</span></code></a>
+archives were eliminated from consideration as they lacked the ability
+to readily share the large common framework components that feature
+heavily in the Python AI ecosystem across different applications.</p>
+</section>
+</section>
+<section id="technical">
+<h2>Technical<a class="headerlink" href="#technical" title="Link to this heading">¶</a></h2>
+<section id="why-use-runtime-environment-layering-over-conventional-virtual-environments">
+<h3>Why use runtime environment layering over conventional virtual environments?<a class="headerlink" href="#why-use-runtime-environment-layering-over-conventional-virtual-environments" title="Link to this heading">¶</a></h3>
+<p>It’s at least theoretically possible to use the <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> locking model
+to build <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/146">conventional virtual environments</a> on the target
+deployment systems without needing to arrange for runtime customisation of
+<code class="docutils literal notranslate"><span class="pre">sys.path</span></code> and dynamic library loading paths. Using such an arrangement
+with a suitably designed package installer (such as <a class="extlink-pypi reference external" href="https://pypi.org/project/uv/">uv</a>) would be
+able to avoid excessive duplication of components on target systems even
+more effectively than the runtime environment layering approach.</p>
+<p>While it’s plausible that <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> will eventually offer the option to build
+stacks using that alternative “conceptual” layer deployment model, the runtime
+environment layering deployment model offers the following practical benefits:</p>
+<ul class="simple">
+<li><p>deployment layer archives are entirely self-contained, and can be installed
+without requiring any further internet access during the post-installation step</p></li>
+<li><p>deployment layer archives may be signed directly, without needing to account for
+additional package downloads occurring in the post-installation step</p></li>
+<li><p>deployment layer updates may consist solely of changes which can’t be readily
+expressed in a Python level dependency declaration (such as updates to the build
+configurations of locally built binary extensions)</p></li>
+</ul>
+</section>
+<section id="why-use-python-build-standalone-for-the-base-runtimes">
+<h3>Why use <code class="docutils literal notranslate"><span class="pre">python-build-standalone</span></code> for the base runtimes?<a class="headerlink" href="#why-use-python-build-standalone-for-the-base-runtimes" title="Link to this heading">¶</a></h3>
+<p>The short answer to this question is “Because that’s what <a class="extlink-pypi reference external" href="https://pypi.org/project/pdm/">pdm</a> uses,
+and <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> was already using <code class="docutils literal notranslate"><span class="pre">pdm</span></code> as its project management tool”.</p>
+<p>The longer answer is that there’s a genuinely strong alignment between the
+properties that the <code class="docutils literal notranslate"><span class="pre">python-build-standalone</span></code> maintainers aim to provide
+in their published binaries, and the characteristics that <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code>
+needs in its base runtime layers.</p>
+<p>Supporting additional base runtime layer providers (such as <a class="extlink-pypi reference external" href="https://pypi.org/project/conda/">conda</a>)
+could be a genuinely interesting capability, but there are no current
+plans to implement such a mechanism.</p>
+</section>
+<section id="how-does-dynamic-linking-work-across-layers">
+<span id="dynamic-linking"></span><h3>How does dynamic linking work across layers?<a class="headerlink" href="#how-does-dynamic-linking-work-across-layers" title="Link to this heading">¶</a></h3>
+<p>In some cases, binary extension modules in a Python package may depend
+on dynamically linked libraries that are provided by a different Python
+package. For example, <a class="extlink-pypi reference external" href="https://pypi.org/project/torch/">PyTorch</a> supports using the nVidia
+CUDA libraries published through the <a class="extlink-pypi reference external" href="https://pypi.org/project/nvidia/">nvidia</a> PyPI project.</p>
+<p>On Windows, finding these dependencies at runtime generally relies on the
+package publishing them calling <a class="reference external" href="https://docs.python.org/3/library/os.html#os.add_dll_directory" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">os.add_dll_directory()</span></code></a> with the
+relevant package subdirectory.</p>
+<p>On Linux and macOS, making this example case work typically requires that
+the nVidia CUDA libraries be installed into the <em>same</em> <code class="docutils literal notranslate"><span class="pre">site-packages</span></code>
+directory as the PyTorch extension modules, so they can be found via
+the relative rpath added to the extension modules when they are built.</p>
+<p>To allow for dynamic linking across layers (without relying on the use of
+tools like <a class="extlink-pypi reference external" href="https://pypi.org/project/dynamic-library/">dynamic-library</a> that require changes to the projects
+involved), <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> does the following on Linux and macOS:</p>
+<ul class="simple">
+<li><p>when building environments, symbolic links to all shared object files
+that do not appear to be Python extension modules are added to a
+<code class="docutils literal notranslate"><span class="pre">share/venv/dynlib</span></code> folder inside the built environment.</p></li>
+<li><p>when building environments, the symlink to the base environment’s
+Python runtime is renamed and replaced with a wrapper script that
+ensures the <code class="docutils literal notranslate"><span class="pre">share/venv/dynlib</span></code> folders of the linked layers are on
+the shared object loading path (<code class="docutils literal notranslate"><span class="pre">LD_LIBRARY_PATH</span></code> on Linux,
+<code class="docutils literal notranslate"><span class="pre">DYLD_LIBRARY_PATH</span></code> on macOS) before invoking the Python runtime.</p></li>
+</ul>
+<p>The additional library path entries are appended after any existing
+entries, so these environment variables may still be set as normal
+to indicate that alternative copies of the linked libraries should be
+preferred.</p>
+<p>If dynamic libraries with the same name are provided by multiple packages
+in the same environment layer, this will be reported as an exception when
+generating the symbolic links in the <code class="docutils literal notranslate"><span class="pre">share/venv/dynlib</span></code> folder. For
+example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>BuildEnvError: Layer framework-torchvision: &#39;./framework-torchvision/share/venv/dynlib/libpng16.16.dylib&#39;
+already exists, but links to &#39;./framework-torchvision/lib/python3.11/site-packages/torchvision/.dylibs/libpng16.16.dylib&#39;,
+not &#39;./framework-torchvision/lib/python3.11/site-packages/PIL/.dylibs/libpng16.16.dylib&#39;.
+Set `dynlib_exclude` in the layer definition to resolve this conflict.
+</pre></div>
+</div>
+<p>For the given example, setting <code class="docutils literal notranslate"><span class="pre">dynlib_exclude=[&quot;libpng16.*&quot;]</span></code> would omit
+generating any symlinks to <code class="docutils literal notranslate"><span class="pre">libpng16</span></code> libraries. Path matching is supported
+(not just name matching), so setting <code class="docutils literal notranslate"><span class="pre">dynlib_exclude=[&quot;PIL/**/libpng16.*&quot;]</span></code>
+will only exclude <code class="docutils literal notranslate"><span class="pre">PIL</span></code>’s embedded copy of the library (leaving the symlink
+in place, referring to the copy in <code class="docutils literal notranslate"><span class="pre">torchvision</span></code>)</p>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">dynlib_exclude=[&quot;*&quot;]</span></code> means that no dynamic library symbolic
+links at all will be generated for that layer.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.4.0: </span>Added support for dynamic linking across layers on Linux and macOS
+(<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</section>
+<section id="are-there-limitations-on-the-permitted-depth-of-layer-dependency-chains">
+<h3>Are there limitations on the permitted depth of layer dependency chains?<a class="headerlink" href="#are-there-limitations-on-the-permitted-depth-of-layer-dependency-chains" title="Link to this heading">¶</a></h3>
+<p>There are no specifically enforced limits on how many framework layers are
+added between an application environment and its underlying runtime environment.</p>
+<p>However, each framework layer does add an extra <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> entry on all platforms,
+and an extra dynamic library loading path entry on Linux and macOS.</p>
+<p>These additions may encounter Python runtime or platform limitations that make
+it desirable to keep the dependency chains relatively short (no more than 5-10
+total layers) rather than making the individual layers excessively granular.
+If that kind of granularity in dependency declarations is desired, it may
+be better to dynamically construct suitable virtual environments on the target
+systems, rather than using <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> with a large number of framework layers.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.4.0: </span>Added the ability for framework layers to depend on other framework layers
+instead of depending directly on a runtime layer
+(<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../api/">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Python API</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../file-formats/">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Environment Stack File Formats</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Element Labs Inc.
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Design Discussion</a><ul>
+<li><a class="reference internal" href="#project">Project</a><ul>
+<li><a class="reference internal" href="#why-does-venvstacks-exist">Why does <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> exist?</a></li>
+<li><a class="reference internal" href="#what-other-existing-projects-were-considered">What other existing projects were considered?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#technical">Technical</a><ul>
+<li><a class="reference internal" href="#why-use-runtime-environment-layering-over-conventional-virtual-environments">Why use runtime environment layering over conventional virtual environments?</a></li>
+<li><a class="reference internal" href="#why-use-python-build-standalone-for-the-base-runtimes">Why use <code class="docutils literal notranslate"><span class="pre">python-build-standalone</span></code> for the base runtimes?</a></li>
+<li><a class="reference internal" href="#how-does-dynamic-linking-work-across-layers">How does dynamic linking work across layers?</a></li>
+<li><a class="reference internal" href="#are-there-limitations-on-the-permitted-depth-of-layer-dependency-chains">Are there limitations on the permitted depth of layer dependency chains?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=adf8fbb0"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    </body>
+</html>
