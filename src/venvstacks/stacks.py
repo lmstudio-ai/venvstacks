@@ -194,6 +194,21 @@ class PackageIndexConfig:
     def _get_pip_install_args(self) -> list[str]:
         return self._get_common_pip_args()
 
+    @staticmethod
+    def _get_uv_config_path(build_path: Path) -> Path:
+        return build_path / "uv.toml"
+
+    @staticmethod
+    def _get_pip_config_path(build_path: Path) -> Path:
+        return build_path / "pip.conf"
+
+    def _write_tool_config_files(self, build_path: Path) -> None:
+        # For now, the config files are always empty
+        # They are specified to reduce potential interference from user and system config files
+        # In the future, settings may migrate from the CLI options to the config file
+        self._get_uv_config_path(build_path).write_text("")
+        self._get_pip_config_path(build_path).write_text("")
+
 
 ######################################################
 # Specifying layered environments
@@ -1367,6 +1382,8 @@ class LayerEnvBase(ABC):
     python_path: Path = field(init=False, repr=False)
     env_lock: EnvironmentLock = field(init=False, repr=False)
     _build_metadata_path: Path = field(init=False, repr=False)
+    _uv_config_path: Path = field(init=False, repr=False)
+    _pip_config_path: Path = field(init=False, repr=False)
 
     # Derived from subclass py_version in __post_init__
     _py_version_info: tuple[str, str] = field(init=False, repr=False)
@@ -1462,10 +1479,15 @@ class LayerEnvBase(ABC):
         self._py_version_info = cast(
             tuple[str, str], tuple(self.py_version.split(".")[:2])
         )
-        self.env_path = env_path = self.build_path / self.env_name
+        build_path = self.build_path
+        self.env_path = env_path = build_path / self.env_name
         self._build_metadata_path = env_path.with_name(
             f"{env_path.name}.last-build.json"
         )
+        index_config = self.index_config
+        self._uv_config_path = index_config._get_uv_config_path(build_path)
+        self._pip_config_path = index_config._get_pip_config_path(build_path)
+
         # Note: purelib and platlib are the same location in virtual environments
         # (even when they have different names, platlib is a symlink to purelib)
         self.pylib_path = self._get_py_scheme_path("purelib")
@@ -1678,6 +1700,8 @@ class LayerEnvBase(ABC):
             "utf8",
             "-Im",
             "uv",
+            "--config-file",
+            str(self._uv_config_path),
             cmd,
             *cmd_args,
         ]
@@ -1726,8 +1750,10 @@ class LayerEnvBase(ABC):
         return self._run_uv_pip(uv_pip_args)
 
     def _run_pip(
-        self, cmd_args: list[str], **kwds: Any
+        self, cmd_args: list[str], env: Mapping[str, str] | None = None, **kwds: Any
     ) -> subprocess.CompletedProcess[str]:
+        run_env = dict(() if env is None else env)
+        run_env["PIP_CONFIG_FILE"] = str(self._pip_config_path)
         command = [
             str(self.tools_python_path),
             "-X",
@@ -1739,7 +1765,7 @@ class LayerEnvBase(ABC):
             "--no-input",
             *cmd_args,
         ]
-        return run_python_command(command, **kwds)
+        return run_python_command(command, env=run_env, **kwds)
 
     def _run_pip_install(
         self, *pip_install_args: str
@@ -3079,6 +3105,7 @@ class StackSpec:
             frameworks,
             applications,
             build_path,
+            index_config,
         )
 
 
@@ -3098,6 +3125,7 @@ class BuildEnvironment:
     frameworks: MutableMapping[LayerBaseName, FrameworkEnv] = field(repr=False)
     applications: MutableMapping[LayerBaseName, ApplicationEnv] = field(repr=False)
     build_path: Path
+    index_config: PackageIndexConfig
 
     def __post_init__(self) -> None:
         # Resolve local config folders relative to spec path
@@ -3378,12 +3406,23 @@ class BuildEnvironment:
     def _needs_lock(self) -> bool:
         return any(env.needs_lock() for env in self.environments_to_lock())
 
+    def _init_required_dirs(self) -> None:
+        """Ensure required folders and files to lock and build environments exist."""
+        # Ensure the destination folder for requirements files exists
+        self.requirements_dir_path.mkdir(parents=True, exist_ok=True)
+        # Ensure the destination folder for the build environments exists
+        # (even locking needs to be able to create the base runtime environments)
+        build_path = self.build_path
+        build_path.mkdir(parents=True, exist_ok=True)
+        # Ensure the tool config files exist
+        self.index_config._write_tool_config_files(build_path)
+
     def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
         """Lock build environments for specified layers."""
         # Lock environments without fully building them
         # Necessarily creates the runtime environments and
         # installs any declared build dependencies
-        self.requirements_dir_path.mkdir(parents=True, exist_ok=True)
+        self._init_required_dirs()
         for rt_env in self.runtimes_to_lock():
             rt_env.create_build_environment(clean=clean)
         return [env.lock_requirements() for env in self.environments_to_lock()]
@@ -3393,7 +3432,7 @@ class BuildEnvironment:
     ) -> None:
         """Create build environments for specified layers."""
         # Base runtime environments need to exist before dependencies can be locked
-        self.build_path.mkdir(parents=True, exist_ok=True)
+        self._init_required_dirs()
         clean_runtime_envs = clean
         if lock or self._needs_lock():
             clean_runtime_envs = False  # Don't clean the runtime envs again below
