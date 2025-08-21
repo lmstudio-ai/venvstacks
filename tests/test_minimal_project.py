@@ -426,7 +426,7 @@ class TestMinimalBuildConfig(unittest.TestCase):
         stack_spec = self.stack_spec
         build_env = stack_spec.define_build_environment()
         expected_build_path = stack_spec.spec_path.parent
-        self.assertEqual(build_env.build_path, expected_build_path)
+        self.assertEqual(expected_build_path, build_env.build_path)
         # The spec directory necessarily already exists
         self.assertTrue(expected_build_path.exists())
 
@@ -434,21 +434,21 @@ class TestMinimalBuildConfig(unittest.TestCase):
         stack_spec = self.stack_spec
         build_env = stack_spec.define_build_environment("custom")
         expected_build_path = stack_spec.spec_path.parent / "custom"
-        self.assertEqual(build_env.build_path, expected_build_path)
+        self.assertEqual(expected_build_path, build_env.build_path)
         # Build directory is only created when needed, not immediately
         self.assertFalse(expected_build_path.exists())
 
     def test_custom_build_directory_user(self) -> None:
         build_env = self.stack_spec.define_build_environment("~/custom")
         expected_build_path = Path.home() / "custom"
-        self.assertEqual(build_env.build_path, expected_build_path)
+        self.assertEqual(expected_build_path, build_env.build_path)
         # Build directory is only created when needed, not immediately
         self.assertFalse(expected_build_path.exists())
 
     def test_custom_build_directory_absolute(self) -> None:
         expected_build_path = Path("/custom").absolute()  # Add drive info on Windows
         build_env = self.stack_spec.define_build_environment(expected_build_path)
-        self.assertEqual(build_env.build_path, expected_build_path)
+        self.assertEqual(expected_build_path, build_env.build_path)
         # Build directory is only created when needed, not immediately
         self.assertFalse(expected_build_path.exists())
 
@@ -457,19 +457,19 @@ class TestMinimalBuildConfig(unittest.TestCase):
         build_env = stack_spec.define_build_environment()
         expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_names = [env.env_name for env in build_env.all_environments()]
-        self.assertEqual(all_names, expected_names)
+        self.assertEqual(expected_names, all_names)
         # No lock files, so all envs should need locking
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = [env.env_name for env in envs_to_lock]
-        self.assertEqual(lock_names, expected_names)
+        self.assertEqual(expected_names, lock_names)
         self.assertTrue(all(env.needs_lock() for env in envs_to_lock))
         self.assertTrue(build_env._needs_lock())
         # All envs should be flagged for building
         build_names = [env.env_name for env in build_env.environments_to_build()]
-        self.assertEqual(build_names, expected_names)
+        self.assertEqual(expected_names, build_names)
         # All envs should be flagged for publishing
         publish_names = [env.env_name for env in build_env.environments_to_publish()]
-        self.assertEqual(publish_names, expected_names)
+        self.assertEqual(expected_names, publish_names)
 
     def test_env_categories_with_ops_disabled(self) -> None:
         stack_spec = self.stack_spec
@@ -482,15 +482,15 @@ class TestMinimalBuildConfig(unittest.TestCase):
         expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_envs = list(build_env.all_environments())
         all_names = [env.env_name for env in all_envs]
-        self.assertEqual(all_names, expected_names)
+        self.assertEqual(expected_names, all_names)
         # No envs should be selected for locking
-        self.assertEqual(list(build_env.environments_to_lock()), [])
+        self.assertEqual([], list(build_env.environments_to_lock()))
         self.assertFalse(any(env.needs_lock() for env in all_envs))
         self.assertFalse(build_env._needs_lock())
         # No envs should be flagged for building
-        self.assertEqual(list(build_env.environments_to_build()), [])
+        self.assertEqual([], list(build_env.environments_to_build()))
         # No envs should be flagged for publishing
-        self.assertEqual(list(build_env.environments_to_publish()), [])
+        self.assertEqual([], list(build_env.environments_to_publish()))
 
     def test_get_stack_status(self) -> None:
         # Also covers testing get_env_status on the individual layers
@@ -508,7 +508,7 @@ class TestMinimalBuildConfig(unittest.TestCase):
             for layer_status in expected_stack_status_no_ops[category]:
                 layer_status["selected_operations"] = None
         stack_status_no_ops = build_env.get_stack_status(report_ops=False)
-        self.assertEqual(stack_status_no_ops, expected_stack_status_no_ops)
+        self.assertEqual(expected_stack_status_no_ops, stack_status_no_ops)
 
 
 class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
@@ -539,14 +539,14 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
     def check_publishing_request(
         self, publishing_request: StackPublishingRequest
     ) -> None:
-        self.assertEqual(_filter_manifest(publishing_request)[0], EXPECTED_MANIFEST)
+        self.assertEqual(EXPECTED_MANIFEST, _filter_manifest(publishing_request)[0])
 
     def test_default_output_directory(self) -> None:
         build_env = self.build_env
         output_path, publishing_request = build_env.publish_artifacts(dry_run=True)
         # Build folder is used as the default output directory
         expected_output_path = self.expected_build_path
-        self.assertEqual(output_path, expected_output_path)
+        self.assertEqual(expected_output_path, output_path)
         self.check_publishing_request(publishing_request)
         # The build directory necessarily already exists
         self.assertFalse(expected_output_path.exists())
@@ -557,7 +557,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
             "custom", dry_run=True
         )
         expected_output_path = self.working_path / "custom"
-        self.assertEqual(output_path, expected_output_path)
+        self.assertEqual(expected_output_path, output_path)
         self.check_publishing_request(publishing_request)
         # Dry run doesn't create the output directory
         self.assertFalse(expected_output_path.exists())
@@ -568,7 +568,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
             "~/custom", dry_run=True
         )
         expected_output_path = Path.home() / "custom"
-        self.assertEqual(output_path, expected_output_path)
+        self.assertEqual(expected_output_path, output_path)
         self.check_publishing_request(publishing_request)
         # Dry run doesn't create the output directory
         self.assertFalse(expected_output_path.exists())
@@ -579,7 +579,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         output_path, publishing_request = build_env.publish_artifacts(
             expected_output_path, dry_run=True
         )
-        self.assertEqual(output_path, expected_output_path)
+        self.assertEqual(expected_output_path, output_path)
         self.check_publishing_request(publishing_request)
         # Dry run doesn't create the output directory
         self.assertFalse(expected_output_path.exists())
@@ -588,20 +588,20 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         build_env = self.build_env
         expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_names = [env.env_name for env in build_env.all_environments()]
-        self.assertEqual(all_names, expected_names)
+        self.assertEqual(expected_names, all_names)
         # Lock files exist, so no envs should *need* locking,
         # but their lock status should still be checked by default
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = [env.env_name for env in envs_to_lock]
-        self.assertEqual(lock_names, expected_names)
+        self.assertEqual(expected_names, lock_names)
         self.assertFalse(any(env.needs_lock() for env in envs_to_lock))
         self.assertFalse(build_env._needs_lock())
         # All envs should be flagged for building
         build_names = [env.env_name for env in build_env.environments_to_build()]
-        self.assertEqual(build_names, expected_names)
+        self.assertEqual(expected_names, build_names)
         # All envs should be flagged for publishing
         publish_names = [env.env_name for env in build_env.environments_to_publish()]
-        self.assertEqual(publish_names, expected_names)
+        self.assertEqual(expected_names, publish_names)
 
     def test_env_categories_lock_with_lock_reset(self) -> None:
         build_env = self.build_env
@@ -611,17 +611,17 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         )
         expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_names = [env.env_name for env in build_env.all_environments()]
-        self.assertEqual(all_names, expected_names)
+        self.assertEqual(expected_names, all_names)
         # Lock reset requested, so all envs should need locking
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = [env.env_name for env in envs_to_lock]
-        self.assertEqual(lock_names, expected_names)
+        self.assertEqual(expected_names, lock_names)
         self.assertTrue(all(env.needs_lock() for env in envs_to_lock))
         self.assertTrue(build_env._needs_lock())
         # No envs should be flagged for building
-        self.assertEqual(list(build_env.environments_to_build()), [])
+        self.assertEqual([], list(build_env.environments_to_build()))
         # No envs should be flagged for publishing
-        self.assertEqual(list(build_env.environments_to_publish()), [])
+        self.assertEqual([], list(build_env.environments_to_publish()))
 
     def test_env_categories_lock_layers_with_lock_reset(self) -> None:
         build_env = self.build_env
@@ -637,13 +637,13 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         # Lock reset requested, so all envs should need locking
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = [env.env_name for env in envs_to_lock]
-        self.assertEqual(lock_names, all_names)
+        self.assertEqual(all_names, lock_names)
         self.assertTrue(all(env.needs_lock() for env in envs_to_lock))
         self.assertTrue(build_env._needs_lock())
         # No envs should be flagged for building
-        self.assertEqual(list(build_env.environments_to_build()), [])
+        self.assertEqual([], list(build_env.environments_to_build()))
         # No envs should be flagged for publishing
-        self.assertEqual(list(build_env.environments_to_publish()), [])
+        self.assertEqual([], list(build_env.environments_to_publish()))
 
     def test_env_categories_selective_lock_with_lock_reset(self) -> None:
         build_env = self.build_env
@@ -669,7 +669,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         # Ensure expected envs want and need locking
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = {env.env_name for env in envs_to_lock}
-        self.assertEqual(lock_names, all_names - no_lock)
+        self.assertEqual(all_names - no_lock, lock_names)
         self.assertTrue(
             all(
                 env.needs_lock() for env in envs_to_lock if env.env_name not in no_reset
@@ -682,7 +682,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         # Check the runtime environment has been added to layers to lock
         envs_to_lock = list(build_env.environments_to_lock())
         lock_names = {env.env_name for env in envs_to_lock}
-        self.assertEqual(lock_names, all_names - no_lock)
+        self.assertEqual(all_names - no_lock, lock_names)
         self.assertTrue(all(env.needs_lock() for env in envs_to_lock))
         self.assertTrue(build_env._needs_lock())
 
@@ -697,12 +697,12 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         del build_env  # Ensure all checks are run against the new instance
         expected_names = [env.env_name for env in EXPECTED_ENVIRONMENTS]
         all_names = [env.env_name for env in new_env.all_environments()]
-        self.assertEqual(all_names, expected_names)
+        self.assertEqual(expected_names, all_names)
         # Lock files still exist, so no envs should need locking
         unlocked = [
             env.env_name for env in new_env.all_environments() if env.needs_lock()
         ]
-        self.assertEqual(unlocked, [])
+        self.assertEqual([], unlocked)
         self.assertFalse(new_env._needs_lock())
 
 
@@ -773,9 +773,9 @@ class TestMinimalBuild(DeploymentTestCase):
         manifest_path, snippet_paths, archive_paths = publication_result
         # Check overall manifest file
         expected_manifest_path = expected_metadata_path / expected_metadata_name
-        self.assertEqual(manifest_path, expected_manifest_path)
+        self.assertEqual(expected_manifest_path, manifest_path)
         manifest_data = self._load_build_manifest(manifest_path)
-        self.assertEqual(manifest_data, dry_run_result)
+        self.assertEqual(dry_run_result, manifest_data)
         # Check individual archive manifests
         expected_summaries: dict[str, ArchiveSummary] = {}
         for archive_summaries in dry_run_result["layers"].values():
@@ -787,8 +787,8 @@ class TestMinimalBuild(DeploymentTestCase):
             install_target = archive_summary["install_target"]
             expected_snippet_name = f"{install_target}{expected_snippet_suffix}"
             expected_snippet_path = expected_env_metadata_path / expected_snippet_name
-            self.assertEqual(snippet_path, expected_snippet_path)
-            self.assertEqual(archive_summary, expected_summaries[install_target])
+            self.assertEqual(expected_snippet_path, snippet_path)
+            self.assertEqual(expected_summaries[install_target], archive_summary)
         # Check the names and location of the generated archives
         expected_archive_paths: list[Path] = []
         for archive_summaries in dry_run_result["layers"].values():
@@ -798,7 +798,7 @@ class TestMinimalBuild(DeploymentTestCase):
                 )
                 expected_archive_paths.append(expected_archive_path)
         expected_archive_paths.sort()
-        self.assertEqual(sorted(archive_paths), expected_archive_paths)
+        self.assertEqual(expected_archive_paths, sorted(archive_paths))
 
     @staticmethod
     def _run_postinstall(env_path: Path) -> None:
@@ -873,7 +873,7 @@ class TestMinimalBuild(DeploymentTestCase):
             for env in build_env.all_environments()
             if not env.needs_build()
         ]
-        self.assertEqual(already_built, [])
+        self.assertEqual([], already_built)
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
 
@@ -926,7 +926,7 @@ class TestMinimalBuild(DeploymentTestCase):
             dry_run_result, dry_run_last_locked_times = _filter_manifest(
                 build_env.publish_artifacts(dry_run=True)[1]
             )
-            self.assertEqual(dry_run_result, expected_dry_run_result)
+            self.assertEqual(expected_dry_run_result, dry_run_result)
             self.assertRecentlyLocked(dry_run_last_locked_times, minimum_lock_time)
             # Check for expected subprocess argument lookups
             for env in self.build_env.all_environments():
@@ -943,8 +943,8 @@ class TestMinimalBuild(DeploymentTestCase):
             tagged_dry_run_result, tagged_last_locked_times = _filter_manifest(
                 build_env.publish_artifacts(dry_run=True, tag_outputs=True)[1]
             )
-            self.assertEqual(tagged_dry_run_result, expected_tagged_dry_run_result)
-            self.assertEqual(tagged_last_locked_times, dry_run_last_locked_times)
+            self.assertEqual(expected_tagged_dry_run_result, tagged_dry_run_result)
+            self.assertEqual(dry_run_last_locked_times, tagged_last_locked_times)
             subtests_passed += 1
         # Test stage: ensure lock timestamps don't change when requirements don't change
         build_env.lock_environments()
@@ -954,8 +954,8 @@ class TestMinimalBuild(DeploymentTestCase):
             stable_dry_run_result, stable_last_locked_times = _filter_manifest(
                 build_env.publish_artifacts(dry_run=True)[1]
             )
-            self.assertEqual(stable_dry_run_result, expected_dry_run_result)
-            self.assertEqual(stable_last_locked_times, dry_run_last_locked_times)
+            self.assertEqual(expected_dry_run_result, stable_dry_run_result)
+            self.assertEqual(dry_run_last_locked_times, stable_last_locked_times)
             # Check for expected subprocess argument lookups
             for env in self.build_env.all_environments():
                 # The lock file is recreated, the timestamp metadata just doesn't
@@ -979,7 +979,7 @@ class TestMinimalBuild(DeploymentTestCase):
             relocked_dry_run_result, relocked_last_locked_times = _filter_manifest(
                 build_env.publish_artifacts(dry_run=True)[1]
             )
-            self.assertEqual(relocked_dry_run_result, expected_dry_run_result)
+            self.assertEqual(expected_dry_run_result, relocked_dry_run_result)
             self.assertGreater(minimum_relock_time, minimum_lock_time)
             self.assertRecentlyLocked(relocked_last_locked_times, minimum_relock_time)
             # Check for expected subprocess argument lookups
