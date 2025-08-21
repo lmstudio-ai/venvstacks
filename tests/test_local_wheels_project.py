@@ -284,7 +284,7 @@ class TestBuildEnvironment(DeploymentTestCase):
             for env in build_env.all_environments()
             if not env.needs_build()
         ]
-        self.assertEqual(already_built, [])
+        self.assertEqual([], already_built)
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
 

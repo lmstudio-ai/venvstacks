@@ -271,12 +271,12 @@ class SpecLoadingTestCase(unittest.TestCase):
         spec_keys = runtime_keys + framework_keys + application_keys
         self.assertCountEqual(spec_keys, set(spec_keys))
         expected_spec_names = [env.spec_name for env in expected_environments]
-        self.assertCountEqual(spec_keys, expected_spec_names)
+        self.assertCountEqual(expected_spec_names, spec_keys)
         spec_names = [env.name for env in stack_spec.all_environment_specs()]
-        self.assertCountEqual(spec_names, expected_spec_names)
+        self.assertCountEqual(expected_spec_names, spec_names)
         expected_env_names = [env.env_name for env in expected_environments]
         env_names = [env.env_name for env in stack_spec.all_environment_specs()]
-        self.assertCountEqual(env_names, expected_env_names)
+        self.assertCountEqual(expected_env_names, env_names)
         for rt_summary in expected_runtimes:
             spec_name = rt_summary.spec_name
             rt_env = stack_spec.runtimes[spec_name]
@@ -302,10 +302,10 @@ class SpecLoadingTestCase(unittest.TestCase):
             self.assertEqual(fw_dep_names, app_summary.framework_spec_names)
         del spec_name, fw_dep_names, app_env, app_summary
         # Check path attributes
-        self.assertEqual(stack_spec.spec_path, expected_spec_path)
+        self.assertEqual(expected_spec_path, stack_spec.spec_path)
         expected_requirements_dir_path = expected_spec_path.parent / "requirements"
         self.assertEqual(
-            stack_spec.requirements_dir_path, expected_requirements_dir_path
+            expected_requirements_dir_path, stack_spec.requirements_dir_path
         )
 
 
@@ -389,7 +389,7 @@ class DeploymentTestCase(unittest.TestCase):
             layer_config = json.loads(config_path.read_text(encoding="utf-8"))
             env_python = env_path / layer_config["python"]
             expected_python_path = env.python_path
-            self.assertEqual(str(env_python), str(expected_python_path))
+            self.assertEqual(str(expected_python_path), str(env_python))
             base_python_path = env_path / layer_config["base_python"]
             is_runtime_env = env.kind == LayerVariants.RUNTIME
             if is_runtime_env:
@@ -407,7 +407,7 @@ class DeploymentTestCase(unittest.TestCase):
                 expected_base_python_path = Path(
                     env_path, "..", base_runtime.install_target, relative_base_python
                 )
-            self.assertEqual(str(base_python_path), str(expected_base_python_path))
+            self.assertEqual(str(expected_base_python_path), str(base_python_path))
             env_sys_path = get_sys_path(env_python)
             # Base runtime environments are expected to be self-contained
             self.check_env_sys_path(
@@ -415,7 +415,7 @@ class DeploymentTestCase(unittest.TestCase):
             )
             # Only Python executables, links and/or wrapper scripts should be present
             bin_path = env.executables_path
-            self.assertEqual(list(bin_path.iterdir()), list(bin_path.glob("python*")))
+            self.assertEqual(list(bin_path.glob("python*")), list(bin_path.iterdir()))
             # RECORD files should exist, *without* any entries for executables
             pylib_path = env.pylib_path
             if next(pylib_path.glob("*.dist-info"), None) is not None:
@@ -482,9 +482,9 @@ class DeploymentTestCase(unittest.TestCase):
             assert env_config["launch_module"] == launch_module
             launch_result = run_module(env_python, launch_module)
             # Tolerate extra trailing whitespace on stdout
-            self.assertEqual(launch_result.stdout.rstrip(), self.EXPECTED_APP_OUTPUT)
+            self.assertEqual(self.EXPECTED_APP_OUTPUT, launch_result.stdout.rstrip())
             # Nothing at all should be emitted on stderr
-            self.assertEqual(launch_result.stderr, "")
+            self.assertEqual("", launch_result.stderr)
             # Support modules should be available for import
             support_module_info = app_env.get("app_support_modules")
             if support_module_info is not None:
@@ -493,8 +493,8 @@ class DeploymentTestCase(unittest.TestCase):
                     # Any support modules used in test cases produce no output
                     # (other than potentially a newline indicator)
                     mod_exec_result = run_module(env_python, module_info["name"])
-                    self.assertEqual(mod_exec_result.stdout.rstrip(), "")
-                    self.assertEqual(mod_exec_result.stderr, "")
+                    self.assertEqual("", mod_exec_result.stdout.rstrip())
+                    self.assertEqual("", mod_exec_result.stderr)
 
     def check_environment_exports(
         self, export_path: Path, export_paths: ExportedEnvironmentPaths

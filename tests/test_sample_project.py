@@ -258,7 +258,7 @@ class TestBuildEnvironment(DeploymentTestCase):
             for env in build_env.all_environments()
             if not env.needs_build()
         ]
-        self.assertEqual(already_built, [])
+        self.assertEqual([], already_built)
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
 
@@ -292,7 +292,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         subtests_started += 1
         with self.subTest("Ensure lock files are reproducible"):
             self.assertEqual(
-                generated_locked_requirements, committed_locked_requirements
+                committed_locked_requirements, generated_locked_requirements
             )
             export_locked_requirements = self.export_on_success  # Only export if forced
             subtests_passed += 1
@@ -310,12 +310,12 @@ class TestBuildEnvironment(DeploymentTestCase):
         with self.subTest("Ensure archive publication requests are reproducible"):
             # Check generation of untagged archive names
             dry_run_result = build_env.publish_artifacts(dry_run=True)[1]
-            self.assertEqual(dry_run_result, expected_dry_run_result)
+            self.assertEqual(expected_dry_run_result, dry_run_result)
             # Check generation of tagged archive names
             tagged_dry_run_result = build_env.publish_artifacts(
                 dry_run=True, tag_outputs=True
             )[1]
-            self.assertEqual(tagged_dry_run_result, expected_tagged_dry_run_result)
+            self.assertEqual(expected_tagged_dry_run_result, tagged_dry_run_result)
             # Dry run metadata may be incorrect because the expected outputs are being updated,
             # so always continue on and execute the full archive publication subtest
             subtests_passed += 1
@@ -326,7 +326,7 @@ class TestBuildEnvironment(DeploymentTestCase):
             # No changes to lock files
             post_rebuild_locked_requirements = _collect_locked_requirements(build_env)
             self.assertEqual(
-                post_rebuild_locked_requirements, generated_locked_requirements
+                generated_locked_requirements, post_rebuild_locked_requirements
             )
             subtests_passed += 1
         # Test stage: ensure built artifacts have the expected manifest contents
@@ -339,12 +339,12 @@ class TestBuildEnvironment(DeploymentTestCase):
                 manifest_path.parent, snippet_paths
             )
             self.assertEqual(
-                generated_archive_metadata.combined_data,
                 expected_archive_metadata.combined_data,
+                generated_archive_metadata.combined_data,
             )
             self.assertCountEqual(
-                generated_archive_metadata.snippet_data,
                 expected_archive_metadata.snippet_data,
+                generated_archive_metadata.snippet_data,
             )
             # Archive should be emitted for every environment defined for this platform
             num_environments = len(list(build_env.all_environments()))
@@ -353,7 +353,7 @@ class TestBuildEnvironment(DeploymentTestCase):
             # No changes to lock files
             post_publish_locked_requirements = _collect_locked_requirements(build_env)
             self.assertEqual(
-                post_publish_locked_requirements, generated_locked_requirements
+                generated_locked_requirements, post_publish_locked_requirements
             )
             subtests_passed += 1
         if export_published_archives:
@@ -434,13 +434,13 @@ class TestBuildEnvironment(DeploymentTestCase):
             for env in build_env.all_environments():
                 subtests_started += 1
                 with self.subTest(env=env.env_name, requested=requested):
-                    self.assertEqual(env.want_lock, want_lock, "want_lock mismatch")
+                    self.assertEqual(want_lock, env.want_lock, "want_lock mismatch")
                     self.assertTrue(
                         env.want_lock_reset, "want_lock_reset should be True"
                     )
-                    self.assertEqual(env.want_build, want_build, "want_build mismatch")
+                    self.assertEqual(want_build, env.want_build, "want_build mismatch")
                     self.assertEqual(
-                        env.want_publish, want_publish, "want_publish mismatch"
+                        want_publish, env.want_publish, "want_publish mismatch"
                     )
                     subtests_passed += 1
         self.assertEqual(
@@ -456,13 +456,13 @@ class TestBuildEnvironment(DeploymentTestCase):
             if not (name := env.env_name).startswith("framework-s")
         )
         self.assertNotEqual(expected_layers, set())
-        self.assertEqual(build_env.filter_layers(matching), (expected_layers, set()))
+        self.assertEqual((expected_layers, set()), build_env.filter_layers(matching))
         unknown = ["unknown", "app-?", "*-app"]
         unknown_set = set(unknown)
-        self.assertEqual(build_env.filter_layers(unknown), (set(), unknown_set))
+        self.assertEqual((set(), unknown_set), build_env.filter_layers(unknown))
         combined = sorted(matching + unknown)
         self.assertEqual(
-            build_env.filter_layers(combined), (expected_layers, unknown_set)
+            (expected_layers, unknown_set), build_env.filter_layers(combined)
         )
 
     def test_layer_selection(self) -> None:
