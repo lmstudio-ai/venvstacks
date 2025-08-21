@@ -16,7 +16,13 @@ produces are `reproducible <https://reproducible-builds.org/>`__: if the same
 stack definition is built again later with the same
 `build environment <https://reproducible-builds.org/docs/perimeter/>`__,
 then the resulting layer archives will be byte-for-byte identical with
-those produced by the original stack build.
+those produced by the original stack build. In general, keeping the versions of
+``venvstacks``, ``uv``, and ``pbs-installer`` consistent should produce
+consistent output artifacts. Note that changing the Python runtime used to
+build the layers *may* change the hashes if the standard library's archiving
+implementation changes (for example, CPython 3.14 switched to ``zlib-ng``,
+which means most archives generated for Windows layers will be smaller than
+previous versions when generated on CPython 3.14 or later)
 
 One of the ways this is achieved is by requiring that all Python packages
 included in a stack build be provided as pre-built

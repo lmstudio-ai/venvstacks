@@ -2,6 +2,7 @@
 
 import os.path
 import shutil
+import sys
 import tempfile
 
 from itertools import chain
@@ -61,7 +62,12 @@ def _define_build_env(working_path: Path) -> BuildEnvironment:
 
 def _get_expected_metadata(build_env: BuildEnvironment) -> ManifestData:
     """Path to the expected sample project archive metadata for the current platform."""
-    return ManifestData(SAMPLE_PROJECT_MANIFESTS_PATH / build_env.build_platform)
+    # CPython switched to a new Windows zlib implementation in 3.14,
+    # so its expected metadata is stored separately
+    metadata_path = SAMPLE_PROJECT_MANIFESTS_PATH / build_env.build_platform
+    if sys.version_info >= (3, 14) and sys.platform == "win32":
+        metadata_path = metadata_path / "py3.14"
+    return ManifestData(metadata_path)
 
 
 def _get_expected_dry_run_result(

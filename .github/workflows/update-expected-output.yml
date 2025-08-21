@@ -54,15 +54,23 @@ jobs:
       # limitation: https://github.com/orgs/community/discussions/17245
       want-pr-linux: ${{ steps.set-matrix-result.outputs.want-pr-ubuntu }}
       want-pr-windows: ${{ steps.set-matrix-result.outputs.want-pr-windows }}
+      want-pr-windows-zlib-ng: ${{ steps.set-matrix-result.outputs.want-pr-windows-zlib-ng }}
       want-pr-macos: ${{ steps.set-matrix-result.outputs.want-pr-macos }}
     strategy:
       fail-fast: true  # Don't bother updating if any test run fails
       max-parallel: 3
       matrix:
-        # Expected test output is required to be Python version independent
-        # The version specified here should match the `test` label in `tox.ini`
-        python-version: [3.12]
+        # The expected test output aims to be Python version independent,
+        # but CPython switched to a new zlib implementation in 3.14
+        # The first version here should match the `test` label in `tox.ini`
+        python-version: [3.12, 3.14]
         os: [ubuntu-22.04, windows-2022, macos-14]
+        suffix: [""]
+        include:
+              # Generate an additional set of expected output on Windows
+              - os: windows-2022
+                python-version: 3.14
+                suffix: "-zlib-ng"
 
     # Check https://github.com/actions/action-versions/tree/main/config/actions
     # for latest versions if the standard actions start emitting warnings
@@ -172,7 +180,7 @@ jobs:
         output_var_name="want-pr-$(echo "$CI_TARGET" | cut -d '-' -f 1)"
         echo "$output_var_name=true"| tee -a "$GITHUB_OUTPUT"
       env:
-        CI_TARGET: ${{ matrix.os }}
+        CI_TARGET: ${{ matrix.os }}${{ matrix.suffix }}
 
   update:
     # Run this as a separate step to minimise the scope of the access token
@@ -180,7 +188,7 @@ jobs:
     needs: [timestamp, test]
     runs-on: ubuntu-22.04
     # Need to check the output for each matrix job separately due to GitHub matrix output limitations
-    if: needs.test.outputs.want-pr-linux || needs.test.outputs.want-pr-windows || needs.test.outputs.want-pr-macos
+    if: needs.test.outputs.want-pr-linux || needs.test.outputs.want-pr-windows || needs.test.outputs.want-pr-windows-zlib-ng || needs.test.outputs.want-pr-macos
     permissions:
       # Creating PRs involves more than just read permissions
       contents: write
