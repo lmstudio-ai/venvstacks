@@ -1,6 +1,6 @@
 [project]
 name = "venvstacks"
-version = "0.7.1.dev0"
+version = "0.8.0.dev0"
 description = "Use layered Python virtual environment stacks to share large dependencies"
 authors = [
     {name = "Alyssa Coghlan", email = "ncoghlan@gmail.com"},
@@ -47,6 +47,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Build Tools",
     "Typing :: Typed",
 ]
