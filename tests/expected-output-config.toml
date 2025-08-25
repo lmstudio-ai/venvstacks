@@ -33,4 +33,4 @@ UV_EXCLUDE_NEWER="2025-04-27 00:00:00+00:00"
 # Metadata updates can also be requested when the
 # expected layer content in the sample project changes
 
-# Last requested update: retain RECORD files
+# Last requested update: install packages with uv

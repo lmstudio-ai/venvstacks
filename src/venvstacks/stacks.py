@@ -191,23 +191,18 @@ class PackageIndexConfig:
     def _get_uv_pip_compile_args(self) -> list[str]:
         return self._get_common_pip_args()
 
-    def _get_pip_install_args(self) -> list[str]:
+    def _get_uv_pip_install_args(self) -> list[str]:
         return self._get_common_pip_args()
 
     @staticmethod
     def _get_uv_config_path(build_path: Path) -> Path:
         return build_path / "uv.toml"
 
-    @staticmethod
-    def _get_pip_config_path(build_path: Path) -> Path:
-        return build_path / "pip.conf"
-
     def _write_tool_config_files(self, build_path: Path) -> None:
         # For now, the config files are always empty
         # They are specified to reduce potential interference from user and system config files
         # In the future, settings may migrate from the CLI options to the config file
         self._get_uv_config_path(build_path).write_text("")
-        self._get_pip_config_path(build_path).write_text("")
 
 
 ######################################################
@@ -221,6 +216,36 @@ class PackageIndexConfig:
 LayerBaseName = NewType("LayerBaseName", str)
 EnvNameBuild = NewType("EnvNameBuild", str)
 EnvNameDeploy = NewType("EnvNameDeploy", str)
+
+
+def _ignore_req_comments(requirements: Iterable[str]) -> Sequence[str]:
+    # Ignore comments and blank lines in a requirements file and sort the result
+    # Artifact hash declarations are still incorporated, as are trailing backslash line escapes
+    result: list[str] = []
+    for req_line in requirements:
+        req, _sep, _comment = req_line.strip().partition("#")
+        req = req.strip()
+        if req:
+            result.append(req)
+    result.sort()
+    return result
+
+
+def _extract_pinned_reqs(requirements: Iterable[str]) -> Iterable[str]:
+    # Extract *just* the pinned requirements from a requirements file
+    # Only non-comment lines containing "==" that don't start with whitespace are considered
+    for req_line in requirements:
+        req = req_line.split()[0].strip()
+        if not req:
+            # Line is blank or starts with whitespace
+            continue
+        if req.startswith("#"):
+            # Line is a comment
+            continue
+        if "==" not in req:
+            # Line is not a pinned requirement
+            continue
+        yield req
 
 
 class EnvironmentLockMetadata(TypedDict):
@@ -376,19 +401,8 @@ class EnvironmentLock:
         return _format_as_utc(self.last_locked)
 
     @classmethod
-    def _clean_reqs(cls, requirements: Iterable[str]) -> list[str]:
-        result: list[str] = []
-        for req_line in requirements:
-            req, _sep, _comment = req_line.strip().partition("#")
-            req = req.strip()
-            if req:
-                result.append(req)
-        result.sort()
-        return result
-
-    @classmethod
     def _hash_reqs(cls, requirements: Iterable[str]) -> str:
-        return hash_strings(cls._clean_reqs(requirements))
+        return hash_strings(_ignore_req_comments(requirements))
 
     @classmethod
     def _hash_req_file(cls, requirements_path: Path) -> str | None:
@@ -1383,7 +1397,6 @@ class LayerEnvBase(ABC):
     env_lock: EnvironmentLock = field(init=False, repr=False)
     _build_metadata_path: Path = field(init=False, repr=False)
     _uv_config_path: Path = field(init=False, repr=False)
-    _pip_config_path: Path = field(init=False, repr=False)
 
     # Derived from subclass py_version in __post_init__
     _py_version_info: tuple[str, str] = field(init=False, repr=False)
@@ -1486,7 +1499,6 @@ class LayerEnvBase(ABC):
         )
         index_config = self.index_config
         self._uv_config_path = index_config._get_uv_config_path(build_path)
-        self._pip_config_path = index_config._get_pip_config_path(build_path)
 
         # Note: purelib and platlib are the same location in virtual environments
         # (even when they have different names, platlib is a symlink to purelib)
@@ -1749,43 +1761,26 @@ class LayerEnvBase(ABC):
         uv_pip_args.append(os.fspath(requirements_input_path))
         return self._run_uv_pip(uv_pip_args)
 
-    def _run_pip(
-        self, cmd_args: list[str], env: Mapping[str, str] | None = None, **kwds: Any
+    def _run_uv_pip_install(
+        self,
+        requirements_path: StrPath,
+        overrides: Sequence[StrPath],
     ) -> subprocess.CompletedProcess[str]:
-        run_env = dict(() if env is None else env)
-        run_env["PIP_CONFIG_FILE"] = str(self._pip_config_path)
-        command = [
-            str(self.tools_python_path),
-            "-X",
-            "utf8",
-            "-Im",
-            "pip",
+        uv_pip_args = [
+            "install",
             "--python",
             str(self.python_path),
-            "--no-input",
-            *cmd_args,
+            "--python-version",
+            self.py_version,
+            *self.index_config._get_uv_pip_install_args(),
+            "--quiet",
+            "--no-color",
+            "--no-config",
         ]
-        return run_python_command(command, env=run_env, **kwds)
-
-    def _run_pip_install(
-        self, *pip_install_args: str
-    ) -> subprocess.CompletedProcess[str]:
-        # TODO: Switch to `uv pip install` once https://github.com/astral-sh/uv/issues/2500
-        #       is resolved (so environment layering is still handled correctly)
-        # Requirements are fully transitively locked, so no implicit deps are allowed
-        # Implicit source builds are not supported (use local wheel dirs instead)
-        pip_args = [
-            "install",
-            "--no-warn-script-location",
-            *self.index_config._get_pip_install_args(),
-            "--no-deps",
-            "--upgrade",
-            *pip_install_args,
-        ]
-        # TODO: adjust how pip is executed based on UI verbosity settings
-        result = self._run_pip(pip_args)
-        _UI.echo(f"Dependencies installed and updated in {str(self.env_path)!r}")
-        return result
+        for override_path in overrides:
+            uv_pip_args.extend(("--overrides", os.fspath(override_path)))
+        uv_pip_args.extend(("-r", os.fspath(requirements_path)))
+        return self._run_uv_pip(uv_pip_args)
 
     def get_constraint_paths(self) -> list[Path]:
         """Get the lower level layer constraints imposed on this environment."""
@@ -1890,7 +1885,7 @@ class LayerEnvBase(ABC):
     def _iter_dependencies(self) -> Iterator["LayerEnvBase"]:
         return iter(())
 
-    def get_lock_inputs(self) -> tuple[Path, Path, list[Path]]:
+    def get_lock_inputs(self) -> tuple[Path, Path, Sequence[Path]]:
         """Ensure the inputs needed to lock this environment are defined and valid."""
         unlocked_deps = [
             env.env_name for env in self._iter_dependencies() if env.needs_lock()
@@ -1947,12 +1942,8 @@ class LayerEnvBase(ABC):
         assert not self.needs_lock()
         return self.env_lock
 
-    def install_requirements(self) -> subprocess.CompletedProcess[str]:
-        """Install the locked layer requirements into this environment.
-
-        Note: assumes dependencies have already been installed into linked layers.
-        """
-        # Run a pip dependency upgrade inside the target environment
+    def get_install_inputs(self) -> tuple[Path, Sequence[Path]]:
+        """Ensure the inputs needed to install into this environment are defined and valid."""
         if not self.env_lock.has_valid_lock:
             lock_diagnostics = _format_json(self.env_lock.get_diagnostics())
             failure_details = [
@@ -1961,10 +1952,41 @@ class LayerEnvBase(ABC):
                 lock_diagnostics,
             ]
             self._fail_build("\n".join(failure_details))
-        install_result = self._run_pip_install(
-            "-r",
-            str(self.requirements_path),
+        exclusion_path = self.env_path.with_suffix(".exclusions.txt")
+        constraints_paths = self.get_constraint_paths()
+        constraints = set[str]()
+        for constraints_path in constraints_paths:
+            pinned_reqs = _extract_pinned_reqs(
+                constraints_path.read_text().splitlines()
+            )
+            constraints.update(pinned_reqs)
+        layered_exclusions = [
+            f'{req}; sys_platform == "never"' for req in sorted(constraints)
+        ]
+        if layered_exclusions:
+            exclusion_contents = [
+                f"# Excluding packages from lower layers for {self.env_name}",
+                "#     Auto-generated by venvstacks (DO NOT EDIT)",
+                *layered_exclusions,
+                "",
+            ]
+            exclusion_path.write_text("\n".join(exclusion_contents))
+            exclusion_paths = [exclusion_path]
+        else:
+            exclusion_paths = []
+        return (
+            self.requirements_path,
+            exclusion_paths,
         )
+
+    def install_requirements(self) -> subprocess.CompletedProcess[str]:
+        """Install the locked layer requirements into this environment.
+
+        Note: assumes dependencies have already been installed into linked layers.
+        """
+        requirements_path, exclusion_paths = self.get_install_inputs()
+        # Run a pip dependency upgrade inside the target environment
+        install_result = self._run_uv_pip_install(requirements_path, exclusion_paths)
         if not _WINDOWS_BUILD:
             symlink_dir_path = self.dynlib_path
             if symlink_dir_path is None:
@@ -2194,8 +2216,14 @@ class RuntimeEnv(LayerEnvBase):
                 to_be_removed.append(pylib)
         if not to_be_removed:
             return None
-        pip_args = ["uninstall", "-y", *to_be_removed]
-        return self._run_pip(pip_args)
+        pip_args = [
+            "uninstall",
+            "--python",
+            str(self.python_path),
+            *to_be_removed,
+        ]
+        # "uv pip uninstall" sends routine output to stderr for not-readily-apparent reasons...
+        return self._run_uv_pip(pip_args, stderr=subprocess.STDOUT)
 
     def _create_new_environment(self, *, lock_only: bool = False) -> None:
         self._clean_environment()
