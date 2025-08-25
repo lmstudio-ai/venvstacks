@@ -61,7 +61,7 @@ class _WheelBuildEnv:
         self._venv_path = venv_path = working_path / "build_venv"
         venv.create(venv_path, symlinks=(not WINDOWS_BUILD), with_pip=True)
         self._python_path = python_path = get_env_python(venv_path)
-        self._run_pip_install(
+        self._run_uv_pip_install(
             ["-r", str(WHEEL_BUILD_REQUIREMENTS_PATH)], with_index=True
         )
         self._venv_bin_path = python_path.parent
@@ -70,26 +70,28 @@ class _WheelBuildEnv:
         # Test suite is done with the build, only keep the built wheels around
         shutil.rmtree(self._venv_path)
 
-    def _run_pip(
+    def _run_uv(
         self, cmd_args: list[str], **kwds: Any
     ) -> subprocess.CompletedProcess[str]:
         command = [
-            str(self._python_path),
+            sys.executable,
             "-X",
             "utf8",
             "-Im",
-            "pip",
-            "--no-input",
+            "uv",
             *cmd_args,
         ]
         return run_python_command(command, **kwds)
 
-    def _run_pip_install(
+    def _run_uv_pip_install(
         self, cmd_args: list[str], *, with_index: bool, **kwds: Any
     ) -> subprocess.CompletedProcess[str]:
-        return self._run_pip(
+        return self._run_uv(
             [
+                "pip",
                 "install",
+                "--python",
+                str(self._python_path),
                 *(() if with_index else ("--no-index",)),
                 "--no-deps",
                 "--only-binary",
@@ -108,12 +110,15 @@ class _WheelBuildEnv:
         }
         if venv_bin_dir not in path_envvar:
             env_settings["PATH"] = f"{venv_bin_dir}{os.pathsep}{path_envvar}"
-        result = self._run_pip(
+        result = self._run_uv(
             [
-                "wheel",
+                "build",
+                "--wheel",
+                "--python",
+                str(self._python_path),
                 "--no-index",
                 "--no-build-isolation",  # Build env is managed by the test suite
-                "--wheel-dir",
+                "--out-dir",
                 str(self.wheel_path),
                 str(src_path),
             ],
@@ -138,7 +143,7 @@ class _WheelBuildEnv:
         return result
 
     def install_built_wheel(self, name: str) -> subprocess.CompletedProcess[str]:
-        return self._run_pip_install([name], with_index=False)
+        return self._run_uv_pip_install([name], with_index=False)
 
 
 def _build_local_wheels(working_path: Path) -> Path:

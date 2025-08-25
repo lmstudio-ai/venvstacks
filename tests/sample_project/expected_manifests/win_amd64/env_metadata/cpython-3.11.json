@@ -1,10 +1,10 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "a453b9ce9be9566b13521b5e930cb47a2e3d761d093fc8a2140ec645c3ef5acc"
+    "sha256": "e0dc7878d3d807c01178561b45a70e56368bf1eb4a1b2178c22239cff374696d"
   },
   "archive_name": "cpython-3.11.zip",
-  "archive_size": 50148496,
+  "archive_size": 50145433,
   "bound_to_implementation": true,
   "install_target": "cpython-3.11",
   "layer_name": "cpython-3.11",
