@@ -213,7 +213,7 @@ def make_mock_index_config(reference_config: PackageIndexConfig | None = None) -
             mock_method.side_effect = getattr(field_value, method_name)
     # Still call the actual CLI arg retrieval methods
     for attr_name in dir(reference_config):
-        if not attr_name.startswith(("_get_pip_", "_get_uv_")):
+        if not attr_name.startswith("_get_uv_"):
             continue
         mock_method = getattr(mock_config, attr_name)
         mock_method.side_effect = getattr(reference_config, attr_name)
@@ -447,6 +447,8 @@ class DeploymentTestCase(unittest.TestCase):
             self.assertTrue(env_sys_path)  # Environment should have sys.path entries
             # Runtime environment layer should be completely self-contained
             self.check_env_sys_path(env_path, env_sys_path, self_contained=True)
+            # No hidden build files should be published
+            self.assertEqual(list(env_path.glob(".*")), [])
         for fw_env in layered_metadata["frameworks"]:
             env_name, env_path, env_sys_path = get_env_details(fw_env)
             self.assertTrue(env_sys_path)  # Environment should have sys.path entries
@@ -457,6 +459,8 @@ class DeploymentTestCase(unittest.TestCase):
             short_runtime_name = ".".join(runtime_layer.split(".")[:2])
             self.assertSysPathEntry(env_name, env_sys_path)
             self.assertSysPathEntry(short_runtime_name, env_sys_path)
+            # No hidden build files should be published
+            self.assertEqual(list(env_path.glob(".*")), [])
         for app_env in layered_metadata["applications"]:
             env_name, env_path, env_sys_path = get_env_details(app_env)
             self.assertTrue(env_sys_path)  # Environment should have sys.path entries
@@ -473,6 +477,8 @@ class DeploymentTestCase(unittest.TestCase):
             for fw_env_name in app_env["required_layers"]:
                 self.assertSysPathEntry(fw_env_name, env_sys_path)
             self.assertSysPathEntry(short_runtime_name, env_sys_path)
+            # No hidden build files should be published
+            self.assertEqual(list(env_path.glob(".*")), [])
             # Launch module should be executable
             env_config_path = env_path / DEPLOYED_LAYER_CONFIG
             env_config = json.loads(env_config_path.read_text(encoding="utf-8"))

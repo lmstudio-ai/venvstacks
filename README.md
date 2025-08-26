@@ -50,13 +50,12 @@ of the `venvstacks` project itself.
 
 The layered framework and app environments are created with the standard library's `venv` module.
 
-The Python packages in each layer are currently being installed directly with `pip`, but
-are expected to eventually move to being installed with `uv` to reduce environment
-setup times during builds.
+Platform-specific environment locking for each layer is performed using `uv pip compile`,
+with the locked requirements for lower layers being used as constraints files when
+locking layers that depend on them.
 
-Platform-specific environment locking for each layer is performed using
-`uv pip compile`. Refer to `pyproject.toml` for the specific issues preventing
-the adoption of `uv` for additional purposes.
+The Python packages in each layer are installed with `uv pip install`, with the override mechanism
+being used to prevent installation of the packages provided by lower layers.
 
 `venvstacks` expects precompiled `wheel` archives to be available for all included
 Python distribution packages. When this is not the case, other projects like

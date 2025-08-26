@@ -934,7 +934,7 @@ class TestMinimalBuild(DeploymentTestCase):
                 mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
                 mock_compile.assert_called_once_with()
                 mock_compile.reset_mock()
-                mock_install = cast(Mock, env.index_config._get_pip_install_args)
+                mock_install = cast(Mock, env.index_config._get_uv_pip_install_args)
                 mock_install.assert_called_once_with()
                 mock_install.reset_mock()
             subtests_passed += 1
@@ -963,7 +963,7 @@ class TestMinimalBuild(DeploymentTestCase):
                 mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
                 mock_compile.assert_called_once_with()
                 mock_compile.reset_mock()
-                mock_install = cast(Mock, env.index_config._get_pip_install_args)
+                mock_install = cast(Mock, env.index_config._get_uv_pip_install_args)
                 mock_install.assert_not_called()
             subtests_passed += 1
         # Test stage: ensure lock timestamps *do* change when the requirements "change"
@@ -988,7 +988,7 @@ class TestMinimalBuild(DeploymentTestCase):
                 mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
                 mock_compile.assert_called_once_with()
                 mock_compile.reset_mock()
-                mock_install = cast(Mock, env.index_config._get_pip_install_args)
+                mock_install = cast(Mock, env.index_config._get_uv_pip_install_args)
                 mock_install.assert_not_called()
             subtests_passed += 1
         # Test stage: ensure exported environments allow launch module execution
