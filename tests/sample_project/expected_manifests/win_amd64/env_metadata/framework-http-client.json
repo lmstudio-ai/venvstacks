@@ -1,10 +1,10 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "1a6d241d44136b41250f463b7490e974e5089631159a204ef5fb9e00f71c7f48"
+    "sha256": "0d7d5a3c7e1f0ccf06ebffa6532228ccd359310b1851dad5288e1bc2add88e39"
   },
   "archive_name": "framework-http-client.zip",
-  "archive_size": 809381,
+  "archive_size": 809379,
   "bound_to_implementation": true,
   "install_target": "framework-http-client",
   "layer_name": "framework-http-client",
