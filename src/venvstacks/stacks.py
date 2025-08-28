@@ -151,7 +151,7 @@ def _resolve_lexical_path(path: StrPath, base_path: Path, /) -> Path:
 class PackageIndexConfig:
     """Python package index access configuration."""
 
-    query_default_index: bool = field(default=True)
+    query_default_index: bool = True
     local_wheel_dirs: InitVar[Sequence[StrPath] | None] = None
     local_wheel_paths: list[Path] = field(init=False)
 
@@ -198,11 +198,18 @@ class PackageIndexConfig:
     def _get_uv_config_path(build_path: Path) -> Path:
         return build_path / "uv.toml"
 
-    def _write_tool_config_files(self, build_path: Path) -> None:
-        # For now, the config files are always empty
-        # They are specified to reduce potential interference from user and system config files
-        # In the future, settings may migrate from the CLI options to the config file
-        self._get_uv_config_path(build_path).write_text("")
+    def _write_tool_config_files(self, spec_path: Path, build_path: Path) -> None:
+        baseline_config_path = self._get_uv_config_path(spec_path.parent)
+        if baseline_config_path.exists():
+            # TODO: At least confirm file is valid TOML (while leaving full validation to uv)
+            baseline_config = baseline_config_path.read_text()
+        else:
+            # If no baseline config is given, the tool config file is still created
+            # This reduces the potential for interference from user and system config files
+            baseline_config = "# No baseline uv tool config\n"
+        # TODO: migrate remaining settings from subprocess CLI options to the config file
+        tool_config_path = self._get_uv_config_path(build_path)
+        tool_config_path.write_text(baseline_config, encoding="utf-8")
 
 
 ######################################################
@@ -3443,7 +3450,9 @@ class BuildEnvironment:
         build_path = self.build_path
         build_path.mkdir(parents=True, exist_ok=True)
         # Ensure the tool config files exist
-        self.index_config._write_tool_config_files(build_path)
+        self.index_config._write_tool_config_files(
+            self.stack_spec.spec_path, build_path
+        )
 
     def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
         """Lock build environments for specified layers."""

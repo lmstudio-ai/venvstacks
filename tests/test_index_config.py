@@ -53,6 +53,35 @@ class TestConfiguredOptions:
         ]
 
 
+class TestBaselineToolConfig:
+    TEST_CONFIG = PackageIndexConfig()
+
+    def test_default_tool_config(self, temp_dir_path: Path) -> None:
+        # Test tool config with no user supplied baseline config
+        spec_path = temp_dir_path / "venvstacks.toml"
+        output_dir_path = temp_dir_path
+        self.TEST_CONFIG._write_tool_config_files(spec_path, output_dir_path)
+        output_config_path = output_dir_path / "uv.toml"
+        assert output_config_path.exists()
+        assert "# No baseline uv tool config\n" == output_config_path.read_text(
+            encoding="utf-8"
+        )
+
+    def test_custom_tool_config(self, temp_dir_path: Path) -> None:
+        # Test tool config with no user supplied baseline config
+        spec_path = temp_dir_path / "venvstacks.toml"
+        baseline_config_path = temp_dir_path / "uv.toml"
+        baseline_config_path.write_text("# Custom uv config\n", encoding="utf-8")
+        output_dir_path = temp_dir_path / "_output"
+        output_dir_path.mkdir()
+        self.TEST_CONFIG._write_tool_config_files(spec_path, output_dir_path)
+        output_config_path = output_dir_path / "uv.toml"
+        assert output_config_path.exists()
+        assert "# Custom uv config\n" == output_config_path.read_text(
+            encoding="utf-8"
+        )
+
+
 # Miscellaneous test cases
 def test_wheel_dir_not_in_sequence() -> None:
     with pytest.raises(TypeError):

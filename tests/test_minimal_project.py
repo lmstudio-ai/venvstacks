@@ -876,6 +876,10 @@ class TestMinimalBuild(DeploymentTestCase):
         self.assertEqual([], already_built)
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
+        # Ensure creating the environments implicitly creates the uv tool config file
+        uv_config_path = build_env.build_path / "uv.toml"
+        self.assertTrue(uv_config_path.exists())
+        self.assertEqual("# No baseline uv tool config", uv_config_path.read_text().rstrip())
 
     def test_build_with_invalid_locks(self) -> None:
         # Ensure attempt to build without locking first raises a detailed exception
