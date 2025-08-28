@@ -1,10 +1,10 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "2e56409ecf8d75a3c53fcac9165db3de7f73d16131ed673a4d1d10e29cf73333"
+    "sha256": "9198252547e32e335deb20c0110cc050df08580c99d7682239675d3a84652a2b"
   },
   "archive_name": "framework-scipy@2.zip",
-  "archive_size": 45154189,
+  "archive_size": 45154187,
   "bound_to_implementation": true,
   "install_target": "framework-scipy@2",
   "layer_name": "framework-scipy",
