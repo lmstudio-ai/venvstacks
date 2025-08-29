@@ -195,11 +195,15 @@ class PackageIndexConfig:
         return self._get_common_pip_args()
 
     @staticmethod
+    def _get_uv_input_config_path(spec_path: Path) -> Path:
+        return spec_path.parent / "venvstacks.uv.toml"
+
+    @staticmethod
     def _get_uv_config_path(build_path: Path) -> Path:
         return build_path / "uv.toml"
 
     def _write_tool_config_files(self, spec_path: Path, build_path: Path) -> None:
-        baseline_config_path = self._get_uv_config_path(spec_path.parent)
+        baseline_config_path = self._get_uv_input_config_path(spec_path)
         if baseline_config_path.exists():
             # TODO: At least confirm file is valid TOML (while leaving full validation to uv)
             baseline_config = baseline_config_path.read_text()
