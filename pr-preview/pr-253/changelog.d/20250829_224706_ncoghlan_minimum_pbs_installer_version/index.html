@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="search" title="Search" href="../../search/" />
-        <link rel="canonical" href="https://venvstacks.lmstudio.ai/changelog.d/20250829_012014_ncoghlan_accept_uv_tool_config/" />
+        <link rel="canonical" href="https://venvstacks.lmstudio.ai/changelog.d/20250829_224706_ncoghlan_minimum_pbs_installer_version/" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
-        <title>Added - venvstacks documentation</title>
+        <title>Fixed - venvstacks documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -267,12 +267,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/blob/main/docs/changelog.d/20250829_012014_ncoghlan_accept_uv_tool_config.rst?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/blob/main/docs/changelog.d/20250829_224706_ncoghlan_minimum_pbs_installer_version.rst?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/edit/main/docs/changelog.d/20250829_012014_ncoghlan_accept_uv_tool_config.rst" rel="edit" title="Edit this page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/edit/main/docs/changelog.d/20250829_224706_ncoghlan_minimum_pbs_installer_version.rst" rel="edit" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -291,12 +291,12 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="added">
-<h1>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h1>
+          <section id="fixed">
+<h1>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">¶</a></h1>
 <ul class="simple">
-<li><p>A <code class="docutils literal notranslate"><span class="pre">venvstacks.uv.toml</span></code> file located alongside the stack definition file is now
-incorporated into the configuration passed to <code class="docutils literal notranslate"><span class="pre">uv</span></code> when locking and
-building environments (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>).</p></li>
+<li><p>A minimum <code class="docutils literal notranslate"><span class="pre">pbs-installer==2025.8.27</span></code> version is now specified. This ensures
+that the smaller CPython base runtime installations that omit debug
+symbols are consistently preferred (reported in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/242">#242</a>).</p></li>
 </ul>
 </section>
 
