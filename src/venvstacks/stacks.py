@@ -48,6 +48,8 @@ from typing import (
     TypedDict,
 )
 
+import tomlkit
+
 from installer.records import parse_record_file
 
 from . import pack_venv
@@ -202,18 +204,31 @@ class PackageIndexConfig:
     def _get_uv_config_path(build_path: Path) -> Path:
         return build_path / "uv.toml"
 
-    def _write_tool_config_files(self, spec_path: Path, build_path: Path) -> None:
-        baseline_config_path = self._get_uv_input_config_path(spec_path)
-        if baseline_config_path.exists():
-            # TODO: At least confirm file is valid TOML (while leaving full validation to uv)
-            baseline_config = baseline_config_path.read_text()
-        else:
-            # If no baseline config is given, the tool config file is still created
-            # This reduces the potential for interference from user and system config files
-            baseline_config = "# No baseline uv tool config\n"
+    def _write_common_tool_config_files(
+        self, spec_path: Path, build_path: Path
+    ) -> None:
+        baseline_config: Mapping[Any, Any] | None = None
+        spec_config = tomlkit.parse(spec_path.read_text())
+        inline_tool_config = spec_config.get("tool", None)
+        if isinstance(inline_tool_config, dict):
+            inline_uv_config = inline_tool_config.get("uv")
+            if inline_uv_config is not None:
+                # Unwrap to ensure all nested keys have the tool.uv prefix removed
+                baseline_config = inline_uv_config.unwrap()
+        if baseline_config is None:
+            baseline_config_input_path = self._get_uv_input_config_path(spec_path)
+            if baseline_config_input_path.exists():
+                # Ensure the given baseline config file is valid TOML
+                baseline_content = baseline_config_input_path.read_text()
+            else:
+                # If no baseline config is given, the tool config file is still created
+                # This reduces the potential for interference from user and system config files
+                baseline_content = "# No baseline uv tool config\n"
+            baseline_config = tomlkit.parse(baseline_content)
         # TODO: migrate remaining settings from subprocess CLI options to the config file
         tool_config_path = self._get_uv_config_path(build_path)
-        tool_config_path.write_text(baseline_config, encoding="utf-8")
+        with tool_config_path.open("w") as f:
+            tomlkit.dump(baseline_config, f)
 
 
 ######################################################
@@ -2967,9 +2982,6 @@ class StackSpec:
     @classmethod
     def from_dict(cls, fname: StrPath, layer_data: dict[str, Any]) -> Self:
         """Write stack specification to given path as TOML and then load it."""
-        # Lazy import as most venvstacks invocations don't need to *write* TOML files
-        import tomlkit
-
         stack_spec_path = as_normalized_path(fname)
         stack_spec_path.parent.mkdir(parents=True, exist_ok=True)
         with open(stack_spec_path, "w") as f:
@@ -3454,7 +3466,7 @@ class BuildEnvironment:
         build_path = self.build_path
         build_path.mkdir(parents=True, exist_ok=True)
         # Ensure the tool config files exist
-        self.index_config._write_tool_config_files(
+        self.index_config._write_common_tool_config_files(
             self.stack_spec.spec_path, build_path
         )
 
