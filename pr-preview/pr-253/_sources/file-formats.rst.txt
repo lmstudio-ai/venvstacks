@@ -127,6 +127,20 @@ All layer specifications may also contain the following optional fields:
      Added support for dynamic linking across layers on Linux and macOS
      (:ref:`release details <changelog-0.4.0>`).
 
+* ``sources`` (:toml:`table` mapping Python distribution package names to named ``uv`` indexes):
+  by default, all layers are built with common tool configuration settings. To allow different
+  layers to retrieve wheels from different indexes, layers may define a ``sources`` subtable that
+  is used to add to or override the ``uv`` ``sources`` configuration for that layer.
+  For example, one framework layer definition may specify ``sources = {torch = "pytorch_cu128"}``,
+  while an alternate framework definition layer may specify ``sources = {torch = "pytorch_cpu"}``.
+  Upper layers inherit the source overrides of all of the layers they depend on. A stack definition
+  error is reported if a source override refers to an unknown index name, or if the collected source
+  overrides for a given layer definition are inconsistent.
+
+  .. versionadded:: 0.8.0
+    Added support for per-layer ``uv`` sources configuration
+    (:ref:`release details <changelog-0.8.0>`).
+
 * ``versioned`` (:toml:`boolean`): by default, and when this setting is ``false``,
   the layer is considered unversioned (even if an ``@`` symbol appears in the
   layer name). The layer metadata will always report the lock version for these
