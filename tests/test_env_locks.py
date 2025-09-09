@@ -22,6 +22,7 @@ from venvstacks.stacks import (
     LayerEnvBase,
     LayerVariants,
     StackSpec,
+    _ignore_req_comments,
 )
 
 
@@ -118,7 +119,7 @@ def test_requirements_file_hashing(temp_dir_path: Path) -> None:
         "# Preceding line intentionally blank",
         "d==4.5.6",
     ]
-    clean_requirements = EnvironmentLock._clean_reqs(messy_requirements)
+    clean_requirements = _ignore_req_comments(messy_requirements)
     expected_requirements = [
         "a==1.2.3",
         "b==2.3.4",

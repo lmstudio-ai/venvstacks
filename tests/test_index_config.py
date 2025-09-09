@@ -18,8 +18,8 @@ class TestDefaultOptions:
             ":all:",
         ]
 
-    def test_pip_install(self) -> None:
-        assert self.TEST_CONFIG._get_pip_install_args() == [
+    def test_uv_pip_install(self) -> None:
+        assert self.TEST_CONFIG._get_uv_pip_install_args() == [
             "--only-binary",
             ":all:",
         ]
@@ -42,9 +42,9 @@ class TestConfiguredOptions:
             self.WHEEL_DIR,
         ]
 
-    def test_pip_install(self) -> None:
+    def test_uv_pip_install(self) -> None:
         # There are currently no installation specific args
-        assert self.TEST_CONFIG._get_pip_install_args() == [
+        assert self.TEST_CONFIG._get_uv_pip_install_args() == [
             "--only-binary",
             ":all:",
             "--no-index",
