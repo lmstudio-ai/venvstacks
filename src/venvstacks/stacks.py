@@ -1520,11 +1520,13 @@ class LayerEnvBase(ABC):
         )
         build_path = self.build_path
         self.env_path = env_path = build_path / self.env_name
+        # Per-environment config and metadata files are stored *adjacent* to the build environments
+        # This allows the environment creation to distinguish fresh builds from in-place updates
+        # (this would not be possible if tool config files were stored in the build environments)
         self._build_metadata_path = env_path.with_name(
             f"{env_path.name}.last-build.json"
         )
-        index_config = self.index_config
-        self._uv_config_path = index_config._get_uv_config_path(build_path)
+        self._uv_config_path = env_path.with_name(f"{env_path.name}.uv.toml")
 
         # Note: purelib and platlib are the same location in virtual environments
         # (even when they have different names, platlib is a symlink to purelib)
@@ -1572,6 +1574,7 @@ class LayerEnvBase(ABC):
         assert self.dynlib_path.relative_to(self.env_path)
 
     def _get_other_lock_inputs(self) -> tuple[str, ...]:
+        # TODO: consider incorporating the uv config settings into the implicit layer versioning
         return (f"py_version={'.'.join(self._py_version_info)}",)
 
     def _get_lock_version_inputs(self) -> tuple[str, ...]:
@@ -1677,6 +1680,12 @@ class LayerEnvBase(ABC):
         """Exclude the layer from all operations (including stack status reporting)."""
         self.select_operations(False, False, False)
         self.excluded = True
+
+    def _write_tool_config_files(self, common_uv_config_path: Path) -> None:
+        # TODO: Support per-layer source index configuration
+        common_uv_config = tomlkit.parse(common_uv_config_path.read_text())
+        with self._uv_config_path.open("w") as f:
+            tomlkit.dump(common_uv_config, f)
 
     def _create_environment(
         self, *, clean: bool = False, lock_only: bool = False
@@ -3466,9 +3475,13 @@ class BuildEnvironment:
         build_path = self.build_path
         build_path.mkdir(parents=True, exist_ok=True)
         # Ensure the tool config files exist
-        self.index_config._write_common_tool_config_files(
+        index_config = self.index_config
+        index_config._write_common_tool_config_files(
             self.stack_spec.spec_path, build_path
         )
+        common_uv_config_path = self.index_config._get_uv_config_path(build_path)
+        for env in self.all_environments():
+            env._write_tool_config_files(common_uv_config_path)
 
     def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
         """Lock build environments for specified layers."""
