@@ -1,0 +1,30 @@
+# Ensure suitable error is raised for inconsistent package source index overrides
+
+[[runtimes]]
+name = "cpython-3.13"
+python_implementation = "cpython@3.13.7"
+requirements = []
+
+[[frameworks]]
+name = "pytorch-cpu"
+runtime = "cpython-3.13"
+requirements = []
+sources = { torch = "pytorch-cpu"}
+
+[[applications]]
+name = "empty"
+launch_module = "../minimal_project/empty.py"
+# This will fail, since the app layer specifies a different source index for PyTorch
+frameworks = ["pytorch-cpu"]
+requirements = []
+sources = { torch = "pytorch-cu128"}
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

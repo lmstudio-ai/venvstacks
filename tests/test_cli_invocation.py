@@ -140,12 +140,10 @@ class MockedRunner:
     def invoke(self, cli_args: list[str]) -> click.testing.Result:
         return self.runner.invoke(self.app, cli_args)
 
-    def assert_build_config(
-        self, expected_build_dir: str, expected_index_config: PackageIndexConfig
-    ) -> None:
+    def assert_build_config(self, expected_build_dir: str) -> None:
         """Check environment build path and index configuration details."""
         env_definition = self.mocked_stack_spec.define_build_environment
-        env_definition.assert_called_with(expected_build_dir, expected_index_config)
+        env_definition.assert_called_with(expected_build_dir)
 
     _OUTPUT_METHODS = {
         "build": "publish_artifacts",
@@ -362,9 +360,11 @@ class TestSubcommands:
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "custom"
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
         expected_index_config = _get_default_index_config(command)
-        mocked_runner.assert_build_config(expected_build_dir, expected_index_config)
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
+        )
+        mocked_runner.assert_build_config(expected_build_dir)
         if command in ACCEPTS_OUTPUT_DIR:
             # Only check the output path (other tests check the other parameters)
             output_method = mocked_runner.get_output_method(command)
@@ -388,9 +388,11 @@ class TestSubcommands:
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "_build"
         expected_output_dir = "custom"
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
         expected_index_config = _get_default_index_config(command)
-        mocked_runner.assert_build_config(expected_build_dir, expected_index_config)
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
+        )
+        mocked_runner.assert_build_config(expected_build_dir)
         # Only check the output path (other tests check the other parameters)
         output_method = mocked_runner.get_output_method(command)
         output_method.assert_called_once()
@@ -410,9 +412,11 @@ class TestSubcommands:
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "_build"
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
         expected_index_config = _get_default_index_config(command)
-        mocked_runner.assert_build_config(expected_build_dir, expected_index_config)
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
+        )
+        mocked_runner.assert_build_config(expected_build_dir)
         # Only check the layer selection invocation
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_not_called()
@@ -440,9 +444,11 @@ class TestSubcommands:
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "_build"
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
         expected_index_config = _get_default_index_config(command)
-        mocked_runner.assert_build_config(expected_build_dir, expected_index_config)
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
+        )
+        mocked_runner.assert_build_config(expected_build_dir)
         # Only check the layer selection invocation
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_not_called()
@@ -470,9 +476,11 @@ class TestSubcommands:
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "_build"
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
         expected_index_config = _get_default_index_config(command)
-        mocked_runner.assert_build_config(expected_build_dir, expected_index_config)
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
+        )
+        mocked_runner.assert_build_config(expected_build_dir)
         # Only check the layer selection invocation
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_not_called()
@@ -535,9 +543,11 @@ class TestSubcommands:
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "_build"
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
+        )
         # Check build environment is created with the expected options
-        mocked_runner.assert_build_config(expected_build_dir, expected_index_config)
+        mocked_runner.assert_build_config(expected_build_dir)
         # Check operation result last to ensure test results are as informative as possible
         assert result.exception is None, report_traceback(result.exception)
         assert result.exit_code == 0
@@ -551,7 +561,10 @@ class TestSubcommands:
         # Always loads the stack spec and creates the build environment
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
+        expected_index_config = _get_default_index_config(command)
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
+        )
         # Op selection details are checked elsewhere
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once()
@@ -576,7 +589,10 @@ class TestSubcommands:
         # Always loads the stack spec and creates the build environment
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
+        expected_index_config = PackageIndexConfig.disabled()
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
+        )
         # Op selection details are checked elsewhere
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once()
@@ -710,8 +726,11 @@ class TestSubcommands:
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "_build"
         expected_output_dir = "_artifacts"
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
-        mocked_runner.assert_build_config(expected_build_dir, PackageIndexConfig())
+        expected_index_config = PackageIndexConfig()
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
+        )
+        mocked_runner.assert_build_config(expected_build_dir)
         # Defaults to selecting operations rather than layers
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once_with(
@@ -789,8 +808,11 @@ class TestSubcommands:
         mocked_stack_spec = mocked_runner.mocked_stack_spec
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "_build"
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
-        mocked_runner.assert_build_config(expected_build_dir, PackageIndexConfig())
+        expected_index_config = PackageIndexConfig()
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
+        )
+        mocked_runner.assert_build_config(expected_build_dir)
         # Defaults to selecting operations rather than layers
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once_with(
@@ -901,10 +923,11 @@ class TestSubcommands:
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "_build"
         expected_output_dir = "_artifacts"
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
-        mocked_runner.assert_build_config(
-            expected_build_dir, PackageIndexConfig.disabled()
+        expected_index_config = PackageIndexConfig.disabled()
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
         )
+        mocked_runner.assert_build_config(expected_build_dir)
         # Defaults to selecting operations rather than layers
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once_with(
@@ -998,10 +1021,11 @@ class TestSubcommands:
         mocked_stack_spec.assert_not_called()
         expected_build_dir = "_build"
         expected_output_dir = "_export"
-        mocked_stack_spec.load.assert_called_once_with(spec_path_to_mock)
-        mocked_runner.assert_build_config(
-            expected_build_dir, PackageIndexConfig.disabled()
+        expected_index_config = PackageIndexConfig.disabled()
+        mocked_stack_spec.load.assert_called_once_with(
+            spec_path_to_mock, expected_index_config
         )
+        mocked_runner.assert_build_config(expected_build_dir)
         # Defaults to selecting operations rather than stacks
         mocked_build_env = mocked_runner.mocked_build_env
         mocked_build_env.select_operations.assert_called_once_with(

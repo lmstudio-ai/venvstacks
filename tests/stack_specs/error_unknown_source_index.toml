@@ -1,0 +1,12 @@
+# Ensure suitable error is raised for an unknown index name in a package source index override
+
+[[runtimes]]
+name = "cpython-3.13"
+python_implementation = "cpython@3.13.7"
+requirements = []
+
+[[frameworks]]
+name = "pytorch-cpu"
+runtime = "cpython-3.13"
+requirements = []
+sources = { torch = "pytorch-cpu"}

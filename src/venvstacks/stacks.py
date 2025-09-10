@@ -19,7 +19,8 @@ import tomllib
 import warnings
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field, InitVar
+from copy import deepcopy
+from dataclasses import dataclass, field, replace as dc_replace
 from datetime import datetime, timezone
 from enum import StrEnum
 from fnmatch import fnmatch
@@ -32,6 +33,7 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    Container,
     Iterable,
     Iterator,
     Literal,
@@ -154,17 +156,34 @@ class PackageIndexConfig:
     """Python package index access configuration."""
 
     query_default_index: bool = True
-    local_wheel_dirs: InitVar[Sequence[StrPath] | None] = None
+    local_wheel_dirs: Sequence[StrPath] | None = field(repr=False, default=None)
     local_wheel_paths: list[Path] = field(init=False)
 
-    def __post_init__(self, local_wheel_dirs: Sequence[StrPath] | None) -> None:
+    # Tool specific config is implicitly queried and cached when loading a specification file
+    _common_config_uv: Mapping[Any, Any] | None = field(
+        init=False, repr=False, default=None
+    )
+    _known_sources: Container[str] = field(init=False, repr=False, default=())
+
+    def __post_init__(self) -> None:
+        local_wheel_dirs = self.local_wheel_dirs
         if isinstance(local_wheel_dirs, (str, Path)):
+            # Strings and paths are iterable, so explicitly reject them instead of iterating
             err_msg = f"local_wheel_dirs must be a sequence of paths (got {local_wheel_dirs!r})"
             raise TypeError(err_msg)
+        # Ensure local wheel dirs field can be safely copied (even if an iterator is passed in)
         if local_wheel_dirs:
+            self.local_wheel_dirs = local_wheel_dirs = tuple(local_wheel_dirs)
             self.local_wheel_paths = [Path(wheel_dir) for wheel_dir in local_wheel_dirs]
         else:
+            self.local_wheel_dirs = ()
             self.local_wheel_paths = []
+
+    def copy(self) -> Self:
+        """Create a copy of the index config with all internal caches cleared."""
+        # dataclasses.replace resets `init=False` fields to their post-init values
+        # This is desired here, as those fields cache usage dependent results
+        return dc_replace(self)
 
     @classmethod
     def disabled(cls) -> Self:
@@ -174,13 +193,7 @@ class PackageIndexConfig:
             local_wheel_dirs=None,
         )
 
-    def resolve_lexical_paths(self, base_path: StrPath) -> None:
-        """Lexically resolve paths in config relative to the given base path."""
-        base_path = Path(base_path)
-        self.local_wheel_paths[:] = [
-            _resolve_lexical_path(path, base_path) for path in self.local_wheel_paths
-        ]
-
+    # TODO: migrate remaining settings from subprocess CLI options to the common config file
     def _get_common_pip_args(self) -> list[str]:
         # Local wheel builds are expected for any source-only dependencies
         result = ["--only-binary", ":all:"]
@@ -204,18 +217,47 @@ class PackageIndexConfig:
     def _get_uv_config_path(build_path: Path) -> Path:
         return build_path / "uv.toml"
 
-    def _write_common_tool_config_files(
-        self, spec_path: Path, build_path: Path
-    ) -> None:
-        baseline_config: Mapping[Any, Any] | None = None
+    def _resolve_lexical_paths(self, base_path: StrPath) -> None:
+        """Lexically resolve paths in config relative to the given base path."""
+        base_path = Path(base_path)
+        self.local_wheel_paths[:] = [
+            _resolve_lexical_path(path, base_path) for path in self.local_wheel_paths
+        ]
+
+    def _is_known_source_index(self, source: str) -> bool:
+        if self._common_config_uv is None:
+            raise RuntimeError(
+                "Tool config must be loaded before checking source index validity"
+            )
+        return source in self._known_sources
+
+    @staticmethod
+    def _iter_source_index_names(uv_config: Mapping[Any, Any]) -> Iterator[str]:
+        indexes = uv_config.get("index", ())
+        for index in indexes:
+            name = index.get("name")
+            if name:
+                yield name
+
+    def _load_common_tool_config(self, spec_path: Path) -> Mapping[Any, Any]:
+        # Loading the tool config couples this config instance to the given stack specification
+        # (copying the config first allows a single index config to be used across multiple stacks)
+        if self._common_config_uv is not None:
+            raise RuntimeError(
+                "Attempted to reuse path index config with new spec path"
+            )
+        # Ensure paths are absolute. Relative input paths are left alone for config copying.
+        self._resolve_lexical_paths(spec_path.parent)
+        # Load the common uv config settings (including the set of known source index names)
+        common_config_uv: Mapping[Any, Any] | None = None
         spec_config = tomlkit.parse(spec_path.read_text())
         inline_tool_config = spec_config.get("tool", None)
         if isinstance(inline_tool_config, dict):
             inline_uv_config = inline_tool_config.get("uv")
             if inline_uv_config is not None:
                 # Unwrap to ensure all nested keys have the tool.uv prefix removed
-                baseline_config = inline_uv_config.unwrap()
-        if baseline_config is None:
+                common_config_uv = inline_uv_config.unwrap()
+        if common_config_uv is None:
             baseline_config_input_path = self._get_uv_input_config_path(spec_path)
             if baseline_config_input_path.exists():
                 # Ensure the given baseline config file is valid TOML
@@ -224,11 +266,17 @@ class PackageIndexConfig:
                 # If no baseline config is given, the tool config file is still created
                 # This reduces the potential for interference from user and system config files
                 baseline_content = "# No baseline uv tool config\n"
-            baseline_config = tomlkit.parse(baseline_content)
-        # TODO: migrate remaining settings from subprocess CLI options to the config file
-        tool_config_path = self._get_uv_config_path(build_path)
-        with tool_config_path.open("w") as f:
-            tomlkit.dump(baseline_config, f)
+            common_config_uv = tomlkit.parse(baseline_content)
+        self._known_sources = set(self._iter_source_index_names(common_config_uv))
+        self._common_config_uv = common_config_uv
+        return common_config_uv
+
+    def _write_common_tool_config_files(self, build_path: Path) -> None:
+        common_config_uv = self._common_config_uv
+        assert common_config_uv is not None
+        uv_config_path = self._get_uv_config_path(build_path)
+        with uv_config_path.open("w") as f:
+            tomlkit.dump(common_config_uv, f)
 
 
 ######################################################
@@ -745,10 +793,11 @@ def ensure_optional_env_spec_fields(env_metadata: MutableMapping[str, Any]) -> N
     """Populate missing environment spec fields that are optional in the TOML file."""
     TargetPlatforms.ensure_platform_list(env_metadata)
     env_metadata.setdefault("versioned", False)
+    env_metadata.setdefault("sources", {})
     env_metadata.setdefault("dynlib_exclude", [])
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LayerSpecBase(ABC):
     """Common base class for layer environment specifications."""
 
@@ -764,20 +813,37 @@ class LayerSpecBase(ABC):
     versioned: bool
     requirements: list[str] = field(repr=False)
     platforms: list[TargetPlatforms] = field(repr=False)
+    sources: dict[str, str] = field(repr=False)
     dynlib_exclude: list[str] = field(repr=False)
+
+    # Optionally specified on creation
+    _index_config: PackageIndexConfig = field(
+        repr=False, default_factory=PackageIndexConfig
+    )
 
     def __post_init__(self) -> None:
         # When instantiating specs that don't have a prefix,
         # they're not allowed to use prefixes that *are* defined
+        layer_name = self.name
         if not self.ENV_PREFIX:
-            spec_name = self.name
             for spec_type in LayerSpecBase.__subclasses__():
                 reserved_prefix = spec_type.ENV_PREFIX
                 if not reserved_prefix:
                     continue
-                if spec_name.startswith(reserved_prefix + "-"):
-                    err = f"{spec_name} starts with reserved prefix {reserved_prefix!r}"
-                    raise ValueError(err)
+                if layer_name.startswith(reserved_prefix + "-"):
+                    err = (
+                        f"{layer_name} starts with reserved prefix {reserved_prefix!r}"
+                    )
+                    raise LayerSpecError(err)
+        # Ensure any source index overrides reference known source index names
+        index_config = self._index_config
+        for dist_name, index_name in self.sources.items():
+            if not index_config._is_known_source_index(index_name):
+                msg = (
+                    f"{layer_name} references an unknown source index "
+                    f"({index_name}) for {dist_name}"
+                )
+                raise LayerSpecError(msg)
 
     @property
     def env_name(self) -> EnvNameBuild:
@@ -802,8 +868,11 @@ class LayerSpecBase(ABC):
 
     def to_dict(self) -> Mapping[str, Any]:
         """Convert spec details to a JSON-compatible dict."""
-        # No hidden fields in the specification dataclasses
+        # Omit any private fields from the metadata dictionary
         result = dataclasses.asdict(self)
+        for k in list(result):
+            if k.startswith("_"):
+                del result[k]
         # Remove nesting and ensure values round-trip through JSON files
         for k, v in result.items():
             match v:
@@ -1411,7 +1480,6 @@ class LayerEnvBase(ABC):
     _env_spec: LayerSpecBase = field(repr=False)
     build_path: Path = field(repr=False)
     requirements_path: Path = field(repr=False)
-    index_config: PackageIndexConfig = field(repr=False)
     source_filter: SourceTreeContentFilter = field(repr=False)
 
     # Derived from build path and spec in __post_init__
@@ -1510,6 +1578,11 @@ class LayerEnvBase(ABC):
     def install_target(self) -> EnvNameDeploy:
         """The environment name used for this layer when deployed."""
         return self.env_lock.get_deployed_name(self.env_spec.env_name)
+
+    @property
+    def index_config(self) -> PackageIndexConfig:
+        """The package index configuration used to lock and build this layer."""
+        return self._env_spec._index_config
 
     def __post_init__(self) -> None:
         # Concrete subclasses must set the version before finishing the base initialisation
@@ -1681,11 +1754,20 @@ class LayerEnvBase(ABC):
         self.select_operations(False, False, False)
         self.excluded = True
 
-    def _write_tool_config_files(self, common_uv_config_path: Path) -> None:
-        # TODO: Support per-layer source index configuration
-        common_uv_config = tomlkit.parse(common_uv_config_path.read_text())
+    def _write_tool_config_files(self) -> None:
+        common_config_uv_path = self.index_config._get_uv_config_path(self.build_path)
+        common_config_uv = tomlkit.parse(common_config_uv_path.read_text())
+        index_sources: dict[str, dict[str, str]] = {}
+        for dist_name, index_name in self.env_spec.sources.items():
+            index_sources[dist_name] = {"index": index_name}
+        layer_config_uv = deepcopy(common_config_uv)
+        layer_config_uv.setdefault("sources", {})
+        sources_config: Any = layer_config_uv["sources"]
+        sources_config.update(
+            index_sources
+        )  # Let the AttributeError happen if config is invalid
         with self._uv_config_path.open("w") as f:
-            tomlkit.dump(common_uv_config, f)
+            tomlkit.dump(layer_config_uv, f)
 
     def _create_environment(
         self, *, clean: bool = False, lock_only: bool = False
@@ -2375,7 +2457,10 @@ class LayeredEnvBase(LayerEnvBase):
         _LOG.debug(f"Linked {self}")
 
     def link_layered_environments(
-        self, runtime: RuntimeEnv, frameworks: Mapping[LayerBaseName, "FrameworkEnv"]
+        self,
+        runtime: RuntimeEnv,
+        frameworks: Mapping[LayerBaseName, "FrameworkEnv"],
+        source_index_names: Container[str] = (),
     ) -> None:
         """Link this application build environment with its runtime and framework layers."""
         self.link_base_runtime(runtime)
@@ -2802,6 +2887,7 @@ class StackSpec:
     frameworks: MutableMapping[LayerBaseName, FrameworkSpec]
     applications: MutableMapping[LayerBaseName, ApplicationSpec]
     requirements_dir_path: Path
+    index_config: PackageIndexConfig = field(repr=False, default_factory=PackageIndexConfig)
 
     # Derived from runtime environment in __post_init__
     build_platform: str = field(init=False, repr=False)
@@ -2944,11 +3030,15 @@ class StackSpec:
         declared_spec: Mapping[str, Any],
         runtimes: Mapping[LayerBaseName, RuntimeSpec],
         frameworks: Mapping[LayerBaseName, FrameworkSpec],
-    ) -> tuple[RuntimeSpec, tuple[FrameworkSpec, ...]]:
+    ) -> tuple[RuntimeSpec, tuple[FrameworkSpec, ...], dict[str, str]]:
+        # TODO: Normalise distribution names in source index overrides
+        #       (including for runtime layers, which aren't covered by this method)
+        # Note: layers are intentionally allowed to override any *common* source index settings
         declared_runtime: LayerBaseName | None = declared_spec.get("runtime")
         declared_frameworks: Sequence[LayerBaseName] | None = declared_spec.get(
             "frameworks"
         )
+        merged_sources: dict[str, str] = {}
         runtime_dep: RuntimeSpec | None = None
         framework_deps: tuple[FrameworkSpec, ...]
         if declared_runtime is not None:
@@ -2964,29 +3054,55 @@ class StackSpec:
             if runtime_dep is None:
                 msg = f"{err_prefix} references unknown runtime {declared_runtime!r}"
                 raise LayerSpecError(msg)
+            # Only need to check the runtime sources are consistent with the layer's own sources
+            merged_sources.update(runtime_dep.sources)
         elif not declared_frameworks:
             msg = f"{err_prefix} must specify a runtime or at least one framework dependency"
             raise LayerSpecError(msg)
         else:
             declared_fw_deps: list[FrameworkSpec] = []
             for fw_name in declared_frameworks:
-                fw_spec = frameworks.get(fw_name)
-                if fw_spec is None:
+                fw_dep = frameworks.get(fw_name)
+                if fw_dep is None:
                     msg = f"{err_prefix} references unknown framework {fw_name!r}"
                     raise LayerSpecError(msg)
                 if runtime_dep is None:
-                    runtime_dep = fw_spec.runtime
-                elif fw_spec.runtime is not runtime_dep:
+                    runtime_dep = fw_dep.runtime
+                elif fw_dep.runtime is not runtime_dep:
                     msg = (
                         f"{err_prefix} references inconsistent frameworks. "
                         f"{declared_fw_deps[0].name!r} requires runtime {runtime_dep.name!r}."
-                        f"while {fw_spec.name!r} requires runtime {fw_spec.runtime.name!r}."
+                        f"while {fw_dep.name!r} requires runtime {fw_dep.runtime.name!r}."
                     )
                     raise LayerSpecError(msg)
-                declared_fw_deps.append(fw_spec)
+                declared_fw_deps.append(fw_dep)
             framework_deps = cls._linearize_C3(err_prefix, declared_fw_deps)
             assert runtime_dep is not None
-        return runtime_dep, framework_deps
+            # Check any framework source overrides are consistent with each other
+            for fw_dep in reversed(framework_deps):
+                for dist_name, index_name in fw_dep.sources.items():
+                    declared_index_name = merged_sources.get(dist_name, None)
+                    if declared_index_name and declared_index_name != index_name:
+                        msg = (
+                            f"{err_prefix} depends on layers with "
+                            f"inconsistent source index overrides for {dist_name} "
+                            f"({declared_index_name} != {index_name})"
+                        )
+                        raise LayerSpecError(msg)
+                merged_sources.update(fw_dep.sources)
+        # Check layer's source overrides are consistent with the layers it depends on
+        declared_sources = declared_spec.get("sources", {})
+        for dist_name, index_name in declared_sources.items():
+            declared_index_name = merged_sources.get(dist_name, None)
+            if declared_index_name and declared_index_name != index_name:
+                msg = (
+                    f"{err_prefix} declares an inconsistent "
+                    f"source index override for {dist_name} "
+                    f"({declared_index_name} != {index_name})"
+                )
+                raise LayerSpecError(msg)
+        merged_sources.update(declared_sources)
+        return runtime_dep, framework_deps, merged_sources
 
     @classmethod
     def from_dict(cls, fname: StrPath, layer_data: dict[str, Any]) -> Self:
@@ -2998,13 +3114,21 @@ class StackSpec:
         return cls.load(stack_spec_path)
 
     @classmethod
-    def load(cls, fname: StrPath) -> Self:
+    def load(
+        cls, fname: StrPath, index_config: PackageIndexConfig | None = None
+    ) -> Self:
         """Load stack specification from given TOML file."""
         stack_spec_path = as_normalized_path(fname)
         with open(stack_spec_path, "rb") as f:
             data = tomllib.load(f)
         spec_dir_path = stack_spec_path.parent
         requirements_dir_path = spec_dir_path / "requirements"
+        # Fully populate the source index configuration details
+        if index_config is None:
+            index_config = PackageIndexConfig()
+        else:
+            index_config = index_config.copy()
+        index_config._load_common_tool_config(stack_spec_path)
         # Collect the list of runtime specs
         runtimes: dict[LayerBaseName, RuntimeSpec] = {}
         for rt in data.get("runtimes", ()):
@@ -3015,6 +3139,7 @@ class StackSpec:
             if name in runtimes:
                 msg = f"Runtime names must be distinct ({name!r} already defined)"
                 raise LayerSpecError(msg)
+            rt["_index_config"] = index_config
             ensure_optional_env_spec_fields(rt)
             runtimes[name] = RuntimeSpec(**rt)
         # Collect the list of framework specs
@@ -3028,11 +3153,13 @@ class StackSpec:
                 msg = f"Framework names must be distinct ({name!r} already defined)"
                 raise LayerSpecError(msg)
             err_prefix = f"Framework {name!r}"
-            runtime_dep, framework_deps = cls._resolve_layer_deps(
+            fw["_index_config"] = index_config
+            runtime_dep, framework_deps, merged_sources = cls._resolve_layer_deps(
                 err_prefix, fw, runtimes, frameworks
             )
             fw["runtime"] = runtime_dep
             fw["frameworks"] = framework_deps
+            fw["sources"] = merged_sources
             ensure_optional_env_spec_fields(fw)
             frameworks[name] = FrameworkSpec(**fw)
         # Collect the list of application specs
@@ -3046,11 +3173,13 @@ class StackSpec:
                 msg = f"Application names must be distinct ({name!r} already defined)"
                 raise LayerSpecError(msg)
             err_prefix = f"Application {name!r}"
-            runtime_dep, framework_deps = cls._resolve_layer_deps(
+            app["_index_config"] = index_config
+            runtime_dep, framework_deps, merged_sources = cls._resolve_layer_deps(
                 err_prefix, app, runtimes, frameworks
             )
             app["runtime"] = runtime_dep
             app["frameworks"] = framework_deps
+            app["sources"] = merged_sources
             launch_module = app.pop("launch_module")
             launch_module_path = spec_dir_path / launch_module
             launch_module_name = launch_module_path.stem
@@ -3069,7 +3198,7 @@ class StackSpec:
             ensure_optional_env_spec_fields(app)
             applications[name] = ApplicationSpec(**app)
         self = cls(
-            stack_spec_path, runtimes, frameworks, applications, requirements_dir_path
+            stack_spec_path, runtimes, frameworks, applications, requirements_dir_path, index_config,
         )
         build_platform = self.build_platform
         for app_spec in self.applications.values():
@@ -3097,7 +3226,6 @@ class StackSpec:
     def _define_envs(
         self,
         build_path: Path,
-        index_config: PackageIndexConfig,
         source_filter: SourceTreeContentFilter,
         env_class: type[BuildEnv],
         specs: Mapping[LayerBaseName, LayerSpecBase],
@@ -3119,7 +3247,6 @@ class StackSpec:
                 spec,
                 build_path,
                 requirements_path,
-                index_config,
                 source_filter,
             )
             build_environments[name] = build_env
@@ -3133,28 +3260,24 @@ class StackSpec:
     def define_build_environment(
         self,
         build_dir: StrPath = "",
-        index_config: PackageIndexConfig | None = None,
     ) -> "BuildEnvironment":
         """Define layer build environments for this specification."""
         build_path = self.resolve_lexical_path(build_dir)
-        if index_config is None:
-            index_config = PackageIndexConfig()
-        index_config.resolve_lexical_paths(self.spec_path.parent)
         source_filter = get_default_source_filter(self.spec_path.parent)
         _LOG.info("Defining runtime environments:")
         runtimes = self._define_envs(
-            build_path, index_config, source_filter, RuntimeEnv, self.runtimes
+            build_path, source_filter, RuntimeEnv, self.runtimes
         )
         _LOG.info("Defining framework environments:")
         frameworks = self._define_envs(
-            build_path, index_config, source_filter, FrameworkEnv, self.frameworks
+            build_path, source_filter, FrameworkEnv, self.frameworks
         )
         for fw_env in frameworks.values():
             runtime = runtimes[fw_env.env_spec.runtime.name]
             fw_env.link_layered_environments(runtime, frameworks)
         _LOG.info("Defining application environments:")
         applications = self._define_envs(
-            build_path, index_config, source_filter, ApplicationEnv, self.applications
+            build_path, source_filter, ApplicationEnv, self.applications
         )
         for app_env in applications.values():
             runtime = runtimes[app_env.env_spec.runtime.name]
@@ -3165,7 +3288,6 @@ class StackSpec:
             frameworks,
             applications,
             build_path,
-            index_config,
         )
 
 
@@ -3185,7 +3307,6 @@ class BuildEnvironment:
     frameworks: MutableMapping[LayerBaseName, FrameworkEnv] = field(repr=False)
     applications: MutableMapping[LayerBaseName, ApplicationEnv] = field(repr=False)
     build_path: Path
-    index_config: PackageIndexConfig
 
     def __post_init__(self) -> None:
         # Resolve local config folders relative to spec path
@@ -3475,13 +3596,10 @@ class BuildEnvironment:
         build_path = self.build_path
         build_path.mkdir(parents=True, exist_ok=True)
         # Ensure the tool config files exist
-        index_config = self.index_config
-        index_config._write_common_tool_config_files(
-            self.stack_spec.spec_path, build_path
-        )
-        common_uv_config_path = self.index_config._get_uv_config_path(build_path)
+        index_config = self.stack_spec.index_config
+        index_config._write_common_tool_config_files(build_path)
         for env in self.all_environments():
-            env._write_tool_config_files(common_uv_config_path)
+            env._write_tool_config_files()
 
     def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
         """Lock build environments for specified layers."""
