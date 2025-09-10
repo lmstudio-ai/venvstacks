@@ -1,7 +1,6 @@
 """Test cases for environment lock management."""
 
 import shutil
-import tempfile
 import tomllib
 
 import pytest
@@ -24,12 +23,6 @@ from venvstacks.stacks import (
     StackSpec,
     _ignore_req_comments,
 )
-
-
-@pytest.fixture
-def temp_dir_path() -> Generator[Path, None, None]:
-    with tempfile.TemporaryDirectory() as dir_name:
-        yield Path(dir_name)
 
 
 ##############################

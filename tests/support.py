@@ -428,7 +428,8 @@ class DeploymentTestCase(unittest.TestCase):
                     if bin_pattern in record_path.read_text(encoding="utf-8"):
                         self.fail(f"{bin_pattern!r} found in {str(record_path)!r}")
             if env.needs_build():
-                # Check the individual elements of the build validity check
+                # A just-built environment *shouldn't* still indicate it needs building
+                # Report the first actually failing element of the build validity check
                 self.assertTrue(env.env_path.exists())
                 self.assertTrue(env._build_metadata_path.exists())
                 last_metadata = env._load_last_build_metadata()
