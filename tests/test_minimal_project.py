@@ -705,6 +705,11 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         self.assertEqual([], unlocked)
         self.assertFalse(new_env._needs_lock())
 
+_EXPECTED_UV_CONFIG = """\
+[[index]]
+name = "pypi-named"
+url = "https://pypi.org/simple/"
+explicit = true"""
 
 class TestMinimalBuild(DeploymentTestCase):
     # Test cases that actually create the build environment folders
@@ -750,7 +755,7 @@ class TestMinimalBuild(DeploymentTestCase):
                 env_reference_config = env.index_config
             else:
                 env_reference_config = reference_config
-            env.index_config = make_mock_index_config(env_reference_config)
+            env.env_spec._index_config = make_mock_index_config(env_reference_config)
 
     def check_publication_result(
         self,
@@ -880,8 +885,12 @@ class TestMinimalBuild(DeploymentTestCase):
         uv_config_path = build_env.build_path / "uv.toml"
         self.assertTrue(uv_config_path.exists())
         self.assertEqual(
-            "# No baseline uv tool config", uv_config_path.read_text().rstrip()
+            _EXPECTED_UV_CONFIG, uv_config_path.read_text().rstrip()
         )
+        rt_build_path = [*build_env.runtimes.values()][0].env_path
+        rt_uv_config_name = f"{rt_build_path.name}.uv.toml"
+        rt_uv_config_path = rt_build_path.with_name(rt_uv_config_name)
+        assert 'index = "pypi-named"' in rt_uv_config_path.read_text().rstrip()
 
     def test_build_with_invalid_locks(self) -> None:
         # Ensure attempt to build without locking first raises a detailed exception
