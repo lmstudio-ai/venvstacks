@@ -13,10 +13,10 @@
   ],
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "ab8712bbb9462b73b25e02ecf887af42e6b92f1edd39f0709082ec6dcefc03e3"
+    "sha256": "bbaa86982183fa48641ff2b5503f41ad522414ed96522f663d903ea2e20572f8"
   },
   "archive_name": "app-scipy-import@1.tar.xz",
-  "archive_size": 3744,
+  "archive_size": 3680,
   "bound_to_implementation": false,
   "install_target": "app-scipy-import@1",
   "layer_name": "app-scipy-import",
