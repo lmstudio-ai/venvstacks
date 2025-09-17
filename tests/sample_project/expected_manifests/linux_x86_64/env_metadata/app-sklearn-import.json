@@ -3,20 +3,20 @@
   "app_launch_module_hash": "sha256:fcb2d3f009b6bd274509ed8830e4640aadeef0b726b6de833edc16b76a893530",
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "4c4cdd39355f9e39edebdd5d72748a600506152c3f5e83eee442e04ac0a5bcc1"
+    "sha256": "68a8667b0fc5d19190067f5d66e8c35a7fdcdb34113bf4d257b4c185b41efd0a"
   },
   "archive_name": "app-sklearn-import.tar.xz",
-  "archive_size": 3648,
+  "archive_size": 3712,
   "bound_to_implementation": false,
   "install_target": "app-sklearn-import",
   "layer_name": "app-sklearn-import",
   "lock_version": 1,
-  "locked_at": "2025-05-09T18:45:53.095593+00:00",
+  "locked_at": "2025-09-17T16:02:15.192771+00:00",
   "python_implementation": "cpython@3.12.9",
   "required_layers": [
     "framework-sklearn"
   ],
-  "requirements_hash": "sha256:5600adcb820b3f27dd6434fcd83573d2feed718732092ebb1dcd16cebed9f017",
-  "runtime_layer": "cpython-3.12@2",
+  "requirements_hash": "sha256:d175fe1b3ee0a639d53b2c687f6f9536b4bcf1be82348cab1e88dd0536fbf974",
+  "runtime_layer": "cpython-3.12@1",
   "target_platform": "linux_x86_64"
 }
