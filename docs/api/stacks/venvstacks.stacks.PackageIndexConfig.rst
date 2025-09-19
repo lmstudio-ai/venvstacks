@@ -11,8 +11,6 @@ venvstacks.stacks.PackageIndexConfig
    .. autosummary::
 
       ~PackageIndexConfig.disabled
-      ~PackageIndexConfig.resolve_lexical_paths
-
 
    .. rubric:: Attributes
 

@@ -686,7 +686,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         self.assertTrue(all(env.needs_lock() for env in envs_to_lock))
         self.assertTrue(build_env._needs_lock())
 
-    def test_lock_input_cache_is_optional(self):
+    def test_lock_input_cache_is_optional(self) -> None:
         build_env = self.build_env
         stack_spec = build_env.stack_spec
         # Lock input files should serve as a pure cache
@@ -704,6 +704,13 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         ]
         self.assertEqual([], unlocked)
         self.assertFalse(new_env._needs_lock())
+
+
+_EXPECTED_UV_CONFIG = """\
+[[index]]
+name = "pypi-named"
+url = "https://pypi.org/simple/"
+explicit = true"""
 
 
 class TestMinimalBuild(DeploymentTestCase):
@@ -750,7 +757,7 @@ class TestMinimalBuild(DeploymentTestCase):
                 env_reference_config = env.index_config
             else:
                 env_reference_config = reference_config
-            env.index_config = make_mock_index_config(env_reference_config)
+            env.env_spec._index_config = make_mock_index_config(env_reference_config)
 
     def check_publication_result(
         self,
@@ -876,6 +883,15 @@ class TestMinimalBuild(DeploymentTestCase):
         self.assertEqual([], already_built)
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
+        # Ensure creating the environments implicitly creates the uv tool config file
+        uv_config_path = build_env.build_path / "uv.toml"
+        self.assertTrue(uv_config_path.exists())
+        self.assertEqual(_EXPECTED_UV_CONFIG, uv_config_path.read_text().rstrip())
+        rt_build_path = [*build_env.runtimes.values()][0].env_path
+        rt_pyproject_name = f"{rt_build_path.name}_resolve"
+        rt_pyproject_path = rt_build_path.with_name(rt_pyproject_name)
+        rt_pyproject_toml_path = rt_pyproject_path / "pyproject.toml"
+        assert 'index = "pypi-named"' in rt_pyproject_toml_path.read_text().rstrip()
 
     def test_build_with_invalid_locks(self) -> None:
         # Ensure attempt to build without locking first raises a detailed exception
@@ -901,6 +917,7 @@ class TestMinimalBuild(DeploymentTestCase):
         # declarations, since actual build failures need to fail the entire test method.
         subtests_started = subtests_passed = 0  # Track subtest failures
         build_env = self.build_env
+        build_path = build_env.build_path
         self.mock_index_config_options()
         platform_tag = build_env.build_platform
         expected_tag = f"-{platform_tag}"
@@ -930,13 +947,16 @@ class TestMinimalBuild(DeploymentTestCase):
             self.assertRecentlyLocked(dry_run_last_locked_times, minimum_lock_time)
             # Check for expected subprocess argument lookups
             for env in self.build_env.all_environments():
-                # First environment build: lock with uv, install with pip
-                mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once_with()
-                mock_compile.reset_mock()
-                mock_install = cast(Mock, env.index_config._get_uv_pip_install_args)
-                mock_install.assert_called_once_with()
-                mock_install.reset_mock()
+                # First environment build: uv lock -> uv export -> uv pip install
+                mock_uv_lock = cast(Mock, env.index_config._get_uv_lock_args)
+                mock_uv_lock.assert_called_once_with(build_path)
+                mock_uv_lock.reset_mock()
+                mock_uv_export = cast(Mock, env.index_config._get_uv_export_args)
+                mock_uv_export.assert_called_once_with(build_path)
+                mock_uv_export.reset_mock()
+                mock_uv_install = cast(Mock, env.index_config._get_uv_pip_install_args)
+                mock_uv_install.assert_called_once_with(build_path)
+                mock_uv_install.reset_mock()
             subtests_passed += 1
         subtests_started += 1
         with self.subTest("Check tagged dry run"):
@@ -960,11 +980,14 @@ class TestMinimalBuild(DeploymentTestCase):
             for env in self.build_env.all_environments():
                 # The lock file is recreated, the timestamp metadata just doesn't
                 # get updated if the hash of the contents doesn't change
-                mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once_with()
-                mock_compile.reset_mock()
-                mock_install = cast(Mock, env.index_config._get_uv_pip_install_args)
-                mock_install.assert_not_called()
+                mock_uv_lock = cast(Mock, env.index_config._get_uv_lock_args)
+                mock_uv_lock.assert_called_once_with(build_path)
+                mock_uv_lock.reset_mock()
+                mock_uv_export = cast(Mock, env.index_config._get_uv_export_args)
+                mock_uv_export.assert_called_once_with(build_path)
+                mock_uv_export.reset_mock()
+                mock_uv_install = cast(Mock, env.index_config._get_uv_pip_install_args)
+                mock_uv_install.assert_not_called()
             subtests_passed += 1
         # Test stage: ensure lock timestamps *do* change when the requirements "change"
         for env in build_env.all_environments():
@@ -984,12 +1007,15 @@ class TestMinimalBuild(DeploymentTestCase):
             self.assertRecentlyLocked(relocked_last_locked_times, minimum_relock_time)
             # Check for expected subprocess argument lookups
             for env in self.build_env.all_environments():
-                # Locked, but not rebuilt, so only uv should be called
-                mock_compile = cast(Mock, env.index_config._get_uv_pip_compile_args)
-                mock_compile.assert_called_once_with()
-                mock_compile.reset_mock()
-                mock_install = cast(Mock, env.index_config._get_uv_pip_install_args)
-                mock_install.assert_not_called()
+                # Locked, but not rebuilt, so only lock and export should be called
+                mock_uv_lock = cast(Mock, env.index_config._get_uv_lock_args)
+                mock_uv_lock.assert_called_once_with(build_path)
+                mock_uv_lock.reset_mock()
+                mock_uv_export = cast(Mock, env.index_config._get_uv_export_args)
+                mock_uv_export.assert_called_once_with(build_path)
+                mock_uv_export.reset_mock()
+                mock_uv_install = cast(Mock, env.index_config._get_uv_pip_install_args)
+                mock_uv_install.assert_not_called()
             subtests_passed += 1
         # Test stage: ensure exported environments allow launch module execution
         subtests_started += 1
@@ -1034,14 +1060,14 @@ class TestShowStack:
             print(report_traceback(result.exception))
         return result
 
-    def test_show_unlocked(self):
+    def test_show_unlocked(self) -> None:
         result = self.invoke_cli()
         assert EXPECTED_SHOW_RESULT.strip() in result.stdout
         # Check operation result last to ensure test results are as informative as possible
         assert result.exception is None, report_traceback(result.exception)
         assert result.exit_code == 0
 
-    def test_show_filtered(self):
+    def test_show_filtered(self) -> None:
         result = self.invoke_cli(("--include", "*-layerC"))
         assert EXPECTED_SHOW_LAYER_C_RESULT.strip() in result.stdout
         # Check operation result last to ensure test results are as informative as possible

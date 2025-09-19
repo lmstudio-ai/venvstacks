@@ -1,24 +1,17 @@
 """Test cases for dynamic library discovery and symlinking."""
 
 import sys
-import tempfile
 
 import pytest
 
 from pathlib import Path
 from importlib.machinery import EXTENSION_SUFFIXES
-from typing import Generator, cast
+from typing import cast
 
 from venvstacks._util import (
     find_shared_libraries,
     map_symlink_targets,
 )
-
-
-@pytest.fixture
-def temp_dir_path() -> Generator[Path, None, None]:
-    with tempfile.TemporaryDirectory() as dir_name:
-        yield Path(dir_name)
 
 
 @pytest.mark.skipif(

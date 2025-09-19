@@ -64,6 +64,18 @@ def test_future_warning_for_build_requirements() -> None:
 
 EXPECTED_ERRORS = {
     "error_inconsistent_runtimes.toml": (LayerSpecError, "inconsistent frameworks"),
+    "error_inconsistent_app_sources.toml": (
+        LayerSpecError,
+        "inconsistent source index override",
+    ),
+    "error_inconsistent_framework_sources.toml": (
+        LayerSpecError,
+        "inconsistent source index override",
+    ),
+    "error_inconsistent_runtime_sources.toml": (
+        LayerSpecError,
+        "inconsistent source index override",
+    ),
     "error_launch_support_conflict.toml": (
         LayerSpecError,
         "'name'.*conflicts with.*'layer'",
@@ -88,6 +100,7 @@ EXPECTED_ERRORS = {
     ),
     "error_unknown_framework.toml": (LayerSpecError, "unknown framework"),
     "error_unknown_runtime.toml": (LayerSpecError, "unknown runtime"),
+    "error_unknown_source_index.toml": (LayerSpecError, "unknown source index"),
 }
 
 

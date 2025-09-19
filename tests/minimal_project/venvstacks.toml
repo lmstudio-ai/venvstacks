@@ -9,6 +9,8 @@
 name = "cpython-3.11"
 python_implementation = "cpython@3.11.11"
 requirements = []
+# Not actually installed, just testing source index configuration
+sources = { venvstacks = "pypi-named" }
 
 # Set up the framework layers to cover classic linearization problems:
 #
@@ -60,3 +62,9 @@ name = "no-framework"
 launch_module = "empty.py"
 runtime = "cpython-3.11"
 requirements = []
+
+# Ensure `uv` accepts `sources` configuration
+[[tool.uv.index]]
+name = "pypi-named"
+url = "https://pypi.org/simple/"
+explicit = true
