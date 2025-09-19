@@ -13,7 +13,7 @@
 # also trigger updates to the expected test results.
 [pinned-dev-packages]
 # Ensure the lockfiles don't unexpectedly change format
-uv="0.6.9"
+uv="0.8.18"
 # Ensure the runtime layer hashes have the expected value
 pbs-installer="2025.8.27"
 
