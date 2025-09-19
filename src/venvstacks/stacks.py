@@ -1865,7 +1865,6 @@ class LayerEnvBase(ABC):
             *self.index_config._get_uv_pip_compile_args(),
             "--quiet",
             "--no-color",
-            "--no-config",
             "--no-annotate",  # Annotations include file paths, creating portability problems
             "--generate-hashes",
             "--strip-extras",
@@ -1894,7 +1893,6 @@ class LayerEnvBase(ABC):
             *self.index_config._get_uv_pip_install_args(),
             "--quiet",
             "--no-color",
-            "--no-config",
         ]
         for override_path in overrides:
             uv_pip_args.extend(("--overrides", os.fspath(override_path)))
