@@ -19,6 +19,7 @@ try:
     from venvstacks.stacks import EnvironmentLock, StackSpec
 except ImportError as exc:
     exc.add_note("Try 'pdm run migrate-hashes' if direct execution fails")
+    raise
 
 _THIS_DIR = pathlib.Path(__file__).parent
 _REPO_DIR = _THIS_DIR.parent

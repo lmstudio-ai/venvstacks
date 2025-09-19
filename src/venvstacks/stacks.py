@@ -855,7 +855,7 @@ class LayerSpecBase(ABC):
 
     def get_requirements_fname(self, platform: str) -> str:
         """Locked requirements file name for this layer specification."""
-        return f"requirements-{self.env_name}-{platform}.txt"
+        return f"requirements-{self.env_name}.txt"
 
     def get_requirements_path(self, platform: str, requirements_dir: StrPath) -> Path:
         """Full path of locked requirements file for this layer specification."""
@@ -1871,7 +1871,9 @@ class LayerEnvBase(ABC):
             "--strip-extras",
             "--no-upgrade",  # Delete the existing lock files to upgrade dependencies
             "--allow-unsafe",  # Despite the name, this turns off an unwanted legacy behaviour
-            # that disallowed pinning some packaging related PyPI projects
+            #                    that disallowed pinning some packaging related PyPI projects
+            # Prepare for migration to locking via pyproject.toml
+            "--universal",
         ]
         for constraint_path in constraints:
             uv_pip_args.extend(("-c", os.fspath(constraint_path)))
