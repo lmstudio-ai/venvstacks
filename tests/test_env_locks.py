@@ -7,7 +7,7 @@ import pytest
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator, cast
+from typing import Any, Generator
 
 from pytest_subtests import SubTests
 
@@ -277,8 +277,7 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         runtime_lock_inputs = runtime_env.get_lock_inputs()
         expected_runtime_lock_inputs = (
             runtime_env.requirements_path,
-            runtime_env.requirements_path.with_suffix(".in"),
-            cast(list[Path], []),
+            runtime_env.env_path.with_name(f"{runtime_env.env_name}_resolve"),
         )
         assert runtime_lock_inputs == expected_runtime_lock_inputs
     for unlocked_env in build_env_to_lock.environments_to_lock():

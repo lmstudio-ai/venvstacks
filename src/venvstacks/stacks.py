@@ -19,7 +19,6 @@ import tomllib
 import warnings
 
 from abc import ABC, abstractmethod
-from copy import deepcopy
 from dataclasses import dataclass, field, replace as dc_replace
 from datetime import datetime, timezone
 from enum import StrEnum
@@ -194,20 +193,30 @@ class PackageIndexConfig:
         )
 
     # TODO: migrate remaining settings from subprocess CLI options to the common config file
-    def _get_common_pip_args(self) -> list[str]:
-        # Local wheel builds are expected for any source-only dependencies
-        result = ["--only-binary", ":all:"]
+    def _get_config_file_arg(self, build_path: Path) -> list[str]:
+        return [
+            "--config-file",
+            str(self._get_uv_config_path(build_path)),
+        ]
+
+    def _get_uv_export_args(self, build_path: Path) -> list[str]:
+        return self._get_config_file_arg(build_path)
+
+    def _get_common_resolve_args(self, build_path: Path) -> list[str]:
+        result = self._get_config_file_arg(build_path)
         if not self.query_default_index:
             result.append("--no-index")
         for local_wheel_path in self.local_wheel_paths:
             result.extend(("--find-links", os.fspath(local_wheel_path)))
         return result
 
-    def _get_uv_pip_compile_args(self) -> list[str]:
-        return self._get_common_pip_args()
+    def _get_uv_lock_args(self, build_path: Path) -> list[str]:
+        # Local wheel builds are expected for any source-only dependencies
+        return ["--no-binary", *self._get_common_resolve_args(build_path)]
 
-    def _get_uv_pip_install_args(self) -> list[str]:
-        return self._get_common_pip_args()
+    def _get_uv_pip_install_args(self, build_path: Path) -> list[str]:
+        # Local wheel builds are expected for any source-only dependencies
+        return ["--only-binary", ":all:", *self._get_common_resolve_args(build_path)]
 
     @staticmethod
     def _get_uv_input_config_path(spec_path: Path) -> Path:
@@ -303,6 +312,10 @@ def _ignore_req_comments(requirements: Iterable[str]) -> Sequence[str]:
             result.append(req)
     result.sort()
     return result
+
+
+def _read_req_file(requirements_path: Path) -> Sequence[str]:
+    return _ignore_req_comments(requirements_path.read_text().splitlines())
 
 
 def _extract_pinned_reqs(requirements: Iterable[str]) -> Iterable[str]:
@@ -1490,7 +1503,7 @@ class LayerEnvBase(ABC):
     python_path: Path = field(init=False, repr=False)
     env_lock: EnvironmentLock = field(init=False, repr=False)
     _build_metadata_path: Path = field(init=False, repr=False)
-    _uv_config_path: Path = field(init=False, repr=False)
+    _pyproject_path: Path = field(init=False, repr=False)
 
     # Derived from subclass py_version in __post_init__
     _py_version_info: tuple[str, str] = field(init=False, repr=False)
@@ -1599,7 +1612,7 @@ class LayerEnvBase(ABC):
         self._build_metadata_path = env_path.with_name(
             f"{env_path.name}.last-build.json"
         )
-        self._uv_config_path = env_path.with_name(f"{env_path.name}.uv.toml")
+        self._pyproject_path = env_path.with_name(f"{env_path.name}_resolve")
 
         # Note: purelib and platlib are the same location in virtual environments
         # (even when they have different names, platlib is a symlink to purelib)
@@ -1754,20 +1767,35 @@ class LayerEnvBase(ABC):
         self.select_operations(False, False, False)
         self.excluded = True
 
-    def _write_tool_config_files(self) -> None:
-        common_config_uv_path = self.index_config._get_uv_config_path(self.build_path)
-        common_config_uv = tomlkit.parse(common_config_uv_path.read_text())
-        index_sources: dict[str, dict[str, str]] = {}
-        for dist_name, index_name in self.env_spec.sources.items():
-            index_sources[dist_name] = {"index": index_name}
-        layer_config_uv = deepcopy(common_config_uv)
-        layer_config_uv.setdefault("sources", {})
-        sources_config: Any = layer_config_uv["sources"]
-        sources_config.update(
-            index_sources
-        )  # Let the AttributeError happen if config is invalid
-        with self._uv_config_path.open("w") as f:
-            tomlkit.dump(layer_config_uv, f)
+    def _write_pyproject_file(self, requirements_input_path: Path) -> None:
+        # Common config is passed via --config-file, so it doesn't need to be included here
+        # Layer config to be passed in:
+        # - declared requirements -> dependencies
+        # - lower layer constraints -> tool.uv.constraint-dependencies
+        # - layer source declarations -> tool.uv.sources
+        dependencies = _read_req_file(requirements_input_path)
+        constraint_paths = self.get_constraint_paths()
+        unique_constraints = set[str]()
+        for constraint_path in constraint_paths:
+            unique_constraints.update(_read_req_file(constraint_path))
+        constraints = sorted(unique_constraints)
+        index_sources = {
+            pkg: {"index": idx} for pkg, idx in self.env_spec.sources.items()
+        }
+        uv_tool_config = {
+            "constraint-dependencies": constraints,
+            "sources": index_sources,
+        }
+        pyproject_config = {
+            "project": {"name": self.env_name, "version": "0"},
+            "dependencies": dependencies,
+            "tool": {"uv": uv_tool_config},
+        }
+        pyproject_path = self._pyproject_path
+        pyproject_path.mkdir(exist_ok=True)
+        pyproject_toml_path = pyproject_path / "pyproject.toml"
+        with pyproject_toml_path.open("w") as f:
+            tomlkit.dump(pyproject_config, f)
 
     def _create_environment(
         self, *, clean: bool = False, lock_only: bool = False
@@ -1829,10 +1857,9 @@ class LayerEnvBase(ABC):
             "utf8",
             "-Im",
             "uv",
-            "--config-file",
-            str(self._uv_config_path),
             cmd,
             *cmd_args,
+            "--no-managed-python",
         ]
         return run_python_command(command, **kwds)
 
@@ -1841,43 +1868,42 @@ class LayerEnvBase(ABC):
     ) -> subprocess.CompletedProcess[str]:
         return self._run_uv("pip", cmd_args, **kwds)
 
-    def _run_uv_pip_compile(
+    def _run_uv_lock(
         self,
-        requirements_path: StrPath,
-        requirements_input_path: StrPath,
-        constraints: Sequence[StrPath],
+        pyproject_path: StrPath,
     ) -> subprocess.CompletedProcess[str]:
-        # TODO: Explore whether resolution in `--universal` mode might eliminate the
-        #       need for per-platform lock files (it depends on whether `uv` is assuming
-        #       dependency declarations don't vary across wheels, which is not a valid
-        #       assumption for some Python packages, including `pytorch`)
-        cli_lock_command = f"{Path(sys.executable).name} -Im {__package__} lock"
-        uv_pip_args = [
-            "compile",
-            "-o",
-            os.fspath(requirements_path),
+        uv_lock_args = [
+            "--project",
+            str(pyproject_path),
             "--python",
             str(self.base_python_path),
-            "--python-version",
-            self.py_version,
-            "--custom-compile-command",
-            cli_lock_command,
-            *self.index_config._get_uv_pip_compile_args(),
+            *self.index_config._get_uv_lock_args(self.build_path),
+            "--quiet",
+            "--no-color",
+        ]
+        return self._run_uv("lock", uv_lock_args)
+
+    def _run_uv_export_requirements(
+        self,
+        requirements_path: StrPath,
+        pyproject_path: StrPath,
+    ) -> subprocess.CompletedProcess[str]:
+        uv_export_args = [
+            "-o",
+            os.fspath(requirements_path),
+            "--project",
+            str(pyproject_path),
+            "--locked",
+            "--format",
+            "requirements-txt",
+            "--python",
+            str(self.base_python_path),
+            *self.index_config._get_uv_export_args(self.build_path),
             "--quiet",
             "--no-color",
             "--no-annotate",  # Annotations include file paths, creating portability problems
-            "--generate-hashes",
-            "--strip-extras",
-            "--no-upgrade",  # Delete the existing lock files to upgrade dependencies
-            "--allow-unsafe",  # Despite the name, this turns off an unwanted legacy behaviour
-            #                    that disallowed pinning some packaging related PyPI projects
-            # Prepare for migration to locking via pyproject.toml
-            "--universal",
         ]
-        for constraint_path in constraints:
-            uv_pip_args.extend(("-c", os.fspath(constraint_path)))
-        uv_pip_args.append(os.fspath(requirements_input_path))
-        return self._run_uv_pip(uv_pip_args)
+        return self._run_uv("export", uv_export_args)
 
     def _run_uv_pip_install(
         self,
@@ -1890,7 +1916,7 @@ class LayerEnvBase(ABC):
             str(self.python_path),
             "--python-version",
             self.py_version,
-            *self.index_config._get_uv_pip_install_args(),
+            *self.index_config._get_uv_pip_install_args(self.build_path),
             "--quiet",
             "--no-color",
         ]
@@ -2002,7 +2028,7 @@ class LayerEnvBase(ABC):
     def _iter_dependencies(self) -> Iterator["LayerEnvBase"]:
         return iter(())
 
-    def get_lock_inputs(self) -> tuple[Path, Path, Sequence[Path]]:
+    def get_lock_inputs(self) -> tuple[Path, Path]:
         """Ensure the inputs needed to lock this environment are defined and valid."""
         unlocked_deps = [
             env.env_name for env in self._iter_dependencies() if env.needs_lock()
@@ -2010,17 +2036,15 @@ class LayerEnvBase(ABC):
         if unlocked_deps:
             self._fail_build(f"Cannot lock with unlocked dependencies: {unlocked_deps}")
         declared_requirements_path = self.env_lock.prepare_lock_inputs()
+        self._write_pyproject_file(declared_requirements_path)
         return (
             self.requirements_path,
-            declared_requirements_path,
-            self.get_constraint_paths(),
+            self._pyproject_path,
         )
 
     def lock_requirements(self) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
-        requirements_path, declared_requirements_path, constraint_paths = (
-            self.get_lock_inputs()
-        )
+        requirements_path, pyproject_path = self.get_lock_inputs()
         if not self.want_lock and not self.needs_lock():
             _LOG.info(
                 f"Using existing lock for {self.env_name} ({str(requirements_path)!r})"
@@ -2040,9 +2064,8 @@ class LayerEnvBase(ABC):
             _LOG.info(
                 f"Locking {self.env_name} (generating {str(requirements_path)!r})"
             )
-            self._run_uv_pip_compile(
-                requirements_path, declared_requirements_path, constraint_paths
-            )
+            self._run_uv_lock(pyproject_path)
+            self._run_uv_export_requirements(requirements_path, pyproject_path)
             if not requirements_path.exists():
                 self._fail_build(f"Failed to generate {str(requirements_path)!r}")
         else:
@@ -3605,8 +3628,6 @@ class BuildEnvironment:
         # Ensure the tool config files exist
         index_config = self.stack_spec.index_config
         index_config._write_common_tool_config_files(build_path)
-        for env in self.all_environments():
-            env._write_tool_config_files()
 
     def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
         """Lock build environments for specified layers."""

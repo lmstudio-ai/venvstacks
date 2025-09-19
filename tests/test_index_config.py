@@ -10,44 +10,67 @@ import tomlkit
 from venvstacks.stacks import PackageIndexConfig
 
 
-class TestDefaultOptions:
+class _CommonTestDetails:
+    BUILD_PATH = Path("/build_dir")
+    CONFIG_FILE = os.fspath(BUILD_PATH / "uv.toml")
+
+
+class TestDefaultOptions(_CommonTestDetails):
     TEST_CONFIG = PackageIndexConfig()
 
-    def test_uv_pip_compile(self) -> None:
-        assert self.TEST_CONFIG._get_uv_pip_compile_args() == [
-            "--only-binary",
-            ":all:",
+    def test_uv_lock(self) -> None:
+        assert self.TEST_CONFIG._get_uv_lock_args(self.BUILD_PATH) == [
+            "--no-binary",
+            "--config-file",
+            self.CONFIG_FILE,
+        ]
+
+    def test_uv_export(self) -> None:
+        assert self.TEST_CONFIG._get_uv_export_args(self.BUILD_PATH) == [
+            "--config-file",
+            self.CONFIG_FILE,
         ]
 
     def test_uv_pip_install(self) -> None:
-        assert self.TEST_CONFIG._get_uv_pip_install_args() == [
+        assert self.TEST_CONFIG._get_uv_pip_install_args(self.BUILD_PATH) == [
             "--only-binary",
             ":all:",
+            "--config-file",
+            self.CONFIG_FILE,
         ]
 
 
-class TestConfiguredOptions:
+class TestConfiguredOptions(_CommonTestDetails):
     TEST_CONFIG = PackageIndexConfig(
         query_default_index=False,
         local_wheel_dirs=["/some_dir"],
     )
     WHEEL_DIR = f"{os.sep}some_dir"
 
-    def test_uv_pip_compile(self) -> None:
+    def test_uv_lock(self) -> None:
         # There are currently no locking specific args
-        assert self.TEST_CONFIG._get_uv_pip_compile_args() == [
-            "--only-binary",
-            ":all:",
+        assert self.TEST_CONFIG._get_uv_lock_args(self.BUILD_PATH) == [
+            "--no-binary",
+            "--config-file",
+            self.CONFIG_FILE,
             "--no-index",
             "--find-links",
             self.WHEEL_DIR,
         ]
 
+    def test_uv_export(self) -> None:
+        assert self.TEST_CONFIG._get_uv_export_args(self.BUILD_PATH) == [
+            "--config-file",
+            self.CONFIG_FILE,
+        ]
+
     def test_uv_pip_install(self) -> None:
         # There are currently no installation specific args
-        assert self.TEST_CONFIG._get_uv_pip_install_args() == [
+        assert self.TEST_CONFIG._get_uv_pip_install_args(self.BUILD_PATH) == [
             "--only-binary",
             ":all:",
+            "--config-file",
+            self.CONFIG_FILE,
             "--no-index",
             "--find-links",
             self.WHEEL_DIR,
