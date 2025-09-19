@@ -2889,7 +2889,9 @@ class StackSpec:
     frameworks: MutableMapping[LayerBaseName, FrameworkSpec]
     applications: MutableMapping[LayerBaseName, ApplicationSpec]
     requirements_dir_path: Path
-    index_config: PackageIndexConfig = field(repr=False, default_factory=PackageIndexConfig)
+    index_config: PackageIndexConfig = field(
+        repr=False, default_factory=PackageIndexConfig
+    )
 
     # Derived from runtime environment in __post_init__
     build_platform: str = field(init=False, repr=False)
@@ -3200,7 +3202,12 @@ class StackSpec:
             ensure_optional_env_spec_fields(app)
             applications[name] = ApplicationSpec(**app)
         self = cls(
-            stack_spec_path, runtimes, frameworks, applications, requirements_dir_path, index_config,
+            stack_spec_path,
+            runtimes,
+            frameworks,
+            applications,
+            requirements_dir_path,
+            index_config,
         )
         build_platform = self.build_platform
         for app_spec in self.applications.values():

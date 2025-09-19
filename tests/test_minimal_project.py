@@ -686,7 +686,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         self.assertTrue(all(env.needs_lock() for env in envs_to_lock))
         self.assertTrue(build_env._needs_lock())
 
-    def test_lock_input_cache_is_optional(self):
+    def test_lock_input_cache_is_optional(self) -> None:
         build_env = self.build_env
         stack_spec = build_env.stack_spec
         # Lock input files should serve as a pure cache
@@ -705,11 +705,13 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
         self.assertEqual([], unlocked)
         self.assertFalse(new_env._needs_lock())
 
+
 _EXPECTED_UV_CONFIG = """\
 [[index]]
 name = "pypi-named"
 url = "https://pypi.org/simple/"
 explicit = true"""
+
 
 class TestMinimalBuild(DeploymentTestCase):
     # Test cases that actually create the build environment folders
@@ -884,9 +886,7 @@ class TestMinimalBuild(DeploymentTestCase):
         # Ensure creating the environments implicitly creates the uv tool config file
         uv_config_path = build_env.build_path / "uv.toml"
         self.assertTrue(uv_config_path.exists())
-        self.assertEqual(
-            _EXPECTED_UV_CONFIG, uv_config_path.read_text().rstrip()
-        )
+        self.assertEqual(_EXPECTED_UV_CONFIG, uv_config_path.read_text().rstrip())
         rt_build_path = [*build_env.runtimes.values()][0].env_path
         rt_uv_config_name = f"{rt_build_path.name}.uv.toml"
         rt_uv_config_path = rt_build_path.with_name(rt_uv_config_name)
@@ -1049,14 +1049,14 @@ class TestShowStack:
             print(report_traceback(result.exception))
         return result
 
-    def test_show_unlocked(self):
+    def test_show_unlocked(self) -> None:
         result = self.invoke_cli()
         assert EXPECTED_SHOW_RESULT.strip() in result.stdout
         # Check operation result last to ensure test results are as informative as possible
         assert result.exception is None, report_traceback(result.exception)
         assert result.exit_code == 0
 
-    def test_show_filtered(self):
+    def test_show_filtered(self) -> None:
         result = self.invoke_cli(("--include", "*-layerC"))
         assert EXPECTED_SHOW_LAYER_C_RESULT.strip() in result.stdout
         # Check operation result last to ensure test results are as informative as possible

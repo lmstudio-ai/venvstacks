@@ -66,7 +66,7 @@ class _WheelBuildEnv:
         )
         self._venv_bin_path = python_path.parent
 
-    def remove_venv(self):
+    def remove_venv(self) -> None:
         # Test suite is done with the build, only keep the built wheels around
         shutil.rmtree(self._venv_path)
 
@@ -170,9 +170,9 @@ def _define_build_env(
     # accessing the Python executables (that can be temperamental, especially on macOS).
     # The subdirectory won't be used for anything, so it being missing shouldn't matter.
     working_spec_path = working_path / "_unused_dir/../venvstacks.toml"
-    stack_spec = StackSpec.load(working_spec_path)
+    stack_spec = StackSpec.load(working_spec_path, index_config)
     build_path = working_path / "_build🐸"
-    return stack_spec.define_build_environment(build_path, index_config)
+    return stack_spec.define_build_environment(build_path)
 
 
 ##################################
@@ -246,7 +246,7 @@ class TestBuildEnvironment(DeploymentTestCase):
     # Test cases that need the full build environment to exist
     EXPECTED_APP_OUTPUT = "Environment launch module executed successfully"
 
-    _wheel_temp_dir: ClassVar[tempfile.TemporaryDirectory | None] = None
+    _wheel_temp_dir: ClassVar[tempfile.TemporaryDirectory[str] | None] = None
     local_wheel_path: ClassVar[Path]
     working_path: Path
     build_env: BuildEnvironment
