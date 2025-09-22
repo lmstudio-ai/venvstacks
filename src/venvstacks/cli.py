@@ -45,7 +45,7 @@ _cli = typer.Typer(
 )
 
 
-@_cli.callback(invoke_without_command=True, no_args_is_help=False)
+@_cli.callback(no_args_is_help=True)
 def handle_app_options(
     ctx: typer.Context,
     version: Annotated[bool, typer.Option("--version", "-V", is_eager=True)] = False,
@@ -53,7 +53,6 @@ def handle_app_options(
     quiet: Annotated[bool, typer.Option("--quiet", "-q")] = False,
 ) -> None:
     """Lock, build, and publish Python virtual environment stacks."""
-    # Work around for https://github.com/fastapi/typer/discussions/1233
     if version:
         from importlib.metadata import version as get_version
 
@@ -61,9 +60,6 @@ def handle_app_options(
         package_name = __name__.partition(".")[0]
         version_info = get_version(package_name)
         print(f"{package_name}: {version_info}")
-        raise typer.Exit()
-    if ctx.invoked_subcommand is None:
-        print(ctx.get_help())
         raise typer.Exit()
     _UI.set_verbosity(-1 if quiet else verbose)
     _UI.configure_app_logging()
