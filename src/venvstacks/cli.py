@@ -746,5 +746,5 @@ def main(args: Sequence[str] | None = None) -> None:
         _cli(args, windows_expand_args=False)
     except EnvStackError as exc:
         exc_type = type(exc)
-        print(f"{exc_type.__module__}.{exc_type.__name__}: {exc}")
+        print(f"{exc_type.__name__}: {exc}")
         sys.exit(1)

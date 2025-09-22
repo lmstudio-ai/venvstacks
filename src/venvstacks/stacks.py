@@ -219,11 +219,11 @@ class PackageIndexConfig:
         return result
 
     def _get_uv_lock_args(self, build_path: Path) -> list[str]:
-        # Local wheel builds are expected for any source-only dependencies
-        return ["--no-binary", *self._get_common_resolve_args(build_path)]
+        # Local wheel builds must be created in advance for any source-only dependencies
+        return ["--no-build", *self._get_common_resolve_args(build_path)]
 
     def _get_uv_pip_install_args(self, build_path: Path) -> list[str]:
-        # Local wheel builds are expected for any source-only dependencies
+        # Local wheel builds must be created in advance for any source-only dependencies
         return ["--only-binary", ":all:", *self._get_common_resolve_args(build_path)]
 
     @staticmethod
@@ -322,8 +322,18 @@ def _ignore_req_comments(requirements: Iterable[str]) -> Sequence[str]:
     return result
 
 
-def _read_req_file(requirements_path: Path) -> Sequence[str]:
-    return _ignore_req_comments(requirements_path.read_text().splitlines())
+def _read_deps_from_req_file(requirements_path: Path) -> Iterable[str]:
+    # Read dependencies from a requirements file
+    # - omit trailing backslash line escapes
+    # - ignore comments and blank lines
+    # - ignore artifact hash declarations
+    lines = requirements_path.read_text("utf-8").splitlines()
+    for line in lines:
+        req_line = line.rstrip("\\").strip()
+        req, _sep, _comment = req_line.strip().partition("#")
+        req = req.strip()
+        if req and "--hash" not in req:
+            yield req
 
 
 def _extract_pinned_reqs(requirements: Iterable[str]) -> Iterable[str]:
@@ -1781,11 +1791,11 @@ class LayerEnvBase(ABC):
         # - declared requirements -> dependencies
         # - lower layer constraints -> tool.uv.constraint-dependencies
         # - layer source declarations -> tool.uv.sources
-        dependencies = _read_req_file(requirements_input_path)
+        dependencies = sorted(_read_deps_from_req_file(requirements_input_path))
         constraint_paths = self.get_constraint_paths()
         unique_constraints = set[str]()
         for constraint_path in constraint_paths:
-            unique_constraints.update(_read_req_file(constraint_path))
+            unique_constraints.update(_read_deps_from_req_file(constraint_path))
         constraints = sorted(unique_constraints)
         index_sources = {
             pkg: {"index": idx} for pkg, idx in self.env_spec.sources.items()
@@ -1795,8 +1805,11 @@ class LayerEnvBase(ABC):
             "sources": index_sources,
         }
         pyproject_config = {
-            "project": {"name": self.env_name, "version": "0"},
-            "dependencies": dependencies,
+            "project": {
+                "name": self.env_name,
+                "version": "0",
+                "dependencies": dependencies,
+            },
             "tool": {"uv": uv_tool_config},
         }
         pyproject_path = self._pyproject_path
@@ -1889,6 +1902,7 @@ class LayerEnvBase(ABC):
             "--quiet",
             "--no-color",
         ]
+        _LOG.debug((Path(pyproject_path) / "pyproject.toml").read_text())
         try:
             return self._run_uv("lock", uv_lock_args)
         except subprocess.CalledProcessError as exc:

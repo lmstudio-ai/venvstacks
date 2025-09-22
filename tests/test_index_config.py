@@ -20,7 +20,7 @@ class TestDefaultOptions(_CommonTestDetails):
 
     def test_uv_lock(self) -> None:
         assert self.TEST_CONFIG._get_uv_lock_args(self.BUILD_PATH) == [
-            "--no-binary",
+            "--no-build",
             "--config-file",
             self.CONFIG_FILE,
         ]
@@ -50,7 +50,7 @@ class TestConfiguredOptions(_CommonTestDetails):
     def test_uv_lock(self) -> None:
         # There are currently no locking specific args
         assert self.TEST_CONFIG._get_uv_lock_args(self.BUILD_PATH) == [
-            "--no-binary",
+            "--no-build",
             "--config-file",
             self.CONFIG_FILE,
             "--no-index",
