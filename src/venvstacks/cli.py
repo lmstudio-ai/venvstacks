@@ -8,11 +8,12 @@ from typing import Annotated, Iterable, Sequence
 import typer
 
 from .stacks import (
-    StackSpec,
     BuildEnvironment,
-    _format_json,
-    PackageIndexConfig,
+    EnvStackError,
     EnvNameBuild,
+    PackageIndexConfig,
+    StackSpec,
+    _format_json,
     _UI,
 )
 from ._ui.render import format_stack_status
@@ -45,7 +46,7 @@ _cli = typer.Typer(
 )
 
 
-@_cli.callback(invoke_without_command=True, no_args_is_help=False)
+@_cli.callback(no_args_is_help=True)
 def handle_app_options(
     ctx: typer.Context,
     version: Annotated[bool, typer.Option("--version", "-V", is_eager=True)] = False,
@@ -53,7 +54,6 @@ def handle_app_options(
     quiet: Annotated[bool, typer.Option("--quiet", "-q")] = False,
 ) -> None:
     """Lock, build, and publish Python virtual environment stacks."""
-    # Work around for https://github.com/fastapi/typer/discussions/1233
     if version:
         from importlib.metadata import version as get_version
 
@@ -61,9 +61,6 @@ def handle_app_options(
         package_name = __name__.partition(".")[0]
         version_info = get_version(package_name)
         print(f"{package_name}: {version_info}")
-        raise typer.Exit()
-    if ctx.invoked_subcommand is None:
-        print(ctx.get_help())
         raise typer.Exit()
     _UI.set_verbosity(-1 if quiet else verbose)
     _UI.configure_app_logging()
@@ -743,6 +740,11 @@ def main(args: Sequence[str] | None = None) -> None:
 
     If *args* is not given, defaults to using ``sys.argv``.
     """
-    # Indirectly calls the relevant click.Command variant's `main` method
-    # See https://click.palletsprojects.com/en/8.1.x/api/#click.BaseCommand.main
-    _cli(args, windows_expand_args=False)
+    try:
+        # Indirectly calls the relevant click.Command variant's `main` method
+        # See https://click.palletsprojects.com/en/8.1.x/api/#click.BaseCommand.main
+        _cli(args, windows_expand_args=False)
+    except EnvStackError as exc:
+        exc_type = type(exc)
+        print(f"{exc_type.__module__}.{exc_type.__name__}: {exc}")
+        sys.exit(1)

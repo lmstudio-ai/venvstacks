@@ -189,8 +189,10 @@ class TestTopLevelCommand:
         mocked_stack_spec.assert_not_called()
         mocked_stack_spec.load.assert_not_called()
         # Check operation result last to ensure test results are as informative as possible
-        assert result.exception is None, report_traceback(result.exception)
-        assert result.exit_code == 0
+        assert isinstance(result.exception, SystemExit), report_traceback(
+            result.exception
+        )
+        assert result.exit_code == 2
         assert not result.stderr
 
     @requires_venv("Entry point test")

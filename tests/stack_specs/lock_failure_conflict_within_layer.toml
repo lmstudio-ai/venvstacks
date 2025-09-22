@@ -1,0 +1,10 @@
+# Ensure suitable error is raised when layers fail to lock
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = [
+    # Ensure layer locking fails by specifying incompatible requirements
+    "numpy < 2.0",
+    "numpy >= 2.0",
+]

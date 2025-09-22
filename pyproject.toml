@@ -32,9 +32,6 @@ dependencies = [
     "tomlkit>=0.13.2",
     # dulwich is used for git metadata processing to avoid any external git CLI dependency
     "dulwich>=0.23.2",
-    # TODO: Investigate failure to report CLI usage errors in CI with click>=8.3.0
-    #       (for example, omitting spec_path lets None into the rest of the application)
-    "click<8.3.0",
 ]
 requires-python = ">=3.11"
 readme = "README.md"

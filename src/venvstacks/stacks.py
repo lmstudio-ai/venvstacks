@@ -79,16 +79,24 @@ if f"{__package__}.cli" not in sys.modules:
     warnings.warn(_API_STABILITY_WARNING, FutureWarning)
 
 
-class EnvStackError(ValueError):
+class EnvStackError(Exception):
     """Common base class for all errors specific to managing environment stacks."""
 
 
-class LayerSpecError(EnvStackError):
+class LayerSpecError(ValueError, EnvStackError):
     """Raised when an internal inconsistency is found in a layer specification."""
 
 
-class BuildEnvError(EnvStackError):
+class BuildEnvError(RuntimeError, EnvStackError):
     """Raised when a build environment doesn't comply with process restrictions."""
+
+
+class LayerLockError(RuntimeError, EnvStackError):
+    """Raised when locking a layer fails."""
+
+
+class LayerInstallationError(RuntimeError, EnvStackError):
+    """Raised when installing packages into a layer fails."""
 
 
 ######################################################
@@ -1881,7 +1889,10 @@ class LayerEnvBase(ABC):
             "--quiet",
             "--no-color",
         ]
-        return self._run_uv("lock", uv_lock_args)
+        try:
+            return self._run_uv("lock", uv_lock_args)
+        except subprocess.CalledProcessError as exc:
+            raise LayerLockError(f"Failed to lock layer {self.env_name!r}") from exc
 
     def _run_uv_export_requirements(
         self,
@@ -1903,7 +1914,12 @@ class LayerEnvBase(ABC):
             "--no-color",
             "--no-annotate",  # Annotations include file paths, creating portability problems
         ]
-        return self._run_uv("export", uv_export_args)
+        try:
+            return self._run_uv("export", uv_export_args)
+        except subprocess.CalledProcessError as exc:
+            raise LayerLockError(
+                f"Failed to generate requirements.txt for layer {self.env_name!r}"
+            ) from exc
 
     def _run_uv_pip_install(
         self,
@@ -1923,7 +1939,12 @@ class LayerEnvBase(ABC):
         for override_path in overrides:
             uv_pip_args.extend(("--overrides", os.fspath(override_path)))
         uv_pip_args.extend(("-r", os.fspath(requirements_path)))
-        return self._run_uv_pip(uv_pip_args)
+        try:
+            return self._run_uv_pip(uv_pip_args)
+        except subprocess.CalledProcessError as exc:
+            raise LayerInstallationError(
+                f"Failed to install into layer {self.env_name!r}"
+            ) from exc
 
     def get_constraint_paths(self) -> list[Path]:
         """Get the lower level layer constraints imposed on this environment."""
