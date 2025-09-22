@@ -8,11 +8,12 @@ from typing import Annotated, Iterable, Sequence
 import typer
 
 from .stacks import (
-    StackSpec,
     BuildEnvironment,
-    _format_json,
-    PackageIndexConfig,
+    EnvStackError,
     EnvNameBuild,
+    PackageIndexConfig,
+    StackSpec,
+    _format_json,
     _UI,
 )
 from ._ui.render import format_stack_status
@@ -739,6 +740,11 @@ def main(args: Sequence[str] | None = None) -> None:
 
     If *args* is not given, defaults to using ``sys.argv``.
     """
-    # Indirectly calls the relevant click.Command variant's `main` method
-    # See https://click.palletsprojects.com/en/8.1.x/api/#click.BaseCommand.main
-    _cli(args, windows_expand_args=False)
+    try:
+        # Indirectly calls the relevant click.Command variant's `main` method
+        # See https://click.palletsprojects.com/en/8.1.x/api/#click.BaseCommand.main
+        _cli(args, windows_expand_args=False)
+    except EnvStackError as exc:
+        exc_type = type(exc)
+        print(f"{exc_type.__module__}.{exc_type.__name__}: {exc}")
+        sys.exit(1)
