@@ -76,16 +76,24 @@ if f"{__package__}.cli" not in sys.modules:
     warnings.warn(_API_STABILITY_WARNING, FutureWarning)
 
 
-class EnvStackError(ValueError):
+class EnvStackError(Exception):
     """Common base class for all errors specific to managing environment stacks."""
 
 
-class LayerSpecError(EnvStackError):
+class LayerSpecError(ValueError, EnvStackError):
     """Raised when an internal inconsistency is found in a layer specification."""
 
 
-class BuildEnvError(EnvStackError):
+class BuildEnvError(RuntimeError, EnvStackError):
     """Raised when a build environment doesn't comply with process restrictions."""
+
+
+class LayerLockError(RuntimeError, EnvStackError):
+    """Raised when locking a layer fails."""
+
+
+class LayerInstallationError(RuntimeError, EnvStackError):
+    """Raised when installing packages into a layer fails."""
 
 
 ######################################################
@@ -1761,7 +1769,10 @@ class LayerEnvBase(ABC):
         for constraint_path in constraints:
             uv_pip_args.extend(("-c", os.fspath(constraint_path)))
         uv_pip_args.append(os.fspath(requirements_input_path))
-        return self._run_uv_pip(uv_pip_args)
+        try:
+            return self._run_uv_pip(uv_pip_args)
+        except subprocess.CalledProcessError as exc:
+            raise LayerLockError(f"Failed to lock layer {self.env_name!r}") from exc
 
     def _run_uv_pip_install(
         self,
@@ -1782,7 +1793,12 @@ class LayerEnvBase(ABC):
         for override_path in overrides:
             uv_pip_args.extend(("--overrides", os.fspath(override_path)))
         uv_pip_args.extend(("-r", os.fspath(requirements_path)))
-        return self._run_uv_pip(uv_pip_args)
+        try:
+            return self._run_uv_pip(uv_pip_args)
+        except subprocess.CalledProcessError as exc:
+            raise LayerInstallationError(
+                f"Failed to install into layer {self.env_name!r}"
+            ) from exc
 
     def get_constraint_paths(self) -> list[Path]:
         """Get the lower level layer constraints imposed on this environment."""

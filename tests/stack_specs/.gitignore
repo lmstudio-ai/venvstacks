@@ -1,0 +1,4 @@
+# Ignore local builds of these files
+requirements
+_build*
+_export*
