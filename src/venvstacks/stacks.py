@@ -214,8 +214,6 @@ class PackageIndexConfig:
         result = self._get_config_file_arg(build_path)
         if not self.query_default_index:
             result.append("--no-index")
-        for local_wheel_path in self.local_wheel_paths:
-            result.extend(("--find-links", os.fspath(local_wheel_path)))
         return result
 
     def _get_uv_lock_args(self, build_path: Path) -> list[str]:
@@ -256,7 +254,10 @@ class PackageIndexConfig:
             if name:
                 yield name
 
-    def _load_common_tool_config(self, spec_path: Path) -> Mapping[Any, Any]:
+    def _define_local_wheel_locations(self) -> Iterator[str]:
+        return map(os.fspath, self.local_wheel_paths)
+
+    def _load_common_tool_config(self, spec_path: Path) -> tomlkit.TOMLDocument:
         # Loading the tool config couples this config instance to the given stack specification
         # (copying the config first allows a single index config to be used across multiple stacks)
         if self._common_config_uv is not None:
@@ -266,24 +267,34 @@ class PackageIndexConfig:
         # Ensure paths are absolute. Relative input paths are left alone for config copying.
         self._resolve_lexical_paths(spec_path.parent)
         # Load the common uv config settings (including the set of known source index names)
-        common_config_uv: Mapping[Any, Any] | None = None
+        baseline_config_uv: dict[Any, Any] | None = None
         spec_config = tomlkit.parse(spec_path.read_text())
         inline_tool_config = spec_config.get("tool", None)
         if isinstance(inline_tool_config, dict):
             inline_uv_config = inline_tool_config.get("uv")
             if inline_uv_config is not None:
                 # Unwrap to ensure all nested keys have the tool.uv prefix removed
-                common_config_uv = inline_uv_config.unwrap()
-        if common_config_uv is None:
+                baseline_config_uv = inline_uv_config.unwrap()
+        if baseline_config_uv is None:
             baseline_config_input_path = self._get_uv_input_config_path(spec_path)
             if baseline_config_input_path.exists():
                 # Ensure the given baseline config file is valid TOML
                 baseline_content = baseline_config_input_path.read_text()
+                baseline_config_uv = tomlkit.parse(baseline_content).unwrap()
             else:
-                # If no baseline config is given, the tool config file is still created
-                # This reduces the potential for interference from user and system config files
-                baseline_content = "# No baseline uv tool config\n"
-            common_config_uv = tomlkit.parse(baseline_content)
+                baseline_config_uv = {}
+        if self.local_wheel_paths:
+            local_wheels_config_uv = baseline_config_uv.setdefault("find-links", [])
+            local_wheels_config_uv.extend(self._define_local_wheel_locations())
+        common_config_uv: tomlkit.TOMLDocument
+        if baseline_config_uv:
+            common_config_uv = tomlkit.document()
+            common_config_uv.update(baseline_config_uv)
+        else:
+            # If no baseline config is given, the tool config file is still created
+            # This reduces the potential for interference from user and system config files
+            baseline_comment = "# No baseline uv tool config\n"
+            common_config_uv = tomlkit.parse(baseline_comment)
         self._known_sources = set(self._iter_source_index_names(common_config_uv))
         self._common_config_uv = common_config_uv
         return common_config_uv

@@ -39,6 +39,9 @@ class TestDefaultOptions(_CommonTestDetails):
             self.CONFIG_FILE,
         ]
 
+    def test_local_wheel_indexes(self) -> None:
+        assert list(self.TEST_CONFIG._define_local_wheel_locations()) == []
+
 
 class TestConfiguredOptions(_CommonTestDetails):
     TEST_CONFIG = PackageIndexConfig(
@@ -54,8 +57,6 @@ class TestConfiguredOptions(_CommonTestDetails):
             "--config-file",
             self.CONFIG_FILE,
             "--no-index",
-            "--find-links",
-            self.WHEEL_DIR,
         ]
 
     def test_uv_export(self) -> None:
@@ -72,8 +73,11 @@ class TestConfiguredOptions(_CommonTestDetails):
             "--config-file",
             self.CONFIG_FILE,
             "--no-index",
-            "--find-links",
-            self.WHEEL_DIR,
+        ]
+
+    def test_local_wheel_indexes(self) -> None:
+        assert list(self.TEST_CONFIG._define_local_wheel_locations()) == [
+            self.WHEEL_DIR
         ]
 
 
@@ -119,9 +123,8 @@ class TestBaselineToolConfig:
         self._write_test_config_files(spec_path, output_dir_path)
         output_config_path = output_dir_path / "uv.toml"
         assert output_config_path.exists()
-        assert "# No baseline uv tool config\n" == output_config_path.read_text(
-            encoding="utf-8"
-        )
+        output_config = output_config_path.read_text("utf-8")
+        assert output_config == "# No baseline uv tool config\n"
 
     def test_tool_config_overwrite_error(self, temp_dir_path: Path) -> None:
         # Test attempting to use one index config with multiple spec paths fails
@@ -144,8 +147,10 @@ class TestBaselineToolConfig:
         self._write_test_config_files(spec_path, output_dir_path)
         output_config_path = output_dir_path / "uv.toml"
         assert output_config_path.exists()
-        # Comments and formatting should be preserved when using an adjacent config file
-        assert _EXAMPLE_UV_CONFIG == output_config_path.read_text(encoding="utf-8")
+        # Config parsing and modifications lose the comments and specific formatting details
+        output_config = output_config_path.read_text("utf-8")
+        expected_config = tomlkit.dumps(tomlkit.parse(_EXAMPLE_UV_CONFIG).unwrap())
+        assert output_config == expected_config
 
     def test_custom_tool_config_from_inline_table(self, temp_dir_path: Path) -> None:
         # Test tool config with baseline config supplied via the stack definition table
@@ -160,8 +165,9 @@ class TestBaselineToolConfig:
         output_config_path = output_dir_path / "uv.toml"
         assert output_config_path.exists()
         # Extracting an inline table loses comments and specific formatting details
+        output_config = output_config_path.read_text("utf-8")
         expected_config = tomlkit.dumps(tomlkit.parse(_EXAMPLE_UV_CONFIG).unwrap())
-        assert expected_config == output_config_path.read_text(encoding="utf-8")
+        assert output_config == expected_config
 
 
 # Miscellaneous test cases
