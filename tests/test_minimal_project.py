@@ -99,7 +99,7 @@ EXPECTED_FRAMEWORKS = [
     ),
     LayeredEnvSummary("layerE", "framework-", "cpython-3.11", ("layerB", "layerA")),
     LayeredEnvSummary(
-        "layerF", "framework-", "cpython-3.11", ("layerE", "layerB", "layerA")
+        "layerF@1", "framework-", "cpython-3.11", ("layerE", "layerB", "layerA")
     ),
 ]
 
@@ -108,7 +108,7 @@ EXPECTED_APPLICATIONS = [
         "empty",
         "app-",
         "cpython-3.11",
-        ("layerD", "layerF", "layerE", "layerB", "layerC", "layerA"),
+        ("layerD", "layerF@1", "layerE", "layerB", "layerC", "layerA"),
     ),
     ApplicationEnvSummary("no-framework", "app-", "cpython-3.11", ()),
 ]
@@ -165,8 +165,8 @@ EXPECTED_STACK_STATUS: StackStatus = {
         },
         {
             "has_valid_lock": False,
-            "install_target": EnvNameDeploy("framework-layerF"),
-            "name": EnvNameBuild("framework-layerF"),
+            "install_target": EnvNameDeploy("framework-layerF@1"),
+            "name": EnvNameBuild("framework-layerF@1"),
             "selected_operations": ["lock-if-needed", "build", "publish"],
         },
     ],
@@ -203,7 +203,7 @@ EXPECTED_SHOW_RESULT = f"""\
 │   │   ├── *framework-layerB
 │   │   ├── *framework-layerA
 │   │   └── *cpython-3.11
-│   └── *framework-layerF
+│   └── *framework-layerF@1
 │       ├── *framework-layerE
 │       ├── *framework-layerB
 │       ├── *framework-layerA
@@ -211,7 +211,7 @@ EXPECTED_SHOW_RESULT = f"""\
 └── Applications
     ├── *app-empty
     │   ├── *framework-layerD
-    │   ├── *framework-layerF
+    │   ├── *framework-layerF@1
     │   ├── *framework-layerE
     │   ├── *framework-layerB
     │   ├── *framework-layerC
@@ -239,7 +239,7 @@ EXPECTED_SHOW_LAYER_C_RESULT = f"""\
 └── Applications
     └── *app-empty
         ├── *framework-layerD
-        ├── *framework-layerF
+        ├── *framework-layerF@1
         ├── *framework-layerE
         ├── *framework-layerB
         ├── *framework-layerC
@@ -264,7 +264,7 @@ EXPECTED_MANIFEST: BuildManifest = {
                 "archive_name": f"app-empty{ARCHIVE_SUFFIX}",
                 "required_layers": [
                     "framework-layerD",
-                    "framework-layerF",
+                    "framework-layerF@1",
                     "framework-layerE",
                     "framework-layerB",
                     "framework-layerC",
@@ -330,8 +330,8 @@ EXPECTED_MANIFEST: BuildManifest = {
             },
             {
                 "archive_build": 1,
-                "install_target": "framework-layerF",
-                "archive_name": f"framework-layerF{ARCHIVE_SUFFIX}",
+                "install_target": "framework-layerF@1",
+                "archive_name": f"framework-layerF@1{ARCHIVE_SUFFIX}",
                 "required_layers": [
                     "framework-layerE",
                     "framework-layerB",

@@ -45,7 +45,8 @@ frameworks = ["layerB"]
 requirements = []
 
 [[frameworks]]
-name = "layerF"
+# Also ensure '@' in layer names is handled correctly
+name = "layerF@1"
 frameworks = ["layerE"]
 # Expected resolved frameworks: E, B, A
 requirements = []
@@ -53,8 +54,8 @@ requirements = []
 [[applications]]
 name = "empty"
 launch_module = "empty.py"
-frameworks = ["layerD", "layerF"]
-# Expected resolved frameworks: D, F, E, B, C, A
+frameworks = ["layerD", "layerF@1"]
+# Expected resolved frameworks: D, F@1, E, B, C, A
 requirements = []
 
 [[applications]]

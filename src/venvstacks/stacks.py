@@ -9,6 +9,7 @@ import dataclasses
 import json
 import logging
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -1825,9 +1826,10 @@ class LayerEnvBase(ABC):
             "constraint-dependencies": constraints,
             "sources": index_sources,
         }
+        layer_project_name = re.sub("[^a-zA-Z0-9._-]", "-", self.env_name)
         pyproject_config = {
             "project": {
-                "name": canonicalize_name(self.env_name),
+                "name": canonicalize_name(layer_project_name),
                 "version": "0",
                 "dependencies": dependencies,
             },
