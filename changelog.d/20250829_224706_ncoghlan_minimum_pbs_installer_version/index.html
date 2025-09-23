@@ -294,9 +294,10 @@
           <section id="fixed">
 <h1>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">¶</a></h1>
 <ul class="simple">
-<li><p>A minimum <code class="docutils literal notranslate"><span class="pre">pbs-installer==2025.8.27</span></code> version is now specified. This ensures
-that the smaller CPython base runtime installations that omit debug
-symbols are consistently preferred (reported in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/242">#242</a>).</p></li>
+<li><p>Using <code class="docutils literal notranslate"><span class="pre">pbs-installer</span></code> 2025.8.27 or later ensures that the smaller CPython base runtime
+installations that omit debug symbols are consistently preferred (reported in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/242">#242</a>).
+No explicit lower bound is set on the dependency declaration to allow <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> to be updated
+without causing conflicts with existing <code class="docutils literal notranslate"><span class="pre">pbs-installer</span></code> pins to older versions.</p></li>
 </ul>
 </section>
 
