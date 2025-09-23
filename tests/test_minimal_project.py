@@ -707,6 +707,7 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
 
 
 _EXPECTED_UV_CONFIG = """\
+no-build = true
 [[index]]
 name = "pypi-named"
 url = "https://pypi.org/simple/"

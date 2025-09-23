@@ -9,6 +9,11 @@ import tomlkit
 
 from venvstacks.stacks import PackageIndexConfig
 
+# Use the sample project as an example project with no custom index config
+_THIS_PATH = Path(__file__)
+SAMPLE_PROJECT_PATH = _THIS_PATH.parent / "sample_project"
+SAMPLE_PROJECT_STACK_SPEC_PATH = SAMPLE_PROJECT_PATH / "venvstacks.toml"
+
 
 class _CommonTestDetails:
     BUILD_PATH = Path("/build_dir")
@@ -19,28 +24,38 @@ class TestDefaultOptions(_CommonTestDetails):
     TEST_CONFIG = PackageIndexConfig()
 
     def test_uv_lock(self) -> None:
+        # There are currently no locking specific args
         assert self.TEST_CONFIG._get_uv_lock_args(self.BUILD_PATH) == [
-            "--no-build",
             "--config-file",
             self.CONFIG_FILE,
         ]
 
     def test_uv_export(self) -> None:
+        # There are currently no export specific args
         assert self.TEST_CONFIG._get_uv_export_args(self.BUILD_PATH) == [
             "--config-file",
             self.CONFIG_FILE,
         ]
 
     def test_uv_pip_install(self) -> None:
+        # There are currently no installation specific args
         assert self.TEST_CONFIG._get_uv_pip_install_args(self.BUILD_PATH) == [
-            "--only-binary",
-            ":all:",
             "--config-file",
             self.CONFIG_FILE,
         ]
 
     def test_local_wheel_indexes(self) -> None:
         assert list(self.TEST_CONFIG._define_local_wheel_locations()) == []
+
+    def test_common_config(self) -> None:
+        index_config = self.TEST_CONFIG.copy()
+        index_config._load_common_tool_config(SAMPLE_PROJECT_STACK_SPEC_PATH)
+        common_config_uv = index_config._common_config_uv
+        assert common_config_uv is not None
+        assert common_config_uv["no-build"] is True
+        assert "no-index" not in common_config_uv
+        assert "find-links" not in common_config_uv
+        assert "index" not in common_config_uv
 
 
 class TestConfiguredOptions(_CommonTestDetails):
@@ -53,13 +68,12 @@ class TestConfiguredOptions(_CommonTestDetails):
     def test_uv_lock(self) -> None:
         # There are currently no locking specific args
         assert self.TEST_CONFIG._get_uv_lock_args(self.BUILD_PATH) == [
-            "--no-build",
             "--config-file",
             self.CONFIG_FILE,
-            "--no-index",
         ]
 
     def test_uv_export(self) -> None:
+        # There are currently no export specific args
         assert self.TEST_CONFIG._get_uv_export_args(self.BUILD_PATH) == [
             "--config-file",
             self.CONFIG_FILE,
@@ -68,11 +82,8 @@ class TestConfiguredOptions(_CommonTestDetails):
     def test_uv_pip_install(self) -> None:
         # There are currently no installation specific args
         assert self.TEST_CONFIG._get_uv_pip_install_args(self.BUILD_PATH) == [
-            "--only-binary",
-            ":all:",
             "--config-file",
             self.CONFIG_FILE,
-            "--no-index",
         ]
 
     def test_local_wheel_indexes(self) -> None:
@@ -80,9 +91,21 @@ class TestConfiguredOptions(_CommonTestDetails):
             self.WHEEL_DIR
         ]
 
+    def test_common_config(self) -> None:
+        index_config = self.TEST_CONFIG.copy()
+        index_config._load_common_tool_config(SAMPLE_PROJECT_STACK_SPEC_PATH)
+        common_config_uv = index_config._common_config_uv
+        assert common_config_uv is not None
+        assert common_config_uv["no-build"] is True
+        assert common_config_uv["no-index"] is True
+        assert common_config_uv["find-links"] == [self.WHEEL_DIR]
+        assert "index" not in common_config_uv
+
 
 _EXAMPLE_UV_CONFIG = """\
 # Custom uv config
+no-build = true
+
 [[index]]
 name = "pytorch"
 url = "https://download.pytorch.org/whl/cu128"
@@ -93,6 +116,9 @@ torch = { index = "pytorch" }
 """
 
 _EXAMPLE_UV_CONFIG_TABLE = """\
+[tool.uv]
+no-build = true
+
 [[tool.uv.index]]
 name = "pytorch"
 url = "https://download.pytorch.org/whl/cu128"
@@ -124,7 +150,7 @@ class TestBaselineToolConfig:
         output_config_path = output_dir_path / "uv.toml"
         assert output_config_path.exists()
         output_config = output_config_path.read_text("utf-8")
-        assert output_config == "# No baseline uv tool config\n"
+        assert output_config == "no-build = true\n"
 
     def test_tool_config_overwrite_error(self, temp_dir_path: Path) -> None:
         # Test attempting to use one index config with multiple spec paths fails

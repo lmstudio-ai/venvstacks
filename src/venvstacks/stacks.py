@@ -200,7 +200,6 @@ class PackageIndexConfig:
             local_wheel_dirs=None,
         )
 
-    # TODO: migrate remaining settings from subprocess CLI options to the common config file
     def _get_config_file_arg(self, build_path: Path) -> list[str]:
         return [
             "--config-file",
@@ -208,21 +207,20 @@ class PackageIndexConfig:
         ]
 
     def _get_uv_export_args(self, build_path: Path) -> list[str]:
+        # Currently no export-specific CLI args
         return self._get_config_file_arg(build_path)
 
     def _get_common_resolve_args(self, build_path: Path) -> list[str]:
-        result = self._get_config_file_arg(build_path)
-        if not self.query_default_index:
-            result.append("--no-index")
-        return result
+        # Currently no resolution-specific CLI args
+        return self._get_config_file_arg(build_path)
 
     def _get_uv_lock_args(self, build_path: Path) -> list[str]:
-        # Local wheel builds must be created in advance for any source-only dependencies
-        return ["--no-build", *self._get_common_resolve_args(build_path)]
+        # Currently no lock-specific CLI args
+        return self._get_common_resolve_args(build_path)
 
     def _get_uv_pip_install_args(self, build_path: Path) -> list[str]:
-        # Local wheel builds must be created in advance for any source-only dependencies
-        return ["--only-binary", ":all:", *self._get_common_resolve_args(build_path)]
+        # Currently no installation-specific CLI args
+        return self._get_common_resolve_args(build_path)
 
     @staticmethod
     def _get_uv_input_config_path(spec_path: Path) -> Path:
@@ -283,18 +281,16 @@ class PackageIndexConfig:
                 baseline_config_uv = tomlkit.parse(baseline_content).unwrap()
             else:
                 baseline_config_uv = {}
+        common_config_uv = tomlkit.document()
+        common_config_uv.update(baseline_config_uv)
+        del baseline_config_uv
+        if not self.query_default_index:
+            common_config_uv["no-index"] = True
+        # Local wheel builds must be created in advance for any source-only dependencies
+        common_config_uv["no-build"] = True
         if self.local_wheel_paths:
-            local_wheels_config_uv = baseline_config_uv.setdefault("find-links", [])
+            local_wheels_config_uv = common_config_uv.setdefault("find-links", [])
             local_wheels_config_uv.extend(self._define_local_wheel_locations())
-        common_config_uv: tomlkit.TOMLDocument
-        if baseline_config_uv:
-            common_config_uv = tomlkit.document()
-            common_config_uv.update(baseline_config_uv)
-        else:
-            # If no baseline config is given, the tool config file is still created
-            # This reduces the potential for interference from user and system config files
-            baseline_comment = "# No baseline uv tool config\n"
-            common_config_uv = tomlkit.parse(baseline_comment)
         self._known_sources = set(self._iter_source_index_names(common_config_uv))
         self._common_config_uv = common_config_uv
         return common_config_uv
