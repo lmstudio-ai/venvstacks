@@ -14,9 +14,10 @@ dependencies = [
     "pip>=24.1.1",
     # PDM is used to install the base runtime environments for deployment
     "pdm>=2.17.3",
-    # Minimum pbs-installer version ensures use of smaller runtime archives without debug symbols
     # Installations may pin a specific version of pbs-installer to control exact runtime versions
-    "pbs-installer>=2025.8.27",
+    # pbs-install>=2025.8.27 ensures the use of smaller runtime archives without debug symbols
+    # (that lower bound is not specified by default to avoid conflicting with older version pins)
+    "pbs-installer",
     # Due to https://github.com/astral-sh/uv/issues/2831 we're not trying to
     # replace `python -Im venv` with `uv venv` at this point since we want explicit
     # control over whether files are symlinked or copied between the environments
