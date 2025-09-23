@@ -5,7 +5,7 @@
 groups = ["default", "bootstrap", "dev", "docs", "dynlib-wheel-build", "lint", "task-runner", "test", "typecheck"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:219c0e1fc9e81f2b127503d60ab8b7d7b71f7f2ba8d68200fef83051095919c1"
+content_hash = "sha256:abc0eb5999cbe7d060cf13cd5e50ade835aa85affedf1c3c5625b3d792b53ba0"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -62,7 +62,7 @@ files = [
 
 [[package]]
 name = "anyio"
-version = "4.10.0"
+version = "4.11.0"
 requires_python = ">=3.9"
 summary = "High-level concurrency and networking framework on top of asyncio or Trio"
 groups = ["default", "bootstrap"]
@@ -73,8 +73,8 @@ dependencies = [
     "typing-extensions>=4.5; python_version < \"3.13\"",
 ]
 files = [
-    {file = "anyio-4.10.0-py3-none-any.whl", hash = "sha256:60e474ac86736bbfd6f210f7a61218939c318f43f9972497381f1c5e930ed3d1"},
-    {file = "anyio-4.10.0.tar.gz", hash = "sha256:3f3fae35c96039744587aa5b8371e7e8e603c0702999535961dd336026973ba6"},
+    {file = "anyio-4.11.0-py3-none-any.whl", hash = "sha256:0287e96f4d26d4149305414d4e3bc32f0dcd0862365a4bddea19d7a1ec38c4fc"},
+    {file = "anyio-4.11.0.tar.gz", hash = "sha256:82a8d0b81e318cc5ce71a5f1f8b5c4e63619620b63141ef8c995fa0db95a57c4"},
 ]
 
 [[package]]
@@ -627,13 +627,12 @@ files = [
 
 [[package]]
 name = "meson"
-version = "1.9.0"
+version = "1.9.1"
 requires_python = ">=3.7"
 summary = "A high performance build system"
 groups = ["dynlib-wheel-build"]
 files = [
-    {file = "meson-1.9.0-py3-none-any.whl", hash = "sha256:45e51ddc41e37d961582d06e78c48e0f9039011587f3495c4d6b0781dad92357"},
-    {file = "meson-1.9.0.tar.gz", hash = "sha256:cd27277649b5ed50d19875031de516e270b22e890d9db65ed9af57d18ebc498d"},
+    {file = "meson-1.9.1-py3-none-any.whl", hash = "sha256:f824ab770c041a202f532f69e114c971918ed2daff7ea56583d80642564598d0"},
 ]
 
 [[package]]
@@ -1283,8 +1282,8 @@ files = [
 
 [[package]]
 name = "typer-slim"
-version = "0.19.1"
-requires_python = ">=3.7"
+version = "0.19.2"
+requires_python = ">=3.8"
 summary = "Typer, build great CLIs. Easy to code. Based on Python type hints."
 groups = ["default"]
 dependencies = [
@@ -1292,8 +1291,8 @@ dependencies = [
     "typing-extensions>=3.7.4.3",
 ]
 files = [
-    {file = "typer_slim-0.19.1-py3-none-any.whl", hash = "sha256:e050c351613b4855844ef116244b66fb71c3864ae23c997c1c2c7f890fd89f90"},
-    {file = "typer_slim-0.19.1.tar.gz", hash = "sha256:4fb75d0688419f130ff8962e679aa2341ff258b8fa36c41e35d994aa7f1cf8fd"},
+    {file = "typer_slim-0.19.2-py3-none-any.whl", hash = "sha256:1c9cdbbcd5b8d30f4118d3cb7c52dc63438b751903fbd980a35df1dfe10c6c91"},
+    {file = "typer_slim-0.19.2.tar.gz", hash = "sha256:6f601e28fb8249a7507f253e35fb22ccc701403ce99bea6a9923909ddbfcd133"},
 ]
 
 [[package]]
