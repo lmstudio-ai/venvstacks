@@ -53,6 +53,9 @@ import tomlkit
 
 from installer.records import parse_record_file
 
+# TODO: Declare direct dependency on packaging (currently included transitively)
+from packaging.utils import NormalizedName, canonicalize_name
+
 from . import pack_venv
 from ._hash_content import hash_file_contents, hash_module, hash_strings
 from ._injected import postinstall
@@ -170,7 +173,7 @@ class PackageIndexConfig:
     _common_config_uv: Mapping[Any, Any] | None = field(
         init=False, repr=False, default=None
     )
-    _known_sources: Container[str] = field(init=False, repr=False, default=())
+    _known_indexes: Container[str] = field(init=False, repr=False, default=())
 
     def __post_init__(self) -> None:
         local_wheel_dirs = self.local_wheel_dirs
@@ -242,7 +245,7 @@ class PackageIndexConfig:
             raise RuntimeError(
                 "Tool config must be loaded before checking source index validity"
             )
-        return source in self._known_sources
+        return source in self._known_indexes
 
     @staticmethod
     def _iter_source_index_names(uv_config: Mapping[Any, Any]) -> Iterator[str]:
@@ -291,7 +294,7 @@ class PackageIndexConfig:
         if self.local_wheel_paths:
             local_wheels_config_uv = common_config_uv.setdefault("find-links", [])
             local_wheels_config_uv.extend(self._define_local_wheel_locations())
-        self._known_sources = set(self._iter_source_index_names(common_config_uv))
+        self._known_indexes = set(self._iter_source_index_names(common_config_uv))
         self._common_config_uv = common_config_uv
         return common_config_uv
 
@@ -851,7 +854,7 @@ class LayerSpecBase(ABC):
     versioned: bool
     requirements: list[str] = field(repr=False)
     platforms: list[TargetPlatforms] = field(repr=False)
-    sources: dict[str, str] = field(repr=False)
+    sources: dict[NormalizedName, str] = field(repr=False)
     dynlib_exclude: list[str] = field(repr=False)
 
     # Optionally specified on creation
@@ -874,14 +877,25 @@ class LayerSpecBase(ABC):
                     )
                     raise LayerSpecError(err)
         # Ensure any source index overrides reference known source index names
+        raw_sources = self.sources
         index_config = self._index_config
-        for dist_name, index_name in self.sources.items():
+        canonical_sources: dict[NormalizedName, str] = {}
+        for dist_name, index_name in raw_sources.items():
             if not index_config._is_known_source_index(index_name):
                 msg = (
                     f"{layer_name} references an unknown source index "
                     f"({index_name}) for {dist_name}"
                 )
                 raise LayerSpecError(msg)
+            canonical_name = canonicalize_name(dist_name)
+            if canonical_name in canonical_sources:
+                msg = (
+                    f"{layer_name} specifies multiple sources for {canonical_name} "
+                    f"after name normalization ({dist_name} is the second entry)"
+                )
+                raise LayerSpecError(msg)
+            canonical_sources[canonical_name] = index_name
+        self.sources = canonical_sources
 
     @property
     def env_name(self) -> EnvNameBuild:
@@ -1813,7 +1827,7 @@ class LayerEnvBase(ABC):
         }
         pyproject_config = {
             "project": {
-                "name": self.env_name,
+                "name": canonicalize_name(self.env_name),
                 "version": "0",
                 "dependencies": dependencies,
             },
@@ -1928,6 +1942,7 @@ class LayerEnvBase(ABC):
             "--locked",
             "--format",
             "requirements-txt",
+            "--no-emit-project",
             "--python",
             str(self.base_python_path),
             *self.index_config._get_uv_export_args(self.build_path),
@@ -3097,15 +3112,13 @@ class StackSpec:
         declared_spec: Mapping[str, Any],
         runtimes: Mapping[LayerBaseName, RuntimeSpec],
         frameworks: Mapping[LayerBaseName, FrameworkSpec],
-    ) -> tuple[RuntimeSpec, tuple[FrameworkSpec, ...], dict[str, str]]:
-        # TODO: Normalise distribution names in source index overrides
-        #       (including for runtime layers, which aren't covered by this method)
-        # Note: layers are intentionally allowed to override any *common* source index settings
+    ) -> tuple[RuntimeSpec, tuple[FrameworkSpec, ...], dict[NormalizedName, str]]:
+        # Note: layers are intentionally allowed to override any *default* source index settings
         declared_runtime: LayerBaseName | None = declared_spec.get("runtime")
         declared_frameworks: Sequence[LayerBaseName] | None = declared_spec.get(
             "frameworks"
         )
-        merged_sources: dict[str, str] = {}
+        merged_sources: dict[NormalizedName, str] = {}
         runtime_dep: RuntimeSpec | None = None
         framework_deps: tuple[FrameworkSpec, ...]
         if declared_runtime is not None:
