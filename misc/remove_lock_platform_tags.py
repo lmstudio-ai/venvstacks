@@ -63,6 +63,10 @@ def remove_platform_tags(
             tagged_fname = tagged_fnames[0]
             print(f"  Renaming {tagged_fname} -> {untagged_fname}")
             tagged_path = dir_path / tagged_fname
+            if tagged_path.suffix == ".txt":
+                # Ensure requirements files use POSIX line endings
+                file_text = tagged_path.read_text("utf-8")
+                tagged_path.write_text(file_text, "utf-8", newline="\n")
             tagged_path.rename(dir_path / untagged_fname)
         for tagged_fname in files_to_remove:
             print(f"  Removing {tagged_fname}")
