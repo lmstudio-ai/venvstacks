@@ -40,7 +40,7 @@ def test_default_state(temp_dir_path: Path) -> None:
     no_dependencies_hash = env_lock._lock_input_hash
     assert no_dependencies_hash is not None
     env_lock.prepare_lock_inputs()
-    assert env_lock._lock_input_path.read_text() != ""
+    assert env_lock._lock_input_path.read_text("utf-8") != ""
     assert env_lock._lock_input_hash == no_dependencies_hash
     # Locked requirements file must be written externally
     assert env_lock.locked_requirements_path == req_path

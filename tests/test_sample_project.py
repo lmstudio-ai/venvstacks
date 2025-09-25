@@ -107,7 +107,7 @@ def _collect_locked_requirements(build_env: BuildEnvironment) -> dict[Path, str]
         )
         env_requirements_text = ""
         if env_requirements_path.exists():
-            env_requirements_text = env_requirements_path.read_text()
+            env_requirements_text = env_requirements_path.read_text("utf-8")
         locked_requirements[env_requirements_path] = env_requirements_text
     return locked_requirements
 

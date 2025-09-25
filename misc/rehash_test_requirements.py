@@ -56,7 +56,9 @@ def _rehash_layer_inputs() -> None:
         requirements_path = json_path.with_name(json_path.stem)
         requirements_hash = _rehash_req_file(requirements_path)
         lock_metadata["requirements_hash"] = requirements_hash
-        json_path.write_text(json.dumps(lock_metadata, indent=2, sort_keys=True) + "\n")
+        json_path.write_text(
+            json.dumps(lock_metadata, indent=2, sort_keys=True) + "\n", "utf-8"
+        )
         # Manifests also contain the hash of the fully locked requirements
         updated_locked_hashes[(bundle_name, target_platform)] = requirements_hash
 
@@ -88,7 +90,9 @@ def _apply_manifest_update(
         else:
             target_platform = json_path.parent.parent.name
             manifest_update(metadata, target_platform)
-        json_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
+        json_path.write_text(
+            json.dumps(metadata, indent=2, sort_keys=True) + "\n", "utf-8"
+        )
 
 
 if __name__ == "__main__":

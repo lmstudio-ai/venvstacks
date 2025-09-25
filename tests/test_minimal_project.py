@@ -887,12 +887,16 @@ class TestMinimalBuild(DeploymentTestCase):
         # Ensure creating the environments implicitly creates the uv tool config file
         uv_config_path = build_env.build_path / "uv.toml"
         self.assertTrue(uv_config_path.exists())
-        self.assertEqual(_EXPECTED_UV_CONFIG, uv_config_path.read_text().rstrip())
+        self.assertEqual(
+            _EXPECTED_UV_CONFIG, uv_config_path.read_text("utf-8").rstrip()
+        )
         rt_build_path = [*build_env.runtimes.values()][0].env_path
         rt_pyproject_name = f"{rt_build_path.name}_resolve"
         rt_pyproject_path = rt_build_path.with_name(rt_pyproject_name)
         rt_pyproject_toml_path = rt_pyproject_path / "pyproject.toml"
-        assert 'index = "pypi-named"' in rt_pyproject_toml_path.read_text().rstrip()
+        assert (
+            'index = "pypi-named"' in rt_pyproject_toml_path.read_text("utf-8").rstrip()
+        )
 
     def test_build_with_invalid_locks(self) -> None:
         # Ensure attempt to build without locking first raises a detailed exception

@@ -270,7 +270,7 @@ class PackageIndexConfig:
         self._resolve_lexical_paths(spec_path.parent)
         # Load the common uv config settings (including the set of known source index names)
         baseline_config_uv: dict[Any, Any] | None = None
-        spec_config = tomlkit.parse(spec_path.read_text())
+        spec_config = tomlkit.parse(spec_path.read_text("utf-8"))
         inline_tool_config = spec_config.get("tool", None)
         if isinstance(inline_tool_config, dict):
             inline_uv_config = inline_tool_config.get("uv")
@@ -281,7 +281,7 @@ class PackageIndexConfig:
             baseline_config_input_path = self._get_uv_input_config_path(spec_path)
             if baseline_config_input_path.exists():
                 # Ensure the given baseline config file is valid TOML
-                baseline_content = baseline_config_input_path.read_text()
+                baseline_content = baseline_config_input_path.read_text("utf-8")
                 baseline_config_uv = tomlkit.parse(baseline_content).unwrap()
             else:
                 baseline_config_uv = {}
@@ -1925,7 +1925,7 @@ class LayerEnvBase(ABC):
             "--quiet",
             "--no-color",
         ]
-        _LOG.debug((Path(pyproject_path) / "pyproject.toml").read_text())
+        _LOG.debug((Path(pyproject_path) / "pyproject.toml").read_text("utf-8"))
         try:
             return self._run_uv("lock", uv_lock_args)
         except subprocess.CalledProcessError as exc:
@@ -2082,7 +2082,9 @@ class LayerEnvBase(ABC):
             summary_lines.append("")
         summary_fname = requirements_path.name.replace("requirements-", "packages-")
         summary_path = requirements_path.with_name(summary_fname)
-        summary_path.write_text("\n".join(summary_lines), encoding="utf-8")
+        summary_path.write_text(
+            "\n".join(summary_lines), encoding="utf-8", newline="\n"
+        )
 
     def _iter_dependencies(self) -> Iterator["LayerEnvBase"]:
         return iter(())
@@ -2127,6 +2129,9 @@ class LayerEnvBase(ABC):
             self._run_uv_export_requirements(requirements_path, pyproject_path)
             if not requirements_path.exists():
                 self._fail_build(f"Failed to generate {str(requirements_path)!r}")
+            # uv emits native line endings, but we want LF line endings, even on Windows
+            requirements_text = requirements_path.read_text("utf-8")
+            requirements_path.write_text(requirements_text, "utf-8", newline="\n")
         else:
             _LOG.info(f"Incrementing layer version for {self.env_name}")
             # Actually doing the update is handled in `update_lock_metadata`
@@ -2156,7 +2161,7 @@ class LayerEnvBase(ABC):
         constraints = set[str]()
         for constraints_path in constraints_paths:
             pinned_reqs = _extract_pinned_reqs(
-                constraints_path.read_text().splitlines()
+                constraints_path.read_text("utf-8").splitlines()
             )
             constraints.update(pinned_reqs)
         layered_exclusions = [
@@ -2169,7 +2174,7 @@ class LayerEnvBase(ABC):
                 *layered_exclusions,
                 "",
             ]
-            exclusion_path.write_text("\n".join(exclusion_contents))
+            exclusion_path.write_text("\n".join(exclusion_contents), "utf-8")
             exclusion_paths = [exclusion_path]
         else:
             exclusion_paths = []
