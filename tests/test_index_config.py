@@ -63,7 +63,8 @@ class TestConfiguredOptions(_CommonTestDetails):
         query_default_index=False,
         local_wheel_dirs=("/some_dir",),
     )
-    WHEEL_DIR = f"{SAMPLE_PROJECT_STACK_SPEC_PATH.anchor}some_dir"
+    INITIAL_WHEEL_DIR = f"{os.sep}some_dir"
+    RESOLVED_WHEEL_DIR = f"{SAMPLE_PROJECT_STACK_SPEC_PATH.anchor}some_dir"
 
     def test_uv_lock(self) -> None:
         # There are currently no locking specific args
@@ -87,8 +88,13 @@ class TestConfiguredOptions(_CommonTestDetails):
         ]
 
     def test_local_wheel_indexes(self) -> None:
+        index_config = self.TEST_CONFIG.copy()
         assert list(self.TEST_CONFIG._define_local_wheel_locations()) == [
-            self.WHEEL_DIR
+            self.INITIAL_WHEEL_DIR
+        ]
+        index_config._resolve_lexical_paths(SAMPLE_PROJECT_STACK_SPEC_PATH.parent)
+        assert list(self.TEST_CONFIG._define_local_wheel_locations()) == [
+            self.RESOLVED_WHEEL_DIR
         ]
 
     def test_common_config(self) -> None:
@@ -98,7 +104,7 @@ class TestConfiguredOptions(_CommonTestDetails):
         assert common_config_uv is not None
         assert common_config_uv["no-build"] is True
         assert common_config_uv["no-index"] is True
-        assert common_config_uv["find-links"] == [self.WHEEL_DIR]
+        assert common_config_uv["find-links"] == [self.RESOLVED_WHEEL_DIR]
         assert "index" not in common_config_uv
 
 
