@@ -170,7 +170,7 @@ class PackageIndexConfig:
     local_wheel_paths: list[Path] = field(init=False)
 
     # Tool specific config is implicitly queried and cached when loading a specification file
-    _common_config_uv: Mapping[Any, Any] | None = field(
+    _common_config_uv: dict[str, Any] | None = field(
         init=False, repr=False, default=None
     )
     _known_indexes: set[str] | tuple[str, ...] = field(
@@ -260,7 +260,7 @@ class PackageIndexConfig:
     def _define_local_wheel_locations(self) -> Iterator[str]:
         return map(os.fspath, self.local_wheel_paths)
 
-    def _load_common_tool_config(self, spec_path: Path) -> tomlkit.TOMLDocument:
+    def _load_common_tool_config(self, spec_path: Path) -> dict[str, Any]:
         # Loading the tool config couples this config instance to the given stack specification
         # (copying the config first allows a single index config to be used across multiple stacks)
         if self._common_config_uv is not None:
@@ -286,7 +286,7 @@ class PackageIndexConfig:
                 baseline_config_uv = tomlkit.parse(baseline_content).unwrap()
             else:
                 baseline_config_uv = {}
-        common_config_uv = tomlkit.document()
+        common_config_uv: dict[str, Any] = {}
         common_config_uv.update(baseline_config_uv)
         del baseline_config_uv
         if not self.query_default_index:
