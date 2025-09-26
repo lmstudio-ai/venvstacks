@@ -232,12 +232,12 @@ def _define_build_environment(
     local_wheels: Sequence[str] | None = None,
 ) -> BuildEnvironment:
     """Load given stack specification and define a build environment."""
-    stack_spec = StackSpec.load(spec_path)
     index_config = PackageIndexConfig(
         query_default_index=index,
-        local_wheel_dirs=local_wheels,
+        local_wheel_dirs=tuple(local_wheels) if local_wheels is not None else None,
     )
-    return stack_spec.define_build_environment(build_path, index_config)
+    stack_spec = StackSpec.load(spec_path, index_config)
+    return stack_spec.define_build_environment(build_path)
 
 
 def _handle_layer_include_options(
@@ -746,5 +746,5 @@ def main(args: Sequence[str] | None = None) -> None:
         _cli(args, windows_expand_args=False)
     except EnvStackError as exc:
         exc_type = type(exc)
-        print(f"{exc_type.__module__}.{exc_type.__name__}: {exc}")
+        print(f"{exc_type.__name__}: {exc}")
         sys.exit(1)

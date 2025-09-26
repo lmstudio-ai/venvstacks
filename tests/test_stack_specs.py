@@ -73,6 +73,9 @@ def test_future_warning_for_build_requirements() -> None:
 
 EXPECTED_STACK_SPEC_ERRORS = {
     "error_inconsistent_runtimes.toml": "inconsistent frameworks",
+    "error_inconsistent_app_sources.toml": "inconsistent source index override",
+    "error_inconsistent_framework_sources.toml": "inconsistent source index override",
+    "error_inconsistent_runtime_sources.toml": "inconsistent source index override",
     "error_launch_support_conflict.toml": "'name'.*conflicts with.*'layer'",
     "error_layer_dep_C3_conflict.toml": "linearization failed.*['layerC', 'layerD'].*['layerD', 'layerC']",
     "error_layer_dep_cycle.toml": "unknown framework",
@@ -82,6 +85,7 @@ EXPECTED_STACK_SPEC_ERRORS = {
     "error_support_modules_conflict.toml": "Conflicting support module names.*'layer'",
     "error_unknown_framework.toml": "unknown framework",
     "error_unknown_runtime.toml": "unknown runtime",
+    "error_unknown_source_index.toml": "unknown source index",
 }
 
 

@@ -1,14 +1,13 @@
 """Test cases for environment lock management."""
 
 import shutil
-import tempfile
 import tomllib
 
 import pytest
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator, cast
+from typing import Any, Generator
 
 from pytest_subtests import SubTests
 
@@ -26,12 +25,6 @@ from venvstacks.stacks import (
 )
 
 
-@pytest.fixture
-def temp_dir_path() -> Generator[Path, None, None]:
-    with tempfile.TemporaryDirectory() as dir_name:
-        yield Path(dir_name)
-
-
 ##############################
 # EnvironmentLock test cases
 ##############################
@@ -47,7 +40,7 @@ def test_default_state(temp_dir_path: Path) -> None:
     no_dependencies_hash = env_lock._lock_input_hash
     assert no_dependencies_hash is not None
     env_lock.prepare_lock_inputs()
-    assert env_lock._lock_input_path.read_text() != ""
+    assert env_lock._lock_input_path.read_text("utf-8") != ""
     assert env_lock._lock_input_hash == no_dependencies_hash
     # Locked requirements file must be written externally
     assert env_lock.locked_requirements_path == req_path
@@ -284,8 +277,7 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         runtime_lock_inputs = runtime_env.get_lock_inputs()
         expected_runtime_lock_inputs = (
             runtime_env.requirements_path,
-            runtime_env.requirements_path.with_suffix(".in"),
-            cast(list[Path], []),
+            runtime_env.env_path.with_name(f"{runtime_env.env_name}_resolve"),
         )
         assert runtime_lock_inputs == expected_runtime_lock_inputs
     for unlocked_env in build_env_to_lock.environments_to_lock():
