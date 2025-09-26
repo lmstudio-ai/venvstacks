@@ -237,7 +237,7 @@ class PackageIndexConfig:
 
     def _resolve_lexical_paths(self, base_path: StrPath) -> None:
         """Lexically resolve paths in config relative to the given base path."""
-        base_path = Path(base_path)
+        base_path = Path(base_path).absolute()
         self.local_wheel_paths[:] = [
             _resolve_lexical_path(path, base_path) for path in self.local_wheel_paths
         ]
