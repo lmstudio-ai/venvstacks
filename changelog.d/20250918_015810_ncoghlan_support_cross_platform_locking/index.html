@@ -295,7 +295,11 @@
 <h1>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h1>
 <ul class="simple">
 <li><p>Layer requirements locking is now cross-platform, with environment markers
-now retained for platform specific dependencies (proposed in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/254">#254</a>).</p></li>
+now retained for platform specific dependencies (proposed in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/254">#254</a>).
+While not part of the published tool, an example script is available in
+the <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> source repository to remove platform tags from lock files
+generated with older versions (this allows for easier review of the <em>actual</em>
+changes introduced by the migration to platform independent lock file names)</p></li>
 </ul>
 </section>
 
