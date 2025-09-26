@@ -234,7 +234,7 @@ def _define_build_environment(
     """Load given stack specification and define a build environment."""
     index_config = PackageIndexConfig(
         query_default_index=index,
-        local_wheel_dirs=local_wheels,
+        local_wheel_dirs=tuple(local_wheels) if local_wheels is not None else None,
     )
     stack_spec = StackSpec.load(spec_path, index_config)
     return stack_spec.define_build_environment(build_path)

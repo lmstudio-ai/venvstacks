@@ -61,7 +61,7 @@ class TestDefaultOptions(_CommonTestDetails):
 class TestConfiguredOptions(_CommonTestDetails):
     TEST_CONFIG = PackageIndexConfig(
         query_default_index=False,
-        local_wheel_dirs=["/some_dir"],
+        local_wheel_dirs=("/some_dir",),
     )
     WHEEL_DIR = f"{os.sep}some_dir"
 
@@ -199,18 +199,18 @@ class TestBaselineToolConfig:
 # Miscellaneous test cases
 def test_wheel_dir_not_in_sequence() -> None:
     with pytest.raises(TypeError):
-        PackageIndexConfig(local_wheel_dirs="/some_dir")
+        PackageIndexConfig(local_wheel_dirs="/some_dir")  # type: ignore[arg-type]
 
 
 def test_lexical_path_resolution() -> None:
-    paths_to_resolve = [
+    paths_to_resolve = (
         "/some/path",
         "/some/absolute/../path",
         "some/path",
         "some/relative/../path",
         "~/some/path",
         "~/some/user/../path",
-    ]
+    )
     expected_paths = [
         Path("/some/path").absolute(),
         Path("/some/path").absolute(),

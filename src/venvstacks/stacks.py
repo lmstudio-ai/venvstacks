@@ -166,7 +166,7 @@ class PackageIndexConfig:
     """Python package index access configuration."""
 
     query_default_index: bool = True
-    local_wheel_dirs: Sequence[StrPath] | None = field(repr=False, default=None)
+    local_wheel_dirs: tuple[StrPath, ...] | None = field(repr=False, default=None)
     local_wheel_paths: list[Path] = field(init=False)
 
     # Tool specific config is implicitly queried and cached when loading a specification file

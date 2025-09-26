@@ -269,7 +269,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         working_path = Path(working_dir.name)
         self.working_path = working_path
         index_config = PackageIndexConfig(
-            query_default_index=False, local_wheel_dirs=[self.local_wheel_path]
+            query_default_index=False, local_wheel_dirs=(self.local_wheel_path,)
         )
         self.build_env = _define_build_env(working_path, index_config)
         os_env_updates = dict(get_os_environ_settings())

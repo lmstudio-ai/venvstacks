@@ -528,7 +528,7 @@ class TestSubcommands:
             ("--local-wheels", "/some_dir", "--local-wheels", "some/other/dir"),
             PackageIndexConfig(
                 query_default_index=True,
-                local_wheel_dirs=["/some_dir", "some/other/dir"],
+                local_wheel_dirs=("/some_dir", "some/other/dir"),
             ),
         ),
     )
