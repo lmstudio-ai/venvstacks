@@ -33,7 +33,6 @@ from typing import (
     Any,
     Callable,
     ClassVar,
-    Container,
     Iterable,
     Iterator,
     Literal,
@@ -174,7 +173,9 @@ class PackageIndexConfig:
     _common_config_uv: Mapping[Any, Any] | None = field(
         init=False, repr=False, default=None
     )
-    _known_indexes: Container[str] = field(init=False, repr=False, default=())
+    _known_indexes: set[str] | tuple[str, ...] = field(
+        init=False, repr=False, default=()
+    )
 
     def __post_init__(self) -> None:
         local_wheel_dirs = self.local_wheel_dirs
@@ -2561,7 +2562,6 @@ class LayeredEnvBase(LayerEnvBase):
         self,
         runtime: RuntimeEnv,
         frameworks: Mapping[LayerBaseName, "FrameworkEnv"],
-        source_index_names: Container[str] = (),
     ) -> None:
         """Link this application build environment with its runtime and framework layers."""
         self.link_base_runtime(runtime)
