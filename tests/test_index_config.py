@@ -63,7 +63,7 @@ class TestConfiguredOptions(_CommonTestDetails):
         query_default_index=False,
         local_wheel_dirs=["/some_dir"],
     )
-    WHEEL_DIR = f"{os.sep}some_dir"
+    WHEEL_DIR = f"{SAMPLE_PROJECT_STACK_SPEC_PATH.anchor}some_dir"
 
     def test_uv_lock(self) -> None:
         # There are currently no locking specific args
