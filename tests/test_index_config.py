@@ -89,11 +89,11 @@ class TestConfiguredOptions(_CommonTestDetails):
 
     def test_local_wheel_indexes(self) -> None:
         index_config = self.TEST_CONFIG.copy()
-        assert list(self.TEST_CONFIG._define_local_wheel_locations()) == [
+        assert list(index_config._define_local_wheel_locations()) == [
             self.INITIAL_WHEEL_DIR
         ]
         index_config._resolve_lexical_paths(SAMPLE_PROJECT_STACK_SPEC_PATH.parent)
-        assert list(self.TEST_CONFIG._define_local_wheel_locations()) == [
+        assert list(index_config._define_local_wheel_locations()) == [
             self.RESOLVED_WHEEL_DIR
         ]
 
