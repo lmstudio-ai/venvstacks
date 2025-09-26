@@ -123,6 +123,7 @@ distribution = true
 
 [tool.pdm.scripts]
 migrate-hashes = "./misc/rehash_test_requirements.py"
+remove-lock-platform-tags = "./misc/remove_lock_platform_tags.py"
 
 [tool.mypy]
 untyped_calls_exclude = "dulwich"
