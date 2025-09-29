@@ -315,10 +315,14 @@ the separate configuration file is ignored.</p>
 relevant to the <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> use case, but at least the following are expected to be applicable:</p>
 <ul class="simple">
 <li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#index">index</a>: specifying which indexes to use for dependency resolution and retrieval</p></li>
-<li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#sources">sources</a>: specifying indexes to use for packages (overriding the default priorities)</p></li>
 <li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a>: ignore packages uploaded after the specified date</p></li>
 <li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#override-dependencies">override-dependencies</a>: override inaccurate or unwanted dependency declarations</p></li>
 </ul>
+<p>Note that the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#sources">sources</a> setting (specifying indexes for specific packages) is NOT
+supported (it may be specified, but will <a class="reference external" href="https://github.com/astral-sh/uv/issues/6772">have no effect</a>). Instead, named indexes are
+referenced from the <a class="reference internal" href="#priority-indexes"><span class="std std-ref">priority indexes</span></a> setting to allow different layer
+definitions to resolve packages against different indexes (such as those maintained by the
+PyTorch project to provide binary builds against different library versions).</p>
 <p>The default output folder for layer metadata when publishing artifacts and locally exporting
 environments is called <code class="docutils literal notranslate"><span class="pre">__venvstacks__</span></code>. The platform-specific layer summary metadata
 files are called <code class="docutils literal notranslate"><span class="pre">venvstacks.json</span></code> and each is written to a folder named after the target
@@ -361,9 +365,11 @@ Dependencies are declared using the standard Python
 These declared dependencies will be transitively locked when locking the layer.
 The list of requirements must be present, but is permitted to be empty.</p></li>
 </ul>
-<p>While there are no formal restrictions on the symbols permitted in layer names,
-the <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> symbol is used to separate the layer name from the lock version for
-implicitly versioned layers, so using it as part of a layer name may cause
+<p>While there are no formal restrictions on the symbols permitted in layer names, it is
+recommended to avoid the use of any punctuation symbols other than <code class="docutils literal notranslate"><span class="pre">_</span></code> and <code class="docutils literal notranslate"><span class="pre">-</span></code>
+(as future releases may assign specific semantics to those symbols).
+The <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> symbol in particular is already used to separate the layer name from the lock
+version for implicitly versioned layers, so using it as part of a layer name may cause
 confusion when attempting to determine whether a published artifact or
 exported environment is using implicit lock versioning or is referring
 to an external version number.</p>
@@ -401,17 +407,20 @@ full path to the files using the equivalent of <a class="reference external" hre
 (<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
 </div>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">sources</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#table">table</a> mapping Python distribution package names to named <code class="docutils literal notranslate"><span class="pre">uv</span></code> indexes):
+</ul>
+<ul id="priority-indexes">
+<li><p><code class="docutils literal notranslate"><span class="pre">priority_indexes</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
 by default, all layers are built with common tool configuration settings. To allow different
-layers to retrieve wheels from different indexes, layers may define a <code class="docutils literal notranslate"><span class="pre">sources</span></code> subtable that
-is used to add to or override the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">sources</span></code> configuration for that layer.
-For example, one framework layer definition may specify <code class="docutils literal notranslate"><span class="pre">sources</span> <span class="pre">=</span> <span class="pre">{torch</span> <span class="pre">=</span> <span class="pre">&quot;pytorch_cu128&quot;}</span></code>,
-while an alternate framework definition layer may specify <code class="docutils literal notranslate"><span class="pre">sources</span> <span class="pre">=</span> <span class="pre">{torch</span> <span class="pre">=</span> <span class="pre">&quot;pytorch_cpu&quot;}</span></code>.
-Upper layers inherit the source overrides of all of the layers they depend on. A stack definition
-error is reported if a source override refers to an unknown index name, or if the collected source
-overrides for a given layer definition are inconsistent.</p>
+layers to retrieve wheels from different indexes, layers may define a <code class="docutils literal notranslate"><span class="pre">priority_indexes</span></code> list
+that is used to adjust the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">index</span></code> configuration for that layer by moving the named
+indexes to the start of the index list (in the given order) and clearing their <code class="docutils literal notranslate"><span class="pre">exclusive</span></code> flag.
+For example, one framework layer definition may specify <code class="docutils literal notranslate"><span class="pre">priority_indexes</span> <span class="pre">=</span> <span class="pre">[&quot;pytorch-cu128&quot;]</span></code>,
+while an alternate framework definition layer may specify <code class="docutils literal notranslate"><span class="pre">priority_indexes</span> <span class="pre">=</span> <span class="pre">[&quot;pytorch-cpu&quot;]</span></code>.
+Upper layers do NOT automatically inherit the index priorities of the layers they depend on
+(however, they also do not install any of the packages provided by lower layers). A stack
+definition error is reported if a priority index list refers to an unknown index name.</p>
 <div class="versionadded">
-<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for per-layer <code class="docutils literal notranslate"><span class="pre">uv</span></code> sources configuration
+<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for per-layer <code class="docutils literal notranslate"><span class="pre">uv</span></code> index priority configuration
 (<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
 </div>
 </li>

@@ -298,9 +298,8 @@
 incorporated into the configuration passed to <code class="docutils literal notranslate"><span class="pre">uv</span></code> when locking and
 building environments (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>). This configuration may alternatively
 be supplied via the <code class="docutils literal notranslate"><span class="pre">[tool.uv]</span></code> table in the stack definition file.</p></li>
-<li><p>Each layer definition may now contain a <code class="docutils literal notranslate"><span class="pre">sources</span></code> section that is used to add to or
-override the shared <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">sources</span></code> configuration when locking or building that layer,
-or any layer that depends on it (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>).</p></li>
+<li><p>Each layer definition may now contain a <code class="docutils literal notranslate"><span class="pre">priority_indexes</span></code> section that is used to adjust
+the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">index</span></code> configuration when locking or building that layer (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>).</p></li>
 </ul>
 </section>
 
