@@ -200,17 +200,11 @@ def make_mock_index_config(reference_config: PackageIndexConfig | None = None) -
     if reference_config is None:
         reference_config = PackageIndexConfig()
     mock_config = create_autospec(reference_config, spec_set=True)
-    # Make conditional checks and iteration reflect the actual field values
-    checked_methods = ("__bool__", "__len__", "__iter__")
+    # Only mock the methods, replace the data fields with their actual values
     for field in fields(reference_config):
         attr_name = field.name
-        mock_field = getattr(mock_config, attr_name)
         field_value = getattr(reference_config, attr_name)
-        for method_name in checked_methods:
-            mock_method = getattr(mock_field, method_name, None)
-            if mock_method is None:
-                continue
-            mock_method.side_effect = getattr(field_value, method_name)
+        setattr(mock_config, attr_name, field_value)
     # Still call the actual CLI arg retrieval methods
     for attr_name in dir(reference_config):
         if not attr_name.startswith("_get_uv_"):
