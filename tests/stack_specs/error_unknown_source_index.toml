@@ -9,4 +9,4 @@ requirements = []
 name = "pytorch-cpu"
 runtime = "cpython-3.13"
 requirements = []
-sources = { torch = "pytorch-cpu"}
+priority_indexes = ["pytorch-cpu"]

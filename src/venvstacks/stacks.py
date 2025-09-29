@@ -54,7 +54,7 @@ import tomlkit
 from installer.records import parse_record_file
 
 # TODO: Declare direct dependency on packaging (currently included transitively)
-from packaging.utils import NormalizedName, canonicalize_name
+from packaging.utils import canonicalize_name
 
 from . import pack_venv
 from ._hash_content import hash_file_contents, hash_module, hash_strings
@@ -161,6 +161,13 @@ def _resolve_lexical_path(path: StrPath, base_path: Path, /) -> Path:
 ######################################################
 
 
+class _IndexDetails(TypedDict):
+    name: NotRequired[str]
+    url: str
+    format: NotRequired[str]
+    explicit: NotRequired[bool]
+
+
 @dataclass
 class PackageIndexConfig:
     """Python package index access configuration."""
@@ -173,8 +180,9 @@ class PackageIndexConfig:
     _common_config_uv: dict[str, Any] | None = field(
         init=False, repr=False, default=None
     )
-    _known_indexes: set[str] | tuple[str, ...] = field(
-        init=False, repr=False, default=()
+    _indexes: list[_IndexDetails] = field(init=False, repr=False, default_factory=list)
+    _named_indexes: dict[str, _IndexDetails] = field(
+        init=False, repr=False, default_factory=dict
     )
 
     def __post_init__(self) -> None:
@@ -242,20 +250,24 @@ class PackageIndexConfig:
             _resolve_lexical_path(path, base_path) for path in self.local_wheel_paths
         ]
 
-    def _is_known_source_index(self, source: str) -> bool:
+    def _is_known_source_index(self, index_name: str) -> bool:
         if self._common_config_uv is None:
             raise RuntimeError(
                 "Tool config must be loaded before checking source index validity"
             )
-        return source in self._known_indexes
+        return index_name in self._named_indexes
 
     @staticmethod
-    def _iter_source_index_names(uv_config: Mapping[Any, Any]) -> Iterator[str]:
-        indexes = uv_config.get("index", ())
-        for index in indexes:
-            name = index.get("name")
-            if name:
-                yield name
+    def _get_named_indexes(
+        indexes: Iterable[_IndexDetails],
+    ) -> dict[str, _IndexDetails]:
+        named_indexes: dict[str, _IndexDetails] = {}
+        for index_details in indexes:
+            index_name = index_details.get("name")
+            if not index_name:
+                continue
+            named_indexes[index_name] = index_details
+        return named_indexes
 
     def _define_local_wheel_locations(self) -> Iterator[str]:
         return map(os.fspath, self.local_wheel_paths)
@@ -269,7 +281,7 @@ class PackageIndexConfig:
             )
         # Ensure paths are absolute. Relative input paths are left alone for config copying.
         self._resolve_lexical_paths(spec_path.parent)
-        # Load the common uv config settings (including the set of known source index names)
+        # Load the common uv config settings (including the source index priority and details)
         baseline_config_uv: dict[Any, Any] | None = None
         spec_config = tomlkit.parse(spec_path.read_text("utf-8"))
         inline_tool_config = spec_config.get("tool", None)
@@ -296,7 +308,8 @@ class PackageIndexConfig:
         if self.local_wheel_paths:
             local_wheels_config_uv = common_config_uv.setdefault("find-links", [])
             local_wheels_config_uv.extend(self._define_local_wheel_locations())
-        self._known_indexes = set(self._iter_source_index_names(common_config_uv))
+        self._indexes = all_indexes = common_config_uv.pop("index", [])
+        self._named_indexes = self._get_named_indexes(all_indexes)
         self._common_config_uv = common_config_uv
         return common_config_uv
 
@@ -839,7 +852,7 @@ def ensure_optional_env_spec_fields(env_metadata: MutableMapping[str, Any]) -> N
     """Populate missing environment spec fields that are optional in the TOML file."""
     TargetPlatforms.ensure_platform_list(env_metadata)
     env_metadata.setdefault("versioned", False)
-    env_metadata.setdefault("sources", {})
+    env_metadata.setdefault("priority_indexes", [])
     env_metadata.setdefault("dynlib_exclude", [])
 
 
@@ -859,7 +872,7 @@ class LayerSpecBase(ABC):
     versioned: bool
     requirements: list[str] = field(repr=False)
     platforms: list[TargetPlatforms] = field(repr=False)
-    sources: dict[NormalizedName, str] = field(repr=False)
+    priority_indexes: list[str] = field(repr=False)
     dynlib_exclude: list[str] = field(repr=False)
 
     # Optionally specified on creation
@@ -881,26 +894,16 @@ class LayerSpecBase(ABC):
                         f"{layer_name} starts with reserved prefix {reserved_prefix!r}"
                     )
                     raise LayerSpecError(err)
-        # Ensure any source index overrides reference known source index names
-        raw_sources = self.sources
+        # Ensure any index priority overrides reference known source index names
+        priority_indexes = self.priority_indexes
         index_config = self._index_config
-        canonical_sources: dict[NormalizedName, str] = {}
-        for dist_name, index_name in raw_sources.items():
+        for index_name in priority_indexes:
             if not index_config._is_known_source_index(index_name):
                 msg = (
-                    f"{layer_name} references an unknown source index "
-                    f"({index_name}) for {dist_name}"
+                    f"{layer_name} priority index list references an unknown source index "
+                    f"({index_name})"
                 )
                 raise LayerSpecError(msg)
-            canonical_name = canonicalize_name(dist_name)
-            if canonical_name in canonical_sources:
-                msg = (
-                    f"{layer_name} specifies multiple sources for {canonical_name} "
-                    f"after name normalization ({dist_name} is the second entry)"
-                )
-                raise LayerSpecError(msg)
-            canonical_sources[canonical_name] = index_name
-        self.sources = canonical_sources
 
     @property
     def env_name(self) -> EnvNameBuild:
@@ -1816,19 +1819,30 @@ class LayerEnvBase(ABC):
         # Layer config to be passed in:
         # - declared requirements -> dependencies
         # - lower layer constraints -> tool.uv.constraint-dependencies
-        # - layer source declarations -> tool.uv.sources
+        # - index definitions -> tool.uv.index
         dependencies = sorted(_read_deps_from_req_file(requirements_input_path))
         constraint_paths = self.get_constraint_paths()
         unique_constraints = set[str]()
         for constraint_path in constraint_paths:
             unique_constraints.update(_read_deps_from_req_file(constraint_path))
         constraints = sorted(unique_constraints)
-        index_sources = {
-            pkg: {"index": idx} for pkg, idx in self.env_spec.sources.items()
-        }
+        env_spec = self.env_spec
+        index_config = env_spec._index_config
+        all_indexes = index_config._indexes
+        named_indexes = index_config._named_indexes
+        priority_names = env_spec.priority_indexes
+        if not priority_names:
+            layer_indexes = all_indexes
+        else:
+            # Priority indexes are checked against the known index list at spec definition time
+            priority_indexes = [named_indexes[name] for name in priority_names]
+            other_indexes = [
+                x for x in all_indexes if x.get("name") not in priority_names
+            ]
+            layer_indexes = [*priority_indexes, *other_indexes]
         uv_tool_config = {
             "constraint-dependencies": constraints,
-            "sources": index_sources,
+            "index": layer_indexes,
         }
         layer_project_name = re.sub("[^a-zA-Z0-9._-]", "-", self.env_name)
         pyproject_config = {
@@ -3133,13 +3147,12 @@ class StackSpec:
         declared_spec: Mapping[str, Any],
         runtimes: Mapping[LayerBaseName, RuntimeSpec],
         frameworks: Mapping[LayerBaseName, FrameworkSpec],
-    ) -> tuple[RuntimeSpec, tuple[FrameworkSpec, ...], dict[NormalizedName, str]]:
+    ) -> tuple[RuntimeSpec, tuple[FrameworkSpec, ...]]:
         # Note: layers are intentionally allowed to override any *default* source index settings
         declared_runtime: LayerBaseName | None = declared_spec.get("runtime")
         declared_frameworks: Sequence[LayerBaseName] | None = declared_spec.get(
             "frameworks"
         )
-        merged_sources: dict[NormalizedName, str] = {}
         runtime_dep: RuntimeSpec | None = None
         framework_deps: tuple[FrameworkSpec, ...]
         if declared_runtime is not None:
@@ -3155,8 +3168,6 @@ class StackSpec:
             if runtime_dep is None:
                 msg = f"{err_prefix} references unknown runtime {declared_runtime!r}"
                 raise LayerSpecError(msg)
-            # Only need to check the runtime sources are consistent with the layer's own sources
-            merged_sources.update(runtime_dep.sources)
         elif not declared_frameworks:
             msg = f"{err_prefix} must specify a runtime or at least one framework dependency"
             raise LayerSpecError(msg)
@@ -3179,31 +3190,7 @@ class StackSpec:
                 declared_fw_deps.append(fw_dep)
             framework_deps = cls._linearize_C3(err_prefix, declared_fw_deps)
             assert runtime_dep is not None
-            # Check any framework source overrides are consistent with each other
-            for fw_dep in reversed(framework_deps):
-                for dist_name, index_name in fw_dep.sources.items():
-                    declared_index_name = merged_sources.get(dist_name, None)
-                    if declared_index_name and declared_index_name != index_name:
-                        msg = (
-                            f"{err_prefix} depends on layers with "
-                            f"inconsistent source index overrides for {dist_name} "
-                            f"({declared_index_name} != {index_name})"
-                        )
-                        raise LayerSpecError(msg)
-                merged_sources.update(fw_dep.sources)
-        # Check layer's source overrides are consistent with the layers it depends on
-        declared_sources = declared_spec.get("sources", {})
-        for dist_name, index_name in declared_sources.items():
-            declared_index_name = merged_sources.get(dist_name, None)
-            if declared_index_name and declared_index_name != index_name:
-                msg = (
-                    f"{err_prefix} declares an inconsistent "
-                    f"source index override for {dist_name} "
-                    f"({declared_index_name} != {index_name})"
-                )
-                raise LayerSpecError(msg)
-        merged_sources.update(declared_sources)
-        return runtime_dep, framework_deps, merged_sources
+        return runtime_dep, framework_deps
 
     @classmethod
     def from_dict(cls, fname: StrPath, layer_data: dict[str, Any]) -> Self:
@@ -3255,12 +3242,11 @@ class StackSpec:
                 raise LayerSpecError(msg)
             err_prefix = f"Framework {name!r}"
             fw["_index_config"] = index_config
-            runtime_dep, framework_deps, merged_sources = cls._resolve_layer_deps(
+            runtime_dep, framework_deps = cls._resolve_layer_deps(
                 err_prefix, fw, runtimes, frameworks
             )
             fw["runtime"] = runtime_dep
             fw["frameworks"] = framework_deps
-            fw["sources"] = merged_sources
             ensure_optional_env_spec_fields(fw)
             frameworks[name] = FrameworkSpec(**fw)
         # Collect the list of application specs
@@ -3275,12 +3261,11 @@ class StackSpec:
                 raise LayerSpecError(msg)
             err_prefix = f"Application {name!r}"
             app["_index_config"] = index_config
-            runtime_dep, framework_deps, merged_sources = cls._resolve_layer_deps(
+            runtime_dep, framework_deps = cls._resolve_layer_deps(
                 err_prefix, app, runtimes, frameworks
             )
             app["runtime"] = runtime_dep
             app["frameworks"] = framework_deps
-            app["sources"] = merged_sources
             launch_module = app.pop("launch_module")
             launch_module_path = spec_dir_path / launch_module
             launch_module_name = launch_module_path.stem

@@ -707,11 +707,12 @@ class TestMinimalBuildConfigWithExistingLockFiles(unittest.TestCase):
 
 
 _EXPECTED_UV_CONFIG = """\
-no-build = true
-[[index]]
+no-build = true"""
+
+_EXPECTED_NAMED_INDEX = """\
+[[tool.uv.index]]
 name = "pypi-named"
-url = "https://pypi.org/simple/"
-explicit = true"""
+"""
 
 
 class TestMinimalBuild(DeploymentTestCase):
@@ -895,7 +896,7 @@ class TestMinimalBuild(DeploymentTestCase):
         rt_pyproject_path = rt_build_path.with_name(rt_pyproject_name)
         rt_pyproject_toml_path = rt_pyproject_path / "pyproject.toml"
         assert (
-            'index = "pypi-named"' in rt_pyproject_toml_path.read_text("utf-8").rstrip()
+            _EXPECTED_NAMED_INDEX in rt_pyproject_toml_path.read_text("utf-8").rstrip()
         )
 
     def test_build_with_invalid_locks(self) -> None:

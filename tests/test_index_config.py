@@ -5,9 +5,8 @@ import os
 from pathlib import Path
 
 import pytest
-import tomlkit
 
-from venvstacks.stacks import PackageIndexConfig
+from venvstacks.stacks import PackageIndexConfig, _IndexDetails
 
 # Use the sample project as an example project with no custom index config
 _THIS_PATH = Path(__file__)
@@ -113,12 +112,19 @@ _EXAMPLE_UV_CONFIG = """\
 no-build = true
 
 [[index]]
-name = "pytorch"
-url = "https://download.pytorch.org/whl/cu128"
+# explicit -> only used when specified in priority_indexes
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128/"
 explicit = true
 
-[sources]
-torch = { index = "pytorch" }
+[[index]]
+# implicit -> used by default for all layers
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu/"
+
+[[index]]
+# anonymous (and implicit) -> used by default for all layers, priority cannot be increased
+url = "https://pypi.org/simple/"
 """
 
 _EXAMPLE_UV_CONFIG_TABLE = """\
@@ -126,13 +132,42 @@ _EXAMPLE_UV_CONFIG_TABLE = """\
 no-build = true
 
 [[tool.uv.index]]
-name = "pytorch"
-url = "https://download.pytorch.org/whl/cu128"
+# explicit -> only used when specified in priority_indexes
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128/"
 explicit = true
 
-[tool.uv.sources]
-torch = { index = "pytorch" }
+[[tool.uv.index]]
+# implicit -> used by default for all layers
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu/"
+
+[[tool.uv.index]]
+# anonymous (and implicit) -> used by default for all layers, priority cannot be increased
+url = "https://pypi.org/simple/"
 """
+
+_EXPECTED_COMMON_UV_CONFIG = """\
+no-build = true
+"""
+_EXPECTED_NAMED_INDEX_DETAILS: dict[str, _IndexDetails] = {
+    "pytorch-cu128": {
+        "name": "pytorch-cu128",
+        "url": "https://download.pytorch.org/whl/cu128/",
+        "explicit": True,
+    },
+    "pytorch-cpu": {
+        "name": "pytorch-cpu",
+        "url": "https://download.pytorch.org/whl/cpu/",
+    },
+}
+_EXPECTED_INDEX_DETAILS: list[_IndexDetails] = [
+    _EXPECTED_NAMED_INDEX_DETAILS["pytorch-cu128"],
+    _EXPECTED_NAMED_INDEX_DETAILS["pytorch-cpu"],
+    {
+        "url": "https://pypi.org/simple/",
+    },
+]
 
 
 class TestBaselineToolConfig:
@@ -152,11 +187,13 @@ class TestBaselineToolConfig:
         spec_path = temp_dir_path / "venvstacks.toml"
         spec_path.touch()
         output_dir_path = temp_dir_path
-        self._write_test_config_files(spec_path, output_dir_path)
+        index_config = self._write_test_config_files(spec_path, output_dir_path)
         output_config_path = output_dir_path / "uv.toml"
         assert output_config_path.exists()
         output_config = output_config_path.read_text("utf-8")
-        assert output_config == "no-build = true\n"
+        assert output_config == _EXPECTED_COMMON_UV_CONFIG
+        assert index_config._indexes == []
+        assert index_config._named_indexes == {}
 
     def test_tool_config_overwrite_error(self, temp_dir_path: Path) -> None:
         # Test attempting to use one index config with multiple spec paths fails
@@ -176,13 +213,14 @@ class TestBaselineToolConfig:
         baseline_config_path.write_text(_EXAMPLE_UV_CONFIG, encoding="utf-8")
         output_dir_path = temp_dir_path / "_output"
         output_dir_path.mkdir()
-        self._write_test_config_files(spec_path, output_dir_path)
+        index_config = self._write_test_config_files(spec_path, output_dir_path)
         output_config_path = output_dir_path / "uv.toml"
         assert output_config_path.exists()
-        # Config parsing and modifications lose the comments and specific formatting details
+        # Config file omits the index details
         output_config = output_config_path.read_text("utf-8")
-        expected_config = tomlkit.dumps(tomlkit.parse(_EXAMPLE_UV_CONFIG).unwrap())
-        assert output_config == expected_config
+        assert output_config == _EXPECTED_COMMON_UV_CONFIG
+        assert index_config._indexes == _EXPECTED_INDEX_DETAILS
+        assert index_config._named_indexes == _EXPECTED_NAMED_INDEX_DETAILS
 
     def test_custom_tool_config_from_inline_table(self, temp_dir_path: Path) -> None:
         # Test tool config with baseline config supplied via the stack definition table
@@ -193,13 +231,14 @@ class TestBaselineToolConfig:
         ignored_config_path.write_text("# This file is ignored\n", encoding="utf-8")
         output_dir_path = temp_dir_path / "_output"
         output_dir_path.mkdir()
-        self._write_test_config_files(spec_path, output_dir_path)
+        index_config = self._write_test_config_files(spec_path, output_dir_path)
         output_config_path = output_dir_path / "uv.toml"
         assert output_config_path.exists()
-        # Extracting an inline table loses comments and specific formatting details
+        # Config file omits the index details
         output_config = output_config_path.read_text("utf-8")
-        expected_config = tomlkit.dumps(tomlkit.parse(_EXAMPLE_UV_CONFIG).unwrap())
-        assert output_config == expected_config
+        assert output_config == _EXPECTED_COMMON_UV_CONFIG
+        assert index_config._indexes == _EXPECTED_INDEX_DETAILS
+        assert index_config._named_indexes == _EXPECTED_NAMED_INDEX_DETAILS
 
 
 # Miscellaneous test cases

@@ -32,12 +32,18 @@ The format of the ``venvstacks.uv.toml`` configuration file is that described fo
 relevant to the ``venvstacks`` use case, but at least the following are expected to be applicable:
 
 * :uv-config:`index`: specifying which indexes to use for dependency resolution and retrieval
-* :uv-config:`sources`: specifying indexes to use for packages (overriding the default priorities)
 * :uv-config:`exclude-newer`: ignore packages uploaded after the specified date
 * :uv-config:`override-dependencies`: override inaccurate or unwanted dependency declarations
 
+Note that the :uv-config:`sources` setting (specifying indexes for specific packages) is NOT
+supported (it may be specified, but will `have no effect`_). Instead, named indexes are
+referenced from the :ref:`priority indexes <priority-indexes>` setting to allow different layer
+definitions to resolve packages against different indexes (such as those maintained by the
+PyTorch project to provide binary builds against different library versions).
+
 .. |uv's tool documentation| replace:: ``uv``'s tool documentation
 .. _uv's tool documentation: https://docs.astral.sh/uv/concepts/configuration-files/
+.. _have no effect: https://github.com/astral-sh/uv/issues/6772
 
 The default output folder for layer metadata when publishing artifacts and locally exporting
 environments is called ``__venvstacks__``. The platform-specific layer summary metadata
@@ -87,9 +93,11 @@ All layer specifications must contain the following two fields:
   These declared dependencies will be transitively locked when locking the layer.
   The list of requirements must be present, but is permitted to be empty.
 
-While there are no formal restrictions on the symbols permitted in layer names,
-the ``@`` symbol is used to separate the layer name from the lock version for
-implicitly versioned layers, so using it as part of a layer name may cause
+While there are no formal restrictions on the symbols permitted in layer names, it is
+recommended to avoid the use of any punctuation symbols other than ``_`` and ``-``
+(as future releases may assign specific semantics to those symbols).
+The ``@`` symbol in particular is already used to separate the layer name from the lock
+version for implicitly versioned layers, so using it as part of a layer name may cause
 confusion when attempting to determine whether a published artifact or
 exported environment is using implicit lock versioning or is referring
 to an external version number.
@@ -127,18 +135,21 @@ All layer specifications may also contain the following optional fields:
      Added support for dynamic linking across layers on Linux and macOS
      (:ref:`release details <changelog-0.4.0>`).
 
-* ``sources`` (:toml:`table` mapping Python distribution package names to named ``uv`` indexes):
+.. _priority-indexes:
+
+* ``priority_indexes`` (:toml:`array` of :toml:`strings <string>`):
   by default, all layers are built with common tool configuration settings. To allow different
-  layers to retrieve wheels from different indexes, layers may define a ``sources`` subtable that
-  is used to add to or override the ``uv`` ``sources`` configuration for that layer.
-  For example, one framework layer definition may specify ``sources = {torch = "pytorch_cu128"}``,
-  while an alternate framework definition layer may specify ``sources = {torch = "pytorch_cpu"}``.
-  Upper layers inherit the source overrides of all of the layers they depend on. A stack definition
-  error is reported if a source override refers to an unknown index name, or if the collected source
-  overrides for a given layer definition are inconsistent.
+  layers to retrieve wheels from different indexes, layers may define a ``priority_indexes`` list
+  that is used to adjust the ``uv`` ``index`` configuration for that layer by moving the named
+  indexes to the start of the index list (in the given order) and clearing their ``exclusive`` flag.
+  For example, one framework layer definition may specify ``priority_indexes = ["pytorch-cu128"]``,
+  while an alternate framework definition layer may specify ``priority_indexes = ["pytorch-cpu"]``.
+  Upper layers do NOT automatically inherit the index priorities of the layers they depend on
+  (however, they also do not install any of the packages provided by lower layers). A stack
+  definition error is reported if a priority index list refers to an unknown index name.
 
   .. versionadded:: 0.8.0
-    Added support for per-layer ``uv`` sources configuration
+    Added support for per-layer ``uv`` index priority configuration
     (:ref:`release details <changelog-0.8.0>`).
 
 * ``versioned`` (:toml:`boolean`): by default, and when this setting is ``false``,
