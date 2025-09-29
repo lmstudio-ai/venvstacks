@@ -413,7 +413,7 @@ full path to the files using the equivalent of <a class="reference external" hre
 by default, all layers are built with common tool configuration settings. To allow different
 layers to retrieve wheels from different indexes, layers may define a <code class="docutils literal notranslate"><span class="pre">priority_indexes</span></code> list
 that is used to adjust the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">index</span></code> configuration for that layer by moving the named
-indexes to the start of the index list (in the given order) and clearing their <code class="docutils literal notranslate"><span class="pre">exclusive</span></code> flag.
+indexes to the start of the index list (in the given order) and clearing their <code class="docutils literal notranslate"><span class="pre">explicit</span></code> flag.
 For example, one framework layer definition may specify <code class="docutils literal notranslate"><span class="pre">priority_indexes</span> <span class="pre">=</span> <span class="pre">[&quot;pytorch-cu128&quot;]</span></code>,
 while an alternate framework definition layer may specify <code class="docutils literal notranslate"><span class="pre">priority_indexes</span> <span class="pre">=</span> <span class="pre">[&quot;pytorch-cpu&quot;]</span></code>.
 Upper layers do NOT automatically inherit the index priorities of the layers they depend on
