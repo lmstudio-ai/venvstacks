@@ -1835,7 +1835,9 @@ class LayerEnvBase(ABC):
             layer_indexes = all_indexes
         else:
             # Priority indexes are checked against the known index list at spec definition time
-            priority_indexes = [named_indexes[name] for name in priority_names]
+            priority_indexes = [named_indexes[name].copy() for name in priority_names]
+            for p in priority_indexes:
+                p["explicit"] = False
             other_indexes = [
                 x for x in all_indexes if x.get("name") not in priority_names
             ]

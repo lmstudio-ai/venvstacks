@@ -141,7 +141,7 @@ All layer specifications may also contain the following optional fields:
   by default, all layers are built with common tool configuration settings. To allow different
   layers to retrieve wheels from different indexes, layers may define a ``priority_indexes`` list
   that is used to adjust the ``uv`` ``index`` configuration for that layer by moving the named
-  indexes to the start of the index list (in the given order) and clearing their ``exclusive`` flag.
+  indexes to the start of the index list (in the given order) and clearing their ``explicit`` flag.
   For example, one framework layer definition may specify ``priority_indexes = ["pytorch-cu128"]``,
   while an alternate framework definition layer may specify ``priority_indexes = ["pytorch-cpu"]``.
   Upper layers do NOT automatically inherit the index priorities of the layers they depend on
