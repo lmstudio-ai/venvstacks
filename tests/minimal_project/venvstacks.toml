@@ -9,6 +9,8 @@
 name = "cpython-3.11"
 python_implementation = "cpython@3.11.11"
 requirements = []
+# Test source index configuration
+priority_indexes = ["pypi-named"]
 
 # Set up the framework layers to cover classic linearization problems:
 #
@@ -43,7 +45,8 @@ frameworks = ["layerB"]
 requirements = []
 
 [[frameworks]]
-name = "layerF"
+# Also ensure '@' in layer names is handled correctly
+name = "layerF@1"
 frameworks = ["layerE"]
 # Expected resolved frameworks: E, B, A
 requirements = []
@@ -51,8 +54,8 @@ requirements = []
 [[applications]]
 name = "empty"
 launch_module = "empty.py"
-frameworks = ["layerD", "layerF"]
-# Expected resolved frameworks: D, F, E, B, C, A
+frameworks = ["layerD", "layerF@1"]
+# Expected resolved frameworks: D, F@1, E, B, C, A
 requirements = []
 
 [[applications]]
@@ -60,3 +63,9 @@ name = "no-framework"
 launch_module = "empty.py"
 runtime = "cpython-3.11"
 requirements = []
+
+# Fodder for priority_index testing
+[[tool.uv.index]]
+name = "pypi-named"
+url = "https://pypi.org/simple/"
+explicit = true

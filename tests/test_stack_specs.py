@@ -82,6 +82,7 @@ EXPECTED_STACK_SPEC_ERRORS = {
     "error_support_modules_conflict.toml": "Conflicting support module names.*'layer'",
     "error_unknown_framework.toml": "unknown framework",
     "error_unknown_runtime.toml": "unknown runtime",
+    "error_unknown_source_index.toml": "unknown source index",
 }
 
 

@@ -4,7 +4,7 @@ import os.path
 
 from abc import abstractmethod
 from pathlib import Path
-from typing import Iterable, Iterator, Protocol, Sequence, Type
+from typing import Any, Iterable, Iterator, Protocol, Sequence, Type
 
 from dulwich.repo import Repo as GitRepo
 from dulwich.porcelain import check_ignore as check_gitignore
@@ -107,7 +107,9 @@ class SourceTreeGit(SourceTreeContentFilter):
         return cls(source_path)
 
     def _check_gitignore(self, dir_path: Path, entries: Sequence[str]) -> Iterator[str]:
-        paths_to_check: list[str] = []
+        # Specify the full union to avoid a mutable arg typing complaint on check_gitignore
+        # https://github.com/jelmer/dulwich/issues/1894
+        paths_to_check: list[str | bytes | os.PathLike[Any]] = []
         for entry in entries:
             if entry.startswith(".git"):
                 # Ignore any git metadata files

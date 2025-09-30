@@ -24,15 +24,16 @@ dependencies = [
     "uv>=0.6.9",
     # Installer is used for RECORD file editing
     "installer>=0.7.0",
+    # packaging is used directly for low level metadata handling tasks
+    "packaging>=24.0",
     # rich is used for the CLI console display
     "rich>=13.6.0",
     # Typer is used for the CLI arg parsing. Install 'rich-cli' extra for enhanced features.
     "typer-slim>=0.12.4",
-    # Library supports *writing* stack specification TOML files
-    # (choice of tomlkit is due to PDM already using it and the
-    # potential for non-intrusively updating *existing* specs)
+    # tomlkit is used to save programmatically defined environment stacks,
+    # as well as for writing tool configuration files when locking and building layers
     "tomlkit>=0.13.2",
-    # Using dulwich for git metadata processing to avoid any external git dependency
+    # dulwich is used for git metadata processing to avoid any external git CLI dependency
     "dulwich>=0.23.2",
 ]
 requires-python = ">=3.11"

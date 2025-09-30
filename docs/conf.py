@@ -70,6 +70,7 @@ extlinks = {
     "pr": ("https://github.com/lmstudio-ai/venvstacks/pull/%s", "PR #%s"),
     "pypi": ("https://pypi.org/project/%s/", "%s"),
     "toml": ("https://toml.io/en/v1.0.0#%s", "%s"),
+    "uv-config": ("https://docs.astral.sh/uv/reference/settings/#%s", "%s"),
 }
 extlinks_detect_hardcoded_links = True
 
