@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="search" title="Search" href="../../search/">
-        <link rel="canonical" href="https://venvstacks.lmstudio.ai/changelog.d/README_pending/">
+        <link rel="canonical" href="https://venvstacks.lmstudio.ai/changelog.d/20250829_012014_ncoghlan_accept_uv_tool_config/">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>&lt;no title&gt; - venvstacks documentation</title>
+        <title>Added - venvstacks documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -260,12 +260,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/blob/main/docs/changelog.d/README_pending.rst?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/blob/main/docs/changelog.d/20250829_012014_ncoghlan_accept_uv_tool_config.rst?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/edit/main/docs/changelog.d/README_pending.rst" rel="edit" title="Edit this page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/edit/main/docs/changelog.d/20250829_012014_ncoghlan_accept_uv_tool_config.rst" rel="edit" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -282,7 +282,18 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          
+          <section id="added">
+<h1>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h1>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">venvstacks.uv.toml</span></code> file located alongside the stack definition file is now
+incorporated into the configuration passed to <code class="docutils literal notranslate"><span class="pre">uv</span></code> when locking and
+building environments (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>). This configuration may alternatively
+be supplied via the <code class="docutils literal notranslate"><span class="pre">[tool.uv]</span></code> table in the stack definition file.</p></li>
+<li><p>Each layer definition may now contain a <code class="docutils literal notranslate"><span class="pre">priority_indexes</span></code> section that is used to adjust
+the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">index</span></code> configuration when locking or building that layer (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>).</p></li>
+</ul>
+</section>
+
         </article>
       </div>
       <footer>
