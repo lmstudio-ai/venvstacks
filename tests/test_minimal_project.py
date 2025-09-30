@@ -711,9 +711,10 @@ no-build = true
 """
 
 
-_EXPECTED_NAMED_INDEX = """\
+_NAMED_INDEX = "pypi-named"
+_EXPECTED_NAMED_INDEX = f"""\
 [[tool.uv.index]]
-name = "pypi-named"
+name = "{_NAMED_INDEX}"
 url = "https://pypi.org/simple/"
 explicit = false
 """
@@ -897,7 +898,9 @@ class TestMinimalBuild(DeploymentTestCase):
         rt_pyproject_name = f"{rt_build_path.name}_resolve"
         rt_pyproject_path = rt_build_path.with_name(rt_pyproject_name)
         rt_pyproject_toml_path = rt_pyproject_path / "pyproject.toml"
-        assert _EXPECTED_NAMED_INDEX in rt_pyproject_toml_path.read_text("utf-8")
+        rt_pyproject_config_text = rt_pyproject_toml_path.read_text("utf-8")
+        assert "no-build = true" in rt_pyproject_config_text
+        assert _EXPECTED_NAMED_INDEX in rt_pyproject_config_text
 
     def test_build_with_invalid_locks(self) -> None:
         # Ensure attempt to build without locking first raises a detailed exception

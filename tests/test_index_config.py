@@ -24,24 +24,15 @@ class TestDefaultOptions(_CommonTestDetails):
 
     def test_uv_lock(self) -> None:
         # There are currently no locking specific args
-        assert self.TEST_CONFIG._get_uv_lock_args(self.BUILD_PATH) == [
-            "--config-file",
-            self.CONFIG_FILE,
-        ]
+        assert self.TEST_CONFIG._get_uv_lock_args(self.BUILD_PATH) == []
 
     def test_uv_export(self) -> None:
         # There are currently no export specific args
-        assert self.TEST_CONFIG._get_uv_export_args(self.BUILD_PATH) == [
-            "--config-file",
-            self.CONFIG_FILE,
-        ]
+        assert self.TEST_CONFIG._get_uv_export_args(self.BUILD_PATH) == []
 
     def test_uv_pip_install(self) -> None:
         # There are currently no installation specific args
-        assert self.TEST_CONFIG._get_uv_pip_install_args(self.BUILD_PATH) == [
-            "--config-file",
-            self.CONFIG_FILE,
-        ]
+        assert self.TEST_CONFIG._get_uv_pip_install_args(self.BUILD_PATH) == []
 
     def test_local_wheel_indexes(self) -> None:
         assert list(self.TEST_CONFIG._define_local_wheel_locations()) == []
@@ -67,24 +58,15 @@ class TestConfiguredOptions(_CommonTestDetails):
 
     def test_uv_lock(self) -> None:
         # There are currently no locking specific args
-        assert self.TEST_CONFIG._get_uv_lock_args(self.BUILD_PATH) == [
-            "--config-file",
-            self.CONFIG_FILE,
-        ]
+        assert self.TEST_CONFIG._get_uv_lock_args(self.BUILD_PATH) == []
 
     def test_uv_export(self) -> None:
         # There are currently no export specific args
-        assert self.TEST_CONFIG._get_uv_export_args(self.BUILD_PATH) == [
-            "--config-file",
-            self.CONFIG_FILE,
-        ]
+        assert self.TEST_CONFIG._get_uv_export_args(self.BUILD_PATH) == []
 
     def test_uv_pip_install(self) -> None:
         # There are currently no installation specific args
-        assert self.TEST_CONFIG._get_uv_pip_install_args(self.BUILD_PATH) == [
-            "--config-file",
-            self.CONFIG_FILE,
-        ]
+        assert self.TEST_CONFIG._get_uv_pip_install_args(self.BUILD_PATH) == []
 
     def test_local_wheel_indexes(self) -> None:
         index_config = self.TEST_CONFIG.copy()

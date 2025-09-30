@@ -21,9 +21,10 @@ stack definition.
 The package installation tool used to lock and build environments is ``uv``. While the exact
 configuration settings used when invoking ``uv`` are generated dynamically by ``venvstacks``,
 baseline settings may be provided via either a ``venvstacks.uv.toml`` file in the same folder as
-the stack definition file or by defining a ``[tool.uv]`` table in the stack definition file. For
-consistency with ``uv``, if both are present, the inline table configuration settings are used and
-the separate configuration file is ignored.
+the stack definition file or by defining a ``[tool.uv]`` table in the stack definition file. If
+both are present, the inline table configuration settings are used and the separate configuration
+file is ignored (note: this is the *opposite* of the way ``uv`` works for regular Python projects,
+where the presence of a ``uv.toml`` file overrides the settings in ``pyproject.toml``).
 
 The format of the ``venvstacks.uv.toml`` configuration file is that described for ``uv.toml`` in
 |uv's tool documentation|_. The ``[tool.uv]`` table supports the same settings, nested under the

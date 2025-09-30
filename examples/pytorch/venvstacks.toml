@@ -1,0 +1,55 @@
+# Demonstrate using priority indexes to define cross-platform parallel torch stacks
+[[runtimes]]
+name = "cpython3.11"
+python_implementation = "cpython@3.11.13"
+requirements = []
+
+[[frameworks]]
+name = "torch-cpu"
+runtime = "cpython3.11"
+priority_indexes = ["pytorch-cpu"]
+requirements = [
+    "torch==2.7.0"
+]
+dynlib_exclude = [
+    "triton/**"
+]
+
+[[frameworks]]
+name = "torch-cu128"
+runtime = "cpython3.11"
+priority_indexes = ["pytorch-cu128"]
+requirements = [
+    "torch==2.7.0"
+]
+dynlib_exclude = [
+    "triton/**"
+]
+
+[[applications]]
+name = "cpu"
+launch_module = "report_torch_cuda_version.py"
+frameworks = ["torch-cpu"]
+requirements = []
+
+[[applications]]
+name = "cu128"
+launch_module = "report_torch_cuda_version.py"
+frameworks = ["torch-cu128"]
+requirements = []
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu/"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128/"
+explicit = true
+
+[[tool.uv.index]]
+name = "disable-pypi-fallback"
+url = "https://pypi.org/simple/"
+explicit = true
+default = true
