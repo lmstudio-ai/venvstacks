@@ -9,7 +9,7 @@ script_dir="$(cd -- "$(dirname -- "$(readlink -f "${BASH_SOURCE[0]}")")" &> /dev
 
 lock_stack () {
     local stack_spec=${1:?}
-    venvstacks lock --reset-lock='*' "$stack_spec"
+    pdm run venvstacks lock --reset-lock='*' "$stack_spec"
 }
 
 for entry in "$script_dir/../examples/"*; do
