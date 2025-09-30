@@ -52,8 +52,6 @@ from typing import (
 import tomlkit
 
 from installer.records import parse_record_file
-
-# TODO: Declare direct dependency on packaging (currently included transitively)
 from packaging.utils import canonicalize_name
 
 from . import pack_venv

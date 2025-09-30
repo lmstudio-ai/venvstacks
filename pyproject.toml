@@ -24,6 +24,8 @@ dependencies = [
     "uv>=0.6.9",
     # Installer is used for RECORD file editing
     "installer>=0.7.0",
+    # packaging is used directly for low level metadata handling tasks
+    "packaging>=24.0",
     # rich is used for the CLI console display
     "rich>=13.6.0",
     # Typer is used for the CLI arg parsing. Install 'rich-cli' extra for enhanced features.
