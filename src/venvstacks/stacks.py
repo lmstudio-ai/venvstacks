@@ -175,10 +175,13 @@ class PackageIndexConfig:
     local_wheel_paths: list[Path] = field(init=False)
 
     # Tool specific config is implicitly queried and cached when loading a specification file
-    _common_config_uv: dict[str, Any] | None = field(
-        init=False, repr=False, default=None
+    _common_config_uv: dict[str, Any] = field(
+        init=False, repr=False, default_factory=dict
     )
     _indexes: list[_IndexDetails] = field(init=False, repr=False, default_factory=list)
+    _common_indexes: list[_IndexDetails] = field(
+        init=False, repr=False, default_factory=list
+    )
     _named_indexes: dict[str, _IndexDetails] = field(
         init=False, repr=False, default_factory=dict
     )
@@ -211,27 +214,17 @@ class PackageIndexConfig:
             local_wheel_dirs=None,
         )
 
-    def _get_config_file_arg(self, build_path: Path) -> list[str]:
-        return [
-            "--config-file",
-            str(self._get_uv_config_path(build_path)),
-        ]
-
     def _get_uv_export_args(self, build_path: Path) -> list[str]:
-        # Currently no export-specific CLI args
-        return self._get_config_file_arg(build_path)
-
-    def _get_common_resolve_args(self, build_path: Path) -> list[str]:
-        # Currently no resolution-specific CLI args
-        return self._get_config_file_arg(build_path)
+        # Currently no config-dependent export-specific CLI args
+        return []
 
     def _get_uv_lock_args(self, build_path: Path) -> list[str]:
-        # Currently no lock-specific CLI args
-        return self._get_common_resolve_args(build_path)
+        # Currently no config-dependent lock-specific CLI args
+        return []
 
     def _get_uv_pip_install_args(self, build_path: Path) -> list[str]:
-        # Currently no installation-specific CLI args
-        return self._get_common_resolve_args(build_path)
+        # Currently no config-dependent installation-specific CLI args
+        return []
 
     @staticmethod
     def _get_uv_input_config_path(spec_path: Path) -> Path:
@@ -249,7 +242,7 @@ class PackageIndexConfig:
         ]
 
     def _is_known_source_index(self, index_name: str) -> bool:
-        if self._common_config_uv is None:
+        if not self._common_config_uv:
             raise RuntimeError(
                 "Tool config must be loaded before checking source index validity"
             )
@@ -273,7 +266,7 @@ class PackageIndexConfig:
     def _load_common_tool_config(self, spec_path: Path) -> dict[str, Any]:
         # Loading the tool config couples this config instance to the given stack specification
         # (copying the config first allows a single index config to be used across multiple stacks)
-        if self._common_config_uv is not None:
+        if self._common_config_uv:
             raise RuntimeError(
                 "Attempted to reuse path index config with new spec path"
             )
@@ -296,7 +289,7 @@ class PackageIndexConfig:
                 baseline_config_uv = tomlkit.parse(baseline_content).unwrap()
             else:
                 baseline_config_uv = {}
-        common_config_uv: dict[str, Any] = {}
+        common_config_uv: dict[str, Any] = self._common_config_uv
         common_config_uv.update(baseline_config_uv)
         del baseline_config_uv
         if not self.query_default_index:
@@ -307,6 +300,9 @@ class PackageIndexConfig:
             local_wheels_config_uv = common_config_uv.setdefault("find-links", [])
             local_wheels_config_uv.extend(self._define_local_wheel_locations())
         self._indexes = all_indexes = common_config_uv.pop("index", [])
+        self._common_indexes = [
+            x for x in all_indexes if x.get("default") or not x.get("explicit")
+        ]
         self._named_indexes = self._get_named_indexes(all_indexes)
         self._common_config_uv = common_config_uv
         return common_config_uv
@@ -314,6 +310,8 @@ class PackageIndexConfig:
     def _write_common_tool_config_files(self, build_path: Path) -> None:
         common_config_uv = self._common_config_uv
         assert common_config_uv is not None
+        # While the common uv config settings are passed in each layer's pyproject.toml,
+        # they're also written out to a dedicated file for build debugging purposes
         uv_config_path = self._get_uv_config_path(build_path)
         with uv_config_path.open("w") as f:
             tomlkit.dump(common_config_uv, f)
@@ -1813,11 +1811,12 @@ class LayerEnvBase(ABC):
         self.excluded = True
 
     def _write_pyproject_file(self, requirements_input_path: Path) -> None:
-        # Common config is passed via --config-file, so it doesn't need to be included here
         # Layer config to be passed in:
         # - declared requirements -> dependencies
         # - lower layer constraints -> tool.uv.constraint-dependencies
         # - index definitions -> tool.uv.index
+        # Common config is also included here as attempting to pass it in via
+        # `--config-file` means `uv` won't reliably read the `[tool.uv]` table
         dependencies = sorted(_read_deps_from_req_file(requirements_input_path))
         constraint_paths = self.get_constraint_paths()
         unique_constraints = set[str]()
@@ -1826,30 +1825,31 @@ class LayerEnvBase(ABC):
         constraints = sorted(unique_constraints)
         env_spec = self.env_spec
         index_config = env_spec._index_config
-        all_indexes = index_config._indexes
+        common_indexes = index_config._common_indexes
         named_indexes = index_config._named_indexes
         priority_names = env_spec.priority_indexes
         if not priority_names:
-            layer_indexes = all_indexes
+            layer_indexes = common_indexes
         else:
             # Priority indexes are checked against the known index list at spec definition time
             priority_indexes = [named_indexes[name].copy() for name in priority_names]
             for p in priority_indexes:
                 p["explicit"] = False
             other_indexes = [
-                x for x in all_indexes if x.get("name") not in priority_names
+                x for x in common_indexes if x.get("name") not in priority_names
             ]
             layer_indexes = [*priority_indexes, *other_indexes]
-        uv_tool_config = {
-            "constraint-dependencies": constraints,
-            "index": layer_indexes,
-        }
+        uv_tool_config = index_config._common_config_uv.copy()
+        uv_tool_config["constraint-dependencies"] = constraints
+        uv_tool_config["index"] = layer_indexes
         layer_project_name = re.sub("[^a-zA-Z0-9._-]", "-", self.env_name)
+        py_version_short = self.py_version.rpartition(".")[0]
         pyproject_config = {
             "project": {
                 "name": canonicalize_name(layer_project_name),
                 "version": "0",
                 "dependencies": dependencies,
+                "requires-python": f"=={py_version_short}.*",
             },
             "tool": {"uv": uv_tool_config},
         }
@@ -1981,14 +1981,15 @@ class LayerEnvBase(ABC):
     def _run_uv_pip_install(
         self,
         requirements_path: StrPath,
+        pyproject_path: StrPath,
         overrides: Sequence[StrPath],
     ) -> subprocess.CompletedProcess[str]:
         uv_pip_args = [
             "install",
+            "--project",
+            str(pyproject_path),
             "--python",
             str(self.python_path),
-            "--python-version",
-            self.py_version,
             *self.index_config._get_uv_pip_install_args(self.build_path),
             "--quiet",
             "--no-color",
@@ -2092,7 +2093,6 @@ class LayerEnvBase(ABC):
         summary_lines = [
             f"# Package summary for {self.env_name}",
             "#     Auto-generated by venvstacks (DO NOT EDIT)",
-            "",
         ]
         summary_lines.extend(required_packages)
         summary_lines.append("")
@@ -2156,7 +2156,6 @@ class LayerEnvBase(ABC):
                 f"# Locked requirements for {self.env_name} (DO NOT EDIT)",
                 "#     Auto-generated by venvstacks with the following command:",
                 f"#         {Path(sys.executable).name} -Im {__package__} lock",
-                "",
                 requirements_text,
             ]
             text_with_header = "\n".join(requirements_with_header_lines)
@@ -2175,7 +2174,7 @@ class LayerEnvBase(ABC):
         assert not self.needs_lock()
         return self.env_lock
 
-    def get_install_inputs(self) -> tuple[Path, Sequence[Path]]:
+    def get_install_inputs(self) -> tuple[Path, Path, Sequence[Path]]:
         """Ensure the inputs needed to install into this environment are defined and valid."""
         if not self.env_lock.has_valid_lock:
             lock_diagnostics = _format_json(self.env_lock.get_diagnostics())
@@ -2185,6 +2184,7 @@ class LayerEnvBase(ABC):
                 lock_diagnostics,
             ]
             self._fail_build("\n".join(failure_details))
+        requirements_path, pyproject_path = self.get_lock_inputs()
         exclusion_path = self.env_path.with_suffix(".exclusions.txt")
         constraints_paths = self.get_constraint_paths()
         constraints = set[str]()
@@ -2208,7 +2208,8 @@ class LayerEnvBase(ABC):
         else:
             exclusion_paths = []
         return (
-            self.requirements_path,
+            requirements_path,
+            pyproject_path,
             exclusion_paths,
         )
 
@@ -2217,9 +2218,8 @@ class LayerEnvBase(ABC):
 
         Note: assumes dependencies have already been installed into linked layers.
         """
-        requirements_path, exclusion_paths = self.get_install_inputs()
         # Run a pip dependency upgrade inside the target environment
-        install_result = self._run_uv_pip_install(requirements_path, exclusion_paths)
+        install_result = self._run_uv_pip_install(*self.get_install_inputs())
         if not _WINDOWS_BUILD:
             symlink_dir_path = self.dynlib_path
             if symlink_dir_path is None:
