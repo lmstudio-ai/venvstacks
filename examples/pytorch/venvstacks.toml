@@ -2,14 +2,18 @@
 [[runtimes]]
 name = "cpython3.11"
 python_implementation = "cpython@3.11.13"
-requirements = []
+requirements = [
+    # Share a common numpy across the different torch variants
+    "numpy",
+]
 
 [[frameworks]]
 name = "torch-cpu"
 runtime = "cpython3.11"
 priority_indexes = ["pytorch-cpu"]
 requirements = [
-    "torch==2.7.0"
+    "torch==2.7.0",
+    # Skip listing numpy, so numpy updates don't automatically invalidate the layer lock
 ]
 dynlib_exclude = [
     "triton/**"
@@ -20,7 +24,8 @@ name = "torch-cu128"
 runtime = "cpython3.11"
 priority_indexes = ["pytorch-cu128"]
 requirements = [
-    "torch==2.7.0"
+    "torch==2.7.0",
+    # Skip listing numpy, so numpy updates don't automatically invalidate the layer lock
 ]
 dynlib_exclude = [
     "triton/**"
@@ -30,12 +35,14 @@ dynlib_exclude = [
 name = "cpu"
 launch_module = "report_torch_cuda_version.py"
 frameworks = ["torch-cpu"]
+# Skip listing deps, so framework updates don't automatically invalidate the layer lock
 requirements = []
 
 [[applications]]
 name = "cu128"
 launch_module = "report_torch_cuda_version.py"
 frameworks = ["torch-cu128"]
+# Skip listing deps, so framework updates don't automatically invalidate the layer lock
 requirements = []
 
 [[tool.uv.index]]
@@ -47,9 +54,3 @@ explicit = true
 name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128/"
 explicit = true
-
-[[tool.uv.index]]
-name = "disable-pypi-fallback"
-url = "https://pypi.org/simple/"
-explicit = true
-default = true

@@ -10,3 +10,6 @@ sympy==1.13.3
 torch==2.7.0 ; sys_platform == 'darwin'
 torch==2.7.0+cpu ; sys_platform != 'darwin'
 typing-extensions==4.12.2
+
+# Shared packages inherited from other layers
+numpy==2.3.3
