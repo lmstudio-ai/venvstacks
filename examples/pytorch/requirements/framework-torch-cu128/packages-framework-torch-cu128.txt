@@ -25,3 +25,6 @@ sympy==1.13.3
 torch==2.7.0+cu128
 triton==3.3.0 ; sys_platform == 'linux'
 typing-extensions==4.12.2
+
+# Shared packages inherited from other layers
+numpy==2.3.3
