@@ -33,18 +33,17 @@ The format of the ``venvstacks.uv.toml`` configuration file is that described fo
 relevant to the ``venvstacks`` use case, but at least the following are expected to be applicable:
 
 * :uv-config:`index`: specifying which indexes to use for dependency resolution and retrieval
+* :uv-config:`sources`: specifying indexes to use for packages (overriding the default priorities)
 * :uv-config:`exclude-newer`: ignore packages uploaded after the specified date
 * :uv-config:`override-dependencies`: override inaccurate or unwanted dependency declarations
 
-Note that the :uv-config:`sources` setting (specifying indexes for specific packages) is NOT
-supported (it may be specified, but will `have no effect`_). Instead, named indexes are
-referenced from the :ref:`priority indexes <priority-indexes>` setting to allow different layer
-definitions to resolve packages against different indexes (such as those maintained by the
-PyTorch project to provide binary builds against different library versions).
+Note that the :uv-config:`index` and :uv-config:`sources` settings may be overridden when locking
+and building specific layers via the :ref:`package indexes <package-indexes>` and
+:ref:`priority indexes <priority-indexes>` layer settings respectively. The :uv-config:`sources`
+field in the common configuration is also restricted to only referring to named indexes.
 
 .. |uv's tool documentation| replace:: ``uv``'s tool documentation
 .. _uv's tool documentation: https://docs.astral.sh/uv/concepts/configuration-files/
-.. _have no effect: https://github.com/astral-sh/uv/issues/6772
 
 The default output folder for layer metadata when publishing artifacts and locally exporting
 environments is called ``__venvstacks__``. The platform-specific layer summary metadata
@@ -136,6 +135,24 @@ All layer specifications may also contain the following optional fields:
      Added support for dynamic linking across layers on Linux and macOS
      (:ref:`release details <changelog-0.4.0>`).
 
+.. _package-indexes:
+
+* ``package_indexes`` (:toml:`table` mapping distribution package names to named ``uv`` indexes):
+  by default, all layers are built with common tool configuration settings.
+  To allow different layers to *selectively* retrieve wheels from different indexes,
+  layers may define a ``package_indexes`` subtable that is used to add to or
+  override the ``uv`` ``sources`` configuration for that layer.
+  For example, one framework layer definition may specify
+  ``package_indexes = {torch = "pytorch_cu128"}``,
+  while an alternate framework layer definition
+  may specify ``package_indexes = {torch = "pytorch_cpu"}``.
+  Upper layers inherit the package index overrides of all of the layers they depend on.
+  A stack definition error is reported if a source override refers to an unknown index name,
+  or if the collected source overrides for a given layer definition are inconsistent.
+  Note: retrieving several packages from an index server that contains *only* those packages may
+  be tedious to specify when using this setting. In these cases,
+  :ref:`priority indexes <priority-indexes>` may be a more appropriate setting to use.
+
 .. _priority-indexes:
 
 * ``priority_indexes`` (:toml:`array` of :toml:`strings <string>`):
@@ -143,14 +160,21 @@ All layer specifications may also contain the following optional fields:
   layers to retrieve wheels from different indexes, layers may define a ``priority_indexes`` list
   that is used to adjust the ``uv`` ``index`` configuration for that layer by moving the named
   indexes to the start of the index list (in the given order) and clearing their ``explicit`` flag.
-  For example, one framework layer definition may specify ``priority_indexes = ["pytorch-cu128"]``,
-  while an alternate framework definition layer may specify ``priority_indexes = ["pytorch-cpu"]``.
   Upper layers do NOT automatically inherit the index priorities of the layers they depend on
-  (however, they also do not install any of the packages provided by lower layers). A stack
-  definition error is reported if a priority index list refers to an unknown index name.
+  (however, they also do not install any of the packages provided by lower layers).
+  A stack definition error is reported if a priority index list refers to an unknown index name.
+  Note: specifying priority indexes in a layer specification gives those indexes priority for *all*
+  packages when locking or building that layer. This may be undesirable if the alternate index
+  contains outdated versions of other packages in addition to the packages that *should* be
+  installed from that index. In these cases, :ref:`package indexes <package-indexes>`
+  may be a more appropriate setting to use.
 
   .. versionadded:: 0.8.0
-    Added support for per-layer ``uv`` index priority configuration
+    Added support for ``uv`` configuration with layer specific adjustments
+    (:ref:`release details <changelog-0.8.0>`).
+
+  .. versionadded:: 0.8.0
+    Added support for ``uv`` configuration with layer specific adjustments
     (:ref:`release details <changelog-0.8.0>`).
 
 * ``versioned`` (:toml:`boolean`): by default, and when this setting is ``false``,

@@ -9,8 +9,8 @@
 name = "cpython-3.11"
 python_implementation = "cpython@3.11.11"
 requirements = []
-# Test source index configuration
-priority_indexes = ["pypi-named"]
+# Not actually installed, just testing package index configuration
+package_indexes = { venvstacks = "pypi-named" }
 
 # Set up the framework layers to cover classic linearization problems:
 #
@@ -21,6 +21,8 @@ priority_indexes = ["pypi-named"]
 name = "layerA"
 runtime = "cpython-3.11"
 requirements = []
+# Test the mechanics of index priority configuration
+priority_indexes = ["pypi-named"]
 
 [[frameworks]]
 name = "layerB"
@@ -57,6 +59,8 @@ launch_module = "empty.py"
 frameworks = ["layerD", "layerF@1"]
 # Expected resolved frameworks: D, F@1, E, B, C, A
 requirements = []
+# Check this override is accepted as consistent with the runtime override
+package_indexes = { venvstacks = "pypi-named" }
 
 [[applications]]
 name = "no-framework"
@@ -64,7 +68,7 @@ launch_module = "empty.py"
 runtime = "cpython-3.11"
 requirements = []
 
-# Fodder for priority_index testing
+# Fodder for priority_index and package_indexes testing
 [[tool.uv.index]]
 name = "pypi-named"
 url = "https://pypi.org/simple/"

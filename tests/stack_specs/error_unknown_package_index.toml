@@ -1,4 +1,4 @@
-# Ensure suitable error is raised for an unknown index name in a package source index override
+# Ensure suitable error is raised for an unknown index name in a package index override
 
 [[runtimes]]
 name = "cpython-3.13"
@@ -9,4 +9,4 @@ requirements = []
 name = "pytorch-cpu"
 runtime = "cpython-3.13"
 requirements = []
-priority_indexes = ["pytorch-cpu"]
+package_indexes = { torch = "pytorch-cpu" }

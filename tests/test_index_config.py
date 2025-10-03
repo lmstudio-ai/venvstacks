@@ -93,8 +93,11 @@ _EXAMPLE_UV_CONFIG = """\
 # Custom uv config
 no-build = true
 
+[sources.torch]
+index = "pytorch-cu128"
+
 [[index]]
-# explicit -> only used when specified in priority_indexes
+# explicit -> only used when specified in sources, priority_indexes, or package_indexes
 name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128/"
 explicit = true
@@ -113,8 +116,11 @@ _EXAMPLE_UV_CONFIG_TABLE = """\
 [tool.uv]
 no-build = true
 
+[tool.uv.sources.torch]
+index = "pytorch-cu128"
+
 [[tool.uv.index]]
-# explicit -> only used when specified in priority_indexes
+# explicit -> only used when specified in sources, priority_indexes, or package_indexes
 name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128/"
 explicit = true
@@ -150,6 +156,10 @@ _EXPECTED_INDEX_DETAILS: list[_IndexDetails] = [
         "url": "https://pypi.org/simple/",
     },
 ]
+_EXPECTED_COMMON_INDEX_DETAILS = _EXPECTED_INDEX_DETAILS[1:]  # Omit the explicit index
+_EXPECTED_COMMON_PACKAGE_INDEXES = {
+    "torch": "pytorch-cu128",
+}
 
 
 class TestBaselineToolConfig:
@@ -176,6 +186,8 @@ class TestBaselineToolConfig:
         assert output_config == _EXPECTED_COMMON_UV_CONFIG
         assert index_config._indexes == []
         assert index_config._named_indexes == {}
+        assert index_config._common_indexes == []
+        assert index_config._common_package_indexes == {}
 
     def test_tool_config_overwrite_error(self, temp_dir_path: Path) -> None:
         # Test attempting to use one index config with multiple spec paths fails
@@ -203,6 +215,8 @@ class TestBaselineToolConfig:
         assert output_config == _EXPECTED_COMMON_UV_CONFIG
         assert index_config._indexes == _EXPECTED_INDEX_DETAILS
         assert index_config._named_indexes == _EXPECTED_NAMED_INDEX_DETAILS
+        assert index_config._common_indexes == _EXPECTED_COMMON_INDEX_DETAILS
+        assert index_config._common_package_indexes == _EXPECTED_COMMON_PACKAGE_INDEXES
 
     def test_custom_tool_config_from_inline_table(self, temp_dir_path: Path) -> None:
         # Test tool config with baseline config supplied via the stack definition table
@@ -221,6 +235,8 @@ class TestBaselineToolConfig:
         assert output_config == _EXPECTED_COMMON_UV_CONFIG
         assert index_config._indexes == _EXPECTED_INDEX_DETAILS
         assert index_config._named_indexes == _EXPECTED_NAMED_INDEX_DETAILS
+        assert index_config._common_indexes == _EXPECTED_COMMON_INDEX_DETAILS
+        assert index_config._common_package_indexes == _EXPECTED_COMMON_PACKAGE_INDEXES
 
 
 # Miscellaneous test cases
