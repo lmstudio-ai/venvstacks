@@ -10,7 +10,7 @@ requirements = [
 [[frameworks]]
 name = "torch-cpu"
 runtime = "cpython3.11"
-priority_indexes = ["pytorch-cpu"]
+package_indexes = { torch = "pytorch-cpu" }
 requirements = [
     "torch==2.7.0",
     # Skip listing numpy, so numpy updates don't automatically invalidate the layer lock
@@ -22,7 +22,7 @@ dynlib_exclude = [
 [[frameworks]]
 name = "torch-cu128"
 runtime = "cpython3.11"
-priority_indexes = ["pytorch-cu128"]
+package_indexes = { torch = "pytorch-cu128" }
 requirements = [
     "torch==2.7.0",
     # Skip listing numpy, so numpy updates don't automatically invalidate the layer lock

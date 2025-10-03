@@ -718,6 +718,12 @@ name = "{_NAMED_INDEX}"
 url = "https://pypi.org/simple/"
 explicit = false
 """
+_EXPECTED_EXPLICIT_NAMED_INDEX = f"""\
+[[tool.uv.index]]
+name = "{_NAMED_INDEX}"
+url = "https://pypi.org/simple/"
+explicit = true
+"""
 
 
 class TestMinimalBuild(DeploymentTestCase):
@@ -878,6 +884,13 @@ class TestMinimalBuild(DeploymentTestCase):
 
             self.check_deployed_environments(layered_metadata, get_deployed_env_details)
 
+    @staticmethod
+    def _get_env_pyproject_text(env_build_path: Path) -> str:
+        pyproject_name = f"{env_build_path.name}_resolve"
+        pyproject_path = env_build_path.with_name(pyproject_name)
+        pyproject_toml_path = pyproject_path / "pyproject.toml"
+        return pyproject_toml_path.read_text("utf-8")
+
     def test_create_environments(self) -> None:
         # Faster test to check the links between build envs are set up correctly
         # (if this fails, there's no point even trying the full slow test case)
@@ -894,13 +907,24 @@ class TestMinimalBuild(DeploymentTestCase):
         uv_config_path = build_env.build_path / "uv.toml"
         self.assertTrue(uv_config_path.exists())
         self.assertEqual(_EXPECTED_UV_CONFIG, uv_config_path.read_text("utf-8"))
+        # Check runtime layer config details
         rt_build_path = [*build_env.runtimes.values()][0].env_path
-        rt_pyproject_name = f"{rt_build_path.name}_resolve"
-        rt_pyproject_path = rt_build_path.with_name(rt_pyproject_name)
-        rt_pyproject_toml_path = rt_pyproject_path / "pyproject.toml"
-        rt_pyproject_config_text = rt_pyproject_toml_path.read_text("utf-8")
+        rt_pyproject_config_text = self._get_env_pyproject_text(rt_build_path)
         assert "no-build = true" in rt_pyproject_config_text
-        assert _EXPECTED_NAMED_INDEX in rt_pyproject_config_text
+        assert _EXPECTED_NAMED_INDEX not in rt_pyproject_config_text
+        assert _EXPECTED_EXPLICIT_NAMED_INDEX in rt_pyproject_config_text
+        # Check first firmware layer config details
+        fw_build_path = [*build_env.frameworks.values()][0].env_path
+        fw_pyproject_config_text = self._get_env_pyproject_text(fw_build_path)
+        assert "no-build = true" in fw_pyproject_config_text
+        assert _EXPECTED_NAMED_INDEX in fw_pyproject_config_text
+        assert _EXPECTED_EXPLICIT_NAMED_INDEX not in fw_pyproject_config_text
+        # Check first application layer config details
+        app_build_path = [*build_env.applications.values()][0].env_path
+        app_pyproject_config_text = self._get_env_pyproject_text(app_build_path)
+        assert "no-build = true" in app_pyproject_config_text
+        assert _EXPECTED_NAMED_INDEX not in app_pyproject_config_text
+        assert _EXPECTED_EXPLICIT_NAMED_INDEX in app_pyproject_config_text
 
     def test_build_with_invalid_locks(self) -> None:
         # Ensure attempt to build without locking first raises a detailed exception

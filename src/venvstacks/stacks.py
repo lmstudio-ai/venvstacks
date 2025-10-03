@@ -52,7 +52,7 @@ from typing import (
 import tomlkit
 
 from installer.records import parse_record_file
-from packaging.utils import canonicalize_name
+from packaging.utils import NormalizedName, canonicalize_name
 
 from . import pack_venv
 from ._hash_content import hash_file_contents, hash_module, hash_strings
@@ -185,6 +185,9 @@ class PackageIndexConfig:
     _named_indexes: dict[str, _IndexDetails] = field(
         init=False, repr=False, default_factory=dict
     )
+    _common_package_indexes: dict[NormalizedName, str] = field(
+        init=False, repr=False, default_factory=dict
+    )
 
     def __post_init__(self) -> None:
         local_wheel_dirs = self.local_wheel_dirs
@@ -241,10 +244,10 @@ class PackageIndexConfig:
             _resolve_lexical_path(path, base_path) for path in self.local_wheel_paths
         ]
 
-    def _is_known_source_index(self, index_name: str) -> bool:
+    def _is_known_package_index(self, index_name: str) -> bool:
         if not self._common_config_uv:
             raise RuntimeError(
-                "Tool config must be loaded before checking source index validity"
+                "Tool config must be loaded before checking package index validity"
             )
         return index_name in self._named_indexes
 
@@ -260,6 +263,34 @@ class PackageIndexConfig:
             named_indexes[index_name] = index_details
         return named_indexes
 
+    def _parse_raw_sources(
+        self, raw_sources: dict[str, Any]
+    ) -> dict[NormalizedName, str]:
+        package_indexes: dict[NormalizedName, str] = {}
+        for raw_dist_name, source_ref in raw_sources.items():
+            index_name = source_ref.get("index", None)
+            if index_name is None:
+                msg = (
+                    f"Common uv source config for {raw_dist_name} "
+                    f"must be an index config, not {source_ref!r} "
+                )
+                raise LayerSpecError(msg)
+            if not self._is_known_package_index(index_name):
+                msg = (
+                    f"Common uv source config for {raw_dist_name} "
+                    f"references an unknown package index {index_name!r}"
+                )
+                raise LayerSpecError(msg)
+            dist_name = canonicalize_name(raw_dist_name)
+            if dist_name in package_indexes:
+                msg = (
+                    f"Common uv source config specifies multiple sources for {dist_name} "
+                    f"after name normalization ({raw_dist_name} is the second entry)"
+                )
+                raise LayerSpecError(msg)
+            package_indexes[dist_name] = index_name
+        return package_indexes
+
     def _define_local_wheel_locations(self) -> Iterator[str]:
         return map(os.fspath, self.local_wheel_paths)
 
@@ -272,7 +303,7 @@ class PackageIndexConfig:
             )
         # Ensure paths are absolute. Relative input paths are left alone for config copying.
         self._resolve_lexical_paths(spec_path.parent)
-        # Load the common uv config settings (including the source index priority and details)
+        # Load the common uv config settings (including the package index priority and details)
         baseline_config_uv: dict[Any, Any] | None = None
         spec_config = tomlkit.parse(spec_path.read_text("utf-8"))
         inline_tool_config = spec_config.get("tool", None)
@@ -289,6 +320,7 @@ class PackageIndexConfig:
                 baseline_config_uv = tomlkit.parse(baseline_content).unwrap()
             else:
                 baseline_config_uv = {}
+        raw_common_sources: dict[str, str] = baseline_config_uv.pop("sources", {})
         common_config_uv: dict[str, Any] = self._common_config_uv
         common_config_uv.update(baseline_config_uv)
         del baseline_config_uv
@@ -304,6 +336,7 @@ class PackageIndexConfig:
             x for x in all_indexes if x.get("default") or not x.get("explicit")
         ]
         self._named_indexes = self._get_named_indexes(all_indexes)
+        self._common_package_indexes = self._parse_raw_sources(raw_common_sources)
         self._common_config_uv = common_config_uv
         return common_config_uv
 
@@ -848,6 +881,7 @@ def ensure_optional_env_spec_fields(env_metadata: MutableMapping[str, Any]) -> N
     """Populate missing environment spec fields that are optional in the TOML file."""
     TargetPlatforms.ensure_platform_list(env_metadata)
     env_metadata.setdefault("versioned", False)
+    env_metadata.setdefault("package_indexes", {})
     env_metadata.setdefault("priority_indexes", [])
     env_metadata.setdefault("dynlib_exclude", [])
 
@@ -868,6 +902,7 @@ class LayerSpecBase(ABC):
     versioned: bool
     requirements: list[str] = field(repr=False)
     platforms: list[TargetPlatforms] = field(repr=False)
+    package_indexes: dict[NormalizedName, str] = field(repr=False)
     priority_indexes: list[str] = field(repr=False)
     dynlib_exclude: list[str] = field(repr=False)
 
@@ -890,13 +925,32 @@ class LayerSpecBase(ABC):
                         f"{layer_name} starts with reserved prefix {reserved_prefix!r}"
                     )
                     raise LayerSpecError(err)
-        # Ensure any index priority overrides reference known source index names
-        priority_indexes = self.priority_indexes
         index_config = self._index_config
-        for index_name in priority_indexes:
-            if not index_config._is_known_source_index(index_name):
+        # Ensure any package index overrides reference known package index names
+        raw_package_indexes = self.package_indexes
+        package_indexes: dict[NormalizedName, str] = {}
+        for raw_dist_name, index_name in raw_package_indexes.items():
+            if not index_config._is_known_package_index(index_name):
                 msg = (
-                    f"{layer_name} priority index list references an unknown source index "
+                    f"{layer_name} references an unknown package index "
+                    f"{index_name!r} for {raw_dist_name!r}"
+                )
+                raise LayerSpecError(msg)
+            dist_name = canonicalize_name(raw_dist_name)
+            if dist_name in package_indexes:
+                msg = (
+                    f"{layer_name} specifies multiple sources for {dist_name} "
+                    f"after name normalization ({raw_dist_name} is the second entry)"
+                )
+                raise LayerSpecError(msg)
+            package_indexes[dist_name] = index_name
+        self.package_indexes = package_indexes
+        # Ensure any index priority overrides reference known package index names
+        priority_indexes = self.priority_indexes
+        for index_name in priority_indexes:
+            if not index_config._is_known_package_index(index_name):
+                msg = (
+                    f"{layer_name} priority index list references an unknown package index "
                     f"({index_name})"
                 )
                 raise LayerSpecError(msg)
@@ -1814,7 +1868,8 @@ class LayerEnvBase(ABC):
         # Layer config to be passed in:
         # - declared requirements -> dependencies
         # - lower layer constraints -> tool.uv.constraint-dependencies
-        # - index definitions -> tool.uv.index
+        # - package index overrides -> tool.uv.sources
+        # - index definitions & priority overrides -> tool.uv.index
         # Common config is also included here as attempting to pass it in via
         # `--config-file` means `uv` won't reliably read the `[tool.uv]` table
         dependencies = sorted(_read_deps_from_req_file(requirements_input_path))
@@ -1828,20 +1883,31 @@ class LayerEnvBase(ABC):
         common_indexes = index_config._common_indexes
         named_indexes = index_config._named_indexes
         priority_names = env_spec.priority_indexes
+        # Index names are checked against the known index names at spec definition time,
+        # so there's no specific error handling for failed lookups below
         if not priority_names:
-            layer_indexes = common_indexes
+            priority_indexes = []
         else:
-            # Priority indexes are checked against the known index list at spec definition time
             priority_indexes = [named_indexes[name].copy() for name in priority_names]
             for p in priority_indexes:
                 p["explicit"] = False
-            other_indexes = [
-                x for x in common_indexes if x.get("name") not in priority_names
-            ]
-            layer_indexes = [*priority_indexes, *other_indexes]
+        other_index_names = set(env_spec.package_indexes.values())
+        other_index_names.difference_update(priority_names)
+        referenced_indexes = [named_indexes[name] for name in other_index_names]
+        explicit_indexes = [x for x in referenced_indexes if x.get("explicit")]
+        other_indexes = [
+            x for x in common_indexes if x.get("name") not in priority_names
+        ]
+        layer_indexes = [*priority_indexes, *explicit_indexes, *other_indexes]
+        package_indexes = index_config._common_package_indexes.copy()
+        package_indexes.update(env_spec.package_indexes)
+        package_sources = {pkg: {"index": idx} for pkg, idx in package_indexes.items()}
         uv_tool_config = index_config._common_config_uv.copy()
         uv_tool_config["constraint-dependencies"] = constraints
-        uv_tool_config["index"] = layer_indexes
+        if layer_indexes:
+            uv_tool_config["index"] = layer_indexes
+        if package_sources:
+            uv_tool_config["sources"] = package_sources
         layer_project_name = re.sub("[^a-zA-Z0-9._-]", "-", self.env_name)
         py_version_short = self.py_version.rpartition(".")[0]
         pyproject_config = {
@@ -1940,6 +2006,7 @@ class LayerEnvBase(ABC):
             "--python",
             str(self.base_python_path),
             *self.index_config._get_uv_lock_args(self.build_path),
+            "--upgrade",  # ignore any uv.lock contents from a previous local lock run
             "--quiet",
             "--no-color",
         ]
@@ -3147,12 +3214,13 @@ class StackSpec:
         declared_spec: Mapping[str, Any],
         runtimes: Mapping[LayerBaseName, RuntimeSpec],
         frameworks: Mapping[LayerBaseName, FrameworkSpec],
-    ) -> tuple[RuntimeSpec, tuple[FrameworkSpec, ...]]:
-        # Note: layers are intentionally allowed to override any *default* source index settings
+    ) -> tuple[RuntimeSpec, tuple[FrameworkSpec, ...], dict[NormalizedName, str]]:
+        # Note: layers are intentionally allowed to override any *default* package index settings
         declared_runtime: LayerBaseName | None = declared_spec.get("runtime")
         declared_frameworks: Sequence[LayerBaseName] | None = declared_spec.get(
             "frameworks"
         )
+        merged_package_indexes: dict[NormalizedName, str] = {}
         runtime_dep: RuntimeSpec | None = None
         framework_deps: tuple[FrameworkSpec, ...]
         if declared_runtime is not None:
@@ -3168,6 +3236,8 @@ class StackSpec:
             if runtime_dep is None:
                 msg = f"{err_prefix} references unknown runtime {declared_runtime!r}"
                 raise LayerSpecError(msg)
+            # Check below that the runtime sources are consistent with the layer's own sources
+            merged_package_indexes.update(runtime_dep.package_indexes)
         elif not declared_frameworks:
             msg = f"{err_prefix} must specify a runtime or at least one framework dependency"
             raise LayerSpecError(msg)
@@ -3190,7 +3260,33 @@ class StackSpec:
                 declared_fw_deps.append(fw_dep)
             framework_deps = cls._linearize_C3(err_prefix, declared_fw_deps)
             assert runtime_dep is not None
-        return runtime_dep, framework_deps
+            # Check any framework source overrides are consistent with each other
+            for fw_dep in reversed(framework_deps):
+                for dist_name, index_name in fw_dep.package_indexes.items():
+                    declared_index_name = merged_package_indexes.get(dist_name, None)
+                    if declared_index_name and declared_index_name != index_name:
+                        msg = (
+                            f"{err_prefix} depends on layers with "
+                            f"inconsistent package index overrides for {dist_name} "
+                            f"({declared_index_name} != {index_name})"
+                        )
+                        raise LayerSpecError(msg)
+                merged_package_indexes.update(fw_dep.package_indexes)
+        # Check layer's source overrides are consistent with the layers it depends on
+        declared_package_indexes = declared_spec.get("package_indexes", {})
+        for raw_dist_name, index_name in declared_package_indexes.items():
+            # The package names for this layer haven't been normalised yet
+            dist_name = canonicalize_name(raw_dist_name)
+            declared_index_name = merged_package_indexes.get(dist_name, None)
+            if declared_index_name and declared_index_name != index_name:
+                msg = (
+                    f"{err_prefix} declares an inconsistent "
+                    f"package index override for {raw_dist_name} "
+                    f"({declared_index_name} != {index_name})"
+                )
+                raise LayerSpecError(msg)
+        merged_package_indexes.update(declared_package_indexes)
+        return runtime_dep, framework_deps, merged_package_indexes
 
     @classmethod
     def from_dict(cls, fname: StrPath, layer_data: dict[str, Any]) -> Self:
@@ -3211,7 +3307,7 @@ class StackSpec:
             data = tomllib.load(f)
         spec_dir_path = stack_spec_path.parent
         requirements_dir_path = spec_dir_path / "requirements"
-        # Fully populate the source index configuration details
+        # Fully populate the package index configuration details
         if index_config is None:
             index_config = PackageIndexConfig()
         else:
@@ -3242,11 +3338,12 @@ class StackSpec:
                 raise LayerSpecError(msg)
             err_prefix = f"Framework {name!r}"
             fw["_index_config"] = index_config
-            runtime_dep, framework_deps = cls._resolve_layer_deps(
+            runtime_dep, framework_deps, package_indexes = cls._resolve_layer_deps(
                 err_prefix, fw, runtimes, frameworks
             )
             fw["runtime"] = runtime_dep
             fw["frameworks"] = framework_deps
+            fw["package_indexes"] = package_indexes
             ensure_optional_env_spec_fields(fw)
             frameworks[name] = FrameworkSpec(**fw)
         # Collect the list of application specs
@@ -3261,11 +3358,12 @@ class StackSpec:
                 raise LayerSpecError(msg)
             err_prefix = f"Application {name!r}"
             app["_index_config"] = index_config
-            runtime_dep, framework_deps = cls._resolve_layer_deps(
+            runtime_dep, framework_deps, package_indexes = cls._resolve_layer_deps(
                 err_prefix, app, runtimes, frameworks
             )
             app["runtime"] = runtime_dep
             app["frameworks"] = framework_deps
+            app["package_indexes"] = package_indexes
             launch_module = app.pop("launch_module")
             launch_module_path = spec_dir_path / launch_module
             launch_module_name = launch_module_path.stem

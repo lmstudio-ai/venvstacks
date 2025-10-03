@@ -1,0 +1,32 @@
+# Ensure suitable error is raised for inconsistent package index overrides
+
+[[runtimes]]
+name = "cpython-3.13"
+python_implementation = "cpython@3.13.7"
+requirements = []
+
+[[frameworks]]
+name = "pytorch-cpu"
+runtime = "cpython-3.13"
+requirements = []
+# Package name ends with a capital to ensure names are normalised
+package_indexes = { torcH = "pytorch-cpu"}
+
+[[applications]]
+name = "empty"
+launch_module = "../minimal_project/empty.py"
+# This will fail, since the app layer specifies a different package index for PyTorch
+# Package name is capitalised to ensure names are normalised
+frameworks = ["pytorch-cpu"]
+requirements = []
+package_indexes = { Torch = "pytorch-cu128"}
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
