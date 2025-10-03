@@ -38,8 +38,8 @@ relevant to the ``venvstacks`` use case, but at least the following are expected
 * :uv-config:`override-dependencies`: override inaccurate or unwanted dependency declarations
 
 Note that the :uv-config:`index` and :uv-config:`sources` settings may be overridden when locking
-and building specific layers via the :ref:`package indexes <package-indexes>` and
-:ref:`priority indexes <priority-indexes>` layer settings respectively. The :uv-config:`sources`
+and building specific layers via the :ref:`priority indexes <priority-indexes>` and
+:ref:`package indexes <package-indexes>` layer settings respectively. The :uv-config:`sources`
 field in the common configuration is also restricted to only referring to named indexes.
 
 .. |uv's tool documentation| replace:: ``uv``'s tool documentation
