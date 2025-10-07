@@ -7,11 +7,11 @@ argon2-cffi-bindings==25.1.0
 arrow==1.3.0
 asttokens==3.0.0
 async-lru==2.0.5
-attrs==25.3.0
+attrs==25.4.0
 babel==2.17.0
 beautifulsoup4==4.14.2
 bleach==6.2.0
-certifi==2025.8.3
+certifi==2025.10.5
 cffi==2.0.0
 charset-normalizer==3.4.3
 colorama==0.4.6 ; sys_platform == 'win32'
@@ -68,9 +68,9 @@ pure-eval==0.2.3
 pycparser==2.23 ; implementation_name != 'PyPy'
 pygments==2.19.2
 python-dateutil==2.9.0.post0
-python-json-logger==3.3.0
+python-json-logger==4.0.0
 pywin32==311 ; platform_python_implementation != 'PyPy' and sys_platform == 'win32'
-pywinpty==3.0.0 ; os_name == 'nt'
+pywinpty==3.0.2 ; os_name == 'nt'
 pyyaml==6.0.3
 pyzmq==27.1.0
 referencing==0.36.2
