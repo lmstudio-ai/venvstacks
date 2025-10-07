@@ -326,7 +326,7 @@ resolver works, so it ended up making more sense to design
 <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> to work with <code class="docutils literal notranslate"><span class="pre">venv</span></code> and <code class="docutils literal notranslate"><span class="pre">pip</span></code>-style dependency
 resolution.</p>
 <p>The assorted “Python application packaging” utilities that produce
-standalone platform native executables or Python <a class="reference external" href="https://docs.python.org/3/library/zipapp.html#module-zipapp" title="(in Python v3.13)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">zipapp</span></code></a>
+standalone platform native executables or Python <a class="reference external" href="https://docs.python.org/3/library/zipapp.html#module-zipapp" title="(in Python v3.14)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">zipapp</span></code></a>
 archives were eliminated from consideration as they lacked the ability
 to readily share the large common framework components that feature
 heavily in the Python AI ecosystem across different applications.</p>
@@ -375,7 +375,7 @@ on dynamically linked libraries that are provided by a different Python
 package. For example, <a class="extlink-pypi reference external" href="https://pypi.org/project/torch/">PyTorch</a> supports using the nVidia
 CUDA libraries published through the <a class="extlink-pypi reference external" href="https://pypi.org/project/nvidia/">nvidia</a> PyPI project.</p>
 <p>On Windows, finding these dependencies at runtime generally relies on the
-package publishing them calling <a class="reference external" href="https://docs.python.org/3/library/os.html#os.add_dll_directory" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">os.add_dll_directory()</span></code></a> with the
+package publishing them calling <a class="reference external" href="https://docs.python.org/3/library/os.html#os.add_dll_directory" title="(in Python v3.14)"><code class="xref py py-func docutils literal notranslate"><span class="pre">os.add_dll_directory()</span></code></a> with the
 relevant package subdirectory.</p>
 <p>On Linux and macOS, making this example case work typically requires that
 the nVidia CUDA libraries be installed into the <em>same</em> <code class="docutils literal notranslate"><span class="pre">site-packages</span></code>

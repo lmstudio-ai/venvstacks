@@ -393,7 +393,7 @@ linked from a <code class="docutils literal notranslate"><span class="pre">share
 (see <a class="reference internal" href="../design/#dynamic-linking"><span class="std std-ref">How does dynamic linking work across layers?</span></a> for additional details).
 Setting this field allows files to be excluded from the linking process based
 on filename glob patterns. These patterns are checked against the <em>end</em> of the
-full path to the files using the equivalent of <a class="reference external" href="https://docs.python.org/3/library/glob.html#glob.translate" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">glob.translate()</span></code></a>.</p>
+full path to the files using the equivalent of <a class="reference external" href="https://docs.python.org/3/library/glob.html#glob.translate" title="(in Python v3.14)"><code class="xref py py-func docutils literal notranslate"><span class="pre">glob.translate()</span></code></a>.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">Added in version 0.4.0: </span>Added support for dynamic linking across layers on Linux and macOS
 (<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
@@ -563,7 +563,7 @@ on how the relative order of the application layer <code class="docutils literal
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">launch_module</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): a relative path (starting from the folder containing
 the stack specification file) that specifies a Python module or import package that will
-be included in the built environment for execution with the <a class="reference external" href="https://docs.python.org/3/using/cmdline.html#cmdoption-m" title="(in Python v3.13)"><code class="xref std std-option docutils literal notranslate"><span class="pre">-m</span></code></a> switch.</p></li>
+be included in the built environment for execution with the <a class="reference external" href="https://docs.python.org/3/using/cmdline.html#cmdoption-m" title="(in Python v3.14)"><code class="xref std std-option docutils literal notranslate"><span class="pre">-m</span></code></a> switch.</p></li>
 </ul>
 <p>Application layer specifications may also contain the following optional field:</p>
 <ul class="simple">
@@ -662,7 +662,7 @@ imported for testing purposes from their source tree location).</p>
 </section>
 <section id="deprecated-fields">
 <h3>Deprecated fields<a class="headerlink" href="#deprecated-fields" title="Link to this heading">¶</a></h3>
-<p>The following field names were previously supported and now emit <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FutureWarning" title="(in Python v3.13)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">FutureWarning</span></code></a>
+<p>The following field names were previously supported and now emit <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FutureWarning" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">FutureWarning</span></code></a>
 when used in a loaded stack specification:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">build_requirements</span></code>: no longer has any effect (rendered non-functional before
