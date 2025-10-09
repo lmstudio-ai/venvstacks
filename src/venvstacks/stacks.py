@@ -438,10 +438,8 @@ class EnvironmentLock:
     _lock_input_path: Path = field(init=False, repr=False)
     _lock_input_hash: str = field(init=False, repr=False)
     _requirements_hash: str | None = field(init=False, repr=False)
-    _legacy_req_hash: str | None = field(init=False, repr=False)
     _other_inputs_hash: str = field(init=False, repr=False)
     _version_inputs_hash: str = field(init=False, repr=False)
-    _migrate_other_inputs: bool = field(init=False, repr=False)
     _lock_metadata_path: Path = field(init=False, repr=False)
     _last_locked: datetime | None = field(init=False, repr=False)
     _lock_version: int | None = field(init=False, repr=False)
@@ -582,35 +580,18 @@ class EnvironmentLock:
         self._update_other_inputs_hash()
         self._update_version_inputs_hash()
         self._lock_input_hash = input_hash = self._hash_reqs(self.declared_requirements)
-        req_hash = legacy_req_hash = None
-        migrate_other_inputs = False
+        req_hash = None
         last_metadata = self._load_saved_metadata()
         if last_metadata is not None:
-            # TODO: Introduce a cleaner migration mechanism for lock metadata updates
-            missing = object()
-            last_lock_input_hash = last_metadata.get("lock_input_hash", missing)
-            # 0.5.0 added "lock_input_hash" and changed how "requirements_hash" is calculated
-            set_locked_req_hash = False
-            if last_lock_input_hash is missing:
-                # Pre-0.5.0 lock metadata, consider it valid if the last hash matches the full file
-                # This is technically an unwarranted assumption, but it makes upgrades more flexible
-                legacy_req_hash = hash_file_contents(self.locked_requirements_path)
-                set_locked_req_hash = legacy_req_hash == last_metadata.get(
-                    "requirements_hash", missing
-                )
-            else:
-                set_locked_req_hash = input_hash == last_lock_input_hash
-            if set_locked_req_hash:
-                # Declared requirements hash is consistent, so also check the locked output hash
-                req_hash = self._hash_req_file(self.locked_requirements_path)
-            # 0.6.0 split "version_inputs_hash" out from "other_inputs_hash"
-            # Exclude both "other_inputs_hash" and "version_inputs_hash" from the
-            # metadata consistency check if the latter is missing
-            last_version_inputs_hash = last_metadata.get("version_inputs_hash", missing)
-            migrate_other_inputs = last_version_inputs_hash is missing
+            # TODO: Introduce a cleaner (less ad hoc) migration mechanism for lock metadata
+            # 0.8.0 adopted cross platform locks, so the migration for older locks was dropped
+            # (all lock files from older versions are invalid, as they use a different format)
+            if "_legacy_requirements_hash" not in last_metadata:
+                last_lock_input_hash = last_metadata.get("lock_input_hash", None)
+                if input_hash == last_lock_input_hash:
+                    # Declared reqs hash is consistent, so also check the locked output hash
+                    req_hash = self._hash_req_file(self.locked_requirements_path)
         self._requirements_hash = req_hash
-        self._legacy_req_hash = legacy_req_hash
-        self._migrate_other_inputs = migrate_other_inputs
 
     @staticmethod
     def _write_declared_requirements(
@@ -654,28 +635,21 @@ class EnvironmentLock:
         lock_input_hash = self._lock_input_hash
         if lock_input_hash is None:
             return None
-        # No locked requirements file -> metadata is not valid
+        # No locked requirements file (or an input hash mismatch) -> metadata is not valid
         req_hash = self._requirements_hash
-        legacy_req_hash = self._legacy_req_hash
-        if req_hash is None and legacy_req_hash is None:
+        if req_hash is None:
             return None
         # Metadata is valid only if the recorded hashes match the files on disk
         lock_metadata = self._load_saved_metadata()
         if lock_metadata is None:
             return None
         last_req_hash = lock_metadata.get("requirements_hash", None)
-        check_version = (
-            not ignore_version and self.versioned and not self._migrate_other_inputs
-        )
+        check_version = not ignore_version and self.versioned
         have_valid_lock = (
             req_hash == last_req_hash
             and lock_input_hash == lock_metadata.get("lock_input_hash", None)
             and (
-                self._migrate_other_inputs
-                or (
-                    self._other_inputs_hash
-                    == lock_metadata.get("other_inputs_hash", None)
-                )
+                self._other_inputs_hash == lock_metadata.get("other_inputs_hash", None)
             )
             and (
                 not check_version
@@ -686,10 +660,7 @@ class EnvironmentLock:
             )
         )
         if not have_valid_lock:
-            # Also check for consistent legacy lock metadata
-            if legacy_req_hash != last_req_hash:
-                # This isn't consistent legacy metadata either
-                return None
+            return None
         return lock_metadata
 
     def _get_last_locked_metadata(self) -> datetime | None:
@@ -806,7 +777,6 @@ class EnvironmentLock:
             "requirements_hash": self._requirements_hash,
             "other_inputs_hash": self._other_inputs_hash,
             "version_inputs_hash": self._version_inputs_hash,
-            "_legacy_requirements_hash": self._legacy_req_hash,
             "locked_at": locked_at,
             "lock_version": self._lock_version,
         }
