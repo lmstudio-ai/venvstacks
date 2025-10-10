@@ -7,7 +7,7 @@ import pytest
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any, Generator, Sequence
 
 from pytest_subtests import SubTests
 
@@ -20,8 +20,13 @@ from venvstacks.stacks import (
     LayerBaseName,
     LayerEnvBase,
     LayerVariants,
+    LockedPackage,
     StackSpec,
-    _ignore_req_comments,
+    _clean_flat_reqs,
+    _hash_flat_reqs,
+    _hash_pylock_file,
+    _iter_pylock_hash_inputs,
+    _iter_pylock_packages,
 )
 
 
@@ -31,11 +36,11 @@ from venvstacks.stacks import (
 
 
 def test_default_state(temp_dir_path: Path) -> None:
-    req_path = temp_dir_path / "requirements.txt"
+    req_path = temp_dir_path / "pylock.test_layer.toml"
     env_lock = EnvironmentLock(req_path, (), (), ())
     # Declared requirements file is only written when requested
     assert env_lock.declared_requirements == ()
-    assert env_lock._lock_input_path == temp_dir_path / "requirements.in"
+    assert env_lock._lock_input_path == temp_dir_path / "requirements-test_layer.in"
     assert not env_lock.locked_requirements_path.exists()
     no_dependencies_hash = env_lock._lock_input_hash
     assert no_dependencies_hash is not None
@@ -47,16 +52,16 @@ def test_default_state(temp_dir_path: Path) -> None:
     assert not env_lock.locked_requirements_path.exists()
     assert env_lock._requirements_hash is None
     # Metadata file is only written when requested
-    assert env_lock._lock_metadata_path == temp_dir_path / "requirements.txt.json"
+    assert env_lock._lock_metadata_path == temp_dir_path / "pylock.test_layer.meta.json"
     assert not env_lock._lock_metadata_path.exists()
     assert env_lock.load_valid_metadata() is None
 
 
 def test_load_with_consistent_file_hashes(temp_dir_path: Path) -> None:
-    req_path = temp_dir_path / "requirements.txt"
+    req_path = temp_dir_path / "pylock.test_layer.toml"
     env_lock = EnvironmentLock(req_path, (), (), ())
     env_lock.prepare_lock_inputs()
-    env_lock.locked_requirements_path.write_text("")
+    env_lock.locked_requirements_path.write_text("", "utf-8")
     env_lock.update_lock_metadata()
     assert env_lock._lock_input_hash is not None
     assert env_lock._requirements_hash is not None
@@ -70,10 +75,10 @@ def test_load_with_consistent_file_hashes(temp_dir_path: Path) -> None:
 
 
 def test_load_with_inconsistent_input_hash(temp_dir_path: Path) -> None:
-    req_path = temp_dir_path / "requirements.txt"
+    req_path = temp_dir_path / "pylock.test_layer.toml"
     env_lock = EnvironmentLock(req_path, (), (), ())
     env_lock.prepare_lock_inputs()
-    env_lock.locked_requirements_path.write_text("Hash fodder")
+    env_lock.locked_requirements_path.write_text("", "utf-8")
     env_lock.update_lock_metadata()
     assert env_lock._lock_input_hash is not None
     assert env_lock._requirements_hash is not None
@@ -86,46 +91,114 @@ def test_load_with_inconsistent_input_hash(temp_dir_path: Path) -> None:
 
 
 def test_load_with_inconsistent_output_hash(temp_dir_path: Path) -> None:
-    req_path = temp_dir_path / "requirements.txt"
+    req_path = temp_dir_path / "pylock.test_layer.toml"
     env_lock = EnvironmentLock(req_path, (), (), ())
     env_lock.prepare_lock_inputs()
-    env_lock.locked_requirements_path.write_text("Hash fodder")
+    pylock_text = 'packages = [{name="some-package", version="1.0"}]'
+    env_lock.locked_requirements_path.write_text(pylock_text, "utf-8")
     env_lock.update_lock_metadata()
     assert env_lock._lock_input_hash is not None
     assert env_lock._requirements_hash is not None
     assert env_lock.load_valid_metadata() is not None
     # Loading the lock with a different lock file invalidates the metadata
-    env_lock.locked_requirements_path.write_text("")
+    env_lock.locked_requirements_path.write_text("", "utf-8")
     loaded_lock = EnvironmentLock(req_path, (), (), ())
     assert loaded_lock._lock_input_hash == env_lock._lock_input_hash
     assert loaded_lock._requirements_hash != env_lock._requirements_hash
     assert loaded_lock.load_valid_metadata() is None
 
 
-def test_requirements_file_hashing(temp_dir_path: Path) -> None:
-    messy_requirements = [
-        "# File header comment",
-        "b==2.3.4  # Trailing comment",
-        "    c==3.4.5  # Leading whitespace",
-        "a==1.2.3  # Entry out of order",
-        "",
-        "# Preceding line intentionally blank",
-        "d==4.5.6",
-    ]
-    clean_requirements = _ignore_req_comments(messy_requirements)
-    expected_requirements = [
-        "a==1.2.3",
-        "b==2.3.4",
-        "c==3.4.5",
-        "d==4.5.6",
-    ]
-    assert clean_requirements == expected_requirements
-    expected_hash = hash_strings(expected_requirements)
-    assert EnvironmentLock._hash_reqs(messy_requirements) == expected_hash
+_MESSY_INPUT_REQUIREMENTS = """\
+# File header comment
+b==2.3.4 ; python_version >= 3.12  # Trailing comment
+    c==3.4.5  # Leading whitespace
+a==1.2.3  # Entry out of order
+
+# Preceding line intentionally blank
+d==4.5.6 ; python_version < 3.12
+"""
+
+_EXPECTED_FLAT_REQUIREMENTS = [
+    "a==1.2.3",
+    "b==2.3.4 ; python_version >= 3.12",
+    "c==3.4.5",
+    "d==4.5.6 ; python_version < 3.12",
+]
+
+
+def test_flat_requirements_file_hashing(temp_dir_path: Path) -> None:
+    messy_input = _MESSY_INPUT_REQUIREMENTS.splitlines()
+    clean_requirements = _clean_flat_reqs(messy_input)
+    assert clean_requirements == _EXPECTED_FLAT_REQUIREMENTS
+    expected_hash = hash_strings(_EXPECTED_FLAT_REQUIREMENTS)
+    assert _hash_flat_reqs(messy_input) == expected_hash
     req_input_path = temp_dir_path / "requirements.in"
-    req_input_path.write_text("\n".join(messy_requirements))
-    req_file_hash = EnvironmentLock._hash_req_file(req_input_path)
+    req_input_path.write_text(_MESSY_INPUT_REQUIREMENTS, "utf-8")
+    req_file_hash = EnvironmentLock._hash_input_reqs_file(req_input_path)
     assert req_file_hash == expected_hash
+
+
+_EXAMPLE_PYLOCK_TEXT = """\
+# Simplified example of pylock.toml contents
+[[packages]]
+name = "a"
+version = "1.2.3"
+
+[[packages.wheels]]
+path = "./a-example.whl"
+hashes = { sha256 = "12345a", sha512 = "67890a" }
+
+[[packages]]
+name = "b"
+version = "2.3.4"
+marker = "python_version >= 3.12"
+
+[[packages]]
+name = "c"
+version = "3.4.5"
+index = "https://custom.index.invalid/"
+
+[[packages.wheels]]
+url = "https://custom.index.invalid/wheels/c-example.whl"
+hashes = { sha256 = "12345c", sha512 = "67890c" }
+
+[[packages]]
+name = "d"
+version = "4.5.6"
+marker = "python_version < 3.12"
+
+[[packages.wheels]]
+name = "d-example.whl"
+hashes = { sha256 = "12345d", sha512 = "67890d" }
+"""
+
+_EXPECTED_PYLOCK_HASH_INPUTS = [
+    "a==1.2.3 from unspecified index",
+    "a-example.whl:sha256:12345a",
+    "a-example.whl:sha512:67890a",
+    "b==2.3.4 ; python_version >= 3.12 from unspecified index",
+    "c==3.4.5 from https://custom.index.invalid/",
+    "c-example.whl:sha256:12345c",
+    "c-example.whl:sha512:67890c",
+    "d==4.5.6 ; python_version < 3.12 from unspecified index",
+    "d-example.whl:sha256:12345d",
+    "d-example.whl:sha512:67890d",
+]
+
+
+def test_pylock_req_listing() -> None:
+    pylock_text = _EXAMPLE_PYLOCK_TEXT
+    pylock_reqs = [str(pkg) for pkg in _iter_pylock_packages(pylock_text)]
+    assert pylock_reqs == _EXPECTED_FLAT_REQUIREMENTS
+
+
+def test_pylock_file_hashing(temp_dir_path: Path) -> None:
+    pylock_text = _EXAMPLE_PYLOCK_TEXT
+    assert list(_iter_pylock_hash_inputs(pylock_text)) == _EXPECTED_PYLOCK_HASH_INPUTS
+    expected_hash = hash_strings(sorted(_EXPECTED_PYLOCK_HASH_INPUTS))
+    pylock_path = temp_dir_path / "pylock.toml"
+    pylock_path.write_text(_EXAMPLE_PYLOCK_TEXT, "utf-8")
+    assert _hash_pylock_file(pylock_path) == expected_hash
 
 
 ##################################
@@ -238,12 +311,17 @@ def _modified_file(file_path: Path, contents: str) -> Generator[Any, None, None]
     if not contents.endswith("\n"):
         contents += "\n"
     try:
-        file_path.write_text(contents)
+        file_path.write_text(contents, "utf-8")
         yield
     finally:
         file_path.unlink()
         backup_path.rename(file_path)
 
+_MODIFIED_LOCK_FILE = """\
+[[packages]]
+name = "pip"
+version = "25.1"
+"""
 
 @pytest.mark.slow
 def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
@@ -275,9 +353,10 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         assert runtime_env.kind == LayerVariants.RUNTIME
         layers_to_lock_names.append(runtime_env.env_name)
         runtime_lock_inputs = runtime_env.get_lock_inputs()
-        expected_runtime_lock_inputs = (
+        expected_runtime_lock_inputs: tuple[Path, Path, Sequence[LockedPackage]] = (
             runtime_env.requirements_path,
             runtime_env.env_path.with_name(f"{runtime_env.env_name}_resolve"),
+            [],
         )
         assert runtime_lock_inputs == expected_runtime_lock_inputs
     for unlocked_env in build_env_to_lock.environments_to_lock():
@@ -551,7 +630,7 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
             LayerBaseName("cpython-to-be-modified")
         ]
         with _modified_file(
-            env_to_modify.env_lock.locked_requirements_path, "pip==25.1"
+            env_to_modify.env_lock.locked_requirements_path, _MODIFIED_LOCK_FILE
         ):
             build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
             expected_valid_locks = unaffected_layer_names
@@ -566,7 +645,7 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
         env_to_modify = build_env_to_lock.frameworks[LayerBaseName("to-be-modified")]
         with _modified_file(
-            env_to_modify.env_lock.locked_requirements_path, "pip==25.1"
+            env_to_modify.env_lock.locked_requirements_path, _MODIFIED_LOCK_FILE
         ):
             build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
             expected_valid_locks = unaffected_layer_names | {
@@ -585,7 +664,7 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
         env_to_modify = build_env_to_lock.applications[LayerBaseName("to-be-modified")]
         with _modified_file(
-            env_to_modify.env_lock.locked_requirements_path, "pip==25.1"
+            env_to_modify.env_lock.locked_requirements_path, _MODIFIED_LOCK_FILE
         ):
             build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
             expected_invalid_locks = {"app-to-be-modified"}
