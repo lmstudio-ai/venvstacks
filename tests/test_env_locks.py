@@ -317,6 +317,11 @@ def _modified_file(file_path: Path, contents: str) -> Generator[Any, None, None]
         file_path.unlink()
         backup_path.rename(file_path)
 
+_MODIFIED_LOCK_FILE = """\
+[[packages]]
+name = "pip"
+version = "25.1"
+"""
 
 @pytest.mark.slow
 def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
@@ -625,7 +630,7 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
             LayerBaseName("cpython-to-be-modified")
         ]
         with _modified_file(
-            env_to_modify.env_lock.locked_requirements_path, "pip==25.1"
+            env_to_modify.env_lock.locked_requirements_path, _MODIFIED_LOCK_FILE
         ):
             build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
             expected_valid_locks = unaffected_layer_names
@@ -640,7 +645,7 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
         env_to_modify = build_env_to_lock.frameworks[LayerBaseName("to-be-modified")]
         with _modified_file(
-            env_to_modify.env_lock.locked_requirements_path, "pip==25.1"
+            env_to_modify.env_lock.locked_requirements_path, _MODIFIED_LOCK_FILE
         ):
             build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
             expected_valid_locks = unaffected_layer_names | {
@@ -659,7 +664,7 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
         env_to_modify = build_env_to_lock.applications[LayerBaseName("to-be-modified")]
         with _modified_file(
-            env_to_modify.env_lock.locked_requirements_path, "pip==25.1"
+            env_to_modify.env_lock.locked_requirements_path, _MODIFIED_LOCK_FILE
         ):
             build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
             expected_invalid_locks = {"app-to-be-modified"}
