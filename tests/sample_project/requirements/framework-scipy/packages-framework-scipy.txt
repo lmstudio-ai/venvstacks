@@ -3,5 +3,4 @@
 scipy==1.16.1
 
 # Shared packages inherited from other layers
-dlltracer==1.0.3 ; sys_platform == 'win32'
 numpy==2.3.2
