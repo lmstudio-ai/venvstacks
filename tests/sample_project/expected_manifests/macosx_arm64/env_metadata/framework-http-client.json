@@ -1,18 +1,18 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "590a4571c0f00ffbf935bf3dd774e22e7288adcc845af35d5c0d891e4e2d3593"
+    "sha256": "3e935fd227cf1197f24a0f890b291b88558b08c01ca7cf391b28af17f2bd625f"
   },
   "archive_name": "framework-http-client.tar.xz",
-  "archive_size": 397304,
+  "archive_size": 397468,
   "bound_to_implementation": false,
   "install_target": "framework-http-client",
   "layer_name": "framework-http-client",
   "lock_version": 1,
-  "locked_at": "2025-09-17T16:02:15.108771+00:00",
+  "locked_at": "2025-10-10T12:24:24.148599+00:00",
   "python_implementation": "cpython@3.11.11",
   "required_layers": [],
-  "requirements_hash": "sha256:56c4cbd65417e8c2fdc4015bc43fdbb4473d9d54eaf8f1672e4bc32542e5e518",
+  "requirements_hash": "sha256:780923a1f8fe6070446184a3a0ce3d4891721ab000f7aa3f7bb94524c9beb8fa",
   "runtime_layer": "cpython-3.11",
   "target_platform": "macosx_arm64"
 }
