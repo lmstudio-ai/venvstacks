@@ -29,6 +29,7 @@ launch_module = "launch_modules/sklearn_classification.py"
 frameworks = ["sklearn", "gui"]
 requirements = [
     "scikit-learn",
+    "matplotlib",
     "pyside6",
 ]
 
@@ -38,5 +39,6 @@ launch_module = "launch_modules/sklearn_clustering.py"
 frameworks = ["sklearn", "gui"]
 requirements = [
     "scikit-learn",
+    "matplotlib",
     "pyside6",
 ]
