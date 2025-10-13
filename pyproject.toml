@@ -124,8 +124,7 @@ docs = [
 distribution = true
 
 [tool.pdm.scripts]
-migrate-hashes = "./misc/rehash_test_requirements.py"
-remove-lock-platform-tags = "./misc/remove_lock_platform_tags.py"
+migrate-to-pylock = "./misc/migrate-to-pylock.py"
 
 [tool.mypy]
 untyped_calls_exclude = "dulwich"
