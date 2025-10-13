@@ -97,7 +97,7 @@ requirements = [
 # Sample project application layers
 ######################################
 
-# Ensure one sample layer is built everywhere *other* than Linux
+# Ensure one sample layer is built *only* on Linux
 [[applications]]
 name = "scipy-import"
 versioned = true
@@ -110,9 +110,9 @@ frameworks = ["scipy"]
 requirements = [
     "scipy"
 ]
-platforms = ["macosx_arm64", "macosx_x86_64", "win_amd64", "win_arm64"]
+platforms = ["linux_aarch64", "linux_x86_64"]
 
-# Ensure one sample app layer is built on all platforms
+# Ensure one sample layer is built everywhere *other* than Linux
 [[applications]]
 name = "scipy-client"
 launch_module = "launch_modules/scipy_client"
@@ -125,8 +125,9 @@ requirements = [
     "scipy",
     "httpx",
 ]
+platforms = ["macosx_arm64", "macosx_x86_64", "win_amd64", "win_arm64"]
 
-# Ensure one sample layer is built *only* on Linux
+# Ensure one sample app layer is built on all platforms
 [[applications]]
 name = "sklearn-import"
 launch_module = "launch_modules/sklearn_import.py"
@@ -134,6 +135,5 @@ frameworks = ["sklearn"]
 requirements = [
     "scikit-learn",
 ]
-platforms = ["linux_aarch64", "linux_x86_64"]
 
 # Add more [[applications]] sections to define additional applications (TOML array of tables)

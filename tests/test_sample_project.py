@@ -211,8 +211,8 @@ EXPECTED_ENVIRONMENTS.extend(EXPECTED_FRAMEWORKS)
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_APPLICATIONS)
 
 PLATFORM_DEPENDENT = {
+    "app-scipy-client",
     "app-scipy-import",
-    "app-sklearn-import",
 }
 
 ##########################
@@ -494,8 +494,12 @@ class TestBuildEnvironment(DeploymentTestCase):
         included = ["framework-sklearn"]
         dependencies = ["cpython-3.12"]
         derived = ["app-sklearn-import"]
+        # Ensure all layers selected for this test case are platform independent
+        self.assertFalse(set(included) & PLATFORM_DEPENDENT)
+        self.assertFalse(set(dependencies) & PLATFORM_DEPENDENT)
+        self.assertFalse(set(derived) & PLATFORM_DEPENDENT)
+        # Ensure the layer selection operates as expected
         build_env = self.build_env
-
         input_selection, _ = build_env.filter_layers(included)
         build_env.select_layers(input_selection, lock=True)
         for env in build_env.all_environments():
