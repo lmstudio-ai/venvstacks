@@ -24,7 +24,7 @@ from dataclasses import dataclass, field, replace as dc_replace
 from datetime import datetime, timezone
 from enum import StrEnum
 from fnmatch import fnmatch
-from functools import lru_cache
+from functools import total_ordering
 from itertools import chain
 from pathlib import Path
 from typing import (
@@ -48,11 +48,13 @@ from typing import (
     TypeVar,
     TypedDict,
 )
+from urllib.parse import urlparse
 
 import tomlkit
 
 from installer.records import parse_record_file
 from packaging.utils import NormalizedName, canonicalize_name
+from packaging.version import Version
 
 from . import pack_venv
 from ._hash_content import hash_file_contents, hash_module, hash_strings
@@ -363,26 +365,12 @@ EnvNameBuild = NewType("EnvNameBuild", str)
 EnvNameDeploy = NewType("EnvNameDeploy", str)
 
 
-def _ignore_req_comments(requirements: Iterable[str]) -> Sequence[str]:
-    # Ignore comments and blank lines in a requirements file and sort the result
-    # Artifact hash declarations are still incorporated, as are trailing backslash line escapes
-    result: list[str] = []
-    for req_line in requirements:
-        req, _sep, _comment = req_line.strip().partition("#")
-        req = req.strip()
-        if req:
-            result.append(req)
-    result.sort()
-    return result
-
-
-def _read_deps_from_req_file(requirements_path: Path) -> Iterable[str]:
-    # Read dependencies from a requirements file
+def _filter_flat_reqs(potential_reqs: Iterable[str]) -> Iterable[str]:
+    # Parse potential dependency lines from a flat requirements file
     # - omit trailing backslash line escapes
     # - ignore comments and blank lines
     # - ignore artifact hash declarations
-    lines = requirements_path.read_text("utf-8").splitlines()
-    for line in lines:
+    for line in potential_reqs:
         req_line = line.rstrip("\\").strip()
         req, _sep, _comment = req_line.strip().partition("#")
         req = req.strip()
@@ -390,24 +378,167 @@ def _read_deps_from_req_file(requirements_path: Path) -> Iterable[str]:
             yield req
 
 
-def _extract_pinned_reqs(requirements: Iterable[str]) -> Iterable[str]:
-    # Extract *just* the pinned requirements from a requirements file
-    # Only non-comment lines containing "==" that don't start with whitespace are considered
-    for req_line in requirements:
-        if not req_line:
-            # Line is empty
+def _clean_flat_reqs(potential_reqs: Iterable[str]) -> Sequence[str]:
+    return sorted(_filter_flat_reqs(potential_reqs))
+
+
+def _read_flat_reqs(requirements_path: Path) -> Sequence[str] | None:
+    if not requirements_path.exists():
+        return None
+    return _clean_flat_reqs(requirements_path.read_text("utf-8").splitlines())
+
+
+def _hash_flat_reqs(potential_reqs: Iterable[str]) -> str:
+    return hash_strings(_clean_flat_reqs(potential_reqs))
+
+
+def _hash_flat_reqs_file(requirements_path: Path) -> str | None:
+    reqs = _read_flat_reqs(requirements_path)
+    if reqs is None:
+        return None
+    return hash_strings(reqs)
+
+
+@dataclass
+class LockedWheel:
+    """Details of a locked distribution package (extracted from pylock.toml)."""
+
+    name: str
+    hashes: dict[str, str]
+
+    @classmethod
+    def from_dict(cls, wheel_entry: Mapping[str, Any]) -> Self:
+        """Parse a wheel entry extracted from a pylock.toml file."""
+        whl = {
+            "name": _extract_wheel_name(wheel_entry),
+            "hashes": wheel_entry["hashes"],
+        }
+        return cls(**whl)
+
+
+@total_ordering
+@dataclass
+class LockedPackage:
+    """Details of a locked distribution package (extracted from pylock.toml)."""
+
+    name: str
+    version: Version
+    marker: str
+    index: str
+    wheels: list[LockedWheel]
+
+    def __str__(self) -> str:
+        marker = self.marker
+        marker_suffix = f" ; {marker}" if marker else ""
+        return f"{self.name}=={self.version}{marker_suffix}"
+
+    def __hash__(self) -> int:
+        return hash((self.name, self.version, self.marker))
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, LockedPackage):
+            return NotImplemented
+        return bool(
+            self.name == other.name
+            and self.version == other.version
+            and self.marker == other.marker
+        )
+
+    def __lt__(self, other: Any) -> bool:
+        if not isinstance(other, LockedPackage):
+            return NotImplemented
+        return bool(
+            self.name < other.name
+            and self.version < other.version
+            and self.marker < other.marker
+        )
+
+    @classmethod
+    def from_dict(cls, pkg_entry: Mapping[str, Any]) -> Self:
+        """Parse a package entry extracted from a pylock.toml file."""
+        # version isn't technically required, but all locked layer versions should be pinned
+        # environment markers are genuinely optional for unconditionally installed packages
+        wheels = [LockedWheel.from_dict(whl) for whl in pkg_entry.get("wheels", ())]
+        pkg = {
+            "name": pkg_entry["name"],
+            "version": Version(pkg_entry["version"]),
+            "marker": pkg_entry.get("marker", ""),
+            "index": pkg_entry.get("index", "unspecified index"),
+            "wheels": wheels,
+        }
+        return cls(**pkg)
+
+
+def _iter_pylock_packages(
+    pylock_text: str,
+    text_origin: str = "unspecified pylock.toml",
+    *,
+    exclude_shared: bool = False,
+) -> Iterable[LockedPackage]:
+    # Parse the package entries from the contents of a pylock.toml file
+    # TODO: Nicer errors if the path isn't pointing at a valid pylock.toml file
+    # That can wait until after https://github.com/pypa/packaging/pull/900 is released,
+    # allowing this to switch to using packaging.Pylock instead of ad hoc TOML parsing
+    pylock_dict = tomlkit.parse(pylock_text)
+    pkg_list = pylock_dict.get("packages", [])
+    if not isinstance(pkg_list, list):
+        raise BuildEnvError(f"Invalid packages list in {text_origin}")
+    for raw_pkg in pkg_list:
+        if not isinstance(raw_pkg, dict):
+            raise BuildEnvError(f"Invalid packages entry in {text_origin}")
+        pkg = LockedPackage.from_dict(raw_pkg)
+        if exclude_shared and _SHARED_PKG_MARKER in pkg.marker:
             continue
-        req = req_line.split()[0].strip()
-        if not req:
-            # Line is blank or starts with whitespace
-            continue
-        if req.startswith("#"):
-            # Line is a comment
-            continue
-        if "==" not in req:
-            # Line is not a pinned requirement
-            continue
-        yield req
+        yield pkg
+
+
+_SHARED_PKG_MARKER = "from_lower_layer"
+
+
+def _iter_pylock_packages_from_file(
+    pylock_path: Path, *, exclude_shared: bool = False
+) -> Iterable[LockedPackage]:
+    # Read flattened requirements from a pylock.toml file
+    pylock_text = pylock_path.read_text("utf-8")
+    return _iter_pylock_packages(
+        pylock_text, str(pylock_path), exclude_shared=exclude_shared
+    )
+
+
+def _extract_wheel_name(locked_wheel: Mapping[str, Any]) -> str | None:
+    # Wheel name can be reported in one of three ways
+    whl_name: str = locked_wheel.get("name", None)
+    if whl_name is not None:
+        return whl_name
+    whl_path = locked_wheel.get("path", None)
+    if whl_path is not None:
+        return Path(whl_path).name
+    whl_url = locked_wheel.get("url", None)
+    if whl_url is not None:
+        url_path: str = urlparse(whl_url).path
+        return url_path.rpartition("/")[2]
+    return None
+
+
+def _iter_pylock_hash_inputs(
+    pylock_text: str, text_origin: str = "unspecified pylock.toml"
+) -> Iterable[str]:
+    for pkg in _iter_pylock_packages(pylock_text, text_origin):
+        pkg_req = str(pkg)
+        yield f"{pkg_req} from {pkg.index}"
+        for whl in pkg.wheels:
+            whl_name = whl.name
+            if not whl_name:
+                raise BuildEnvError(f"Missing wheel name in {text_origin}")
+            for algorithm, whl_hash in whl.hashes.items():
+                yield f"{whl_name}:{algorithm}:{whl_hash}"
+
+
+def _hash_pylock_file(requirements_path: Path) -> str | None:
+    if not requirements_path.exists():
+        return None
+    hash_inputs = _iter_pylock_hash_inputs(requirements_path.read_text("utf-8"))
+    return hash_strings(sorted(hash_inputs))
 
 
 class EnvironmentLockMetadata(TypedDict):
@@ -446,8 +577,14 @@ class EnvironmentLock:
 
     def __post_init__(self) -> None:
         req_path = self.locked_requirements_path
-        self._lock_input_path = req_path.with_suffix(".in")
-        self._lock_metadata_path = Path(f"{req_path}.json")
+        pylock_match = re.match(r"^pylock\.([^.]+)\.toml$", req_path.name)
+        if pylock_match is None:
+            raise BuildEnvError(
+                f"{req_path.name} does not match the pattern 'pylock.*.toml'"
+            )
+        env_name = pylock_match.group(1)
+        self._lock_input_path = req_path.with_name(f"requirements-{env_name}.in")
+        self._lock_metadata_path = req_path.with_suffix(".meta.json")
         self._update_hashes()
         self._last_locked = None
         self._lock_version = None
@@ -560,16 +697,6 @@ class EnvironmentLock:
         """ISO-formatted UTC string reporting the last locked date/time."""
         return _format_as_utc(self.last_locked)
 
-    @classmethod
-    def _hash_reqs(cls, requirements: Iterable[str]) -> str:
-        return hash_strings(_ignore_req_comments(requirements))
-
-    @classmethod
-    def _hash_req_file(cls, requirements_path: Path) -> str | None:
-        if not requirements_path.exists():
-            return None
-        return cls._hash_reqs(requirements_path.read_text().splitlines())
-
     def _update_other_inputs_hash(self) -> None:
         self._other_inputs_hash = hash_strings(self.other_inputs)
 
@@ -579,7 +706,7 @@ class EnvironmentLock:
     def _update_hashes(self) -> None:
         self._update_other_inputs_hash()
         self._update_version_inputs_hash()
-        self._lock_input_hash = input_hash = self._hash_reqs(self.declared_requirements)
+        self._lock_input_hash = input_hash = _hash_flat_reqs(self.declared_requirements)
         req_hash = None
         last_metadata = self._load_saved_metadata()
         if last_metadata is not None:
@@ -590,7 +717,7 @@ class EnvironmentLock:
                 last_lock_input_hash = last_metadata.get("lock_input_hash", None)
                 if input_hash == last_lock_input_hash:
                     # Declared reqs hash is consistent, so also check the locked output hash
-                    req_hash = self._hash_req_file(self.locked_requirements_path)
+                    req_hash = _hash_pylock_file(self.locked_requirements_path)
         self._requirements_hash = req_hash
 
     @staticmethod
@@ -740,11 +867,19 @@ class EnvironmentLock:
         self._last_locked = datetime.fromisoformat(lock_metadata["locked_at"])
         self._lock_version = lock_metadata.get("lock_version", 1)
 
+    @staticmethod
+    def _hash_input_reqs_file(requirements_path: Path) -> str | None:
+        return _hash_flat_reqs_file(requirements_path)
+
+    @staticmethod
+    def _hash_locked_reqs_file(requirements_path: Path) -> str | None:
+        return _hash_pylock_file(requirements_path)
+
     def update_lock_metadata(self) -> bool:
         """Update the recorded lock metadata for this environment lock."""
         # Calculate current requirements hashes
-        lock_input_hash = self._hash_req_file(self._lock_input_path)
-        req_hash = self._hash_req_file(self.locked_requirements_path)
+        lock_input_hash = self._hash_input_reqs_file(self._lock_input_path)
+        req_hash = self._hash_locked_reqs_file(self.locked_requirements_path)
         if lock_input_hash != self._lock_input_hash or req_hash is None:
             self._fail_lock_metadata_query(
                 "Environment must be locked before updating lock metadata"
@@ -935,7 +1070,8 @@ class LayerSpecBase(ABC):
 
     def get_requirements_fname(self, platform: str) -> str:
         """Locked requirements file name for this layer specification."""
-        return f"requirements-{self.env_name}.txt"
+        # '.' is disallowed in the name portion of named pylock.toml files
+        return f"pylock.{self.env_name.replace('.', '_')}.toml"
 
     def get_requirements_path(self, platform: str, requirements_dir: StrPath) -> Path:
         """Full path of locked requirements file for this layer specification."""
@@ -1834,7 +1970,9 @@ class LayerEnvBase(ABC):
         self.select_operations(False, False, False)
         self.excluded = True
 
-    def _write_pyproject_file(self, requirements_input_path: Path) -> None:
+    def _write_pyproject_file(
+        self, requirements_input_path: Path
+    ) -> Sequence[LockedPackage]:
         # Layer config to be passed in:
         # - declared requirements -> dependencies
         # - lower layer constraints -> tool.uv.constraint-dependencies
@@ -1842,12 +1980,15 @@ class LayerEnvBase(ABC):
         # - index definitions & priority overrides -> tool.uv.index
         # Common config is also included here as attempting to pass it in via
         # `--config-file` means `uv` won't reliably read the `[tool.uv]` table
-        dependencies = sorted(_read_deps_from_req_file(requirements_input_path))
+        # Returns the list of pinned constraints derived from lower layers
+        dependencies = _read_flat_reqs(requirements_input_path)
         constraint_paths = self.get_constraint_paths()
-        unique_constraints = set[str]()
+        unique_constraints = set[LockedPackage]()
         for constraint_path in constraint_paths:
-            unique_constraints.update(_read_deps_from_req_file(constraint_path))
-        constraints = sorted(unique_constraints)
+            unique_constraints.update(
+                _iter_pylock_packages_from_file(constraint_path, exclude_shared=True)
+            )
+        pinned_constraints = sorted(unique_constraints)
         env_spec = self.env_spec
         index_config = env_spec._index_config
         common_indexes = index_config._common_indexes
@@ -1873,7 +2014,8 @@ class LayerEnvBase(ABC):
         package_indexes.update(env_spec.package_indexes)
         package_sources = {pkg: {"index": idx} for pkg, idx in package_indexes.items()}
         uv_tool_config = index_config._common_config_uv.copy()
-        uv_tool_config["constraint-dependencies"] = constraints
+        uv_constraints = [str(pkg) for pkg in pinned_constraints]
+        uv_tool_config["constraint-dependencies"] = uv_constraints
         if layer_indexes:
             uv_tool_config["index"] = layer_indexes
         if package_sources:
@@ -1894,6 +2036,7 @@ class LayerEnvBase(ABC):
         pyproject_toml_path = pyproject_path / "pyproject.toml"
         with pyproject_toml_path.open("w") as f:
             tomlkit.dump(pyproject_config, f)
+        return pinned_constraints
 
     def _create_environment(
         self, *, clean: bool = False, lock_only: bool = False
@@ -1998,7 +2141,7 @@ class LayerEnvBase(ABC):
             str(pyproject_path),
             "--locked",
             "--format",
-            "requirements-txt",
+            "pylock.toml",
             "--no-header",
             "--no-emit-project",
             "--python",
@@ -2012,27 +2155,23 @@ class LayerEnvBase(ABC):
             return self._run_uv("export", uv_export_args)
         except subprocess.CalledProcessError as exc:
             raise LayerLockError(
-                f"Failed to generate requirements.txt for layer {self.env_name!r}"
+                f"Failed to generate pylock.toml for layer {self.env_name!r}"
             ) from exc
 
     def _run_uv_pip_install(
         self,
         requirements_path: StrPath,
-        pyproject_path: StrPath,
-        overrides: Sequence[StrPath],
     ) -> subprocess.CompletedProcess[str]:
+        # No need to pass in the layer project config,
+        # as everything is captured in the pylock.toml file
         uv_pip_args = [
             "install",
-            "--project",
-            str(pyproject_path),
             "--python",
             str(self.python_path),
             *self.index_config._get_uv_pip_install_args(self.build_path),
             "--quiet",
             "--no-color",
         ]
-        for override_path in overrides:
-            uv_pip_args.extend(("--overrides", os.fspath(override_path)))
         uv_pip_args.extend(("-r", os.fspath(requirements_path)))
         try:
             return self._run_uv_pip(uv_pip_args)
@@ -2103,30 +2242,25 @@ class LayerEnvBase(ABC):
         # Build env is outdated if the metadata has changed since the last build
         return bool(self._get_build_metadata() != last_build_metadata)
 
-    @staticmethod
-    @lru_cache(maxsize=None)
-    def _simplify_requirements(requirements_path: Path) -> tuple[str, ...]:
-        # Strip comments and artifact hash details from a compiled requirements file
-        full_requirements = requirements_path.read_text(encoding="utf-8").splitlines()
-        return tuple(
-            line.rstrip("\\").rstrip()
-            for line in full_requirements
-            if line and line[0] not in {"#", " "}
-        )
-
     def _write_package_summary(self) -> None:
+        # The requirements are read from disk rather than passed in so existing lock files
+        # can be summarised, and to ensure no extra info is being injected into the summaries
         requirements_path = self.requirements_path
-        required_packages = list(self._simplify_requirements(requirements_path))
-        shared_packages: set[str] = set()
-        constraints = self.get_constraint_paths()
-        if constraints:
-            # Exclude lines that appear in a constraining layers
-            for constraints_path in constraints:
-                shared_packages.update(self._simplify_requirements(constraints_path))
-            required_packages = [
-                line for line in required_packages if line not in shared_packages
-            ]
-
+        all_required_packages = sorted(
+            _iter_pylock_packages_from_file(requirements_path)
+        )
+        required_packages: list[str] = []
+        shared_packages: list[str] = []
+        # Omit the shared requirements from the list of required packages
+        # The components from lower layers are marked as shared if they're either
+        # installed unconditionally on all platforms, or if their environment marker
+        # matches the environment marker for the package in the current layer
+        for pkg in all_required_packages:
+            if _SHARED_PKG_MARKER in pkg.marker:
+                # Only record the unconditional req in the summary
+                shared_packages.append(f"{pkg.name}=={pkg.version}")
+                continue
+            required_packages.append(str(pkg))
         summary_lines = [
             f"# Package summary for {self.env_name}",
             "#     Auto-generated by venvstacks (DO NOT EDIT)",
@@ -2137,7 +2271,8 @@ class LayerEnvBase(ABC):
             summary_lines.append("# Shared packages inherited from other layers")
             summary_lines.extend(sorted(shared_packages))
             summary_lines.append("")
-        summary_fname = requirements_path.name.replace("requirements-", "packages-")
+
+        summary_fname = f"packages-{self.env_name}.txt"
         summary_path = requirements_path.with_name(summary_fname)
         summary_path.write_text(
             "\n".join(summary_lines), encoding="utf-8", newline="\n"
@@ -2146,7 +2281,7 @@ class LayerEnvBase(ABC):
     def _iter_dependencies(self) -> Iterator["LayerEnvBase"]:
         return iter(())
 
-    def get_lock_inputs(self) -> tuple[Path, Path]:
+    def get_lock_inputs(self) -> tuple[Path, Path, Sequence[LockedPackage]]:
         """Ensure the inputs needed to lock this environment are defined and valid."""
         unlocked_deps = [
             env.env_name for env in self._iter_dependencies() if env.needs_lock()
@@ -2154,15 +2289,17 @@ class LayerEnvBase(ABC):
         if unlocked_deps:
             self._fail_build(f"Cannot lock with unlocked dependencies: {unlocked_deps}")
         declared_requirements_path = self.env_lock.prepare_lock_inputs()
-        self._write_pyproject_file(declared_requirements_path)
+        pinned_constraints = self._write_pyproject_file(declared_requirements_path)
         return (
             self.requirements_path,
             self._pyproject_path,
+            pinned_constraints,
         )
 
     def lock_requirements(self) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
-        requirements_path, pyproject_path = self.get_lock_inputs()
+        requirements_path, pyproject_path, pinned_constraints = self.get_lock_inputs()
+        # Packages provided by lower layers will be excluded via their environment markers
         if not self.want_lock and not self.needs_lock():
             _LOG.info(
                 f"Using existing lock for {self.env_name} ({str(requirements_path)!r})"
@@ -2186,17 +2323,45 @@ class LayerEnvBase(ABC):
             self._run_uv_export_requirements(requirements_path, pyproject_path)
             if not requirements_path.exists():
                 self._fail_build(f"Failed to generate {str(requirements_path)!r}")
-            # uv emits native line endings, but we want LF line endings, even on Windows
-            # We also omit the default header comment and instead add our own here
-            requirements_text = requirements_path.read_text("utf-8")
-            requirements_with_header_lines = [
-                f"# Locked requirements for {self.env_name} (DO NOT EDIT)",
-                "#     Auto-generated by venvstacks with the following command:",
-                f"#         {Path(sys.executable).name} -Im {__package__} lock",
-                requirements_text,
-            ]
-            text_with_header = "\n".join(requirements_with_header_lines)
-            requirements_path.write_text(text_with_header, "utf-8", newline="\n")
+            # We want to amend the lockfile to skip installing packages provided by lower layers
+            # We also want to remove the default header comment and instead add our own
+            raw_pylock_text = requirements_path.read_text("utf-8")
+            pylock_dict = tomlkit.parse(raw_pylock_text).unwrap()
+            if pinned_constraints:
+                # Edit the environment markers for packages provided by lower layers
+                # The components from lower layers are marked as shared if they're either
+                # installed unconditionally on all platforms, or if their environment marker
+                # matches the environment marker for the package in the current layer
+                available_packages = set(pinned_constraints)
+                exclusion_clause = "sys_platform == 'from_lower_layer'"
+                raw_pkg: dict[str, Any]
+                for raw_pkg in pylock_dict.get("packages", ()):
+                    pkg = LockedPackage.from_dict(raw_pkg)
+                    unconditional_req = LockedPackage(pkg.name, pkg.version, "", "", [])
+                    if (
+                        pkg in available_packages
+                        or unconditional_req in available_packages
+                    ):
+                        # Add an unmatchable environment marker to skip package installation
+                        pkg_marker = pkg.marker
+                        if pkg_marker:
+                            raw_pkg["marker"] = f"({pkg_marker}) and {exclusion_clause}"
+                        else:
+                            raw_pkg["marker"] = exclusion_clause
+                        # In both cases, clear the "wheels" and "index" metadata for the package
+                        raw_pkg.pop("index", "")
+                        raw_pkg.pop("wheel", "")
+            amended_pylock_text = tomlkit.dumps(pylock_dict)
+            pylock_text_with_header = "\n".join(
+                [
+                    f"# Locked requirements for {self.env_name} (DO NOT EDIT)",
+                    "#     Auto-generated by venvstacks with the following command:",
+                    f"#         {Path(sys.executable).name} -Im {__package__} lock",
+                    amended_pylock_text,
+                ]
+            )
+            # Save lock files with LF line endings, even on Windows
+            requirements_path.write_text(pylock_text_with_header, "utf-8", newline="\n")
         else:
             _LOG.info(f"Incrementing layer version for {self.env_name}")
             # Actually doing the update is handled in `update_lock_metadata`
@@ -2211,7 +2376,7 @@ class LayerEnvBase(ABC):
         assert not self.needs_lock()
         return self.env_lock
 
-    def get_install_inputs(self) -> tuple[Path, Path, Sequence[Path]]:
+    def get_install_inputs(self) -> tuple[Path,]:
         """Ensure the inputs needed to install into this environment are defined and valid."""
         if not self.env_lock.has_valid_lock:
             lock_diagnostics = _format_json(self.env_lock.get_diagnostics())
@@ -2221,34 +2386,8 @@ class LayerEnvBase(ABC):
                 lock_diagnostics,
             ]
             self._fail_build("\n".join(failure_details))
-        requirements_path, pyproject_path = self.get_lock_inputs()
-        exclusion_path = self.env_path.with_suffix(".exclusions.txt")
-        constraints_paths = self.get_constraint_paths()
-        constraints = set[str]()
-        for constraints_path in constraints_paths:
-            pinned_reqs = _extract_pinned_reqs(
-                constraints_path.read_text("utf-8").splitlines()
-            )
-            constraints.update(pinned_reqs)
-        layered_exclusions = [
-            f'{req}; sys_platform == "never"' for req in sorted(constraints)
-        ]
-        if layered_exclusions:
-            exclusion_contents = [
-                f"# Excluding packages from lower layers for {self.env_name}",
-                "#     Auto-generated by venvstacks (DO NOT EDIT)",
-                *layered_exclusions,
-                "",
-            ]
-            exclusion_path.write_text("\n".join(exclusion_contents), "utf-8")
-            exclusion_paths = [exclusion_path]
-        else:
-            exclusion_paths = []
-        return (
-            requirements_path,
-            pyproject_path,
-            exclusion_paths,
-        )
+        requirements_path, _pyproject_path, _pinned_constraints = self.get_lock_inputs()
+        return (requirements_path,)
 
     def install_requirements(self) -> subprocess.CompletedProcess[str]:
         """Install the locked layer requirements into this environment.

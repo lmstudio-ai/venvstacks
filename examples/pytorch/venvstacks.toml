@@ -37,15 +37,19 @@ dynlib_exclude = [
 name = "cpu"
 launch_module = "report_torch_cuda_version.py"
 frameworks = ["torch-cpu"]
-# Skip listing deps, so framework updates don't automatically invalidate the layer lock
-requirements = []
+requirements = [
+    # Exact version pin is inherited from the framework layer
+    "torch",
+]
 
 [[applications]]
 name = "cu128"
 launch_module = "report_torch_cuda_version.py"
 frameworks = ["torch-cu128"]
-# Skip listing deps, so framework updates don't automatically invalidate the layer lock
-requirements = []
+requirements = [
+    # Exact version pin is inherited from the framework layer
+    "torch",
+]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
