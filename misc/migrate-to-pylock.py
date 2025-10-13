@@ -21,7 +21,9 @@ try:
     import venvstacks.cli  # noqa
     from venvstacks.stacks import TargetPlatforms
 except ImportError as exc:
-    exc.add_note("Try 'pdm run remove-lock-platform-tags' if direct execution fails")
+    exc.add_note(
+        "Try 'pdm run migrate-to-pylock' in the project folder if direct execution fails"
+    )
     raise
 
 _KNOWN_PLATFORM_TAGS = sorted(named_tag.value for named_tag in TargetPlatforms)

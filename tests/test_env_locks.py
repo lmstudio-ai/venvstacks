@@ -317,11 +317,13 @@ def _modified_file(file_path: Path, contents: str) -> Generator[Any, None, None]
         file_path.unlink()
         backup_path.rename(file_path)
 
+
 _MODIFIED_LOCK_FILE = """\
 [[packages]]
 name = "pip"
 version = "25.1"
 """
+
 
 @pytest.mark.slow
 def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
