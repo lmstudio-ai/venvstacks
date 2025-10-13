@@ -34,39 +34,6 @@
         "target_platform": "linux_x86_64"
       },
       {
-        "app_launch_module": "scipy_client",
-        "app_launch_module_hash": "sha256/76d203dd6d3bb1fdb1117053c81590d42ef3f62b4b92b8d316b31f08334fbca6",
-        "app_support_modules": [
-          {
-            "hash": "sha256:f0db47066ec1e276e17579c221969006dde88da71e26bf5ddbfae356fa7c8fe7",
-            "name": "empty"
-          },
-          {
-            "hash": "sha256:00e03ab6300d0b5c87c8ddd650e8e94b1b079faa2d106be90e2c64a54b712125",
-            "name": "app_support"
-          }
-        ],
-        "archive_build": 1,
-        "archive_hashes": {
-          "sha256": "9d73e6eb312d687e8b61bf15219bcedec636b5d8a9681475389c1ff7928abeda"
-        },
-        "archive_name": "app-scipy-client.tar.xz",
-        "archive_size": 3776,
-        "bound_to_implementation": false,
-        "install_target": "app-scipy-client",
-        "layer_name": "app-scipy-client",
-        "lock_version": 1,
-        "locked_at": "2025-10-10T12:24:04.215159+00:00",
-        "python_implementation": "cpython@3.11.11",
-        "required_layers": [
-          "framework-scipy@1",
-          "framework-http-client"
-        ],
-        "requirements_hash": "sha256:614f4a81ac2747845d6cba0debb87a30492475d82e4a961e3679f9c2760cd2fc",
-        "runtime_layer": "cpython-3.11",
-        "target_platform": "linux_x86_64"
-      },
-      {
         "app_launch_module": "sklearn_import",
         "app_launch_module_hash": "sha256:fcb2d3f009b6bd274509ed8830e4640aadeef0b726b6de833edc16b76a893530",
         "archive_build": 1,
