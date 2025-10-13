@@ -258,14 +258,18 @@ class TestBuildEnvironment(DeploymentTestCase):
         # Faster test to check the links between build envs are set up correctly
         # (if this fails, there's no point even trying the full slow test case)
         build_env = self.build_env
-        already_built = [
-            env.env_name
+        expected_builds = [
+            env
             for env in build_env.all_environments()
-            if not env.needs_build()
+            if env.want_build  # Exclude layers specific to other platforms
+        ]
+        already_built = [
+            env.env_name for env in expected_builds if not env.needs_build()
         ]
         self.assertEqual([], already_built)
+        self.assertEqual(expected_builds, list(build_env.environments_to_build()))
         build_env.create_environments()
-        self.check_build_environments(self.build_env.all_environments())
+        self.check_build_environments(expected_builds)
 
     @pytest.mark.slow
     @pytest.mark.expected_output
@@ -290,7 +294,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         # Create and link the layer build environments
         build_env.create_environments(lock=True)
         # Don't even try to continue if the environments aren't properly linked
-        self.check_build_environments(self.build_env.all_environments())
+        self.check_build_environments(build_env.environments_to_build())
         # Test stage: ensure lock files can be regenerated without alteration
         generated_locked_requirements = _collect_locked_requirements(build_env)
         export_locked_requirements = True
@@ -352,7 +356,7 @@ class TestBuildEnvironment(DeploymentTestCase):
                 generated_archive_metadata.snippet_data,
             )
             # Archive should be emitted for every environment defined for this platform
-            num_environments = len(list(build_env.all_environments()))
+            num_environments = len(list(build_env.environments_to_build()))
             self.assertEqual(len(archive_paths), num_environments)
             export_published_archives = self.export_on_success  # Only export if forced
             # No changes to lock files
