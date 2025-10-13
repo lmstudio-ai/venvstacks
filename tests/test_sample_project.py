@@ -210,6 +210,11 @@ EXPECTED_ENVIRONMENTS = EXPECTED_RUNTIMES.copy()
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_FRAMEWORKS)
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_APPLICATIONS)
 
+PLATFORM_DEPENDENT = {
+    "app-scipy-import",
+    "app-sklearn-import",
+}
+
 ##########################
 # Test cases
 ##########################
@@ -380,17 +385,22 @@ class TestBuildEnvironment(DeploymentTestCase):
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
         )
 
-    def test_initial_operation_selection(self) -> None:
+    def test_operation_selection_initial(self) -> None:
         subtests_started = subtests_passed = 0  # Track subtest failures
         build_env = self.build_env
         # Test initial state
         for env in build_env.all_environments():
             subtests_started += 1
-            with self.subTest(env=env.env_name):
+            env_name = env.env_name
+            with self.subTest(env_name):
                 self.assertIsNone(env.want_lock, "want_lock should be None")
                 self.assertFalse(env.want_lock_reset, "want_lock_reset should be False")
-                self.assertTrue(env.want_build, "want_build should be True")
-                self.assertTrue(env.want_publish, "want_publish should be True")
+                if (env_name not in PLATFORM_DEPENDENT) or env.targets_platform():
+                    self.assertTrue(env.want_build, "want_build should be True")
+                    self.assertTrue(env.want_publish, "want_publish should be True")
+                else:
+                    self.assertFalse(env.want_build, "want_build should be False")
+                    self.assertFalse(env.want_publish, "want_publish should be False")
                 subtests_passed += 1
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
@@ -403,11 +413,16 @@ class TestBuildEnvironment(DeploymentTestCase):
         build_env.select_operations()
         for env in build_env.all_environments():
             subtests_started += 1
-            with self.subTest(env=env.env_name):
+            env_name = env.env_name
+            with self.subTest(env=env_name):
                 self.assertFalse(env.want_lock, "want_lock should be False")
                 self.assertFalse(env.want_lock_reset, "want_lock_reset should be False")
-                self.assertTrue(env.want_build, "want_build should be True")
-                self.assertTrue(env.want_publish, "want_publish should be True")
+                if (env_name not in PLATFORM_DEPENDENT) or env.targets_platform():
+                    self.assertTrue(env.want_build, "want_build should be True")
+                    self.assertTrue(env.want_publish, "want_publish should be True")
+                else:
+                    self.assertFalse(env.want_build, "want_build should be False")
+                    self.assertFalse(env.want_publish, "want_publish should be False")
                 subtests_passed += 1
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
@@ -433,15 +448,24 @@ class TestBuildEnvironment(DeploymentTestCase):
             )
             for env in build_env.all_environments():
                 subtests_started += 1
-                with self.subTest(env=env.env_name, requested=requested):
+                env_name = env.env_name
+                with self.subTest(env=env_name, requested=requested):
                     self.assertEqual(want_lock, env.want_lock, "want_lock mismatch")
                     self.assertTrue(
                         env.want_lock_reset, "want_lock_reset should be True"
                     )
-                    self.assertEqual(want_build, env.want_build, "want_build mismatch")
-                    self.assertEqual(
-                        want_publish, env.want_publish, "want_publish mismatch"
-                    )
+                    if (env_name not in PLATFORM_DEPENDENT) or env.targets_platform():
+                        self.assertEqual(
+                            want_build, env.want_build, "want_build mismatch"
+                        )
+                        self.assertEqual(
+                            want_publish, env.want_publish, "want_publish mismatch"
+                        )
+                    else:
+                        self.assertFalse(env.want_build, "want_build should be False")
+                        self.assertFalse(
+                            env.want_publish, "want_publish should be False"
+                        )
                     subtests_passed += 1
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
