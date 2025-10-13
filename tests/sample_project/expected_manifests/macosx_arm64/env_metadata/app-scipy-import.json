@@ -13,7 +13,7 @@
   ],
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "fdd2d5e26041114fdd6ea7d4f2b4a60cd89ad6e67f69d40c9ae0f635b4a36d37"
+    "sha256": "d6a0c7430286385b3143591bf23bef1f10e9eeaa8ead0169e8426cedb27c7c8f"
   },
   "archive_name": "app-scipy-import@1.tar.xz",
   "archive_size": 3644,
@@ -21,7 +21,7 @@
   "install_target": "app-scipy-import@1",
   "layer_name": "app-scipy-import",
   "lock_version": 1,
-  "locked_at": "2025-10-10T12:24:24.432006+00:00",
+  "locked_at": "2025-10-10T12:24:03.591000+00:00",
   "python_implementation": "cpython@3.11.11",
   "required_layers": [
     "framework-scipy@1"
