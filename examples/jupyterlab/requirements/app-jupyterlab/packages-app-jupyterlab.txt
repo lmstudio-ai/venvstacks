@@ -25,8 +25,8 @@ fqdn==1.5.1
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
-idna==3.11
-ipykernel==7.0.0
+idna==3.10
+ipykernel==6.30.1
 ipython==9.6.0
 ipython-pygments-lexers==1.1.1
 isoduration==20.11.0
@@ -73,7 +73,7 @@ pywin32==311 ; platform_python_implementation != 'PyPy' and sys_platform == 'win
 pywinpty==3.0.2 ; os_name == 'nt'
 pyyaml==6.0.3
 pyzmq==27.1.0
-referencing==0.37.0
+referencing==0.36.2
 requests==2.32.5
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1

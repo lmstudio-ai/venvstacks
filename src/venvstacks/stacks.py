@@ -190,6 +190,7 @@ class PackageIndexConfig:
     _common_package_indexes: dict[NormalizedName, str] = field(
         init=False, repr=False, default_factory=dict
     )
+    _uv_exclude_newer: datetime | None = field(init=False, repr=False, default=None)
 
     def __post_init__(self) -> None:
         local_wheel_dirs = self.local_wheel_dirs
@@ -339,6 +340,9 @@ class PackageIndexConfig:
         ]
         self._named_indexes = self._get_named_indexes(all_indexes)
         self._common_package_indexes = self._parse_raw_sources(raw_common_sources)
+        _exclude_newer_text = common_config_uv.get("exclude-newer", None)
+        if _exclude_newer_text is not None:
+            self._uv_exclude_newer = datetime.fromisoformat(_exclude_newer_text)
         self._common_config_uv = common_config_uv
         return common_config_uv
 
@@ -350,6 +354,18 @@ class PackageIndexConfig:
         uv_config_path = self._get_uv_config_path(build_path)
         with uv_config_path.open("w") as f:
             tomlkit.dump(common_config_uv, f)
+
+    def _get_uv_exclude_newer(self) -> datetime | None:
+        if not self._common_config_uv:
+            raise RuntimeError(
+                "Tool config must be loaded before reading exclude-newer"
+            )
+        # Check for `UV_EXCLUDE_NEWER` (as that takes precedence)
+        exclude_newer_text = os.getenv("UV_EXCLUDE_NEWER")
+        if exclude_newer_text:
+            return datetime.fromisoformat(exclude_newer_text)
+        # Check for `exclude-newer` config setting
+        return self._uv_exclude_newer
 
 
 ######################################################
@@ -579,9 +595,11 @@ class EnvironmentLock:
         req_path = self.locked_requirements_path
         pylock_match = re.match(r"^pylock\.([^.]+)\.toml$", req_path.name)
         if pylock_match is None:
-            raise BuildEnvError(
-                f"{req_path.name} does not match the pattern 'pylock.*.toml'"
+            msg = (
+                f"{req_path.name} must match the pattern 'pylock.*.toml' "
+                "(with no additional periods)"
             )
+            raise BuildEnvError(msg)
         env_name = pylock_match.group(1)
         self._lock_input_path = req_path.with_name(f"requirements-{env_name}.in")
         self._lock_metadata_path = req_path.with_suffix(".meta.json")
@@ -875,7 +893,7 @@ class EnvironmentLock:
     def _hash_locked_reqs_file(requirements_path: Path) -> str | None:
         return _hash_pylock_file(requirements_path)
 
-    def update_lock_metadata(self) -> bool:
+    def update_lock_metadata(self, clamp_lock_time: datetime | None = None) -> bool:
         """Update the recorded lock metadata for this environment lock."""
         # Calculate current requirements hashes
         lock_input_hash = self._hash_input_reqs_file(self._lock_input_path)
@@ -886,15 +904,26 @@ class EnvironmentLock:
             )
         self._requirements_hash = req_hash
         # Only update and save the last locked time if
-        # the lockfile contents have changed or if
-        # the lock metadata file doesn't exist yet
+        # the lockfile contents have changed,
+        # the lock metadata file doesn't exist yet, or
+        # the recorded lock time is too recent
         lock_metadata = self.load_valid_metadata()
+        lock_time: datetime | None = None
+        if lock_metadata is not None and clamp_lock_time is not None:
+            recorded_lock_time = datetime.fromisoformat(lock_metadata["locked_at"])
+            if recorded_lock_time > clamp_lock_time:
+                # Force writing the clamped lock time to the metadata file
+                lock_metadata = None
+                lock_time = clamp_lock_time
         if lock_metadata is None:
-            # Metadata file didn't exist, or the hashes didn't match
-            self._last_locked = last_locked = self._get_path_mtime()
-            assert last_locked is not None, (
-                "Failed to read lock time for locked environment"
-            )
+            # Metadata file didn't exist, the hashes didn't match,
+            # or the recorded lock time needs clamping
+            if lock_time is None:
+                lock_time = self._get_path_mtime()
+                assert lock_time is not None, (
+                    "Failed to read lock time for locked environment"
+                )
+            self._last_locked = lock_time
             self._write_lock_metadata()
             return True
         else:
@@ -2206,7 +2235,7 @@ class LayerEnvBase(ABC):
         # No constraints files by default, subclasses override as necessary
         return []
 
-    def needs_lock(self) -> bool:
+    def needs_lock(self, lock_time: datetime | None = None) -> bool:
         """Returns true if this environment needs to be locked."""
         if self.want_lock is False:
             # Locking step has been explicitly disabled, so override the check
@@ -2217,9 +2246,15 @@ class LayerEnvBase(ABC):
             # If the lock is still to be reset, then locking is needed unless
             # the lock operation has been explicitly disabled
             return True
-        # If the lock is not to be reset, then locking is only needed
-        # if there is no valid lock file metadata already available
-        return not self.env_lock.has_valid_lock
+        env_lock = self.env_lock
+        if not env_lock.has_valid_lock:
+            # No valid metadata -> locking is needed
+            return True
+        # Otherwise, locking is only needed if a specific lock time has been
+        # requested and the recorded lock time doesn't match
+        if lock_time is None:
+            return False
+        return lock_time != env_lock.locked_at
 
     def _get_build_metadata(self) -> Mapping[str, Any]:
         env_name = self.env_name
@@ -2317,11 +2352,11 @@ class LayerEnvBase(ABC):
             pinned_constraints,
         )
 
-    def lock_requirements(self) -> EnvironmentLock:
+    def lock_requirements(self, lock_time: datetime | None = None) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
         requirements_path, pyproject_path, pinned_constraints = self.get_lock_inputs()
         # Packages provided by lower layers will be excluded via their environment markers
-        if not self.want_lock and not self.needs_lock():
+        if not self.want_lock and not self.needs_lock(lock_time):
             _LOG.info(
                 f"Using existing lock for {self.env_name} ({str(requirements_path)!r})"
             )
@@ -2387,7 +2422,7 @@ class LayerEnvBase(ABC):
             _LOG.info(f"Incrementing layer version for {self.env_name}")
             # Actually doing the update is handled in `update_lock_metadata`
         self._write_package_summary()
-        if self.env_lock.update_lock_metadata():
+        if self.env_lock.update_lock_metadata(lock_time):
             _LOG.info(f"  Environment lock time set: {self.env_lock.locked_at!r}")
         assert self.env_lock.has_valid_lock
         if self.env_lock.versioned:
@@ -3911,6 +3946,9 @@ class BuildEnvironment:
         index_config = self.stack_spec.index_config
         index_config._write_common_tool_config_files(build_path)
 
+    def _get_lock_time(self) -> datetime | None:
+        return self.stack_spec.index_config._get_uv_exclude_newer()
+
     def lock_environments(self, *, clean: bool = False) -> Sequence[EnvironmentLock]:
         """Lock build environments for specified layers."""
         # Lock environments without fully building them
@@ -3919,7 +3957,8 @@ class BuildEnvironment:
         self._init_required_dirs()
         for rt_env in self.runtimes_to_lock():
             rt_env.create_build_environment(clean=clean)
-        return [env.lock_requirements() for env in self.environments_to_lock()]
+        lock_time = self._get_lock_time()
+        return [env.lock_requirements(lock_time) for env in self.environments_to_lock()]
 
     def create_environments(
         self, *, clean: bool = False, lock: bool | None = False

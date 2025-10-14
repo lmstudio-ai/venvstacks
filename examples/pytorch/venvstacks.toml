@@ -51,6 +51,12 @@ requirements = [
     "torch",
 ]
 
+[tool.uv]
+# exclude-newer = "2025-10-11T00:00:00Z"
+# The custom torch registries do not support exclude-newer,
+# and that currently requires avoiding the feature entirely
+# https://github.com/astral-sh/uv/issues/12449
+
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu/"
