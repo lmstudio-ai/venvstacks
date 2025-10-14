@@ -42,3 +42,6 @@ requirements = [
     "matplotlib",
     "pyside6",
 ]
+
+[tool.uv]
+exclude-newer = "2025-10-11T00:00:00Z"

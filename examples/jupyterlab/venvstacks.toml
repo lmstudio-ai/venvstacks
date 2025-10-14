@@ -9,3 +9,6 @@ name = "jupyterlab"
 launch_module = "run_jupyterlab.py"
 runtime = "cpython3.11"
 requirements = ["jupyterlab"]
+
+[tool.uv]
+exclude-newer = "2025-10-11T00:00:00Z"
