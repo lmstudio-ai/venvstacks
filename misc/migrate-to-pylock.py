@@ -99,7 +99,7 @@ def rename_lock_metadata_files(dir_to_scan: os.PathLike[str]) -> None:
         env_name = legacy_meta_fname.removeprefix("requirements-").removesuffix(
             ".txt.json"
         )
-        pylock_meta_fname = f"pylock.{env_name.replace('.', '_')}.toml"
+        pylock_meta_fname = f"pylock.{env_name.replace('.', '_')}.meta.json"
         print(f"  Renaming {legacy_meta_fname} -> {pylock_meta_fname}")
         legacy_meta_path.rename(dir_path / pylock_meta_fname)
 
