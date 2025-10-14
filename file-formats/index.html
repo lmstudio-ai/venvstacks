@@ -311,10 +311,20 @@ relevant to the <code class="docutils literal notranslate"><span class="pre">ven
 <li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a>: ignore packages uploaded after the specified date</p></li>
 <li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#override-dependencies">override-dependencies</a>: override inaccurate or unwanted dependency declarations</p></li>
 </ul>
-<p>Note that the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#index">index</a> and <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#sources">sources</a> settings may be overridden when locking
+<p>The <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#index">index</a> and <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#sources">sources</a> settings may be overridden when locking
 and building specific layers via the <a class="reference internal" href="#priority-indexes"><span class="std std-ref">priority indexes</span></a> and
 <a class="reference internal" href="#package-indexes"><span class="std std-ref">package indexes</span></a> layer settings respectively. The <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#sources">sources</a>
 field in the common configuration is also restricted to only referring to named indexes.</p>
+<p>Setting the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a> config setting (or the <code class="docutils literal notranslate"><span class="pre">UV_EXCLUDE_NEWER</span></code> environment
+variable) also records that value as the layer lock time for all updated layer locks.
+Layers with a more recent recorded lock time will also be relocked
+(unless they have been excluded by layer filtering).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As of October 2025, there is an open <code class="docutils literal notranslate"><span class="pre">uv</span></code> issue that may cause problems when
+attempting to combine the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a> with custom indexes due to
+<a class="reference external" href="https://github.com/astral-sh/uv/issues/12449">missing artifact publication date information</a>.</p>
+</div>
 <p>The default output folder for layer metadata when publishing artifacts and locally exporting
 environments is called <code class="docutils literal notranslate"><span class="pre">__venvstacks__</span></code>. The platform-specific layer summary metadata
 files are called <code class="docutils literal notranslate"><span class="pre">venvstacks.json</span></code> and each is written to a folder named after the target
@@ -334,6 +344,10 @@ syntax used to define <code class="docutils literal notranslate"><span class="pr
 <p><span class="versionmodified changed">Changed in version 0.8.0: </span>Added support for configuring <code class="docutils literal notranslate"><span class="pre">uv</span></code> execution and having it affect both locking and building
 (<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>). User and system level default <code class="docutils literal notranslate"><span class="pre">uv</span></code> configuration
 settings no longer affect the behaviour of the locking process.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.8.0: </span>Setting <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a> or <code class="docutils literal notranslate"><span class="pre">UV_EXCLUDE_NEWER</span></code> now also affects the recorded
+layer lock times (<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
 </div>
 </section>
 <section id="defining-virtual-environment-stacks">
