@@ -1,0 +1,22 @@
+{
+  "app_launch_module": "sklearn_import",
+  "app_launch_module_hash": "sha256:fcb2d3f009b6bd274509ed8830e4640aadeef0b726b6de833edc16b76a893530",
+  "archive_build": 1,
+  "archive_hashes": {
+    "sha256": "c4ae3305ebe9f3d3cfc33539fb9aa2b751f73b6e84f393b3c09344798c2805c1"
+  },
+  "archive_name": "app-sklearn-import.tar.xz",
+  "archive_size": 3620,
+  "bound_to_implementation": false,
+  "install_target": "app-sklearn-import",
+  "layer_name": "app-sklearn-import",
+  "lock_version": 1,
+  "locked_at": "2025-10-10T12:21:53.730852+00:00",
+  "python_implementation": "cpython@3.12.9",
+  "required_layers": [
+    "framework-sklearn"
+  ],
+  "requirements_hash": "sha256:796922ca62dd84a98bdc00d8dc57ae352939be86e86a18d3f237ac1eb05eb1b5",
+  "runtime_layer": "cpython-3.12@1",
+  "target_platform": "macosx_arm64"
+}
