@@ -33,7 +33,7 @@ def remove_locked_requirements_files(dir_to_scan: os.PathLike[str]) -> None:
     """Remove locked requirements files using the legacy format."""
     print("Removing locked requirements files...")
     path_to_scan = Path(dir_to_scan)
-    for locked_req_file in path_to_scan.rglob("requirements-*.txt*"):
+    for locked_req_file in path_to_scan.rglob("requirements-*.txt"):
         print(f"  Removing {locked_req_file.name}")
         locked_req_file.unlink()
 
@@ -88,6 +88,22 @@ def remove_platform_tags(
             tagged_path.unlink()
 
 
+def rename_lock_metadata_files(dir_to_scan: os.PathLike[str]) -> None:
+    """Rename lock metadata files to match the updated naming scheme."""
+    print("Removing locked requirements files...")
+    path_to_scan = Path(dir_to_scan)
+    for legacy_meta_file in path_to_scan.rglob("requirements-*.txt.json"):
+        legacy_meta_path = Path(legacy_meta_file)
+        dir_path = legacy_meta_path.parent
+        legacy_meta_fname = legacy_meta_path.name
+        env_name = legacy_meta_fname.removeprefix("requirements-").removesuffix(
+            ".txt.json"
+        )
+        pylock_meta_fname = f"pylock.{env_name.replace('.', '_')}.toml"
+        print(f"  Renaming {legacy_meta_fname} -> {pylock_meta_fname}")
+        legacy_meta_path.rename(dir_path / pylock_meta_fname)
+
+
 def _make_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("dir_to_scan")
@@ -100,6 +116,7 @@ def _main(args: Sequence[str] | None = None) -> None:
     parsed_args = parser.parse_args(args)
     remove_locked_requirements_files(parsed_args.dir_to_scan)
     remove_platform_tags(parsed_args.dir_to_scan, parsed_args.reference_platform)
+    rename_lock_metadata_files(parsed_args.dir_to_scan)
 
 
 if __name__ == "__main__":
