@@ -1697,6 +1697,9 @@ class LayerEnvBase(ABC):
     build_path: Path = field(repr=False)
     requirements_path: Path = field(repr=False)
     source_filter: SourceTreeContentFilter = field(repr=False)
+    build_platform: TargetPlatform = field(
+        repr=False, default_factory=get_build_platform
+    )
 
     # Derived from build path and spec in __post_init__
     env_path: Path = field(init=False)
@@ -1861,6 +1864,10 @@ class LayerEnvBase(ABC):
         assert self.pylib_path.relative_to(self.env_path)
         assert self.executables_path.relative_to(self.env_path)
         assert self.dynlib_path.relative_to(self.env_path)
+        # Adjust op selections based on the target platform
+        targets_platform = self.targets_platform()
+        self.want_build = self.want_build and targets_platform
+        self.want_publish = self.want_publish and targets_platform
 
     def _get_other_lock_inputs(self) -> tuple[str, ...]:
         # TODO: consider incorporating the uv config settings into the implicit layer versioning
@@ -1947,6 +1954,17 @@ class LayerEnvBase(ABC):
         attributed_message = f"Layer {self.env_name}: {message}"
         raise BuildEnvError(attributed_message)
 
+    def targets_platform(
+        self, target_platform: str | TargetPlatform | None = None
+    ) -> bool:
+        """Returns `True` if the layer will be built for the given target platform.
+
+        If no target platform is given, the current build platform is assumed.
+        """
+        if target_platform is None:
+            target_platform = self.build_platform
+        return self.env_spec.targets_platform(target_platform)
+
     def select_operations(
         self,
         lock: bool | None = False,
@@ -1956,11 +1974,14 @@ class LayerEnvBase(ABC):
         reset_lock: bool = False,
     ) -> None:
         """Enable the selected operations for this environment."""
+        targets_platform = self.targets_platform()
         self.excluded = False
+        # Locking is cross-platform
         self.want_lock = lock
         self.want_lock_reset = reset_lock
-        self.want_build = build
-        self.want_publish = publish
+        # Building & publishing artifacts is platform specific
+        self.want_build = build and targets_platform
+        self.want_publish = publish and targets_platform
         # Also reset operation state tracking
         self.was_created = False
         self.was_built = False
@@ -3183,7 +3204,7 @@ class StackSpec:
     )
 
     # Derived from runtime environment in __post_init__
-    build_platform: str = field(init=False, repr=False)
+    build_platform: TargetPlatform = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         self.build_platform = get_build_platform()
@@ -3498,10 +3519,7 @@ class StackSpec:
             requirements_dir_path,
             index_config,
         )
-        build_platform = self.build_platform
         for app_spec in self.applications.values():
-            if not app_spec.targets_platform(build_platform):
-                continue
             if not app_spec.launch_module_path.exists():
                 msg = f"Specified launch module {str(app_spec.launch_module_path)!r} does not exist"
                 raise LayerSpecError(msg)
@@ -3532,11 +3550,6 @@ class StackSpec:
         build_environments: dict[LayerBaseName, BuildEnv] = {}
         build_platform = self.build_platform
         for name, spec in specs.items():
-            if not spec.targets_platform(build_platform):
-                _LOG.info(
-                    f"  Skipping env {name!r} as it does not target this platform"
-                )
-                continue
             requirements_path = spec.get_requirements_path(
                 build_platform, requirements_dir
             )
@@ -3546,6 +3559,7 @@ class StackSpec:
                 build_path,
                 requirements_path,
                 source_filter,
+                build_platform,
             )
             build_environments[name] = build_env
             _LOG.info(f"  Defined {name!r}: {build_env}")

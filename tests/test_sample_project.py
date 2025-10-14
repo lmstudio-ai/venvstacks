@@ -33,6 +33,7 @@ from venvstacks.stacks import (
     BuildEnvironment,
     StackSpec,
     LayerCategories,
+    get_build_platform,
 )
 
 ##################################
@@ -193,7 +194,6 @@ EXPECTED_FRAMEWORKS = [
 ]
 
 EXPECTED_APPLICATIONS = [
-    ApplicationEnvSummary("scipy-import", "app-", "cpython-3.11", ("scipy",)),
     ApplicationEnvSummary(
         "scipy-client",
         "app-",
@@ -203,12 +203,26 @@ EXPECTED_APPLICATIONS = [
             "http-client",
         ),
     ),
+    ApplicationEnvSummary("scipy-import", "app-", "cpython-3.11", ("scipy",)),
     ApplicationEnvSummary("sklearn-import", "app-", "cpython-3.12", ("sklearn",)),
 ]
 
 EXPECTED_ENVIRONMENTS = EXPECTED_RUNTIMES.copy()
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_FRAMEWORKS)
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_APPLICATIONS)
+
+LINUX_EXCLUDED_LAYER = "app-scipy-client"
+LINUX_ONLY_LAYER = "app-scipy-import"
+PLATFORM_DEPENDENT_LAYERS = {
+    LINUX_EXCLUDED_LAYER,
+    LINUX_ONLY_LAYER,
+}
+
+EXPECTED_BUILD_EXCLUSIONS = {
+    LINUX_EXCLUDED_LAYER
+    if get_build_platform().startswith("linux")
+    else LINUX_ONLY_LAYER,
+}
 
 ##########################
 # Test cases
@@ -253,14 +267,18 @@ class TestBuildEnvironment(DeploymentTestCase):
         # Faster test to check the links between build envs are set up correctly
         # (if this fails, there's no point even trying the full slow test case)
         build_env = self.build_env
-        already_built = [
-            env.env_name
+        expected_builds = [
+            env
             for env in build_env.all_environments()
-            if not env.needs_build()
+            if env.want_build  # Exclude layers specific to other platforms
+        ]
+        already_built = [
+            env.env_name for env in expected_builds if not env.needs_build()
         ]
         self.assertEqual([], already_built)
+        self.assertEqual(expected_builds, list(build_env.environments_to_build()))
         build_env.create_environments()
-        self.check_build_environments(self.build_env.all_environments())
+        self.check_build_environments(expected_builds)
 
     @pytest.mark.slow
     @pytest.mark.expected_output
@@ -285,7 +303,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         # Create and link the layer build environments
         build_env.create_environments(lock=True)
         # Don't even try to continue if the environments aren't properly linked
-        self.check_build_environments(self.build_env.all_environments())
+        self.check_build_environments(build_env.environments_to_build())
         # Test stage: ensure lock files can be regenerated without alteration
         generated_locked_requirements = _collect_locked_requirements(build_env)
         export_locked_requirements = True
@@ -347,7 +365,7 @@ class TestBuildEnvironment(DeploymentTestCase):
                 generated_archive_metadata.snippet_data,
             )
             # Archive should be emitted for every environment defined for this platform
-            num_environments = len(list(build_env.all_environments()))
+            num_environments = len(list(build_env.environments_to_build()))
             self.assertEqual(len(archive_paths), num_environments)
             export_published_archives = self.export_on_success  # Only export if forced
             # No changes to lock files
@@ -380,17 +398,28 @@ class TestBuildEnvironment(DeploymentTestCase):
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
         )
 
-    def test_initial_operation_selection(self) -> None:
+    def test_operation_selection_initial(self) -> None:
         subtests_started = subtests_passed = 0  # Track subtest failures
         build_env = self.build_env
         # Test initial state
         for env in build_env.all_environments():
             subtests_started += 1
-            with self.subTest(env=env.env_name):
+            env_name = env.env_name
+            with self.subTest(env_name):
                 self.assertIsNone(env.want_lock, "want_lock should be None")
                 self.assertFalse(env.want_lock_reset, "want_lock_reset should be False")
-                self.assertTrue(env.want_build, "want_build should be True")
-                self.assertTrue(env.want_publish, "want_publish should be True")
+                if env_name in EXPECTED_BUILD_EXCLUSIONS:
+                    self.assertFalse(env.want_build, "want_build should be False")
+                    self.assertFalse(env.want_publish, "want_publish should be False")
+                    self.assertFalse(
+                        env.targets_platform(), "targets_platform() should be False"
+                    )
+                else:
+                    self.assertTrue(env.want_build, "want_build should be True")
+                    self.assertTrue(env.want_publish, "want_publish should be True")
+                    self.assertTrue(
+                        env.targets_platform(), "targets_platform() should be True"
+                    )
                 subtests_passed += 1
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
@@ -403,11 +432,16 @@ class TestBuildEnvironment(DeploymentTestCase):
         build_env.select_operations()
         for env in build_env.all_environments():
             subtests_started += 1
-            with self.subTest(env=env.env_name):
+            env_name = env.env_name
+            with self.subTest(env=env_name):
                 self.assertFalse(env.want_lock, "want_lock should be False")
                 self.assertFalse(env.want_lock_reset, "want_lock_reset should be False")
-                self.assertTrue(env.want_build, "want_build should be True")
-                self.assertTrue(env.want_publish, "want_publish should be True")
+                if env_name in EXPECTED_BUILD_EXCLUSIONS:
+                    self.assertFalse(env.want_build, "want_build should be False")
+                    self.assertFalse(env.want_publish, "want_publish should be False")
+                else:
+                    self.assertTrue(env.want_build, "want_build should be True")
+                    self.assertTrue(env.want_publish, "want_publish should be True")
                 subtests_passed += 1
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
@@ -433,15 +467,24 @@ class TestBuildEnvironment(DeploymentTestCase):
             )
             for env in build_env.all_environments():
                 subtests_started += 1
-                with self.subTest(env=env.env_name, requested=requested):
+                env_name = env.env_name
+                with self.subTest(env=env_name, requested=requested):
                     self.assertEqual(want_lock, env.want_lock, "want_lock mismatch")
                     self.assertTrue(
                         env.want_lock_reset, "want_lock_reset should be True"
                     )
-                    self.assertEqual(want_build, env.want_build, "want_build mismatch")
-                    self.assertEqual(
-                        want_publish, env.want_publish, "want_publish mismatch"
-                    )
+                    if env_name in EXPECTED_BUILD_EXCLUSIONS:
+                        self.assertFalse(env.want_build, "want_build should be False")
+                        self.assertFalse(
+                            env.want_publish, "want_publish should be False"
+                        )
+                    else:
+                        self.assertEqual(
+                            want_build, env.want_build, "want_build mismatch"
+                        )
+                        self.assertEqual(
+                            want_publish, env.want_publish, "want_publish mismatch"
+                        )
                     subtests_passed += 1
         self.assertEqual(
             subtests_passed, subtests_started, "Fail due to failed subtest(s)"
@@ -470,8 +513,12 @@ class TestBuildEnvironment(DeploymentTestCase):
         included = ["framework-sklearn"]
         dependencies = ["cpython-3.12"]
         derived = ["app-sklearn-import"]
+        # Ensure all layers selected for this test case are platform independent
+        self.assertFalse(set(included) & PLATFORM_DEPENDENT_LAYERS)
+        self.assertFalse(set(dependencies) & PLATFORM_DEPENDENT_LAYERS)
+        self.assertFalse(set(derived) & PLATFORM_DEPENDENT_LAYERS)
+        # Ensure the layer selection operates as expected
         build_env = self.build_env
-
         input_selection, _ = build_env.filter_layers(included)
         build_env.select_layers(input_selection, lock=True)
         for env in build_env.all_environments():

@@ -2,38 +2,6 @@
   "layers": {
     "applications": [
       {
-        "app_launch_module": "scipy_import",
-        "app_launch_module_hash": "sha256:69545721a157f18d97c1e05b60d40f8e656f70d9c76748c912a38d9232877791",
-        "app_support_modules": [
-          {
-            "hash": "sha256:f0db47066ec1e276e17579c221969006dde88da71e26bf5ddbfae356fa7c8fe7",
-            "name": "empty"
-          },
-          {
-            "hash": "sha256:00e03ab6300d0b5c87c8ddd650e8e94b1b079faa2d106be90e2c64a54b712125",
-            "name": "app_support"
-          }
-        ],
-        "archive_build": 1,
-        "archive_hashes": {
-          "sha256": "d6a0c7430286385b3143591bf23bef1f10e9eeaa8ead0169e8426cedb27c7c8f"
-        },
-        "archive_name": "app-scipy-import@1.tar.xz",
-        "archive_size": 3644,
-        "bound_to_implementation": false,
-        "install_target": "app-scipy-import@1",
-        "layer_name": "app-scipy-import",
-        "lock_version": 1,
-        "locked_at": "2025-10-10T12:24:03.591000+00:00",
-        "python_implementation": "cpython@3.11.11",
-        "required_layers": [
-          "framework-scipy@1"
-        ],
-        "requirements_hash": "sha256:8b8ef41a92b45d2f175db94b8c3b1d90e45216b3d203d09495f61e73d43c34ae",
-        "runtime_layer": "cpython-3.11",
-        "target_platform": "macosx_arm64"
-      },
-      {
         "app_launch_module": "scipy_client",
         "app_launch_module_hash": "sha256/76d203dd6d3bb1fdb1117053c81590d42ef3f62b4b92b8d316b31f08334fbca6",
         "app_support_modules": [
@@ -64,6 +32,28 @@
         ],
         "requirements_hash": "sha256:614f4a81ac2747845d6cba0debb87a30492475d82e4a961e3679f9c2760cd2fc",
         "runtime_layer": "cpython-3.11",
+        "target_platform": "macosx_arm64"
+      },
+      {
+        "app_launch_module": "sklearn_import",
+        "app_launch_module_hash": "sha256:fcb2d3f009b6bd274509ed8830e4640aadeef0b726b6de833edc16b76a893530",
+        "archive_build": 1,
+        "archive_hashes": {
+          "sha256": "c4ae3305ebe9f3d3cfc33539fb9aa2b751f73b6e84f393b3c09344798c2805c1"
+        },
+        "archive_name": "app-sklearn-import.tar.xz",
+        "archive_size": 3620,
+        "bound_to_implementation": false,
+        "install_target": "app-sklearn-import",
+        "layer_name": "app-sklearn-import",
+        "lock_version": 1,
+        "locked_at": "2025-10-10T12:21:53.730852+00:00",
+        "python_implementation": "cpython@3.12.9",
+        "required_layers": [
+          "framework-sklearn"
+        ],
+        "requirements_hash": "sha256:796922ca62dd84a98bdc00d8dc57ae352939be86e86a18d3f237ac1eb05eb1b5",
+        "runtime_layer": "cpython-3.12@1",
         "target_platform": "macosx_arm64"
       }
     ],
