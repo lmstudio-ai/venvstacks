@@ -303,9 +303,10 @@ class TestBuildEnvironment(DeploymentTestCase):
         # declarations, since actual build failures need to fail the entire test method.
         subtests_started = subtests_passed = 0  # Track subtest failures
         build_env = self.build_env
-        # Create and link the layer build environments
+        # Lock and link the layer build environments
         build_env.create_environments(lock=True)
-        # Don't even try to continue if the environments aren't properly linked
+        # Don't even try to continue if the environments aren't locked & linked
+        self.check_layer_locks(self.build_env.all_environments())
         self.check_build_environments(self.build_env.all_environments())
         # Test stage: ensure exported environments allow launch module execution
         export_path = self.working_path / "_export🦎"

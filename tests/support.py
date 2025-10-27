@@ -29,6 +29,7 @@ from venvstacks.stacks import (
     LayerVariants,
     PackageIndexConfig,
     StackSpec,
+    _iter_pylock_packages_from_file,
 )
 
 _THIS_DIR = Path(__file__).parent
@@ -374,6 +375,36 @@ class DeploymentTestCase(unittest.TestCase):
                 all(_is_relative_to(p, env_path) for p in sys_path_entries),
                 f"No path outside deployed {env_path} in {env_sys_path}",
             )
+
+    def check_layer_locks(self, build_envs: Iterable[LayerEnvBase]) -> None:
+        for env in build_envs:
+            pylock_path = env.requirements_path
+            normalized_env_name = env.env_spec.env_name.replace(".", "_")
+            assert pylock_path.name == f"pylock.{normalized_env_name}.toml"
+            pylock_metadata_path = env.env_lock._lock_metadata_path
+            assert (
+                pylock_metadata_path.name == f"pylock.{normalized_env_name}.meta.json"
+            )
+            for pkg in _iter_pylock_packages_from_file(pylock_path):
+                for whl in pkg.wheels:
+                    local_path = whl.local_path
+                    if local_path is None:
+                        # Not a local wheel
+                        continue
+                    # All local paths should be relative to the lock file
+                    assert not local_path.is_absolute(), f"{local_path} is absolute"
+                    resolved_path = pylock_path.parent / local_path
+                    assert resolved_path.exists(), f"{resolved_path} does not exist"
+            if env.needs_lock():
+                # A just-locked environment *shouldn't* still indicate it needs locking
+                # Report the first actually failing element of the lock validity check
+                self.assertTrue(pylock_path.exists())
+                self.assertTrue(pylock_metadata_path.exists())
+                self.assertTrue(env.env_lock.has_valid_lock)
+                # TODO: Add further details of lock validity check elements here
+                self.fail(
+                    f"Layer {env.env_name!r} still needs locking for an unknown reason"
+                )
 
     def check_build_environments(self, build_envs: Iterable[LayerEnvBase]) -> None:
         for env in build_envs:
