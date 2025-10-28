@@ -968,7 +968,8 @@ class TestMinimalBuild(DeploymentTestCase):
             env.env_lock._purge_lock()
         # Create and link the layer build environments
         build_env.create_environments()
-        # Don't even try to continue if the environments aren't properly linked
+        # Don't even try to continue if the environments aren't locked & linked
+        self.check_layer_locks(self.build_env.all_environments())
         self.check_build_environments(self.build_env.all_environments())
         # Test stage: check dry run metadata results are as expected
         subtests_started += 1

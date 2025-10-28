@@ -127,6 +127,7 @@ distribution = true
 migrate-to-pylock = "./misc/migrate-to-pylock.py"
 
 [tool.mypy]
+python_version = "3.11"
 untyped_calls_exclude = "dulwich"
 
 [tool.pytest.ini_options]
@@ -168,7 +169,6 @@ source = [
 ]
 
 [tool.ruff]
-# Assume Python 3.11
 target-version = "py311"
 
 [tool.ruff.lint]

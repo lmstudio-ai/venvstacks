@@ -49,6 +49,7 @@ from typing import (
     TypedDict,
 )
 from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 import tomlkit
 
@@ -415,20 +416,48 @@ def _hash_flat_reqs_file(requirements_path: Path) -> str | None:
     return hash_strings(reqs)
 
 
+def _extract_wheel_details(
+    locked_wheel: Mapping[str, Any],
+) -> tuple[str | None, Path | None]:
+    # Wheel name can be reported in one of three ways
+    name: str | None = locked_wheel.get("name", None)
+    raw_local_path: str | None = locked_wheel.get("path", None)
+    local_path: Path | None = None
+    if raw_local_path is not None:
+        local_path = Path(raw_local_path)
+        if name is None:
+            name = local_path.name
+        return name, local_path
+    raw_url: str = locked_wheel.get("url", None)
+    if raw_url is not None:
+        parsed_url = urlparse(raw_url)
+        url_path = parsed_url.path
+        if parsed_url.scheme == "file":
+            if parsed_url.netloc:
+                # Handle UNC paths on Windows
+                url_path = r"\\" + parsed_url.netloc + url_path
+            local_path = Path(url2pathname(url_path))
+            if name is None:
+                name = local_path.name
+        elif name is None:
+            # Convert to path to handle mixtures of forward and backslashes
+            name = Path(url_path).name
+    return name, local_path
+
+
 @dataclass
 class LockedWheel:
     """Details of a locked distribution package (extracted from pylock.toml)."""
 
     name: str
     hashes: dict[str, str]
+    local_path: Path | None = None
 
     @classmethod
     def from_dict(cls, wheel_entry: Mapping[str, Any]) -> Self:
         """Parse a wheel entry extracted from a pylock.toml file."""
-        whl = {
-            "name": _extract_wheel_name(wheel_entry),
-            "hashes": wheel_entry["hashes"],
-        }
+        name, local_path = _extract_wheel_details(wheel_entry)
+        whl = {"name": name, "hashes": wheel_entry["hashes"], "local_path": local_path}
         return cls(**whl)
 
 
@@ -514,26 +543,11 @@ _SHARED_PKG_MARKER = "from_lower_layer"
 def _iter_pylock_packages_from_file(
     pylock_path: Path, *, exclude_shared: bool = False
 ) -> Iterable[LockedPackage]:
-    # Read flattened requirements from a pylock.toml file
+    # Read package details from a pylock.toml file
     pylock_text = pylock_path.read_text("utf-8")
     return _iter_pylock_packages(
         pylock_text, str(pylock_path), exclude_shared=exclude_shared
     )
-
-
-def _extract_wheel_name(locked_wheel: Mapping[str, Any]) -> str | None:
-    # Wheel name can be reported in one of three ways
-    whl_name: str = locked_wheel.get("name", None)
-    if whl_name is not None:
-        return whl_name
-    whl_path = locked_wheel.get("path", None)
-    if whl_path is not None:
-        return Path(whl_path).name
-    whl_url = locked_wheel.get("url", None)
-    if whl_url is not None:
-        url_path: str = urlparse(whl_url).path
-        return url_path.rpartition("/")[2]
-    return None
 
 
 def _iter_pylock_hash_inputs(
@@ -1979,9 +1993,12 @@ class LayerEnvBase(ABC):
         config_path.parent.mkdir(parents=True, exist_ok=True)
         _write_json(config_path, self.get_deployed_config())
 
-    def _fail_build(self, message: str) -> NoReturn:
+    def _fail_build(self, message: str, exc: Exception | None = None) -> NoReturn:
         attributed_message = f"Layer {self.env_name}: {message}"
-        raise BuildEnvError(attributed_message)
+        build_exc = BuildEnvError(attributed_message)
+        if exc is not None:
+            raise build_exc from exc
+        raise build_exc
 
     def targets_platform(
         self, target_platform: str | TargetPlatform | None = None
@@ -2354,35 +2371,32 @@ class LayerEnvBase(ABC):
 
     def lock_requirements(self, lock_time: datetime | None = None) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
-        requirements_path, pyproject_path, pinned_constraints = self.get_lock_inputs()
+        pylock_path, pyproject_path, pinned_constraints = self.get_lock_inputs()
         # Packages provided by lower layers will be excluded via their environment markers
         if not self.want_lock and not self.needs_lock(lock_time):
-            _LOG.info(
-                f"Using existing lock for {self.env_name} ({str(requirements_path)!r})"
-            )
+            _LOG.info(f"Using existing lock for {self.env_name} ({str(pylock_path)!r})")
             # Ensure summary files are always emitted, even for existing layer locks
             self._write_package_summary()
             return self.env_lock
-        if self.want_lock_reset and requirements_path.exists():
+        if self.want_lock_reset and pylock_path.exists():
             _LOG.info(
-                f"Resetting lock for {self.env_name} (removing {str(requirements_path)!r})"
+                f"Resetting lock for {self.env_name} (removing {str(pylock_path)!r})"
             )
-            requirements_path.unlink()
+            pylock_path.unlink()
         want_full_lock = (
             self.want_lock or self.want_lock_reset or self.env_lock.needs_full_lock
         )
         if want_full_lock:
-            _LOG.info(
-                f"Locking {self.env_name} (generating {str(requirements_path)!r})"
-            )
+            _LOG.info(f"Locking {self.env_name} (generating {str(pylock_path)!r})")
             self._run_uv_lock(pyproject_path)
-            self._run_uv_export_requirements(requirements_path, pyproject_path)
-            if not requirements_path.exists():
-                self._fail_build(f"Failed to generate {str(requirements_path)!r}")
+            self._run_uv_export_requirements(pylock_path, pyproject_path)
+            if not pylock_path.exists():
+                self._fail_build(f"Failed to generate {str(pylock_path)!r}")
             # We want to amend the lockfile to skip installing packages provided by lower layers
             # We also want to remove the default header comment and instead add our own
-            raw_pylock_text = requirements_path.read_text("utf-8")
+            raw_pylock_text = pylock_path.read_text("utf-8")
             pylock_dict = tomlkit.parse(raw_pylock_text).unwrap()
+            raw_pkg: dict[str, Any]
             if pinned_constraints:
                 # Edit the environment markers for packages provided by lower layers
                 # The components from lower layers are marked as shared if they're either
@@ -2390,7 +2404,6 @@ class LayerEnvBase(ABC):
                 # matches the environment marker for the package in the current layer
                 available_packages = set(pinned_constraints)
                 exclusion_clause = "sys_platform == 'from_lower_layer'"
-                raw_pkg: dict[str, Any]
                 for raw_pkg in pylock_dict.get("packages", ()):
                     pkg = LockedPackage.from_dict(raw_pkg)
                     unconditional_req = LockedPackage(pkg.name, pkg.version, "", "", [])
@@ -2407,6 +2420,43 @@ class LayerEnvBase(ABC):
                         # In both cases, clear the "wheels" and "index" metadata for the package
                         raw_pkg.pop("index", "")
                         raw_pkg.pop("wheel", "")
+            # Edit any absolute file paths (whether)
+            pylock_dir_path = pylock_path.parent
+            for raw_pkg in pylock_dict.get("packages", ()):
+                for raw_whl in raw_pkg.get("wheels", ()):
+                    _name, local_path = _extract_wheel_details(raw_whl)
+                    if local_path is not None:
+                        if local_path.is_absolute():
+                            # Local paths may technically be anywhere on the system
+                            # Making them relative is intended for use cases where
+                            # they're stored in a consistent location relative to
+                            # the layer lock files (e.g in Git LFS)
+                            # We avoid `walk_up=True` to maintain Python 3.11 compatibility
+                            _LOG.debug(
+                                f"Making {str(local_path)!r} relative to {str(pylock_dir_path)!r})"
+                            )
+                            try:
+                                common_prefix = os.path.commonpath(
+                                    (local_path, pylock_dir_path)
+                                )
+                            except ValueError as path_exc:
+                                msg = f"Unable to locate {str(local_path)!r} relative to {str(pylock_dir_path)!r}"
+                                self._fail_build(msg, path_exc)
+                            common_path = Path(common_prefix)
+                            relative_local_path = local_path.relative_to(common_path)
+                            relative_pylock_dir_path = pylock_dir_path.relative_to(
+                                common_path
+                            )
+                            prefix_steps = len(relative_pylock_dir_path.parts)
+                            if relative_pylock_dir_path.drive:
+                                # On Windows, relative paths still include a drive component
+                                # (just without the trailing slash). The drive component is
+                                # ignored for the task of stepping up to the common prefix.
+                                prefix_steps -= 1
+                            relative_prefix = [".."] * prefix_steps
+                            relative_path = Path(*relative_prefix) / relative_local_path
+                            raw_whl.pop("url", None)
+                            raw_whl["path"] = str(relative_path)
             amended_pylock_text = tomlkit.dumps(pylock_dict)
             pylock_text_with_header = "\n".join(
                 [
@@ -2417,7 +2467,7 @@ class LayerEnvBase(ABC):
                 ]
             )
             # Save lock files with LF line endings, even on Windows
-            requirements_path.write_text(pylock_text_with_header, "utf-8", newline="\n")
+            pylock_path.write_text(pylock_text_with_header, "utf-8", newline="\n")
         else:
             _LOG.info(f"Incrementing layer version for {self.env_name}")
             # Actually doing the update is handled in `update_lock_metadata`
