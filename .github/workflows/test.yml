@@ -69,7 +69,7 @@ jobs:
       if: matrix.python-version == '3.13'
       uses: actions/setup-python@v5
       with:
-        python-version: "==3.13.*,>=3.13.5"
+        python-version: "~=3.13.5"
 
     - name: Get pip cache dir
       id: pip-cache
