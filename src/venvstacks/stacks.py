@@ -1985,9 +1985,12 @@ class LayerEnvBase(ABC):
         config_path.parent.mkdir(parents=True, exist_ok=True)
         _write_json(config_path, self.get_deployed_config())
 
-    def _fail_build(self, message: str) -> NoReturn:
+    def _fail_build(self, message: str, exc: Exception | None = None) -> NoReturn:
         attributed_message = f"Layer {self.env_name}: {message}"
-        raise BuildEnvError(attributed_message)
+        build_exc = BuildEnvError(attributed_message)
+        if exc is not None:
+            raise build_exc from exc
+        raise build_exc
 
     def targets_platform(
         self, target_platform: str | TargetPlatform | None = None
@@ -2420,10 +2423,23 @@ class LayerEnvBase(ABC):
                             # Making them relative is intended for use cases where
                             # they're stored in a consistent location relative to
                             # the layer lock files (e.g in Git LFS)
-                            # TODO: Python 3.11 compatibility (avoid using walk_up)
-                            relative_path = local_path.relative_to(
-                                pylock_dir_path, walk_up=True
+                            # We avoid `walk_up=True` to maintain Python 3.11 compatibility
+                            try:
+                                common_prefix = os.path.commonpath(
+                                    (local_path, pylock_dir_path)
+                                )
+                            except ValueError as path_exc:
+                                msg = f"Unable to locate {str(local_path)!r} relative to {str(pylock_dir_path)!r}"
+                                self._fail_build(msg, path_exc)
+                            common_path = Path(common_prefix)
+                            relative_local_path = local_path.relative_to(common_path)
+                            relative_pylock_dir_path = pylock_dir_path.relative_to(
+                                common_path
                             )
+                            relative_prefix = [".."] * len(
+                                relative_pylock_dir_path.parts
+                            )
+                            relative_path = Path(*relative_prefix) / relative_local_path
                             raw_whl.pop("url", None)
                             raw_whl["path"] = str(relative_path)
             amended_pylock_text = tomlkit.dumps(pylock_dict)
