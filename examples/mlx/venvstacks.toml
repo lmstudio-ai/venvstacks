@@ -1,0 +1,76 @@
+# Demonstrate using priority indexes to define cross-platform parallel torch stacks
+[[runtimes]]
+name = "cpython3.11"
+python_implementation = "cpython@3.11.13"
+requirements = []
+platforms = [
+    "macosx_arm64",
+    "linux_x86_64",
+]
+
+[[frameworks]]
+name = "mlx"
+runtime = "cpython3.11"
+# macosx-target = "14"
+requirements = [
+    "mlx==0.29.3",
+    "mlx[cpu]; sys_platform == 'linux'",
+]
+# Platform restrictions are not currently inherited from lower layers
+# https://github.com/lmstudio-ai/venvstacks/issues/244
+platforms = [
+    "macosx_arm64",
+    "linux_x86_64",
+]
+
+[[frameworks]]
+name = "mlx-cuda"
+runtime = "cpython3.11"
+# macosx-target = "14"
+requirements = [
+    "mlx[cuda]==0.29.3",
+]
+# Separate CUDA-based layer stack is only needed on Linux
+platforms = [
+    "linux_x86_64",
+]
+
+[[applications]]
+name = "mlx-example"
+launch_module = "report_mlx_version.py"
+frameworks = ["mlx"]
+# macosx-target = "14"
+requirements = [
+    # Exact version pin is inherited from the framework layer
+    "mlx",
+]
+# Platform restrictions are not currently inherited from lower layers
+# https://github.com/lmstudio-ai/venvstacks/issues/244
+platforms = [
+    "macosx_arm64",
+    "linux_x86_64",
+]
+
+[[applications]]
+name = "mlx-example-cuda"
+launch_module = "report_mlx_version.py"
+frameworks = ["mlx-cuda"]
+requirements = [
+    # Exact version pin is inherited from the framework layer
+    "mlx",
+]
+# Platform restrictions are not currently inherited from lower layers
+# https://github.com/lmstudio-ai/venvstacks/issues/244
+platforms = [
+    "linux_x86_64",
+]
+
+[tool.uv]
+exclude-newer = "2025-10-19T00:00:00Z"
+# Only resolve for the relevant target platforms
+environments = [
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+# No need to set required-environments as the required
+# CPU architecture is specified per environment
