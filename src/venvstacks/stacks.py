@@ -432,14 +432,16 @@ def _extract_wheel_details(
     if raw_url is not None:
         parsed_url = urlparse(raw_url)
         url_path = parsed_url.path
-        if parsed_url.scheme != "file":
-            name = url_path.rpartition("/")[2]
-        else:
-            name = url_path.rpartition(os.sep)[2]
+        if parsed_url.scheme == "file":
             if parsed_url.netloc:
                 # Handle UNC paths on Windows
                 url_path = r"\\" + parsed_url.netloc + url_path
             local_path = Path(url2pathname(url_path))
+            if name is None:
+                name = local_path.name
+        elif name is None:
+            # Convert to path to handle mixtures of forward and backslashes
+            name = Path(url_path).name
     return name, local_path
 
 
