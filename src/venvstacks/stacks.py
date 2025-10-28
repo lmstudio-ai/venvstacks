@@ -2424,6 +2424,9 @@ class LayerEnvBase(ABC):
                             # they're stored in a consistent location relative to
                             # the layer lock files (e.g in Git LFS)
                             # We avoid `walk_up=True` to maintain Python 3.11 compatibility
+                            _LOG.debug(
+                                f"Making {self.env_name} (generating {str(pylock_path)!r})"
+                            )
                             try:
                                 common_prefix = os.path.commonpath(
                                     (local_path, pylock_dir_path)
@@ -2436,9 +2439,13 @@ class LayerEnvBase(ABC):
                             relative_pylock_dir_path = pylock_dir_path.relative_to(
                                 common_path
                             )
-                            relative_prefix = [".."] * len(
-                                relative_pylock_dir_path.parts
-                            )
+                            prefix_steps = len(relative_pylock_dir_path.parts)
+                            if relative_pylock_dir_path.drive:
+                                # On Windows, relative paths still include a drive component
+                                # (just without the trailing slash). The drive component is
+                                # ignored for the task of stepping up to the common prefix.
+                                prefix_steps -= 1
+                            relative_prefix = [".."] * prefix_steps
                             relative_path = Path(*relative_prefix) / relative_local_path
                             raw_whl.pop("url", None)
                             raw_whl["path"] = str(relative_path)
