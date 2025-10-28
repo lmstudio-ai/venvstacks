@@ -49,6 +49,7 @@ from typing import (
     TypedDict,
 )
 from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 import tomlkit
 
@@ -431,9 +432,14 @@ def _extract_wheel_details(
     if raw_url is not None:
         parsed_url = urlparse(raw_url)
         url_path = parsed_url.path
-        name = url_path.rpartition("/")[2]
-        if parsed_url.scheme == "file":
-            local_path = Path(url_path)
+        if parsed_url.scheme != "file":
+            name = url_path.rpartition("/")[2]
+        else:
+            name = url_path.rpartition(os.sep)[2]
+            if parsed_url.netloc:
+                # Handle UNC paths on Windows
+                url_path = r'\\' + parsed_url.netloc + url_path
+            local_path = Path(url2pathname(url_path))
     return name, local_path
 
 
@@ -2425,7 +2431,7 @@ class LayerEnvBase(ABC):
                             # the layer lock files (e.g in Git LFS)
                             # We avoid `walk_up=True` to maintain Python 3.11 compatibility
                             _LOG.debug(
-                                f"Making {self.env_name} (generating {str(pylock_path)!r})"
+                                f"Making {str(local_path)!r} relative to {str(pylock_dir_path)!r})"
                             )
                             try:
                                 common_prefix = os.path.commonpath(
