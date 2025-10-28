@@ -438,7 +438,7 @@ def _extract_wheel_details(
             name = url_path.rpartition(os.sep)[2]
             if parsed_url.netloc:
                 # Handle UNC paths on Windows
-                url_path = r'\\' + parsed_url.netloc + url_path
+                url_path = r"\\" + parsed_url.netloc + url_path
             local_path = Path(url2pathname(url_path))
     return name, local_path
 
