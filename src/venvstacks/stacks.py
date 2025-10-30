@@ -331,6 +331,12 @@ class PackageIndexConfig:
         del baseline_config_uv
         if not self.query_default_index:
             common_config_uv["no-index"] = True
+        # All inputs are via pyproject.toml, *except* on macOS,
+        # where the target OS version is set via an environment variable
+        common_config_uv["cache-keys"] = [
+            {"file": "pyproject.toml"},
+            {"env": "MACOSX_DEPLOYMENT_TARGET"},
+        ]
         # Local wheel builds must be created in advance for any source-only dependencies
         common_config_uv["no-build"] = True
         if self.local_wheel_paths:
@@ -1070,6 +1076,7 @@ class LayerSpecBase(ABC):
     dynlib_exclude: list[str] = field(repr=False)
 
     # Optionally specified on creation
+    macosx_target: str | None = field(repr=False, default=None)
     _index_config: PackageIndexConfig = field(
         repr=False, default_factory=PackageIndexConfig
     )
@@ -2257,6 +2264,7 @@ class LayerEnvBase(ABC):
     def _run_uv_pip_install(
         self,
         requirements_path: StrPath,
+        macosx_target: str | None,
     ) -> subprocess.CompletedProcess[str]:
         # No need to pass in the layer project config,
         # as everything is captured in the pylock.toml file
@@ -2269,8 +2277,11 @@ class LayerEnvBase(ABC):
             "--no-color",
         ]
         uv_pip_args.extend(("-r", os.fspath(requirements_path)))
+        env: dict[str, Any] | None = None
+        if macosx_target is not None:
+            env = {"MACOSX_DEPLOYMENT_TARGET": macosx_target}
         try:
-            return self._run_uv_pip(uv_pip_args)
+            return self._run_uv_pip(uv_pip_args, env=env)
         except subprocess.CalledProcessError as exc:
             raise LayerInstallationError(
                 f"Failed to install into layer {self.env_name!r}"
@@ -2513,7 +2524,7 @@ class LayerEnvBase(ABC):
         assert not self.needs_lock()
         return self.env_lock
 
-    def get_install_inputs(self) -> tuple[Path,]:
+    def get_install_inputs(self) -> tuple[Path, str | None]:
         """Ensure the inputs needed to install into this environment are defined and valid."""
         if not self.env_lock.has_valid_lock:
             lock_diagnostics = _format_json(self.env_lock.get_diagnostics())
@@ -2524,7 +2535,7 @@ class LayerEnvBase(ABC):
             ]
             self._fail_build("\n".join(failure_details))
         requirements_path, _pyproject_path, _pinned_constraints = self.get_lock_inputs()
-        return (requirements_path,)
+        return (requirements_path, self.env_spec.macosx_target)
 
     def install_requirements(self) -> subprocess.CompletedProcess[str]:
         """Install the locked layer requirements into this environment.
