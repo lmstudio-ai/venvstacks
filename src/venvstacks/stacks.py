@@ -2469,7 +2469,7 @@ class LayerEnvBase(ABC):
                             relative_path = Path(*relative_prefix) / relative_local_path
                             raw_whl.pop("url", None)
                             # Always use forward slashes in the relative wheel paths
-                            raw_whl["path"] = str(relative_path.as_posix())
+                            raw_whl["path"] = relative_path.as_posix()
             amended_pylock_text = tomlkit.dumps(pylock_dict)
             pylock_text_with_header = "\n".join(
                 [
