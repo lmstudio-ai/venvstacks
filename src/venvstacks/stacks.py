@@ -941,7 +941,6 @@ class EnvironmentLock:
             if recorded_lock_time > clamp_lock_time:
                 # Force writing the clamped lock time to the metadata file
                 lock_metadata = None
-                lock_time = clamp_lock_time
         if lock_metadata is None:
             # Metadata file didn't exist, the hashes didn't match,
             # or the recorded lock time needs clamping
@@ -950,6 +949,9 @@ class EnvironmentLock:
                 assert lock_time is not None, (
                     "Failed to read lock time for locked environment"
                 )
+            if clamp_lock_time is not None and lock_time > clamp_lock_time:
+                # Force writing the clamped lock time to the metadata file
+                lock_time = clamp_lock_time
             self._last_locked = lock_time
             self._write_lock_metadata()
             return True
