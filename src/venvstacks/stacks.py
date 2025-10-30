@@ -514,16 +514,14 @@ class LockedPackage:
         return cls(**pkg)
 
 
-def _iter_pylock_packages(
+def _iter_pylock_packages_raw(
     pylock_text: str,
     text_origin: str = "unspecified pylock.toml",
     *,
     exclude_shared: bool = False,
-) -> Iterable[LockedPackage]:
-    # Parse the package entries from the contents of a pylock.toml file
+) -> Iterable[dict[str, Any]]:
+    # Extract the raw the package entries from the contents of a pylock.toml file
     # TODO: Nicer errors if the path isn't pointing at a valid pylock.toml file
-    # That can wait until after https://github.com/pypa/packaging/pull/900 is released,
-    # allowing this to switch to using packaging.Pylock instead of ad hoc TOML parsing
     pylock_dict = tomlkit.parse(pylock_text)
     pkg_list = pylock_dict.get("packages", [])
     if not isinstance(pkg_list, list):
@@ -531,6 +529,20 @@ def _iter_pylock_packages(
     for raw_pkg in pkg_list:
         if not isinstance(raw_pkg, dict):
             raise BuildEnvError(f"Invalid packages entry in {text_origin}")
+        yield raw_pkg
+
+
+def _iter_pylock_packages(
+    pylock_text: str,
+    text_origin: str = "unspecified pylock.toml",
+    *,
+    exclude_shared: bool = False,
+) -> Iterable[LockedPackage]:
+    # Parse the package entries from the contents of a pylock.toml file
+    raw_pkg_iter = _iter_pylock_packages_raw(
+        pylock_text, text_origin, exclude_shared=exclude_shared
+    )
+    for raw_pkg in raw_pkg_iter:
         pkg = LockedPackage.from_dict(raw_pkg)
         if exclude_shared and _SHARED_PKG_MARKER in pkg.marker:
             continue
@@ -2456,7 +2468,8 @@ class LayerEnvBase(ABC):
                             relative_prefix = [".."] * prefix_steps
                             relative_path = Path(*relative_prefix) / relative_local_path
                             raw_whl.pop("url", None)
-                            raw_whl["path"] = str(relative_path)
+                            # Always use forward slashes in the relative wheel paths
+                            raw_whl["path"] = relative_path.as_posix()
             amended_pylock_text = tomlkit.dumps(pylock_dict)
             pylock_text_with_header = "\n".join(
                 [

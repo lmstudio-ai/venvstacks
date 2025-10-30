@@ -27,9 +27,10 @@ from venvstacks.stacks import (
     LayerEnvBase,
     LayeredEnvBase,
     LayerVariants,
+    LockedPackage,
     PackageIndexConfig,
     StackSpec,
-    _iter_pylock_packages_from_file,
+    _iter_pylock_packages_raw,
 )
 
 _THIS_DIR = Path(__file__).parent
@@ -385,8 +386,10 @@ class DeploymentTestCase(unittest.TestCase):
             assert (
                 pylock_metadata_path.name == f"pylock.{normalized_env_name}.meta.json"
             )
-            for pkg in _iter_pylock_packages_from_file(pylock_path):
-                for whl in pkg.wheels:
+            pylock_text = pylock_path.read_text("utf-8")
+            for raw_pkg in _iter_pylock_packages_raw(pylock_text, str(pylock_path)):
+                pkg = LockedPackage.from_dict(raw_pkg)
+                for whl, raw_whl in zip(pkg.wheels, raw_pkg.get("wheels", ())):
                     local_path = whl.local_path
                     if local_path is None:
                         # Not a local wheel
@@ -395,6 +398,8 @@ class DeploymentTestCase(unittest.TestCase):
                     assert not local_path.is_absolute(), f"{local_path} is absolute"
                     resolved_path = pylock_path.parent / local_path
                     assert resolved_path.exists(), f"{resolved_path} does not exist"
+                    # Ensure local path is stored using POSIX path separators
+                    assert local_path.as_posix() == raw_whl["path"]
             if env.needs_lock():
                 # A just-locked environment *shouldn't* still indicate it needs locking
                 # Report the first actually failing element of the lock validity check
