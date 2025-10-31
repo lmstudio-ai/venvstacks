@@ -168,6 +168,28 @@ All layer specifications may also contain the following optional fields:
   be tedious to specify when using this setting. In these cases,
   :ref:`priority indexes <priority-indexes>` may be a more appropriate setting to use.
 
+  .. versionadded:: 0.8.0
+    Added support for ``uv`` configuration with layer specific adjustments
+    (:ref:`release details <changelog-0.8.0>`).
+
+.. _index-overrides:
+
+* ``index_overrides`` (:toml:`table` mapping ``uv`` index names to expected conflicts):
+  by default, :ref:`package index <package-indexes>` specifications are expected to be
+  consistent across all layers that a given layer depends on. This is inconvenient when
+  attempting to define layers that depend on two different variants of an underlying
+  framework layer, and will work as long as at least one of those layers is installed.
+  For example, a layer may depend on both a layer that installs PyTorch with
+  ``package_indexes = {torch = "pytorch_cu128"}``, and another that specifies
+  ``package_indexes = {torch = "pytorch_cpu"}``. Assuming the CUDA layer is
+  listed first, this conflict can be resolved by also specifying
+  ``index_overrides = {pytorch_cpu = "pytorch_cu128"}`` to indicate that the
+  apparent conflict is expected, and should not be considered an error.
+
+  .. versionadded:: 0.8.0
+    Added support for ``uv`` configuration with layer specific adjustments
+    (:ref:`release details <changelog-0.8.0>`).
+
 .. _priority-indexes:
 
 * ``priority_indexes`` (:toml:`array` of :toml:`strings <string>`):
@@ -183,10 +205,6 @@ All layer specifications may also contain the following optional fields:
   contains outdated versions of other packages in addition to the packages that *should* be
   installed from that index. In these cases, :ref:`package indexes <package-indexes>`
   may be a more appropriate setting to use.
-
-  .. versionadded:: 0.8.0
-    Added support for ``uv`` configuration with layer specific adjustments
-    (:ref:`release details <changelog-0.8.0>`).
 
   .. versionadded:: 0.8.0
     Added support for ``uv`` configuration with layer specific adjustments

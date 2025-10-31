@@ -13,12 +13,24 @@ requirements = []
 package_indexes = { torcH = "pytorch-cpu"}
 
 [[applications]]
-name = "empty"
+name = "override"
 launch_module = "../minimal_project/empty.py"
-# This will fail, since the app layer specifies a different package index for PyTorch
+runtime = "cpython-3.13"
+requirements = []
+# This is accepted, as even though the framework layer specifies a different
+# package index for PyTorch, it is declared as a permitted override
 # Package name is capitalised to ensure names are normalised
+package_indexes = { Torch = "pytorch-cu128" }
+index_overrides = { pytorch-cpu = "pytorch-cu128" }
+
+[[applications]]
+name = "invalid"
+launch_module = "../minimal_project/empty.py"
 frameworks = ["pytorch-cpu"]
 requirements = []
+# This will fail, since the app layer specifies a different package index for PyTorch
+# *without* specifying that it is a permitted override for the framework layer
+# Package name is capitalised to ensure names are normalised
 package_indexes = { Torch = "pytorch-cu128"}
 
 [[tool.uv.index]]

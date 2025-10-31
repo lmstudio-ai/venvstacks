@@ -73,9 +73,9 @@ def test_future_warning_for_build_requirements() -> None:
 
 EXPECTED_STACK_SPEC_ERRORS = {
     "error_inconsistent_runtimes.toml": "inconsistent frameworks",
-    "error_inconsistent_app_indexes.toml": "inconsistent package index override",
-    "error_inconsistent_framework_indexes.toml": "inconsistent package index override",
-    "error_inconsistent_runtime_indexes.toml": "inconsistent package index override",
+    "error_inconsistent_app_indexes.toml": 'invalid.*inconsistent package index override.*index_overrides = {pytorch-cpu = "pytorch-cu128"}',
+    "error_inconsistent_framework_indexes.toml": 'invalid.*inconsistent package index override.*index_overrides = {pytorch-cpu = "pytorch-cu128"}',
+    "error_inconsistent_runtime_indexes.toml": 'invalid.*inconsistent package index override.*index_overrides = {pytorch-cpu = "pytorch-cu128"}',
     "error_invalid_requirement_syntax.toml": "invalid requirement syntax",
     "error_launch_support_conflict.toml": "'name'.*conflicts with.*'layer'",
     "error_layer_dep_C3_conflict.toml": "linearization failed.*['layerC', 'layerD'].*['layerD', 'layerC']",

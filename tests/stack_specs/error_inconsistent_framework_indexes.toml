@@ -20,11 +20,20 @@ requirements = []
 package_indexes = { Torch = "pytorch-cu128"}
 
 [[applications]]
-name = "empty"
+name = "override"
+launch_module = "../minimal_project/empty.py"
+# This is accepted, as even though the framework layers specify a different
+# package index for PyTorch, it is declared as a permitted override
+frameworks = ["pytorch-cu128", "pytorch-cpu"]
+index_overrides = { pytorch-cpu = "pytorch-cu128" }
+requirements = []
+
+[[applications]]
+name = "invalid"
 launch_module = "../minimal_project/empty.py"
 # This will fail, since the framework layers specify different package indexes for PyTorch
-# TODO: Revisit given https://github.com/lmstudio-ai/venvstacks/issues/269
-frameworks = ["pytorch-cpu", "pytorch-cu128"]
+# *without* specifying that the first of them is an expected override for the other
+frameworks = ["pytorch-cu128", "pytorch-cpu"]
 requirements = []
 
 [[tool.uv.index]]
