@@ -2120,7 +2120,15 @@ class LayerEnvBase(ABC):
         )
         pinned_constraints: list[LockedPackage] = []
         for constrained_name in constrained_names:
-            pinned_constraints.extend(conditional_constraints.get(constrained_name, ()))
+            conditional_pkgs = conditional_constraints.get(constrained_name, [])
+            if conditional_pkgs:
+                shadowing_markers: set[str] = set()
+                for conditional_pkg in conditional_pkgs:
+                    conditional_marker = conditional_pkg.marker
+                    if conditional_marker in shadowing_markers:
+                        continue
+                    shadowing_markers.add(conditional_marker)
+                    pinned_constraints.append(conditional_pkg)
             unconditional_pkg = unconditional_constraints.get(constrained_name, None)
             if unconditional_pkg is not None:
                 pinned_constraints.append(unconditional_pkg)
