@@ -1,0 +1,7 @@
+# Ensure suitable error is raised for an unknown target platform
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+platforms = ["win32_x86_64"]  # Correct spelling is win_amd64

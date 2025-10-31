@@ -8,6 +8,7 @@ requires-python = "==3.11.*"
 [[packages]]
 name = "numpy"
 version = "2.3.4"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -73,14 +74,6 @@ size = 18884682
 
 [packages.wheels.hashes]
 sha256 = "64c5825affc76942973a70acf438a8ab618dbd692b84cd5ec40a0a0509edc09a"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/cf/85/f6f00d019b0cc741e64b4e00ce865a57b6bed945d1bbeb1ccadbc647959b/numpy-2.3.4-cp311-cp311-win32.whl"
-upload-time = 2025-10-15T16:15:38Z
-size = 6570076
-
-[packages.wheels.hashes]
-sha256 = "ed759bf7a70342f7817d88376eb7142fab9fef8320d6019ef87fae05a99874e1"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/7d/10/f8850982021cb90e2ec31990291f9e830ce7d94eef432b15066e7cbe0bec/numpy-2.3.4-cp311-cp311-win_amd64.whl"

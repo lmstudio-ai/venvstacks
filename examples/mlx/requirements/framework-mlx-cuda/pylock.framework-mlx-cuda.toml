@@ -8,32 +8,8 @@ requires-python = "==3.11.*"
 [[packages]]
 name = "mlx"
 version = "0.29.3"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux')"
+marker = "platform_machine == 'x86_64' and sys_platform == 'linux'"
 index = "https://pypi.org/simple"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/94/13/3e91a37fa55dc0e9114620729ab61b27f45ed59053fc77846cad2df54f21/mlx-0.29.3-cp311-cp311-macosx_13_0_arm64.whl"
-upload-time = 2025-10-17T19:17:00Z
-size = 549089
-
-[packages.wheels.hashes]
-sha256 = "0ffdf1f171c903adeaa688210ba39063059b102f3dcc52a64c2200d95d237f15"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/13/01/ce008d14fbd2e22b694f568ab4014e14c979a2262c5f8c10e06d4806709f/mlx-0.29.3-cp311-cp311-macosx_14_0_arm64.whl"
-upload-time = 2025-10-17T19:16:54Z
-size = 549091
-
-[packages.wheels.hashes]
-sha256 = "e7d1d815be0d4a41e598bdb2992822dafd9ab0d59d4b88af760ee0b6584506b7"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/72/1c/45642746d36e91e26f3401e9b7931f92d8cc1eb6015cc40218628f320747/mlx-0.29.3-cp311-cp311-macosx_15_0_arm64.whl"
-upload-time = 2025-10-17T19:17:10Z
-size = 549092
-
-[packages.wheels.hashes]
-sha256 = "d33bff69887fadfd85ce67b8e11318c2319984f3ad4157f871aa9d3beb9de972"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/cb/17/9c85fc6ebe6b8ad30c3e75c0cb869939df82146aa8728de1261adacc731d/mlx-0.29.3-cp311-cp311-manylinux_2_35_x86_64.whl"
@@ -56,36 +32,6 @@ size = 62388548
 
 [packages.wheels.hashes]
 sha256 = "8576231501bc03152385caad318915d7820d4790666837f47ede2cc46c5d2628"
-
-[[packages]]
-name = "mlx-metal"
-version = "0.29.3"
-marker = "platform_machine == 'arm64' and sys_platform == 'darwin'"
-index = "https://pypi.org/simple"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/41/95/a00054a006df82bb1b5b8f666ae44a676b259146fadbff90fe654309fefc/mlx_metal-0.29.3-py3-none-macosx_13_0_arm64.whl"
-upload-time = 2025-10-17T19:19:25Z
-size = 36817352
-
-[packages.wheels.hashes]
-sha256 = "27b5a4d905202a71e84d9fd559ea0236813f6f960ef494e5cafe9c45df4c9d7c"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/c0/d8/5ee91eac16dfcf0334103120b47d4abd8c890ccc0d73d3eee4770ce8810f/mlx_metal-0.29.3-py3-none-macosx_14_0_arm64.whl"
-upload-time = 2025-10-17T19:18:42Z
-size = 36555573
-
-[packages.wheels.hashes]
-sha256 = "f426d4b67f96b4d6f0ed50d5992933595aadb370dc3e9ed2410bafbc16229882"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/cd/9a/39b7ecdf21cf2a39ced8d7933eed65c6cb38295cadfd0907dd1abd4d1ded/mlx_metal-0.29.3-py3-none-macosx_15_0_arm64.whl"
-upload-time = 2025-10-17T19:18:37Z
-size = 36549163
-
-[packages.wheels.hashes]
-sha256 = "106616f7f825851043c53d3dc186965c003985da9cbb6e5c034f35108fc1fc27"
 
 [[packages]]
 name = "nvidia-cublas-cu12"
