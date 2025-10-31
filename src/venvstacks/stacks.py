@@ -1004,7 +1004,16 @@ class EnvironmentLock:
 # Identify target platforms using strings based on
 # https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
 # macOS target system API version info is omitted (as that will be set universally for macOS builds)
-class TargetPlatforms(StrEnum):
+
+
+_SYS_PLATFORM_MARKERS = {
+    "win": "win32",
+    "macosx": "darwin",
+    "linux": "linux",
+}
+
+
+class TargetPlatform(StrEnum):
     """Enum for support target deployment platforms."""
 
     WINDOWS = "win_amd64"
@@ -1019,23 +1028,18 @@ class TargetPlatforms(StrEnum):
         """Sorted list of all defined target platforms."""
         return sorted(set(cls.__members__.values()))
 
-    @classmethod
-    def ensure_platform_list(cls, metadata: MutableMapping[str, Any]) -> None:
-        """Ensure given metadata mapping includes a ``"platforms`` field.
-
-        If the field is not already present, it is set to all defined platforms.
-        """
-        platform_list = metadata.get("platforms")
-        if platform_list is not None:
-            platform_list = [cls(target) for target in platform_list]
-        else:
-            platform_list = cls.get_all_target_platforms()
-        metadata["platforms"] = platform_list
+    def _as_environment_marker(self) -> str:
+        target_os, _, machine = self.partition("_")
+        sys_platform = _SYS_PLATFORM_MARKERS[target_os]
+        return f"sys_platform == {sys_platform!r} and platform_machine == {machine!r}"
 
 
-TargetPlatform = (
-    TargetPlatforms  # Use singular name when creating instances from values
-)
+TargetPlatforms = TargetPlatform  # Use plural alias when the singular name reads oddly
+
+_TARGET_PLATFORM_MARKERS = {
+    platform: platform._as_environment_marker()
+    for platform in TargetPlatforms.get_all_target_platforms()
+}
 
 
 class LayerVariants(StrEnum):
@@ -1054,15 +1058,6 @@ class LayerCategories(StrEnum):
     APPLICATIONS = "applications"
 
 
-def ensure_optional_env_spec_fields(env_metadata: MutableMapping[str, Any]) -> None:
-    """Populate missing environment spec fields that are optional in the TOML file."""
-    TargetPlatforms.ensure_platform_list(env_metadata)
-    env_metadata.setdefault("versioned", False)
-    env_metadata.setdefault("package_indexes", {})
-    env_metadata.setdefault("priority_indexes", [])
-    env_metadata.setdefault("dynlib_exclude", [])
-
-
 @dataclass(kw_only=True)
 class LayerSpecBase(ABC):
     """Common base class for layer environment specifications."""
@@ -1078,7 +1073,7 @@ class LayerSpecBase(ABC):
     name: LayerBaseName
     versioned: bool
     requirements: list[Requirement] = field(repr=False)
-    platforms: list[TargetPlatforms] = field(repr=False)
+    platforms: list[TargetPlatform] = field(repr=False)
     package_indexes: dict[NormalizedName, str] = field(repr=False)
     priority_indexes: list[str] = field(repr=False)
     dynlib_exclude: list[str] = field(repr=False)
@@ -1089,17 +1084,51 @@ class LayerSpecBase(ABC):
     )
 
     @classmethod
+    def _infer_platforms(cls, fields: Mapping[str, Any]) -> list[TargetPlatform]:
+        return TargetPlatforms.get_all_target_platforms()
+
+    @classmethod
     def from_dict(cls, raw_fields: Mapping[str, Any]) -> Self:
         """Parse a layer definition using basic types into the expected format."""
         fields = dict(raw_fields)
-        ensure_optional_env_spec_fields(fields)
+        layer_name = fields["name"]
+        fields.setdefault("versioned", False)
+        fields.setdefault("package_indexes", {})
+        fields.setdefault("priority_indexes", [])
+        fields.setdefault("dynlib_exclude", [])
         # Index overrides are expected to be have been applied externally
         fields.pop("index_overrides", None)
+        # Ensure target platforms are known
+        raw_platforms = fields.get("platforms", None)
+        inferred_platforms = cls._infer_platforms(fields)
+        platforms: list[TargetPlatform]
+        if raw_platforms is None:
+            platforms = inferred_platforms
+        else:
+            platforms = []
+            for raw_platform in raw_platforms:
+                try:
+                    platform = TargetPlatform(raw_platform)
+                except ValueError:
+                    all_platforms = [
+                        str(t) for t in TargetPlatforms.get_all_target_platforms()
+                    ]
+                    err = f"{layer_name} specifies an invalid target platform"
+                    hint = f"{raw_platform!r} given, expected {all_platforms}"
+                    raise LayerSpecError(f"{err} ({hint})")
+                platforms.append(platform)
+            unexpected_platforms = set(platforms) - set(inferred_platforms)
+            if unexpected_platforms:
+                err = f"{layer_name} specifies target platforms not supported by lower layers"
+                hint = f"{[str(t) for t in sorted(unexpected_platforms)]}"
+                raise LayerSpecError(f"{err} ({hint})")
+
+        fields["platforms"] = platforms
         # Ensure declared dependencies are syntactically valid
         try:
             requirements = [Requirement(req) for req in fields["requirements"]]
         except InvalidRequirement as exc:
-            err = f"invalid requirement syntax: {exc}"
+            err = f"{layer_name} uses invalid requirement syntax: {exc}"
             raise LayerSpecError(err) from exc
         fields["requirements"] = requirements
         return cls(**fields)
@@ -1220,6 +1249,16 @@ class LayeredSpecBase(LayerSpecBase):
     # Intermediate class for covariant property typing (never instantiated)
     runtime: RuntimeSpec = field(repr=False)
     frameworks: list["FrameworkSpec"] = field(repr=False)
+
+    @classmethod
+    def _infer_platforms(cls, fields: Mapping[str, Any]) -> list[TargetPlatform]:
+        platforms = set(super()._infer_platforms(fields))
+        rt_spec: RuntimeSpec = fields["runtime"]
+        platforms.intersection_update(rt_spec.platforms)
+        fw_spec: FrameworkSpec
+        for fw_spec in fields["frameworks"]:
+            platforms.intersection_update(fw_spec.platforms)
+        return sorted(platforms)
 
 
 @dataclass
@@ -2161,6 +2200,9 @@ class LayerEnvBase(ABC):
         uv_tool_config = index_config._common_config_uv.copy()
         uv_constraints = [str(pkg) for pkg in pinned_constraints]
         uv_tool_config["constraint-dependencies"] = uv_constraints
+        uv_environments = [_TARGET_PLATFORM_MARKERS[t] for t in env_spec.platforms]
+        uv_tool_config["environments"] = uv_environments
+        # No need to set required-environments, as env markers specify machine arch
         if layer_indexes:
             uv_tool_config["index"] = layer_indexes
         if package_sources:

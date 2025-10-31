@@ -47,6 +47,12 @@ variable) also records that value as the layer lock time for all updated layer l
 Layers with a more recent recorded lock time will also be relocked
 (unless they have been excluded by layer filtering).
 
+Note that the following config settings are always set by ``venvstacks`` when invoking
+``uv``, so any attempts to set them in the common layer configuration will be ignored:
+
+* :uv-config:`environments` (always set based on the layer's target platforms)
+* :uv-config:`no-build` (implicit source builds are always disabled)
+
 .. note::
 
   As of October 2025, there is an open ``uv`` issue that may cause problems when

@@ -1,0 +1,14 @@
+# Ensure suitable error is raised for a inconsistent target platform lists
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+platforms = ["linux_x86_64"]
+
+[[applications]]
+name = "invalid"
+launch_module = "../minimal_project/empty.py"
+runtime = "cpython-3.11"
+requirements = []
+platforms = ["win_amd64"]  # Not specified in the runtime layer
