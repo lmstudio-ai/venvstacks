@@ -1093,6 +1093,8 @@ class LayerSpecBase(ABC):
         """Parse a layer definition using basic types into the expected format."""
         fields = dict(raw_fields)
         ensure_optional_env_spec_fields(fields)
+        # Index overrides are expected to be have been applied externally
+        fields.pop("index_overrides", None)
         # Ensure declared dependencies are syntactically valid
         try:
             requirements = [Requirement(req) for req in fields["requirements"]]
@@ -3504,12 +3506,12 @@ class StackSpec:
         runtimes: Mapping[LayerBaseName, RuntimeSpec],
         frameworks: Mapping[LayerBaseName, FrameworkSpec],
     ) -> tuple[RuntimeSpec, tuple[FrameworkSpec, ...], dict[NormalizedName, str]]:
-        # Note: layers are intentionally allowed to override any *default* package index settings
         declared_runtime: LayerBaseName | None = declared_spec.get("runtime")
         declared_frameworks: Sequence[LayerBaseName] | None = declared_spec.get(
             "frameworks"
         )
         merged_package_indexes: dict[NormalizedName, str] = {}
+        index_overrides: dict[str, str] = declared_spec.get("index_overrides", {})
         runtime_dep: RuntimeSpec | None = None
         framework_deps: tuple[FrameworkSpec, ...]
         if declared_runtime is not None:
@@ -3550,31 +3552,48 @@ class StackSpec:
             framework_deps = cls._linearize_C3(err_prefix, declared_fw_deps)
             assert runtime_dep is not None
             # Check any framework source overrides are consistent with each other
-            for fw_dep in reversed(framework_deps):
-                for dist_name, index_name in fw_dep.package_indexes.items():
+            # Iteration occurs in order of priority to ensure that any index
+            # overrides must favour the framework layer that has import priority
+            for fw_dep in framework_deps:
+                fw_dep_indexes = fw_dep.package_indexes
+                for dist_name, index_name in fw_dep_indexes.items():
+                    # Package names in dependencies will already be normalised
                     declared_index_name = merged_package_indexes.get(dist_name, None)
-                    if declared_index_name and declared_index_name != index_name:
-                        msg = (
-                            f"{err_prefix} depends on layers with "
-                            f"inconsistent package index overrides for {dist_name} "
-                            f"({declared_index_name} != {index_name})"
-                        )
-                        raise LayerSpecError(msg)
-                merged_package_indexes.update(fw_dep.package_indexes)
+                    overridden_name = index_overrides.get(index_name, index_name)
+                    if declared_index_name:
+                        if declared_index_name != overridden_name:
+                            suggestion = f'index_overrides = {{{index_name} = "{declared_index_name}"}}'
+                            msg = (
+                                f"{err_prefix} depends on layers with "
+                                f"inconsistent package index overrides for {dist_name} "
+                                f"(specify {suggestion!r} to accept)"
+                            )
+                            raise LayerSpecError(msg)
+                        # Keep the existing package index entry
+                        continue
+                    merged_package_indexes[dist_name] = index_name
         # Check layer's source overrides are consistent with the layers it depends on
         declared_package_indexes = declared_spec.get("package_indexes", {})
+        normalized_indexes: dict[NormalizedName, str] = {}
         for raw_dist_name, index_name in declared_package_indexes.items():
             # The package names for this layer haven't been normalised yet
             dist_name = canonicalize_name(raw_dist_name)
-            declared_index_name = merged_package_indexes.get(dist_name, None)
-            if declared_index_name and declared_index_name != index_name:
-                msg = (
-                    f"{err_prefix} declares an inconsistent "
-                    f"package index override for {raw_dist_name} "
-                    f"({declared_index_name} != {index_name})"
-                )
-                raise LayerSpecError(msg)
-        merged_package_indexes.update(declared_package_indexes)
+            deps_index_name = merged_package_indexes.get(dist_name, None)
+            if deps_index_name:
+                # This layer's settings take priority over those it depends on
+                overridden_name = index_overrides.get(deps_index_name, deps_index_name)
+                if index_name != overridden_name:
+                    suggestion = (
+                        f'index_overrides = {{{deps_index_name} = "{index_name}"}}'
+                    )
+                    msg = (
+                        f"{err_prefix} declares an inconsistent "
+                        f"package index override for {raw_dist_name} "
+                        f"(specify {suggestion!r} to accept)"
+                    )
+                    raise LayerSpecError(msg)
+            normalized_indexes[dist_name] = index_name
+        merged_package_indexes.update(normalized_indexes)
         return runtime_dep, framework_deps, merged_package_indexes
 
     @classmethod

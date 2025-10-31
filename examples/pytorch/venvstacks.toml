@@ -51,6 +51,23 @@ requirements = [
     "torch",
 ]
 
+[[applications]]
+name = "cu128-or-cpu"
+launch_module = "report_torch_cuda_version.py"
+# Both the CUDA and non-CUDA frameworks are added to the import path,
+# so this app will work as long as *either* of those layers is installed
+# If both are available, it uses the CUDA layer (as it is listed first)
+# However, the layer locking needs to be told that it is expected that
+# the two layers specify different source indexes, and given a conflict,
+# the pytorch-cu128 index should be used in preference to python-cpu
+index_overrides = { pytorch-cpu = "pytorch-cu128" }
+frameworks = ["torch-cu128", "torch-cpu"]
+requirements = [
+    # Exact version pin is inherited from the framework layer
+    "torch",
+]
+
+
 [tool.uv]
 # exclude-newer = "2025-10-11T00:00:00Z"
 # The custom torch registries do not support exclude-newer,
