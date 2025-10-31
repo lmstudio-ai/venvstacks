@@ -59,7 +59,7 @@ launch_module = "report_torch_cuda_version.py"
 # If both are available, it uses the CUDA layer (as it is listed first)
 # However, the layer locking needs to be told that it is expected that
 # the two layers specify different source indexes, and given a conflict,
-# the pytorch-cu128 index should be used in preference to python-cpu
+# the pytorch-cu128 index should be used in preference to pytorch-cpu
 index_overrides = { pytorch-cpu = "pytorch-cu128" }
 frameworks = ["torch-cu128", "torch-cpu"]
 requirements = [
