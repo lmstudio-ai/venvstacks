@@ -533,6 +533,23 @@ def _iter_pylock_packages_raw(
         yield raw_pkg
 
 
+_SHARED_PKG_MARKER = "from_lower_layer"
+_SHARED_PKG_CLAUSE = f"sys_platform == {_SHARED_PKG_MARKER!r}"
+_SHARED_PKG_SUFFIX = f") and {_SHARED_PKG_CLAUSE}"
+
+
+def _mark_shared_package(marker: str) -> str:
+    if not marker:
+        return _SHARED_PKG_CLAUSE
+    return f"({marker}{_SHARED_PKG_SUFFIX}"
+
+
+def _remove_shared_package_marker(marker: str) -> str:
+    if marker == _SHARED_PKG_CLAUSE:
+        return ""
+    return marker.removeprefix("(").removesuffix(_SHARED_PKG_SUFFIX)
+
+
 def _iter_pylock_packages(
     pylock_text: str,
     text_origin: str = "unspecified pylock.toml",
@@ -548,9 +565,6 @@ def _iter_pylock_packages(
         if exclude_shared and _SHARED_PKG_MARKER in pkg.marker:
             continue
         yield pkg
-
-
-_SHARED_PKG_MARKER = "from_lower_layer"
 
 
 def _iter_pylock_packages_from_file(
@@ -2079,12 +2093,45 @@ class LayerEnvBase(ABC):
         # Returns the list of pinned constraints derived from lower layers
         dependencies = _read_flat_reqs(requirements_input_path)
         constraint_paths = self.get_constraint_paths()
-        unique_constraints = set[LockedPackage]()
+        unconditional_constraints: dict[str, LockedPackage] = {}
+        conditional_constraints: dict[str, list[LockedPackage]] = {}
         for constraint_path in constraint_paths:
-            unique_constraints.update(
-                _iter_pylock_packages_from_file(constraint_path, exclude_shared=True)
+            constraining_pkgs = _iter_pylock_packages_from_file(
+                constraint_path, exclude_shared=True
             )
-        pinned_constraints = sorted(unique_constraints)
+            for constraining_pkg in constraining_pkgs:
+                constrained_name = constraining_pkg.name
+                if constrained_name in unconditional_constraints:
+                    # Package is unconditionally shadowed, nothing further to consider
+                    continue
+                if not constraining_pkg.marker:
+                    # For any later layers, the package is now unconditionally shadowed
+                    unconditional_constraints[constrained_name] = constraining_pkg
+                    continue
+                conditional_pkgs = conditional_constraints.setdefault(
+                    constrained_name, []
+                )
+                conditional_pkgs.append(constraining_pkg)
+        # List the constraints in alphabetical order.
+        # When multiple layers provide a package, list them with their environment
+        # marker until the first one that is installed unconditionally
+        constrained_names = sorted(
+            unconditional_constraints.keys() | conditional_constraints.keys()
+        )
+        pinned_constraints: list[LockedPackage] = []
+        for constrained_name in constrained_names:
+            conditional_pkgs = conditional_constraints.get(constrained_name, [])
+            if conditional_pkgs:
+                shadowing_markers: set[str] = set()
+                for conditional_pkg in conditional_pkgs:
+                    conditional_marker = conditional_pkg.marker
+                    if conditional_marker in shadowing_markers:
+                        continue
+                    shadowing_markers.add(conditional_marker)
+                    pinned_constraints.append(conditional_pkg)
+            unconditional_pkg = unconditional_constraints.get(constrained_name, None)
+            if unconditional_pkg is not None:
+                pinned_constraints.append(unconditional_pkg)
         env_spec = self.env_spec
         index_config = env_spec._index_config
         common_indexes = index_config._common_indexes
@@ -2358,9 +2405,10 @@ class LayerEnvBase(ABC):
         # installed unconditionally on all platforms, or if their environment marker
         # matches the environment marker for the package in the current layer
         for pkg in all_required_packages:
-            if _SHARED_PKG_MARKER in pkg.marker:
-                # Only record the unconditional req in the summary
-                shared_packages.append(f"{pkg.name}=={pkg.version}")
+            pkg_marker = pkg.marker
+            if _SHARED_PKG_MARKER in pkg_marker:
+                pkg.marker = _remove_shared_package_marker(pkg_marker)
+                shared_packages.append(str(pkg))
                 continue
             required_packages.append(str(pkg))
         summary_lines = [
@@ -2432,7 +2480,6 @@ class LayerEnvBase(ABC):
                 # installed unconditionally on all platforms, or if their environment marker
                 # matches the environment marker for the package in the current layer
                 available_packages = set(pinned_constraints)
-                exclusion_clause = "sys_platform == 'from_lower_layer'"
                 for raw_pkg in pylock_dict.get("packages", ()):
                     pkg = LockedPackage.from_dict(raw_pkg)
                     unconditional_req = LockedPackage(pkg.name, pkg.version, "", "", [])
@@ -2441,12 +2488,8 @@ class LayerEnvBase(ABC):
                         or unconditional_req in available_packages
                     ):
                         # Add an unmatchable environment marker to skip package installation
-                        pkg_marker = pkg.marker
-                        if pkg_marker:
-                            raw_pkg["marker"] = f"({pkg_marker}) and {exclusion_clause}"
-                        else:
-                            raw_pkg["marker"] = exclusion_clause
-                        # In both cases, clear the "wheels" and "index" metadata for the package
+                        raw_pkg["marker"] = _mark_shared_package(pkg.marker)
+                        # Also clear the "wheels" and "index" metadata for the package
                         raw_pkg.pop("index", "")
                         raw_pkg.pop("wheel", "")
             # Edit any absolute file paths (whether)
