@@ -414,7 +414,7 @@ full path to the files using the equivalent of <a class="reference external" hre
 </div>
 </li>
 </ul>
-<ul class="simple" id="package-indexes">
+<ul id="package-indexes">
 <li><p><code class="docutils literal notranslate"><span class="pre">package_indexes</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#table">table</a> mapping distribution package names to named <code class="docutils literal notranslate"><span class="pre">uv</span></code> indexes):
 by default, all layers are built with common tool configuration settings.
 To allow different layers to <em>selectively</em> retrieve wheels from different indexes,
@@ -429,7 +429,30 @@ A stack definition error is reported if a source override refers to an unknown i
 or if the collected source overrides for a given layer definition are inconsistent.
 Note: retrieving several packages from an index server that contains <em>only</em> those packages may
 be tedious to specify when using this setting. In these cases,
-<a class="reference internal" href="#priority-indexes"><span class="std std-ref">priority indexes</span></a> may be a more appropriate setting to use.</p></li>
+<a class="reference internal" href="#priority-indexes"><span class="std std-ref">priority indexes</span></a> may be a more appropriate setting to use.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for <code class="docutils literal notranslate"><span class="pre">uv</span></code> configuration with layer specific adjustments
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</li>
+</ul>
+<ul id="index-overrides">
+<li><p><code class="docutils literal notranslate"><span class="pre">index_overrides</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#table">table</a> mapping <code class="docutils literal notranslate"><span class="pre">uv</span></code> index names to expected conflicts):
+by default, <a class="reference internal" href="#package-indexes"><span class="std std-ref">package index</span></a> specifications are expected to be
+consistent across all layers that a given layer depends on. This is inconvenient when
+attempting to define layers that depend on two different variants of an underlying
+framework layer, and will work as long as at least one of those layers is installed.
+For example, a layer may depend on both a layer that installs PyTorch with
+<code class="docutils literal notranslate"><span class="pre">package_indexes</span> <span class="pre">=</span> <span class="pre">{torch</span> <span class="pre">=</span> <span class="pre">&quot;pytorch_cu128&quot;}</span></code>, and another that specifies
+<code class="docutils literal notranslate"><span class="pre">package_indexes</span> <span class="pre">=</span> <span class="pre">{torch</span> <span class="pre">=</span> <span class="pre">&quot;pytorch_cpu&quot;}</span></code>. Assuming the CUDA layer is
+listed first, this conflict can be resolved by also specifying
+<code class="docutils literal notranslate"><span class="pre">index_overrides</span> <span class="pre">=</span> <span class="pre">{pytorch_cpu</span> <span class="pre">=</span> <span class="pre">&quot;pytorch_cu128&quot;}</span></code> to indicate that the
+apparent conflict is expected, and should not be considered an error.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for <code class="docutils literal notranslate"><span class="pre">uv</span></code> configuration with layer specific adjustments
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</li>
 </ul>
 <ul id="priority-indexes">
 <li><p><code class="docutils literal notranslate"><span class="pre">priority_indexes</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
@@ -445,10 +468,6 @@ packages when locking or building that layer. This may be undesirable if the alt
 contains outdated versions of other packages in addition to the packages that <em>should</em> be
 installed from that index. In these cases, <a class="reference internal" href="#package-indexes"><span class="std std-ref">package indexes</span></a>
 may be a more appropriate setting to use.</p>
-<div class="versionadded">
-<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for <code class="docutils literal notranslate"><span class="pre">uv</span></code> configuration with layer specific adjustments
-(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
-</div>
 <div class="versionadded">
 <p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for <code class="docutils literal notranslate"><span class="pre">uv</span></code> configuration with layer specific adjustments
 (<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
