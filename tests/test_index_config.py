@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 import pytest
+import tomlkit
 
 from venvstacks.stacks import PackageIndexConfig, _IndexDetails
 
@@ -135,9 +136,13 @@ url = "https://download.pytorch.org/whl/cpu/"
 url = "https://pypi.org/simple/"
 """
 
-_EXPECTED_COMMON_UV_CONFIG = """\
-no-build = true
-"""
+_EXPECTED_COMMON_UV_CONFIG = {
+    "no-build": True,
+    "cache-keys": [
+        {"file": "pyproject.toml"},
+        {"env": "MACOSX_DEPLOYMENT_TARGET"},
+    ],
+}
 _EXPECTED_NAMED_INDEX_DETAILS: dict[str, _IndexDetails] = {
     "pytorch-cu128": {
         "name": "pytorch-cu128",
@@ -182,7 +187,8 @@ class TestBaselineToolConfig:
         index_config = self._write_test_config_files(spec_path, output_dir_path)
         output_config_path = output_dir_path / "uv.toml"
         assert output_config_path.exists()
-        output_config = output_config_path.read_text("utf-8")
+        output_config_text = output_config_path.read_text("utf-8")
+        output_config = tomlkit.parse(output_config_text).unwrap()
         assert output_config == _EXPECTED_COMMON_UV_CONFIG
         assert index_config._indexes == []
         assert index_config._named_indexes == {}
@@ -211,7 +217,8 @@ class TestBaselineToolConfig:
         output_config_path = output_dir_path / "uv.toml"
         assert output_config_path.exists()
         # Config file omits the index details
-        output_config = output_config_path.read_text("utf-8")
+        output_config_text = output_config_path.read_text("utf-8")
+        output_config = tomlkit.parse(output_config_text).unwrap()
         assert output_config == _EXPECTED_COMMON_UV_CONFIG
         assert index_config._indexes == _EXPECTED_INDEX_DETAILS
         assert index_config._named_indexes == _EXPECTED_NAMED_INDEX_DETAILS
@@ -231,7 +238,8 @@ class TestBaselineToolConfig:
         output_config_path = output_dir_path / "uv.toml"
         assert output_config_path.exists()
         # Config file omits the index details
-        output_config = output_config_path.read_text("utf-8")
+        output_config_text = output_config_path.read_text("utf-8")
+        output_config = tomlkit.parse(output_config_text).unwrap()
         assert output_config == _EXPECTED_COMMON_UV_CONFIG
         assert index_config._indexes == _EXPECTED_INDEX_DETAILS
         assert index_config._named_indexes == _EXPECTED_NAMED_INDEX_DETAILS
