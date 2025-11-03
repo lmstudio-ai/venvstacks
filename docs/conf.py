@@ -71,6 +71,7 @@ extlinks = {
     "pypi": ("https://pypi.org/project/%s/", "%s"),
     "toml": ("https://toml.io/en/v1.0.0#%s", "%s"),
     "uv-config": ("https://docs.astral.sh/uv/reference/settings/#%s", "%s"),
+    "uv-envvar": ("https://docs.astral.sh/uv/reference/environment/#%s", "%s"),
 }
 extlinks_detect_hardcoded_links = True
 
