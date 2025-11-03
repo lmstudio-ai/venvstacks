@@ -1,6 +1,7 @@
 """Test building the local wheels project produces the expected results."""
 
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -28,6 +29,7 @@ from support import (
 
 from venvstacks.stacks import (
     BuildEnvironment,
+    LayerInstallationError,
     PackageIndexConfig,
     StackSpec,
 )
@@ -276,6 +278,16 @@ class TestBuildEnvironment(DeploymentTestCase):
         # Loading local wheels, so ignore the date based lock resolution pin,
         # but allow for other env vars to be overridden
         os_env_updates.pop("UV_EXCLUDE_NEWER", None)
+        # Building local wheels, so ensure the layer installation uses the
+        # same MACOSX_DEPLOYMENT_TARGET setting as the wheel build
+        if (
+            sys.platform == "darwin"
+            and "MACOSX_DEPLOYMENT_TARGET" not in os_env_updates
+        ):
+            # the layer build may default to targeting an older macOS version,
+            # so ensure uv targets the same version as the wheel builds
+            this_osx = ".".join(platform.mac_ver()[0].split(".")[:2])
+            os_env_updates["MACOSX_DEPLOYMENT_TARGET"] = this_osx
         os_env_patch = mock.patch.dict("os.environ", os_env_updates)
         os_env_patch.start()
         self.addCleanup(os_env_patch.stop)
@@ -292,6 +304,15 @@ class TestBuildEnvironment(DeploymentTestCase):
         self.assertEqual([], already_built)
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
+
+    @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test case")
+    def test_macosx_wheel_selection(self) -> None:
+        # Local test wheels are built for the current macOS version,
+        # so targeting an older macOS version should fail
+        major, minor = [*map(int, platform.mac_ver()[0].split(".")[:2])]
+        os.environ["MACOSX_DEPLOYMENT_TARGET"] = f"{major - 1}.{minor}"
+        with pytest.raises(LayerInstallationError, match="framework-both-wheels"):
+            self.build_env.create_environments()
 
     def test_locking_and_publishing(self) -> None:
         # Need long diffs to get useful output from metadata checks
