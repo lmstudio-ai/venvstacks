@@ -140,6 +140,9 @@ All layer specifications may also contain the following optional fields:
   * ``"macosx_arm64"``: macOS on Apple (ARM64/Aarch64) silicon
   * ``"macosx_x86_64"``: macOS on Intel silicon (not currently tested in CI)
 
+  If no platforms are specified, the default platform list is used:
+  ``["linux_x86_64", "macosx_arm64", "win_amd64"]``.
+
   .. versionchanged:: 0.3.0
      Added ``win_arm64`` and ``linux_aarch64`` as permitted target platforms
      (:ref:`release details <changelog-0.3.0>`).

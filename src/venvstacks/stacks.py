@@ -201,22 +201,16 @@ class TargetPlatforms(StrEnum):
     MACOS_INTEL = "macosx_x86_64"
 
     @classmethod
-    def get_all_target_platforms(cls) -> list[Self]:
+    def get_all_target_platforms(cls) -> Sequence[Self]:
         """Sorted list of all defined target platforms."""
         return sorted(set(cls.__members__.values()))
 
     @classmethod
-    def ensure_platform_list(cls, metadata: MutableMapping[str, Any]) -> None:
-        """Ensure given metadata mapping includes a ``"platforms`` field.
-
-        If the field is not already present, it is set to all defined platforms.
-        """
-        platform_list = metadata.get("platforms")
-        if platform_list is not None:
-            platform_list = [cls(target) for target in platform_list]
-        else:
-            platform_list = cls.get_all_target_platforms()
-        metadata["platforms"] = platform_list
+    def get_default_target_platforms(cls) -> Sequence[Self]:
+        """List of the platforms targeted by default."""
+        # Explicit cast needed because mypy doesn't correctly infer
+        # that the enum entries are instances of the class being defined
+        return cast(list[Self], [cls.LINUX, cls.MACOS_APPLE, cls.WINDOWS])
 
     def _as_uv_python_platform(self) -> str:
         platform, _, arch = self.partition("_")
@@ -237,7 +231,6 @@ _UV_PYTHON_PLATFORMS = {
     platform: platform._as_uv_python_platform()
     for platform in TargetPlatforms.get_all_target_platforms()
 }
-
 _UV_TARGET_ENVIRONMENTS = {
     platform: platform._as_uv_target_environment()
     for platform in TargetPlatforms.get_all_target_platforms()
@@ -1152,8 +1145,8 @@ class LayerSpecBase(ABC):
     )
 
     @classmethod
-    def _infer_platforms(cls, fields: Mapping[str, Any]) -> list[TargetPlatform]:
-        return TargetPlatforms.get_all_target_platforms()
+    def _infer_platforms(cls, fields: Mapping[str, Any]) -> Sequence[TargetPlatform]:
+        return TargetPlatforms.get_default_target_platforms()
 
     @classmethod
     def from_dict(cls, raw_fields: Mapping[str, Any]) -> Self:
@@ -1169,7 +1162,7 @@ class LayerSpecBase(ABC):
         # Ensure target platforms are known
         raw_platforms = fields.get("platforms", None)
         inferred_platforms = cls._infer_platforms(fields)
-        platforms: list[TargetPlatform]
+        platforms: Sequence[TargetPlatform]
         if raw_platforms is None:
             platforms = inferred_platforms
         else:
@@ -2253,6 +2246,7 @@ class LayerEnvBase(ABC):
         uv_tool_config["constraint-dependencies"] = uv_constraints
         uv_environments = [_UV_TARGET_ENVIRONMENTS[t] for t in env_spec.platforms]
         uv_tool_config["environments"] = uv_environments
+        uv_tool_config["required-environments"] = uv_environments
         # No need to set required-environments, as env markers specify machine arch
         if layer_indexes:
             uv_tool_config["index"] = layer_indexes
