@@ -5,16 +5,28 @@ name = "cpython-3.13"
 python_implementation = "cpython@3.13.7"
 requirements = []
 # Package name ends with a capital to ensure names are normalised
-package_indexes = { torcH = "pytorch-cpu"}
+package_indexes = { torcH = "pytorch-cpu" }
 
 [[applications]]
-name = "empty"
+name = "override"
+launch_module = "../minimal_project/empty.py"
+runtime = "cpython-3.13"
+requirements = []
+# This is accepted, as even though the runtime layer specifies a different
+# package index for PyTorch, it is declared as a permitted override
+# Package name is capitalised to ensure names are normalised
+package_indexes = { Torch = "pytorch-cu128" }
+index_overrides = { pytorch-cpu = "pytorch-cu128" }
+
+[[applications]]
+name = "invalid"
 launch_module = "../minimal_project/empty.py"
 runtime = "cpython-3.13"
 requirements = []
 # This will fail, since the runtime layer specifies a different package index for PyTorch
+# *without* specifying that it is a permitted override for the runtime layer
 # Package name is capitalised to ensure names are normalised
-package_indexes = { Torch = "pytorch-cu128"}
+package_indexes = { Torch = "pytorch-cu128" }
 
 [[tool.uv.index]]
 name = "pytorch-cpu"

@@ -539,6 +539,23 @@ def _iter_pylock_packages_raw(
         yield raw_pkg
 
 
+_SHARED_PKG_MARKER = "from_lower_layer"
+_SHARED_PKG_CLAUSE = f"sys_platform == {_SHARED_PKG_MARKER!r}"
+_SHARED_PKG_SUFFIX = f") and {_SHARED_PKG_CLAUSE}"
+
+
+def _mark_shared_package(marker: str) -> str:
+    if not marker:
+        return _SHARED_PKG_CLAUSE
+    return f"({marker}{_SHARED_PKG_SUFFIX}"
+
+
+def _remove_shared_package_marker(marker: str) -> str:
+    if marker == _SHARED_PKG_CLAUSE:
+        return ""
+    return marker.removeprefix("(").removesuffix(_SHARED_PKG_SUFFIX)
+
+
 def _iter_pylock_packages(
     pylock_text: str,
     text_origin: str = "unspecified pylock.toml",
@@ -554,9 +571,6 @@ def _iter_pylock_packages(
         if exclude_shared and _SHARED_PKG_MARKER in pkg.marker:
             continue
         yield pkg
-
-
-_SHARED_PKG_MARKER = "from_lower_layer"
 
 
 def _iter_pylock_packages_from_file(
@@ -1086,6 +1100,8 @@ class LayerSpecBase(ABC):
         """Parse a layer definition using basic types into the expected format."""
         fields = dict(raw_fields)
         ensure_optional_env_spec_fields(fields)
+        # Index overrides are expected to be have been applied externally
+        fields.pop("index_overrides", None)
         # Ensure declared dependencies are syntactically valid
         try:
             requirements = [Requirement(req) for req in fields["requirements"]]
@@ -2086,12 +2102,45 @@ class LayerEnvBase(ABC):
         # Returns the list of pinned constraints derived from lower layers
         dependencies = _read_flat_reqs(requirements_input_path)
         constraint_paths = self.get_constraint_paths()
-        unique_constraints = set[LockedPackage]()
+        unconditional_constraints: dict[str, LockedPackage] = {}
+        conditional_constraints: dict[str, list[LockedPackage]] = {}
         for constraint_path in constraint_paths:
-            unique_constraints.update(
-                _iter_pylock_packages_from_file(constraint_path, exclude_shared=True)
+            constraining_pkgs = _iter_pylock_packages_from_file(
+                constraint_path, exclude_shared=True
             )
-        pinned_constraints = sorted(unique_constraints)
+            for constraining_pkg in constraining_pkgs:
+                constrained_name = constraining_pkg.name
+                if constrained_name in unconditional_constraints:
+                    # Package is unconditionally shadowed, nothing further to consider
+                    continue
+                if not constraining_pkg.marker:
+                    # For any later layers, the package is now unconditionally shadowed
+                    unconditional_constraints[constrained_name] = constraining_pkg
+                    continue
+                conditional_pkgs = conditional_constraints.setdefault(
+                    constrained_name, []
+                )
+                conditional_pkgs.append(constraining_pkg)
+        # List the constraints in alphabetical order.
+        # When multiple layers provide a package, list them with their environment
+        # marker until the first one that is installed unconditionally
+        constrained_names = sorted(
+            unconditional_constraints.keys() | conditional_constraints.keys()
+        )
+        pinned_constraints: list[LockedPackage] = []
+        for constrained_name in constrained_names:
+            conditional_pkgs = conditional_constraints.get(constrained_name, [])
+            if conditional_pkgs:
+                shadowing_markers: set[str] = set()
+                for conditional_pkg in conditional_pkgs:
+                    conditional_marker = conditional_pkg.marker
+                    if conditional_marker in shadowing_markers:
+                        continue
+                    shadowing_markers.add(conditional_marker)
+                    pinned_constraints.append(conditional_pkg)
+            unconditional_pkg = unconditional_constraints.get(constrained_name, None)
+            if unconditional_pkg is not None:
+                pinned_constraints.append(unconditional_pkg)
         env_spec = self.env_spec
         index_config = env_spec._index_config
         common_indexes = index_config._common_indexes
@@ -2369,9 +2418,10 @@ class LayerEnvBase(ABC):
         # installed unconditionally on all platforms, or if their environment marker
         # matches the environment marker for the package in the current layer
         for pkg in all_required_packages:
-            if _SHARED_PKG_MARKER in pkg.marker:
-                # Only record the unconditional req in the summary
-                shared_packages.append(f"{pkg.name}=={pkg.version}")
+            pkg_marker = pkg.marker
+            if _SHARED_PKG_MARKER in pkg_marker:
+                pkg.marker = _remove_shared_package_marker(pkg_marker)
+                shared_packages.append(str(pkg))
                 continue
             required_packages.append(str(pkg))
         summary_lines = [
@@ -2428,13 +2478,22 @@ class LayerEnvBase(ABC):
         )
         if want_full_lock:
             _LOG.info(f"Locking {self.env_name} (generating {str(pylock_path)!r})")
+            _LOG.debug(
+                f"uv lock input for {self.env_name}:\n"
+                f"{(pyproject_path / 'pyproject.toml').read_text('utf-8')}"
+            )
             self._run_uv_lock(pyproject_path)
+            _LOG.debug(
+                f"uv lock output for {self.env_name}:\n"
+                f"{(pyproject_path / 'uv.lock').read_text('utf-8')}"
+            )
             self._run_uv_export_requirements(pylock_path, pyproject_path)
             if not pylock_path.exists():
                 self._fail_build(f"Failed to generate {str(pylock_path)!r}")
             # We want to amend the lockfile to skip installing packages provided by lower layers
             # We also want to remove the default header comment and instead add our own
             raw_pylock_text = pylock_path.read_text("utf-8")
+            _LOG.debug(f"Raw uv export output for {self.env_name}:\n{raw_pylock_text}")
             pylock_dict = tomlkit.parse(raw_pylock_text).unwrap()
             raw_pkg: dict[str, Any]
             if pinned_constraints:
@@ -2443,7 +2502,6 @@ class LayerEnvBase(ABC):
                 # installed unconditionally on all platforms, or if their environment marker
                 # matches the environment marker for the package in the current layer
                 available_packages = set(pinned_constraints)
-                exclusion_clause = "sys_platform == 'from_lower_layer'"
                 for raw_pkg in pylock_dict.get("packages", ()):
                     pkg = LockedPackage.from_dict(raw_pkg)
                     unconditional_req = LockedPackage(pkg.name, pkg.version, "", "", [])
@@ -2452,15 +2510,11 @@ class LayerEnvBase(ABC):
                         or unconditional_req in available_packages
                     ):
                         # Add an unmatchable environment marker to skip package installation
-                        pkg_marker = pkg.marker
-                        if pkg_marker:
-                            raw_pkg["marker"] = f"({pkg_marker}) and {exclusion_clause}"
-                        else:
-                            raw_pkg["marker"] = exclusion_clause
-                        # In both cases, clear the "wheels" and "index" metadata for the package
+                        raw_pkg["marker"] = _mark_shared_package(pkg.marker)
+                        # Also clear the "wheels" and "index" metadata for the package
                         raw_pkg.pop("index", "")
                         raw_pkg.pop("wheel", "")
-            # Edit any absolute file paths (whether)
+            # Edit any absolute wheel file paths
             pylock_dir_path = pylock_path.parent
             for raw_pkg in pylock_dict.get("packages", ()):
                 for raw_whl in raw_pkg.get("wheels", ()):
@@ -2507,6 +2561,10 @@ class LayerEnvBase(ABC):
                     f"#         {executable_name} -Im {__package__} lock",
                     amended_pylock_text,
                 ]
+            )
+            _LOG.debug(
+                f"Amended uv export output for {self.env_name}:\n"
+                f"{pylock_text_with_header}"
             )
             # Save lock files with LF line endings, even on Windows
             pylock_path.write_text(pylock_text_with_header, "utf-8", newline="\n")
@@ -3472,12 +3530,12 @@ class StackSpec:
         runtimes: Mapping[LayerBaseName, RuntimeSpec],
         frameworks: Mapping[LayerBaseName, FrameworkSpec],
     ) -> tuple[RuntimeSpec, tuple[FrameworkSpec, ...], dict[NormalizedName, str]]:
-        # Note: layers are intentionally allowed to override any *default* package index settings
         declared_runtime: LayerBaseName | None = declared_spec.get("runtime")
         declared_frameworks: Sequence[LayerBaseName] | None = declared_spec.get(
             "frameworks"
         )
         merged_package_indexes: dict[NormalizedName, str] = {}
+        index_overrides: dict[str, str] = declared_spec.get("index_overrides", {})
         runtime_dep: RuntimeSpec | None = None
         framework_deps: tuple[FrameworkSpec, ...]
         if declared_runtime is not None:
@@ -3518,31 +3576,48 @@ class StackSpec:
             framework_deps = cls._linearize_C3(err_prefix, declared_fw_deps)
             assert runtime_dep is not None
             # Check any framework source overrides are consistent with each other
-            for fw_dep in reversed(framework_deps):
-                for dist_name, index_name in fw_dep.package_indexes.items():
+            # Iteration occurs in order of priority to ensure that any index
+            # overrides must favour the framework layer that has import priority
+            for fw_dep in framework_deps:
+                fw_dep_indexes = fw_dep.package_indexes
+                for dist_name, index_name in fw_dep_indexes.items():
+                    # Package names in dependencies will already be normalised
                     declared_index_name = merged_package_indexes.get(dist_name, None)
-                    if declared_index_name and declared_index_name != index_name:
-                        msg = (
-                            f"{err_prefix} depends on layers with "
-                            f"inconsistent package index overrides for {dist_name} "
-                            f"({declared_index_name} != {index_name})"
-                        )
-                        raise LayerSpecError(msg)
-                merged_package_indexes.update(fw_dep.package_indexes)
+                    overridden_name = index_overrides.get(index_name, index_name)
+                    if declared_index_name:
+                        if declared_index_name != overridden_name:
+                            suggestion = f'index_overrides = {{{index_name} = "{declared_index_name}"}}'
+                            msg = (
+                                f"{err_prefix} depends on layers with "
+                                f"inconsistent package index overrides for {dist_name} "
+                                f"(specify {suggestion!r} to accept)"
+                            )
+                            raise LayerSpecError(msg)
+                        # Keep the existing package index entry
+                        continue
+                    merged_package_indexes[dist_name] = index_name
         # Check layer's source overrides are consistent with the layers it depends on
         declared_package_indexes = declared_spec.get("package_indexes", {})
+        normalized_indexes: dict[NormalizedName, str] = {}
         for raw_dist_name, index_name in declared_package_indexes.items():
             # The package names for this layer haven't been normalised yet
             dist_name = canonicalize_name(raw_dist_name)
-            declared_index_name = merged_package_indexes.get(dist_name, None)
-            if declared_index_name and declared_index_name != index_name:
-                msg = (
-                    f"{err_prefix} declares an inconsistent "
-                    f"package index override for {raw_dist_name} "
-                    f"({declared_index_name} != {index_name})"
-                )
-                raise LayerSpecError(msg)
-        merged_package_indexes.update(declared_package_indexes)
+            deps_index_name = merged_package_indexes.get(dist_name, None)
+            if deps_index_name:
+                # This layer's settings take priority over those it depends on
+                overridden_name = index_overrides.get(deps_index_name, deps_index_name)
+                if index_name != overridden_name:
+                    suggestion = (
+                        f'index_overrides = {{{deps_index_name} = "{index_name}"}}'
+                    )
+                    msg = (
+                        f"{err_prefix} declares an inconsistent "
+                        f"package index override for {raw_dist_name} "
+                        f"(specify {suggestion!r} to accept)"
+                    )
+                    raise LayerSpecError(msg)
+            normalized_indexes[dist_name] = index_name
+        merged_package_indexes.update(normalized_indexes)
         return runtime_dep, framework_deps, merged_package_indexes
 
     @classmethod
