@@ -954,7 +954,8 @@ class TestMinimalBuild(DeploymentTestCase):
         build_env = self.build_env
         build_path = build_env.build_path
         self.mock_index_config_options()
-        platform_tag = build_env.build_platform
+        build_platform = build_env.build_platform
+        platform_tag = str(build_platform)
         expected_tag = f"-{platform_tag}"
         versioned_tag = (
             f"{expected_tag}-1"  # No previous metadata when running the test
@@ -991,7 +992,7 @@ class TestMinimalBuild(DeploymentTestCase):
                 mock_uv_export.assert_called_once_with(build_path)
                 mock_uv_export.reset_mock()
                 mock_uv_install = cast(Mock, env.index_config._get_uv_pip_install_args)
-                mock_uv_install.assert_called_once_with(build_path)
+                mock_uv_install.assert_called_once_with(build_path, build_platform)
                 mock_uv_install.reset_mock()
             subtests_passed += 1
         subtests_started += 1

@@ -3864,7 +3864,7 @@ class BuildEnvironment:
         return self.stack_spec.requirements_dir_path
 
     @property
-    def build_platform(self) -> str:
+    def build_platform(self) -> TargetPlatform:
         """Target platform for this environment."""
         return self.stack_spec.build_platform
 
