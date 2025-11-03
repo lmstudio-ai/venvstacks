@@ -79,7 +79,7 @@ def _get_expected_dry_run_result(
     )
     archive_keys = ArchiveMetadata.__required_keys__ | ArchiveMetadata.__optional_keys__
     archive_only_keys = archive_keys - build_request_keys
-    platform_tag = build_env.build_platform
+    platform_tag = str(build_env.build_platform)
     for archive_metadata in chain(*all_layer_manifests.values()):
         for key in archive_only_keys:
             archive_metadata.pop(key, None)

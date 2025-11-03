@@ -159,6 +159,109 @@ def _resolve_lexical_path(path: StrPath, base_path: Path, /) -> Path:
 
 
 ######################################################
+# Supported target platforms
+######################################################
+
+
+# Support mapping platform compatibility tags to uv platform identifiers as per
+# https://docs.astral.sh/uv/reference/cli/#uv-pip-install--python-platform
+# Note: this makes it explicit that the Linux stacks created by venvstacks
+# are currently for GNU-based linux environments (Debian, Fedora, RHEL, etc)
+# Enhancements such as a per-layer `linux_target` setting would be needed
+# to allow emitting stacks for MUSL-based environments (such as Alpine)
+_ARCH_ALIASES = {
+    "arm64": "aarch64",
+    "amd64": "x86_64",
+}
+_UV_PYTHON_PLATFORM_NAMES = {
+    "linux": "unknown-linux-gnu",
+    "macosx": "apple-darwin",
+    "win": "pc-windows-msvc",
+}
+
+# Support mapping platform compatibility tag prefixes to sys.platform values
+_SYS_PLATFORM_MARKERS = {
+    "win": "win32",
+    "macosx": "darwin",
+    "linux": "linux",
+}
+
+
+# Identify target platforms using strings based on
+# https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
+# macOS target system API version info is omitted (as that will be set universally for macOS builds)
+class TargetPlatforms(StrEnum):
+    """Enum for support target deployment platforms."""
+
+    WINDOWS = "win_amd64"  # Tested in CI
+    WINDOWS_ARM64 = "win_arm64"
+    LINUX = "linux_x86_64"  # Tested in CI
+    LINUX_AARCH64 = "linux_aarch64"
+    MACOS_APPLE = "macosx_arm64"  # Tested in CI
+    MACOS_INTEL = "macosx_x86_64"
+
+    @classmethod
+    def get_all_target_platforms(cls) -> list[Self]:
+        """Sorted list of all defined target platforms."""
+        return sorted(set(cls.__members__.values()))
+
+    @classmethod
+    def ensure_platform_list(cls, metadata: MutableMapping[str, Any]) -> None:
+        """Ensure given metadata mapping includes a ``"platforms`` field.
+
+        If the field is not already present, it is set to all defined platforms.
+        """
+        platform_list = metadata.get("platforms")
+        if platform_list is not None:
+            platform_list = [cls(target) for target in platform_list]
+        else:
+            platform_list = cls.get_all_target_platforms()
+        metadata["platforms"] = platform_list
+
+    def _as_uv_python_platform(self) -> str:
+        platform, _, arch = self.partition("_")
+        uv_arch = _ARCH_ALIASES.get(arch, arch)
+        uv_platform = _UV_PYTHON_PLATFORM_NAMES.get(platform, platform)
+        return f"{uv_arch}-{uv_platform}"
+
+    def _as_uv_target_environment(self) -> str:
+        target_os, _, machine = self.partition("_")
+        sys_platform = _SYS_PLATFORM_MARKERS[target_os]
+        return f"sys_platform == {sys_platform!r} and platform_machine == {machine!r}"
+
+
+TargetPlatform = (
+    TargetPlatforms  # Use singular name when creating instances from values
+)
+_UV_PYTHON_PLATFORMS = {
+    platform: platform._as_uv_python_platform()
+    for platform in TargetPlatforms.get_all_target_platforms()
+}
+
+_UV_TARGET_ENVIRONMENTS = {
+    platform: platform._as_uv_target_environment()
+    for platform in TargetPlatforms.get_all_target_platforms()
+}
+
+
+def get_build_platform() -> TargetPlatform:
+    """Report target platform that matches the currently running system."""
+    # Currently no need for cross-build support, so always query the running system
+    # Examples: win_amd64, linux_x86_64, macosx-10_12-x86_64, macosx-10_12-arm64
+    platform_name = sysconfig.get_platform().lower()
+    if platform_name.startswith("macosx"):
+        platform_os_name, *__, platform_arch = platform_name.split("-")
+        if platform_arch.startswith("universal"):
+            # Want to handle x86_64 and arm64 separately
+            if sys.platform == "win32":
+                assert False  # Ensure mypy knows `uname` won't be used on Windows
+            platform_arch = os.uname().machine
+        platform_name = f"{platform_os_name}_{platform_arch}"
+    normalized_name = platform_name.replace("-", "_")
+    return TargetPlatform(normalized_name)  # Let ValueError escape
+
+
+######################################################
 # Specifying package index access settings
 ######################################################
 
@@ -230,9 +333,12 @@ class PackageIndexConfig:
         # Currently no config-dependent lock-specific CLI args
         return []
 
-    def _get_uv_pip_install_args(self, build_path: Path) -> list[str]:
-        # Currently no config-dependent installation-specific CLI args
-        return []
+    def _get_uv_pip_install_args(
+        self, build_path: Path, target_platform: TargetPlatform
+    ) -> list[str]:
+        # Instruct `uv` to potentially target older (or newer) platform versions
+        # Most importantly, this respects MACOSX_DEPLOYMENT_TARGET on macOS
+        return ["--python-platform", _UV_PYTHON_PLATFORMS[target_platform]]
 
     @staticmethod
     def _get_uv_input_config_path(spec_path: Path) -> Path:
@@ -331,6 +437,8 @@ class PackageIndexConfig:
         del baseline_config_uv
         if not self.query_default_index:
             common_config_uv["no-index"] = True
+        # All inputs are supplied via pyproject.toml
+        common_config_uv["cache-keys"] = [{"file": "pyproject.toml"}]
         # Local wheel builds must be created in advance for any source-only dependencies
         common_config_uv["no-build"] = True
         if self.local_wheel_paths:
@@ -1001,47 +1109,6 @@ class EnvironmentLock:
         return diagnostics
 
 
-# Identify target platforms using strings based on
-# https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
-# macOS target system API version info is omitted (as that will be set universally for macOS builds)
-
-
-_SYS_PLATFORM_MARKERS = {
-    "win": "win32",
-    "macosx": "darwin",
-    "linux": "linux",
-}
-
-
-class TargetPlatform(StrEnum):
-    """Enum for support target deployment platforms."""
-
-    WINDOWS = "win_amd64"
-    WINDOWS_ARM64 = "win_arm64"
-    LINUX = "linux_x86_64"
-    LINUX_AARCH64 = "linux_aarch64"
-    MACOS_APPLE = "macosx_arm64"
-    MACOS_INTEL = "macosx_x86_64"  # Note: not currently tested in CI!
-
-    @classmethod
-    def get_all_target_platforms(cls) -> list[Self]:
-        """Sorted list of all defined target platforms."""
-        return sorted(set(cls.__members__.values()))
-
-    def _as_environment_marker(self) -> str:
-        target_os, _, machine = self.partition("_")
-        sys_platform = _SYS_PLATFORM_MARKERS[target_os]
-        return f"sys_platform == {sys_platform!r} and platform_machine == {machine!r}"
-
-
-TargetPlatforms = TargetPlatform  # Use plural alias when the singular name reads oddly
-
-_TARGET_PLATFORM_MARKERS = {
-    platform: platform._as_environment_marker()
-    for platform in TargetPlatforms.get_all_target_platforms()
-}
-
-
 class LayerVariants(StrEnum):
     """Enum for defined layer variants."""
 
@@ -1079,6 +1146,7 @@ class LayerSpecBase(ABC):
     dynlib_exclude: list[str] = field(repr=False)
 
     # Optionally specified on creation
+    macosx_target: str | None = field(repr=False, default=None)
     _index_config: PackageIndexConfig = field(
         repr=False, default_factory=PackageIndexConfig
     )
@@ -1791,23 +1859,6 @@ def _binary_with_extension(name: str) -> str:
     return f"{name}{binary_suffix}"
 
 
-def get_build_platform() -> TargetPlatform:
-    """Report target platform that matches the currently running system."""
-    # Currently no need for cross-build support, so always query the running system
-    # Examples: win_amd64, linux_x86_64, macosx-10_12-x86_64, macosx-10_12-arm64
-    platform_name = sysconfig.get_platform().lower()
-    if platform_name.startswith("macosx"):
-        platform_os_name, *__, platform_arch = platform_name.split("-")
-        if platform_arch.startswith("universal"):
-            # Want to handle x86_64 and arm64 separately
-            if sys.platform == "win32":
-                assert False  # Ensure mypy knows `uname` won't be used on Windows
-            platform_arch = os.uname().machine
-        platform_name = f"{platform_os_name}_{platform_arch}"
-    normalized_name = platform_name.replace("-", "_")
-    return TargetPlatform(normalized_name)  # Let ValueError escape
-
-
 @dataclass
 class LayerEnvBase(ABC):
     """Common base class for layer build environment implementations."""
@@ -2200,7 +2251,7 @@ class LayerEnvBase(ABC):
         uv_tool_config = index_config._common_config_uv.copy()
         uv_constraints = [str(pkg) for pkg in pinned_constraints]
         uv_tool_config["constraint-dependencies"] = uv_constraints
-        uv_environments = [_TARGET_PLATFORM_MARKERS[t] for t in env_spec.platforms]
+        uv_environments = [_UV_TARGET_ENVIRONMENTS[t] for t in env_spec.platforms]
         uv_tool_config["environments"] = uv_environments
         # No need to set required-environments, as env markers specify machine arch
         if layer_indexes:
@@ -2348,6 +2399,7 @@ class LayerEnvBase(ABC):
     def _run_uv_pip_install(
         self,
         requirements_path: StrPath,
+        macosx_target: str | None,
     ) -> subprocess.CompletedProcess[str]:
         # No need to pass in the layer project config,
         # as everything is captured in the pylock.toml file
@@ -2355,13 +2407,18 @@ class LayerEnvBase(ABC):
             "install",
             "--python",
             str(self.python_path),
-            *self.index_config._get_uv_pip_install_args(self.build_path),
+            *self.index_config._get_uv_pip_install_args(
+                self.build_path, self.build_platform
+            ),
             "--quiet",
             "--no-color",
         ]
         uv_pip_args.extend(("-r", os.fspath(requirements_path)))
+        env: dict[str, Any] | None = None
+        if macosx_target is not None:
+            env = {"MACOSX_DEPLOYMENT_TARGET": macosx_target}
         try:
-            return self._run_uv_pip(uv_pip_args)
+            return self._run_uv_pip(uv_pip_args, env=env)
         except subprocess.CalledProcessError as exc:
             raise LayerInstallationError(
                 f"Failed to install into layer {self.env_name!r}"
@@ -2509,13 +2566,22 @@ class LayerEnvBase(ABC):
         )
         if want_full_lock:
             _LOG.info(f"Locking {self.env_name} (generating {str(pylock_path)!r})")
+            _LOG.debug(
+                f"uv lock input for {self.env_name}:\n"
+                f"{(pyproject_path / 'pyproject.toml').read_text('utf-8')}"
+            )
             self._run_uv_lock(pyproject_path)
+            _LOG.debug(
+                f"uv lock output for {self.env_name}:\n"
+                f"{(pyproject_path / 'uv.lock').read_text('utf-8')}"
+            )
             self._run_uv_export_requirements(pylock_path, pyproject_path)
             if not pylock_path.exists():
                 self._fail_build(f"Failed to generate {str(pylock_path)!r}")
             # We want to amend the lockfile to skip installing packages provided by lower layers
             # We also want to remove the default header comment and instead add our own
             raw_pylock_text = pylock_path.read_text("utf-8")
+            _LOG.debug(f"Raw uv export output for {self.env_name}:\n{raw_pylock_text}")
             pylock_dict = tomlkit.parse(raw_pylock_text).unwrap()
             raw_pkg: dict[str, Any]
             if pinned_constraints:
@@ -2536,7 +2602,7 @@ class LayerEnvBase(ABC):
                         # Also clear the "wheels" and "index" metadata for the package
                         raw_pkg.pop("index", "")
                         raw_pkg.pop("wheel", "")
-            # Edit any absolute file paths (whether)
+            # Edit any absolute wheel file paths
             pylock_dir_path = pylock_path.parent
             for raw_pkg in pylock_dict.get("packages", ()):
                 for raw_whl in raw_pkg.get("wheels", ()):
@@ -2584,6 +2650,10 @@ class LayerEnvBase(ABC):
                     amended_pylock_text,
                 ]
             )
+            _LOG.debug(
+                f"Amended uv export output for {self.env_name}:\n"
+                f"{pylock_text_with_header}"
+            )
             # Save lock files with LF line endings, even on Windows
             pylock_path.write_text(pylock_text_with_header, "utf-8", newline="\n")
         else:
@@ -2600,7 +2670,7 @@ class LayerEnvBase(ABC):
         assert not self.needs_lock()
         return self.env_lock
 
-    def get_install_inputs(self) -> tuple[Path,]:
+    def get_install_inputs(self) -> tuple[Path, str | None]:
         """Ensure the inputs needed to install into this environment are defined and valid."""
         if not self.env_lock.has_valid_lock:
             lock_diagnostics = _format_json(self.env_lock.get_diagnostics())
@@ -2611,7 +2681,7 @@ class LayerEnvBase(ABC):
             ]
             self._fail_build("\n".join(failure_details))
         requirements_path, _pyproject_path, _pinned_constraints = self.get_lock_inputs()
-        return (requirements_path,)
+        return (requirements_path, self.env_spec.macosx_target)
 
     def install_requirements(self) -> subprocess.CompletedProcess[str]:
         """Install the locked layer requirements into this environment.
@@ -3849,7 +3919,7 @@ class BuildEnvironment:
         return self.stack_spec.requirements_dir_path
 
     @property
-    def build_platform(self) -> str:
+    def build_platform(self) -> TargetPlatform:
         """Target platform for this environment."""
         return self.stack_spec.build_platform
 

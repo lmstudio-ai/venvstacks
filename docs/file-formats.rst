@@ -50,13 +50,14 @@ Layers with a more recent recorded lock time will also be relocked
 Note that the following config settings are always set by ``venvstacks`` when invoking
 ``uv``, so any attempts to set them in the common layer configuration will be ignored:
 
+* :uv-config:`cache-keys` (always set to the inputs ``venvstacks`` provides)
 * :uv-config:`environments` (always set based on the layer's target platforms)
 * :uv-config:`no-build` (implicit source builds are always disabled)
 
 .. note::
 
   As of October 2025, there is an open ``uv`` issue that may cause problems when
-  attempting to combine the :uv-config:`exclude-newer` with custom indexes due to
+  attempting to combine the :uv-config:`exclude-newer` setting with custom indexes due to
   `missing artifact publication date information <https://github.com/astral-sh/uv/issues/12449>`__.
 
 .. |uv's tool documentation| replace:: ``uv``'s tool documentation
@@ -142,6 +143,21 @@ All layer specifications may also contain the following optional fields:
   .. versionchanged:: 0.3.0
      Added ``win_arm64`` and ``linux_aarch64`` as permitted target platforms
      (:ref:`release details <changelog-0.3.0>`).
+
+.. _macosx-target:
+
+* ``macosx_target`` (:toml:`string`)
+  sets :uv-envvar:`MACOSX_DEPLOYMENT_TARGET` in the ``uv`` subprocess environment when
+  installing packages, which may affect the exact wheels selected for projects which
+  publish wheels for multiple macOS versions.
+
+  If this field is not set, the ``MACOSX_DEPLOYMENT_TARGET`` setting from the
+  calling environment is used without modification. If it is not set at all,
+  the default target macOS version is determined by the ``uv`` version.
+
+  .. versionadded:: 0.8.0
+     Added support for setting the minimum macOS target on a per-layer basis
+     (:ref:`release details <changelog-0.8.0>`).
 
 * ``dynlib_exclude`` (:toml:`array` of :toml:`strings <string>`):
   by default, dynamic library (also known as shared object) files on Linux
