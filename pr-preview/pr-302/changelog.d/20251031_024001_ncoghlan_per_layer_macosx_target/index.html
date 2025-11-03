@@ -285,9 +285,16 @@
           <section id="added">
 <h1>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h1>
 <ul class="simple">
-<li><p>Added <code class="docutils literal notranslate"><span class="pre">macosx_target</span></code> to support per-layer configuration of <code class="docutils literal notranslate"><span class="pre">MACOSX_DEPLOYMENT_TARGET</span></code>.
-Also resolved an issue that meant layers already built locally would not be updated
-correctly if the macOS deployment target changed (resolved in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/292">#292</a>).</p></li>
+<li><p>Added <a class="reference internal" href="../../file-formats/#macosx-target"><span class="std std-ref">macosx_target</span></a> to support per-layer configuration
+of <code class="docutils literal notranslate"><span class="pre">MACOSX_DEPLOYMENT_TARGET</span></code> (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/292">#292</a>)</p></li>
+<li><p>Setting <code class="docutils literal notranslate"><span class="pre">MACOSX_DEPLOYMENT_TARGET</span></code> in the calling environment now affects the
+way layers that do not specify <code class="docutils literal notranslate"><span class="pre">macosx_target</span></code> are built on macOS. If this
+environment variable is not specified at all, the default macOS version
+target is the default portable target set by <code class="docutils literal notranslate"><span class="pre">uv</span></code> rather than the version
+of the system running <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> (resolved in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/292">#292</a>)</p></li>
+<li><p>The target GNU libc version for Linux layer builds is now the default portable
+target set by <code class="docutils literal notranslate"><span class="pre">uv</span></code> rather than the libc version of the system running
+<code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> (resolved in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/292">#292</a>)</p></li>
 </ul>
 </section>
 

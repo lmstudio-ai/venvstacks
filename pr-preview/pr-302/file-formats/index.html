@@ -406,10 +406,15 @@ Permitted entries in the <code class="docutils literal notranslate"><span class=
 (<a class="reference internal" href="../changelog/#changelog-0-3-0"><span class="std std-ref">release details</span></a>).</p>
 </div>
 </li>
+</ul>
+<ul id="macosx-target">
 <li><p><code class="docutils literal notranslate"><span class="pre">macosx_target</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>)
 sets <a class="extlink-uv-envvar reference external" href="https://docs.astral.sh/uv/reference/environment/#MACOSX_DEPLOYMENT_TARGET">MACOSX_DEPLOYMENT_TARGET</a> in the <code class="docutils literal notranslate"><span class="pre">uv</span></code> subprocess environment when
 installing packages, which may affect the exact wheels selected for projects which
-publish wheels for multiple macOS versions</p>
+publish wheels for multiple macOS versions.</p>
+<p>If this field is not set, the <code class="docutils literal notranslate"><span class="pre">MACOSX_DEPLOYMENT_TARGET</span></code> setting from the
+calling environment is used without modification. If it is not set at all,
+the default target macOS version is determined by the <code class="docutils literal notranslate"><span class="pre">uv</span></code> version.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for setting the minimum macOS target on a per-layer basis
 (<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
