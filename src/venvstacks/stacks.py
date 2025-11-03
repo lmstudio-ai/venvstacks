@@ -2467,13 +2467,22 @@ class LayerEnvBase(ABC):
         )
         if want_full_lock:
             _LOG.info(f"Locking {self.env_name} (generating {str(pylock_path)!r})")
+            _LOG.debug(
+                f"uv lock input for {self.env_name}:\n"
+                f"{(pyproject_path / 'pyproject.toml').read_text('utf-8')}"
+            )
             self._run_uv_lock(pyproject_path)
+            _LOG.debug(
+                f"uv lock output for {self.env_name}:\n"
+                f"{(pyproject_path / 'uv.lock').read_text('utf-8')}"
+            )
             self._run_uv_export_requirements(pylock_path, pyproject_path)
             if not pylock_path.exists():
                 self._fail_build(f"Failed to generate {str(pylock_path)!r}")
             # We want to amend the lockfile to skip installing packages provided by lower layers
             # We also want to remove the default header comment and instead add our own
             raw_pylock_text = pylock_path.read_text("utf-8")
+            _LOG.debug(f"Raw uv export output for {self.env_name}:\n{raw_pylock_text}")
             pylock_dict = tomlkit.parse(raw_pylock_text).unwrap()
             raw_pkg: dict[str, Any]
             if pinned_constraints:
@@ -2494,7 +2503,7 @@ class LayerEnvBase(ABC):
                         # Also clear the "wheels" and "index" metadata for the package
                         raw_pkg.pop("index", "")
                         raw_pkg.pop("wheel", "")
-            # Edit any absolute file paths (whether)
+            # Edit any absolute wheel file paths
             pylock_dir_path = pylock_path.parent
             for raw_pkg in pylock_dict.get("packages", ()):
                 for raw_whl in raw_pkg.get("wheels", ()):
@@ -2541,6 +2550,10 @@ class LayerEnvBase(ABC):
                     f"#         {executable_name} -Im {__package__} lock",
                     amended_pylock_text,
                 ]
+            )
+            _LOG.debug(
+                f"Amended uv export output for {self.env_name}:\n"
+                f"{pylock_text_with_header}"
             )
             # Save lock files with LF line endings, even on Windows
             pylock_path.write_text(pylock_text_with_header, "utf-8", newline="\n")
