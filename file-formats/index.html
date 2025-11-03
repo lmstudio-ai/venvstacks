@@ -319,10 +319,16 @@ field in the common configuration is also restricted to only referring to named 
 variable) also records that value as the layer lock time for all updated layer locks.
 Layers with a more recent recorded lock time will also be relocked
 (unless they have been excluded by layer filtering).</p>
+<p>Note that the following config settings are always set by <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> when invoking
+<code class="docutils literal notranslate"><span class="pre">uv</span></code>, so any attempts to set them in the common layer configuration will be ignored:</p>
+<ul class="simple">
+<li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#cache-keys">cache-keys</a> (always set to the inputs <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> provides)</p></li>
+<li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#no-build">no-build</a> (implicit source builds are always disabled)</p></li>
+</ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>As of October 2025, there is an open <code class="docutils literal notranslate"><span class="pre">uv</span></code> issue that may cause problems when
-attempting to combine the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a> with custom indexes due to
+attempting to combine the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a> setting with custom indexes due to
 <a class="reference external" href="https://github.com/astral-sh/uv/issues/12449">missing artifact publication date information</a>.</p>
 </div>
 <p>The default output folder for layer metadata when publishing artifacts and locally exporting
@@ -398,6 +404,20 @@ Permitted entries in the <code class="docutils literal notranslate"><span class=
 <div class="versionchanged">
 <p><span class="versionmodified changed">Changed in version 0.3.0: </span>Added <code class="docutils literal notranslate"><span class="pre">win_arm64</span></code> and <code class="docutils literal notranslate"><span class="pre">linux_aarch64</span></code> as permitted target platforms
 (<a class="reference internal" href="../changelog/#changelog-0-3-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</li>
+</ul>
+<ul id="macosx-target">
+<li><p><code class="docutils literal notranslate"><span class="pre">macosx_target</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>)
+sets <a class="extlink-uv-envvar reference external" href="https://docs.astral.sh/uv/reference/environment/#MACOSX_DEPLOYMENT_TARGET">MACOSX_DEPLOYMENT_TARGET</a> in the <code class="docutils literal notranslate"><span class="pre">uv</span></code> subprocess environment when
+installing packages, which may affect the exact wheels selected for projects which
+publish wheels for multiple macOS versions.</p>
+<p>If this field is not set, the <code class="docutils literal notranslate"><span class="pre">MACOSX_DEPLOYMENT_TARGET</span></code> setting from the
+calling environment is used without modification. If it is not set at all,
+the default target macOS version is determined by the <code class="docutils literal notranslate"><span class="pre">uv</span></code> version.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for setting the minimum macOS target on a per-layer basis
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
 </div>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dynlib_exclude</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
