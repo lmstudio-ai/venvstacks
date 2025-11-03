@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import tomlkit
 
-from venvstacks.stacks import PackageIndexConfig, _IndexDetails
+from venvstacks.stacks import PackageIndexConfig, TargetPlatform, _IndexDetails
 
 # Use the sample project as an example project with no custom index config
 _THIS_PATH = Path(__file__)
@@ -18,6 +18,16 @@ SAMPLE_PROJECT_STACK_SPEC_PATH = SAMPLE_PROJECT_PATH / "venvstacks.toml"
 class _CommonTestDetails:
     BUILD_PATH = Path("/build_dir")
     CONFIG_FILE = os.fspath(BUILD_PATH / "uv.toml")
+
+
+_EXPECTED_UV_PLATFORMS = {
+    TargetPlatform.LINUX: "x86_64-unknown-linux-gnu",
+    TargetPlatform.LINUX_AARCH64: "aarch64-unknown-linux-gnu",
+    TargetPlatform.MACOS_APPLE: "aarch64-apple-darwin",
+    TargetPlatform.MACOS_INTEL: "x86_64-apple-darwin",
+    TargetPlatform.WINDOWS: "x86_64-pc-windows-msvc",
+    TargetPlatform.WINDOWS_ARM64: "aarch64-pc-windows-msvc",
+}
 
 
 class TestDefaultOptions(_CommonTestDetails):
@@ -31,9 +41,16 @@ class TestDefaultOptions(_CommonTestDetails):
         # There are currently no export specific args
         assert self.TEST_CONFIG._get_uv_export_args(self.BUILD_PATH) == []
 
-    def test_uv_pip_install(self) -> None:
-        # There are currently no installation specific args
-        assert self.TEST_CONFIG._get_uv_pip_install_args(self.BUILD_PATH) == []
+    @pytest.mark.parametrize(
+        "build_platform,uv_platform", _EXPECTED_UV_PLATFORMS.items()
+    )
+    def test_uv_pip_install(
+        self, build_platform: TargetPlatform, uv_platform: str
+    ) -> None:
+        # The platform compatibility tag is mapped to a uv platform identifier
+        assert self.TEST_CONFIG._get_uv_pip_install_args(
+            self.BUILD_PATH, build_platform
+        ) == ["--python-platform", uv_platform]
 
     def test_local_wheel_indexes(self) -> None:
         assert list(self.TEST_CONFIG._define_local_wheel_locations()) == []
@@ -65,9 +82,16 @@ class TestConfiguredOptions(_CommonTestDetails):
         # There are currently no export specific args
         assert self.TEST_CONFIG._get_uv_export_args(self.BUILD_PATH) == []
 
-    def test_uv_pip_install(self) -> None:
-        # There are currently no installation specific args
-        assert self.TEST_CONFIG._get_uv_pip_install_args(self.BUILD_PATH) == []
+    @pytest.mark.parametrize(
+        "build_platform,uv_platform", _EXPECTED_UV_PLATFORMS.items()
+    )
+    def test_uv_pip_install(
+        self, build_platform: TargetPlatform, uv_platform: str
+    ) -> None:
+        # The platform compatibility tag is mapped to a uv platform identifier
+        assert self.TEST_CONFIG._get_uv_pip_install_args(
+            self.BUILD_PATH, build_platform
+        ) == ["--python-platform", uv_platform]
 
     def test_local_wheel_indexes(self) -> None:
         index_config = self.TEST_CONFIG.copy()

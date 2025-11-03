@@ -159,6 +159,92 @@ def _resolve_lexical_path(path: StrPath, base_path: Path, /) -> Path:
 
 
 ######################################################
+# Supported target platforms
+######################################################
+
+
+# Support mapping platform compatibility tags to uv platform identifiers as per
+# https://docs.astral.sh/uv/reference/cli/#uv-pip-install--python-platform
+# Note: this makes it explicit that the Linux stacks created by venvstacks
+# are currently for GNU-based linux environments (Debian, Fedora, RHEL, etc)
+# Changes would be needed to allow emitting stacks for MUSL-based environments
+# (such as Alpine) instead of (or an addition to) GNU-based environments
+_ARCH_ALIASES = {
+    "arm64": "aarch64",
+    "amd64": "x86_64",
+}
+_UV_PYTHON_PLATFORM_NAMES = {
+    "linux": "unknown-linux-gnu",
+    "macosx": "apple-darwin",
+    "win": "pc-windows-msvc",
+}
+
+
+# Identify target platforms using strings based on
+# https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
+# macOS target system API version info is omitted (as that will be set universally for macOS builds)
+class TargetPlatforms(StrEnum):
+    """Enum for support target deployment platforms."""
+
+    WINDOWS = "win_amd64"
+    WINDOWS_ARM64 = "win_arm64"
+    LINUX = "linux_x86_64"
+    LINUX_AARCH64 = "linux_aarch64"
+    MACOS_APPLE = "macosx_arm64"
+    MACOS_INTEL = "macosx_x86_64"  # Note: not currently tested in CI!
+
+    @classmethod
+    def get_all_target_platforms(cls) -> list[Self]:
+        """Sorted list of all defined target platforms."""
+        return sorted(set(cls.__members__.values()))
+
+    @classmethod
+    def ensure_platform_list(cls, metadata: MutableMapping[str, Any]) -> None:
+        """Ensure given metadata mapping includes a ``"platforms`` field.
+
+        If the field is not already present, it is set to all defined platforms.
+        """
+        platform_list = metadata.get("platforms")
+        if platform_list is not None:
+            platform_list = [cls(target) for target in platform_list]
+        else:
+            platform_list = cls.get_all_target_platforms()
+        metadata["platforms"] = platform_list
+
+    def _as_uv_python_platform(self) -> str:
+        platform, _, arch = self.partition("_")
+        uv_arch = _ARCH_ALIASES.get(arch, arch)
+        uv_platform = _UV_PYTHON_PLATFORM_NAMES.get(platform, platform)
+        return f"{uv_arch}-{uv_platform}"
+
+
+TargetPlatform = (
+    TargetPlatforms  # Use singular name when creating instances from values
+)
+_UV_PYTHON_PLATFORMS = {
+    platform: platform._as_uv_python_platform()
+    for platform in TargetPlatforms.get_all_target_platforms()
+}
+
+
+def get_build_platform() -> TargetPlatform:
+    """Report target platform that matches the currently running system."""
+    # Currently no need for cross-build support, so always query the running system
+    # Examples: win_amd64, linux_x86_64, macosx-10_12-x86_64, macosx-10_12-arm64
+    platform_name = sysconfig.get_platform().lower()
+    if platform_name.startswith("macosx"):
+        platform_os_name, *__, platform_arch = platform_name.split("-")
+        if platform_arch.startswith("universal"):
+            # Want to handle x86_64 and arm64 separately
+            if sys.platform == "win32":
+                assert False  # Ensure mypy knows `uname` won't be used on Windows
+            platform_arch = os.uname().machine
+        platform_name = f"{platform_os_name}_{platform_arch}"
+    normalized_name = platform_name.replace("-", "_")
+    return TargetPlatform(normalized_name)  # Let ValueError escape
+
+
+######################################################
 # Specifying package index access settings
 ######################################################
 
@@ -230,9 +316,12 @@ class PackageIndexConfig:
         # Currently no config-dependent lock-specific CLI args
         return []
 
-    def _get_uv_pip_install_args(self, build_path: Path) -> list[str]:
-        # Currently no config-dependent installation-specific CLI args
-        return []
+    def _get_uv_pip_install_args(
+        self, build_path: Path, target_platform: TargetPlatform
+    ) -> list[str]:
+        # Instruct `uv` to potentially target older (or newer) platform versions
+        # Most importantly, this respects MACOSX_DEPLOYMENT_TARGET on macOS
+        return ["--python-platform", _UV_PYTHON_PLATFORMS[target_platform]]
 
     @staticmethod
     def _get_uv_input_config_path(spec_path: Path) -> Path:
@@ -1007,43 +1096,6 @@ class EnvironmentLock:
         return diagnostics
 
 
-# Identify target platforms using strings based on
-# https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
-# macOS target system API version info is omitted (as that will be set universally for macOS builds)
-class TargetPlatforms(StrEnum):
-    """Enum for support target deployment platforms."""
-
-    WINDOWS = "win_amd64"
-    WINDOWS_ARM64 = "win_arm64"
-    LINUX = "linux_x86_64"
-    LINUX_AARCH64 = "linux_aarch64"
-    MACOS_APPLE = "macosx_arm64"
-    MACOS_INTEL = "macosx_x86_64"  # Note: not currently tested in CI!
-
-    @classmethod
-    def get_all_target_platforms(cls) -> list[Self]:
-        """Sorted list of all defined target platforms."""
-        return sorted(set(cls.__members__.values()))
-
-    @classmethod
-    def ensure_platform_list(cls, metadata: MutableMapping[str, Any]) -> None:
-        """Ensure given metadata mapping includes a ``"platforms`` field.
-
-        If the field is not already present, it is set to all defined platforms.
-        """
-        platform_list = metadata.get("platforms")
-        if platform_list is not None:
-            platform_list = [cls(target) for target in platform_list]
-        else:
-            platform_list = cls.get_all_target_platforms()
-        metadata["platforms"] = platform_list
-
-
-TargetPlatform = (
-    TargetPlatforms  # Use singular name when creating instances from values
-)
-
-
 class LayerVariants(StrEnum):
     """Enum for defined layer variants."""
 
@@ -1759,23 +1811,6 @@ def _binary_with_extension(name: str) -> str:
     return f"{name}{binary_suffix}"
 
 
-def get_build_platform() -> TargetPlatform:
-    """Report target platform that matches the currently running system."""
-    # Currently no need for cross-build support, so always query the running system
-    # Examples: win_amd64, linux_x86_64, macosx-10_12-x86_64, macosx-10_12-arm64
-    platform_name = sysconfig.get_platform().lower()
-    if platform_name.startswith("macosx"):
-        platform_os_name, *__, platform_arch = platform_name.split("-")
-        if platform_arch.startswith("universal"):
-            # Want to handle x86_64 and arm64 separately
-            if sys.platform == "win32":
-                assert False  # Ensure mypy knows `uname` won't be used on Windows
-            platform_arch = os.uname().machine
-        platform_name = f"{platform_os_name}_{platform_arch}"
-    normalized_name = platform_name.replace("-", "_")
-    return TargetPlatform(normalized_name)  # Let ValueError escape
-
-
 @dataclass
 class LayerEnvBase(ABC):
     """Common base class for layer build environment implementations."""
@@ -2321,7 +2356,9 @@ class LayerEnvBase(ABC):
             "install",
             "--python",
             str(self.python_path),
-            *self.index_config._get_uv_pip_install_args(self.build_path),
+            *self.index_config._get_uv_pip_install_args(
+                self.build_path, self.build_platform
+            ),
             "--quiet",
             "--no-color",
         ]
