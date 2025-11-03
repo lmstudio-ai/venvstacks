@@ -167,8 +167,8 @@ def _resolve_lexical_path(path: StrPath, base_path: Path, /) -> Path:
 # https://docs.astral.sh/uv/reference/cli/#uv-pip-install--python-platform
 # Note: this makes it explicit that the Linux stacks created by venvstacks
 # are currently for GNU-based linux environments (Debian, Fedora, RHEL, etc)
-# Changes would be needed to allow emitting stacks for MUSL-based environments
-# (such as Alpine) instead of (or an addition to) GNU-based environments
+# Enhancements such as a per-layer `linux_target` setting would be needed
+# to allow emitting stacks for MUSL-based environments (such as Alpine)
 _ARCH_ALIASES = {
     "arm64": "aarch64",
     "amd64": "x86_64",
@@ -420,12 +420,8 @@ class PackageIndexConfig:
         del baseline_config_uv
         if not self.query_default_index:
             common_config_uv["no-index"] = True
-        # All inputs are via pyproject.toml, *except* on macOS,
-        # where the target OS version is set via an environment variable
-        common_config_uv["cache-keys"] = [
-            {"file": "pyproject.toml"},
-            {"env": "MACOSX_DEPLOYMENT_TARGET"},
-        ]
+        # All inputs are supplied via pyproject.toml
+        common_config_uv["cache-keys"] = [{"file": "pyproject.toml"}]
         # Local wheel builds must be created in advance for any source-only dependencies
         common_config_uv["no-build"] = True
         if self.local_wheel_paths:

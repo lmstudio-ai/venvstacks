@@ -710,9 +710,6 @@ _EXPECTED_UV_CONFIG = """\
 no-build = true
 [[cache-keys]]
 file = "pyproject.toml"
-
-[[cache-keys]]
-env = "MACOSX_DEPLOYMENT_TARGET"
 """
 
 

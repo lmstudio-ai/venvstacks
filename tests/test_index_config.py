@@ -164,7 +164,6 @@ _EXPECTED_COMMON_UV_CONFIG = {
     "no-build": True,
     "cache-keys": [
         {"file": "pyproject.toml"},
-        {"env": "MACOSX_DEPLOYMENT_TARGET"},
     ],
 }
 _EXPECTED_NAMED_INDEX_DETAILS: dict[str, _IndexDetails] = {

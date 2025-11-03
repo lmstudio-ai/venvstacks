@@ -143,10 +143,16 @@ All layer specifications may also contain the following optional fields:
      Added ``win_arm64`` and ``linux_aarch64`` as permitted target platforms
      (:ref:`release details <changelog-0.3.0>`).
 
+.. _macosx-target:
+
 * ``macosx_target`` (:toml:`string`)
   sets :uv-envvar:`MACOSX_DEPLOYMENT_TARGET` in the ``uv`` subprocess environment when
   installing packages, which may affect the exact wheels selected for projects which
-  publish wheels for multiple macOS versions
+  publish wheels for multiple macOS versions.
+
+  If this field is not set, the ``MACOSX_DEPLOYMENT_TARGET`` setting from the
+  calling environment is used without modification. If it is not set at all,
+  the default target macOS version is determined by the ``uv`` version.
 
   .. versionadded:: 0.8.0
      Added support for setting the minimum macOS target on a per-layer basis
