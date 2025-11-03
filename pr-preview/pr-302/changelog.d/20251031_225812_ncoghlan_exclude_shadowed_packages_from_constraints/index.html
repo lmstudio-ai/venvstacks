@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="search" title="Search" href="../../search/">
-        <link rel="canonical" href="https://venvstacks.lmstudio.ai/changelog.d/20251031_021206_ncoghlan_update_example_stacks/">
+        <link rel="canonical" href="https://venvstacks.lmstudio.ai/changelog.d/20251031_225812_ncoghlan_exclude_shadowed_packages_from_constraints/">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>Fixed - venvstacks documentation</title>
+        <title>Changed - venvstacks documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -260,12 +260,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/blob/main/docs/changelog.d/20251031_021206_ncoghlan_update_example_stacks.rst?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/blob/main/docs/changelog.d/20251031_225812_ncoghlan_exclude_shadowed_packages_from_constraints.rst?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/edit/main/docs/changelog.d/20251031_021206_ncoghlan_update_example_stacks.rst" rel="edit" title="Edit this page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/edit/main/docs/changelog.d/20251031_225812_ncoghlan_exclude_shadowed_packages_from_constraints.rst" rel="edit" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -282,11 +282,13 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="fixed">
-<h1>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">¶</a></h1>
+          <section id="changed">
+<h1>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h1>
 <ul class="simple">
-<li><p>Lock time clamping for uv’s <code class="docutils literal notranslate"><span class="pre">exclude-newer</span></code> setting is now correctly
-applied even for freshly locked layer definitions (resolved in <a class="extlink-pr reference external" href="https://github.com/lmstudio-ai/venvstacks/pull/300">PR #300</a>).</p></li>
+<li><p>The handling of shadowed packages across framework layers has changed,
+so unconditionally shadowed packages are no longer treated as constraints
+by higher layers. Environment marker conditions are also listed for
+shared packages from lower layers in layer summaries (resolved in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/292">#292</a>).</p></li>
 </ul>
 </section>
 
