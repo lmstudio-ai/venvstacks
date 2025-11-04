@@ -183,15 +183,15 @@ _UV_PYTHON_PLATFORM_NAMES = {
 # Identify target platforms using strings based on
 # https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
 # macOS target system API version info is omitted (as that will be set universally for macOS builds)
-class TargetPlatforms(StrEnum):
-    """Enum for support target deployment platforms."""
+class TargetPlatform(StrEnum):
+    """Enum for supported target deployment platforms."""
 
-    WINDOWS = "win_amd64"
+    WINDOWS = "win_amd64"  # Tested in CI
     WINDOWS_ARM64 = "win_arm64"
-    LINUX = "linux_x86_64"
+    LINUX = "linux_x86_64"  # Tested in CI
     LINUX_AARCH64 = "linux_aarch64"
-    MACOS_APPLE = "macosx_arm64"
-    MACOS_INTEL = "macosx_x86_64"  # Note: not currently tested in CI!
+    MACOS_APPLE = "macosx_arm64"  # Tested in CI
+    MACOS_INTEL = "macosx_x86_64"
 
     @classmethod
     def get_all_target_platforms(cls) -> list[Self]:
@@ -218,9 +218,8 @@ class TargetPlatforms(StrEnum):
         return f"{uv_arch}-{uv_platform}"
 
 
-TargetPlatform = (
-    TargetPlatforms  # Use singular name when creating instances from values
-)
+TargetPlatforms = TargetPlatform  # Use plural alias when the singular name reads oddly
+
 _UV_PYTHON_PLATFORMS = {
     platform: platform._as_uv_python_platform()
     for platform in TargetPlatforms.get_all_target_platforms()
@@ -1092,7 +1091,7 @@ class EnvironmentLock:
         return diagnostics
 
 
-class LayerVariants(StrEnum):
+class LayerVariant(StrEnum):
     """Enum for defined layer variants."""
 
     RUNTIME = "runtime"
@@ -1100,12 +1099,18 @@ class LayerVariants(StrEnum):
     APPLICATION = "application"
 
 
-class LayerCategories(StrEnum):
+LayerVariants = LayerVariant  # Use plural alias when the singular name reads oddly
+
+
+class LayerCategory(StrEnum):
     """Enum for defined layer categories (collections of each variant)."""
 
     RUNTIMES = "runtimes"
     FRAMEWORKS = "frameworks"
     APPLICATIONS = "applications"
+
+
+LayerCategories = LayerCategory  # Use plural alias when the singular name reads oddly
 
 
 def ensure_optional_env_spec_fields(env_metadata: MutableMapping[str, Any]) -> None:
@@ -1125,8 +1130,8 @@ class LayerSpecBase(ABC):
     ENV_PREFIX = ""
 
     # Specified in concrete subclasses
-    kind: ClassVar[LayerVariants]
-    category: ClassVar[LayerCategories]
+    kind: ClassVar[LayerVariant]
+    category: ClassVar[LayerCategory]
 
     # Specified on creation (typically based on TOML layer spec fields)
     name: LayerBaseName
@@ -1815,8 +1820,8 @@ class LayerEnvBase(ABC):
     tools_python_path: ClassVar[Path] = Path(sys.executable)
 
     # Specified in concrete subclasses
-    kind: ClassVar[LayerVariants]
-    category: ClassVar[LayerCategories]
+    kind: ClassVar[LayerVariant]
+    category: ClassVar[LayerCategory]
 
     # Specified on creation
     _env_spec: LayerSpecBase = field(repr=False)
