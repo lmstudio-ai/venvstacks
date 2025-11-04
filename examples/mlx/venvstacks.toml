@@ -16,6 +16,7 @@ requirements = [
     "mlx==0.29.3",
     "mlx[cpu]; sys_platform == 'linux'",
 ]
+# Platform restrictions are inherited from lower layers
 
 [[frameworks]]
 name = "mlx-cuda"
@@ -38,7 +39,7 @@ requirements = [
     # Exact version pin is inherited from the framework layer
     "mlx",
 ]
-# Inherit target platforms from the declared layer dependencies
+# Platform restrictions are inherited from lower layers
 
 [[applications]]
 name = "mlx-example-cuda"
@@ -48,7 +49,14 @@ requirements = [
     # Exact version pin is inherited from the framework layer
     "mlx",
 ]
-# Inherit target platforms from the declared layer dependencies
+# Platform restrictions are inherited from lower layers
 
 [tool.uv]
 exclude-newer = "2025-10-19T00:00:00Z"
+# Only resolve for the relevant target platforms
+environments = [
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+# required-environments is intentionally NOT set,
+# as not all layers are built for all platforms

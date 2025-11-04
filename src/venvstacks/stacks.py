@@ -190,8 +190,8 @@ _SYS_PLATFORM_MARKERS = {
 # Identify target platforms using strings based on
 # https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
 # macOS target system API version info is omitted (as that will be set universally for macOS builds)
-class TargetPlatforms(StrEnum):
-    """Enum for support target deployment platforms."""
+class TargetPlatform(StrEnum):
+    """Enum for supported target deployment platforms."""
 
     WINDOWS = "win_amd64"  # Tested in CI
     WINDOWS_ARM64 = "win_arm64"
@@ -224,9 +224,8 @@ class TargetPlatforms(StrEnum):
         return f"sys_platform == {sys_platform!r} and platform_machine == {machine!r}"
 
 
-TargetPlatform = (
-    TargetPlatforms  # Use singular name when creating instances from values
-)
+TargetPlatforms = TargetPlatform  # Use plural alias when the singular name reads oddly
+
 _UV_PYTHON_PLATFORMS = {
     platform: platform._as_uv_python_platform()
     for platform in TargetPlatforms.get_all_target_platforms()
@@ -1102,7 +1101,7 @@ class EnvironmentLock:
         return diagnostics
 
 
-class LayerVariants(StrEnum):
+class LayerVariant(StrEnum):
     """Enum for defined layer variants."""
 
     RUNTIME = "runtime"
@@ -1110,12 +1109,18 @@ class LayerVariants(StrEnum):
     APPLICATION = "application"
 
 
-class LayerCategories(StrEnum):
+LayerVariants = LayerVariant  # Use plural alias when the singular name reads oddly
+
+
+class LayerCategory(StrEnum):
     """Enum for defined layer categories (collections of each variant)."""
 
     RUNTIMES = "runtimes"
     FRAMEWORKS = "frameworks"
     APPLICATIONS = "applications"
+
+
+LayerCategories = LayerCategory  # Use plural alias when the singular name reads oddly
 
 
 @dataclass(kw_only=True)
@@ -1126,8 +1131,8 @@ class LayerSpecBase(ABC):
     ENV_PREFIX = ""
 
     # Specified in concrete subclasses
-    kind: ClassVar[LayerVariants]
-    category: ClassVar[LayerCategories]
+    kind: ClassVar[LayerVariant]
+    category: ClassVar[LayerCategory]
 
     # Specified on creation (typically based on TOML layer spec fields)
     name: LayerBaseName
@@ -1148,11 +1153,19 @@ class LayerSpecBase(ABC):
     def _infer_platforms(cls, fields: Mapping[str, Any]) -> Sequence[TargetPlatform]:
         return TargetPlatforms.get_default_target_platforms()
 
+    @staticmethod
+    def _get_layer_name(data: Mapping[str, Any]) -> Any:
+        try:
+            return data["name"]
+        except KeyError:
+            pass  # This error context is not interesting
+        raise LayerSpecError("missing 'name' key in layer specification")
+
     @classmethod
     def from_dict(cls, raw_fields: Mapping[str, Any]) -> Self:
         """Parse a layer definition using basic types into the expected format."""
         fields = dict(raw_fields)
-        layer_name = fields["name"]
+        layer_name = cls._get_layer_name(fields)
         fields.setdefault("versioned", False)
         fields.setdefault("package_indexes", {})
         fields.setdefault("priority_indexes", [])
@@ -1860,8 +1873,8 @@ class LayerEnvBase(ABC):
     tools_python_path: ClassVar[Path] = Path(sys.executable)
 
     # Specified in concrete subclasses
-    kind: ClassVar[LayerVariants]
-    category: ClassVar[LayerCategories]
+    kind: ClassVar[LayerVariant]
+    category: ClassVar[LayerCategory]
 
     # Specified on creation
     _env_spec: LayerSpecBase = field(repr=False)
@@ -3481,20 +3494,12 @@ class StackSpec:
             self.requirements_dir_path
         )
 
-    @staticmethod
-    def _get_layer_name(data: Mapping[str, Any]) -> Any:
-        try:
-            return data["name"]
-        except KeyError:
-            pass  # This error context is not interesting
-        raise LayerSpecError("Layer specifications must include 'name'")
-
     @classmethod
     def _delete_field(cls, data: MutableMapping[str, Any], legacy_name: str) -> bool:
         """Ignore removed legacy field. Returns True if field needs to be removed."""
         legacy_field_value = data.pop(legacy_name, None)
         if legacy_field_value is not None:
-            layer_name = cls._get_layer_name(data)
+            layer_name = LayerSpecBase._get_layer_name(data)
             msg = f"Dropping legacy field {legacy_name!r} for layer {layer_name!r}"
             warnings.warn(msg, FutureWarning)
             return True
@@ -3507,7 +3512,7 @@ class StackSpec:
         """Convert legacy field to current field. Returns True if conversion is needed."""
         legacy_field_value = data.pop(legacy_name, None)
         if legacy_field_value is not None:
-            layer_name = cls._get_layer_name(data)
+            layer_name = LayerSpecBase._get_layer_name(data)
             if name in data:
                 msg = f"Layer {layer_name!r} sets both {name!r} and the obsolete {legacy_name!r}"
                 raise LayerSpecError(msg)
@@ -3730,7 +3735,7 @@ class StackSpec:
         # Collect the list of runtime specs
         runtimes: dict[LayerBaseName, RuntimeSpec] = {}
         for rt in data.get("runtimes", ()):
-            name = cls._get_layer_name(rt)
+            name = LayerSpecBase._get_layer_name(rt)
             # Handle backwards compatibility fixes and warnings
             cls._update_legacy_fields(rt, cls._RUNTIME_LEGACY_CONVERSIONS)
             # Consistency checks (no field value conversions necessary)
@@ -3742,7 +3747,7 @@ class StackSpec:
         # Collect the list of framework specs
         frameworks: dict[LayerBaseName, FrameworkSpec] = {}
         for fw in data.get("frameworks", ()):
-            name = cls._get_layer_name(fw)
+            name = LayerSpecBase._get_layer_name(fw)
             # Handle backwards compatibility fixes and warnings
             cls._update_legacy_fields(fw, cls._FRAMEWORK_LEGACY_CONVERSIONS)
             # Consistency checks and field value conversions
@@ -3761,7 +3766,7 @@ class StackSpec:
         # Collect the list of application specs
         applications: dict[LayerBaseName, ApplicationSpec] = {}
         for app in data.get("applications", ()):
-            name = cls._get_layer_name(app)
+            name = LayerSpecBase._get_layer_name(app)
             # Handle backwards compatibility fixes and warnings
             cls._update_legacy_fields(app, cls._APPLICATION_LEGACY_CONVERSIONS)
             # Consistency checks and field value conversions

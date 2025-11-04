@@ -83,6 +83,7 @@ EXPECTED_STACK_SPEC_ERRORS = {
     "error_layer_dep_cycle.toml": "unknown framework",
     "error_layer_dep_forward_reference.toml": "unknown framework",
     "error_missing_launch_module.toml": "launch module.*does not exist",
+    "error_missing_layer_name.toml": "missing 'name'",
     "error_missing_support_modules.toml": "support modules do not exist",
     "error_support_modules_conflict.toml": "Conflicting support module names.*'layer'",
     "error_unknown_framework.toml": "unknown framework",

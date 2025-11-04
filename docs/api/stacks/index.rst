@@ -43,7 +43,9 @@
       :nosignatures:
 
       LayerCategories
+      LayerCategory
       LayerSpecMetadata
+      LayerVariant
       LayerVariants
       TargetPlatform
       TargetPlatforms

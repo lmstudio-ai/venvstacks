@@ -1,4 +1,4 @@
-# Ensure suitable error is raised for a inconsistent target platform lists
+# Ensure suitable error is raised for inconsistent target platform lists
 
 [[runtimes]]
 name = "cpython-3.11"

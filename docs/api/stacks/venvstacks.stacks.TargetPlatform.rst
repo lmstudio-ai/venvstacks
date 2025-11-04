@@ -13,4 +13,3 @@ venvstacks.stacks.TargetPlatform
       ~TargetPlatform.LINUX
       ~TargetPlatform.MACOS_APPLE
       ~TargetPlatform.MACOS_INTEL
-
