@@ -198,19 +198,6 @@ class TargetPlatform(StrEnum):
         """Sorted list of all defined target platforms."""
         return sorted(set(cls.__members__.values()))
 
-    @classmethod
-    def ensure_platform_list(cls, metadata: MutableMapping[str, Any]) -> None:
-        """Ensure given metadata mapping includes a ``"platforms`` field.
-
-        If the field is not already present, it is set to all defined platforms.
-        """
-        platform_list = metadata.get("platforms")
-        if platform_list is not None:
-            platform_list = [cls(target) for target in platform_list]
-        else:
-            platform_list = cls.get_all_target_platforms()
-        metadata["platforms"] = platform_list
-
     def _as_uv_python_platform(self) -> str:
         platform, _, arch = self.partition("_")
         uv_arch = _ARCH_ALIASES.get(arch, arch)
@@ -1113,15 +1100,6 @@ class LayerCategory(StrEnum):
 LayerCategories = LayerCategory  # Use plural alias when the singular name reads oddly
 
 
-def ensure_optional_env_spec_fields(env_metadata: MutableMapping[str, Any]) -> None:
-    """Populate missing environment spec fields that are optional in the TOML file."""
-    TargetPlatforms.ensure_platform_list(env_metadata)
-    env_metadata.setdefault("versioned", False)
-    env_metadata.setdefault("package_indexes", {})
-    env_metadata.setdefault("priority_indexes", [])
-    env_metadata.setdefault("dynlib_exclude", [])
-
-
 @dataclass(kw_only=True)
 class LayerSpecBase(ABC):
     """Common base class for layer environment specifications."""
@@ -1149,12 +1127,54 @@ class LayerSpecBase(ABC):
     )
 
     @classmethod
+    def _infer_platforms(cls, fields: Mapping[str, Any]) -> list[TargetPlatform]:
+        return TargetPlatforms.get_all_target_platforms()
+
+    @staticmethod
+    def _get_layer_name(data: Mapping[str, Any]) -> Any:
+        try:
+            return data["name"]
+        except KeyError:
+            pass  # This error context is not interesting
+        raise LayerSpecError("missing 'name' key in layer specification")
+
+    @classmethod
     def from_dict(cls, raw_fields: Mapping[str, Any]) -> Self:
         """Parse a layer definition using basic types into the expected format."""
         fields = dict(raw_fields)
-        ensure_optional_env_spec_fields(fields)
+        layer_name = cls._get_layer_name(fields)
+        fields.setdefault("versioned", False)
+        fields.setdefault("package_indexes", {})
+        fields.setdefault("priority_indexes", [])
+        fields.setdefault("dynlib_exclude", [])
         # Index overrides are expected to be have been applied externally
         fields.pop("index_overrides", None)
+        # Ensure target platforms are known
+        raw_platforms = fields.get("platforms", None)
+        inferred_platforms = cls._infer_platforms(fields)
+        platforms: list[TargetPlatform]
+        if raw_platforms is None:
+            platforms = inferred_platforms
+        else:
+            platforms = []
+            for raw_platform in raw_platforms:
+                try:
+                    platform = TargetPlatform(raw_platform)
+                except ValueError:
+                    all_platforms = [
+                        str(t) for t in TargetPlatforms.get_all_target_platforms()
+                    ]
+                    err = f"{layer_name} specifies an invalid target platform"
+                    hint = f"{raw_platform!r} given, expected {all_platforms}"
+                    raise LayerSpecError(f"{err} ({hint})")
+                platforms.append(platform)
+            unexpected_platforms = set(platforms) - set(inferred_platforms)
+            if unexpected_platforms:
+                err = f"{layer_name} specifies target platforms not supported by lower layers"
+                hint = f"{[str(t) for t in sorted(unexpected_platforms)]}"
+                raise LayerSpecError(f"{err} ({hint})")
+
+        fields["platforms"] = platforms
         # Ensure declared dependencies are syntactically valid
         try:
             requirements = [Requirement(req) for req in fields["requirements"]]
@@ -1280,6 +1300,16 @@ class LayeredSpecBase(LayerSpecBase):
     # Intermediate class for covariant property typing (never instantiated)
     runtime: RuntimeSpec = field(repr=False)
     frameworks: list["FrameworkSpec"] = field(repr=False)
+
+    @classmethod
+    def _infer_platforms(cls, fields: Mapping[str, Any]) -> list[TargetPlatform]:
+        platforms = set(super()._infer_platforms(fields))
+        rt_spec: RuntimeSpec = fields["runtime"]
+        platforms.intersection_update(rt_spec.platforms)
+        fw_spec: FrameworkSpec
+        for fw_spec in fields["frameworks"]:
+            platforms.intersection_update(fw_spec.platforms)
+        return sorted(platforms)
 
 
 @dataclass
@@ -3437,20 +3467,12 @@ class StackSpec:
             self.requirements_dir_path
         )
 
-    @staticmethod
-    def _get_layer_name(data: Mapping[str, Any]) -> Any:
-        try:
-            return data["name"]
-        except KeyError:
-            pass  # This error context is not interesting
-        raise LayerSpecError("Layer specifications must include 'name'")
-
     @classmethod
     def _delete_field(cls, data: MutableMapping[str, Any], legacy_name: str) -> bool:
         """Ignore removed legacy field. Returns True if field needs to be removed."""
         legacy_field_value = data.pop(legacy_name, None)
         if legacy_field_value is not None:
-            layer_name = cls._get_layer_name(data)
+            layer_name = LayerSpecBase._get_layer_name(data)
             msg = f"Dropping legacy field {legacy_name!r} for layer {layer_name!r}"
             warnings.warn(msg, FutureWarning)
             return True
@@ -3463,7 +3485,7 @@ class StackSpec:
         """Convert legacy field to current field. Returns True if conversion is needed."""
         legacy_field_value = data.pop(legacy_name, None)
         if legacy_field_value is not None:
-            layer_name = cls._get_layer_name(data)
+            layer_name = LayerSpecBase._get_layer_name(data)
             if name in data:
                 msg = f"Layer {layer_name!r} sets both {name!r} and the obsolete {legacy_name!r}"
                 raise LayerSpecError(msg)
@@ -3686,7 +3708,7 @@ class StackSpec:
         # Collect the list of runtime specs
         runtimes: dict[LayerBaseName, RuntimeSpec] = {}
         for rt in data.get("runtimes", ()):
-            name = cls._get_layer_name(rt)
+            name = LayerSpecBase._get_layer_name(rt)
             # Handle backwards compatibility fixes and warnings
             cls._update_legacy_fields(rt, cls._RUNTIME_LEGACY_CONVERSIONS)
             # Consistency checks (no field value conversions necessary)
@@ -3698,7 +3720,7 @@ class StackSpec:
         # Collect the list of framework specs
         frameworks: dict[LayerBaseName, FrameworkSpec] = {}
         for fw in data.get("frameworks", ()):
-            name = cls._get_layer_name(fw)
+            name = LayerSpecBase._get_layer_name(fw)
             # Handle backwards compatibility fixes and warnings
             cls._update_legacy_fields(fw, cls._FRAMEWORK_LEGACY_CONVERSIONS)
             # Consistency checks and field value conversions
@@ -3717,7 +3739,7 @@ class StackSpec:
         # Collect the list of application specs
         applications: dict[LayerBaseName, ApplicationSpec] = {}
         for app in data.get("applications", ()):
-            name = cls._get_layer_name(app)
+            name = LayerSpecBase._get_layer_name(app)
             # Handle backwards compatibility fixes and warnings
             cls._update_legacy_fields(app, cls._APPLICATION_LEGACY_CONVERSIONS)
             # Consistency checks and field value conversions
