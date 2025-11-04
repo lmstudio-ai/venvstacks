@@ -68,6 +68,15 @@ launch_module = "empty.py"
 runtime = "cpython-3.11"
 requirements = []
 
+[[applications]]
+name = "disabled"
+launch_module = "empty.py"
+runtime = "cpython-3.11"
+requirements = []
+# An empty platforms list means this layer will never be locked or built
+platforms = []
+
+
 # Fodder for priority_index and package_indexes testing
 [[tool.uv.index]]
 name = "pypi-named"
