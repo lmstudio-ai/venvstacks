@@ -203,7 +203,9 @@
 <li class="toctree-l3"><a class="reference internal" href="../../api/stacks/venvstacks.stacks.StackSpec/">venvstacks.stacks.StackSpec</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../api/stacks/venvstacks.stacks.BuildEnvironment/">venvstacks.stacks.BuildEnvironment</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../api/stacks/venvstacks.stacks.LayerCategories/">venvstacks.stacks.LayerCategories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/stacks/venvstacks.stacks.LayerCategory/">venvstacks.stacks.LayerCategory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../api/stacks/venvstacks.stacks.LayerSpecMetadata/">venvstacks.stacks.LayerSpecMetadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/stacks/venvstacks.stacks.LayerVariant/">venvstacks.stacks.LayerVariant</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../api/stacks/venvstacks.stacks.LayerVariants/">venvstacks.stacks.LayerVariants</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../api/stacks/venvstacks.stacks.TargetPlatform/">venvstacks.stacks.TargetPlatform</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../api/stacks/venvstacks.stacks.TargetPlatforms/">venvstacks.stacks.TargetPlatforms</a></li>
@@ -287,10 +289,11 @@
 <ul class="simple">
 <li><p>Locking operations are no longer filtered by platform. This means the
 <code class="docutils literal notranslate"><span class="pre">BuildEnvironment.all_environments</span></code> iterator now reports all defined
-layers, not just those for the current platform. Iterate over
-<code class="docutils literal notranslate"><span class="pre">BuildEnvironment.environments_to_build</span></code> without any layer filtering
-configured to obtain a list of layers specific to the current platform
-(resolved in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/265">#265</a>).</p></li>
+layers with at least one target platform configured, not just those
+for the current platform.
+Iterate over <code class="docutils literal notranslate"><span class="pre">BuildEnvironment.environments_to_build</span></code> without any layer
+filtering configured to obtain a list of layers specific to the current
+platform (resolved in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/265">#265</a>).</p></li>
 </ul>
 </section>
 

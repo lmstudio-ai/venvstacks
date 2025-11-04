@@ -207,7 +207,9 @@
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.StackSpec/">venvstacks.stacks.StackSpec</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.BuildEnvironment/">venvstacks.stacks.BuildEnvironment</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerCategories/">venvstacks.stacks.LayerCategories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerCategory/">venvstacks.stacks.LayerCategory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerSpecMetadata/">venvstacks.stacks.LayerSpecMetadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerVariant/">venvstacks.stacks.LayerVariant</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerVariants/">venvstacks.stacks.LayerVariants</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.TargetPlatform/">venvstacks.stacks.TargetPlatform</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.TargetPlatforms/">venvstacks.stacks.TargetPlatforms</a></li>
@@ -322,13 +324,14 @@ Layers with a more recent recorded lock time will also be relocked
 <p>Note that the following config settings are always set by <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> when invoking
 <code class="docutils literal notranslate"><span class="pre">uv</span></code>, so any attempts to set them in the common layer configuration will be ignored:</p>
 <ul class="simple">
+<li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#cache-keys">cache-keys</a> (always set to the inputs <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> provides)</p></li>
 <li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#environments">environments</a> (always set based on the layer’s target platforms)</p></li>
 <li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#no-build">no-build</a> (implicit source builds are always disabled)</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>As of October 2025, there is an open <code class="docutils literal notranslate"><span class="pre">uv</span></code> issue that may cause problems when
-attempting to combine the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a> with custom indexes due to
+attempting to combine the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a> setting with custom indexes due to
 <a class="reference external" href="https://github.com/astral-sh/uv/issues/12449">missing artifact publication date information</a>.</p>
 </div>
 <p>The default output folder for layer metadata when publishing artifacts and locally exporting
@@ -389,10 +392,11 @@ to an external version number.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">platforms</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
 by default, all layers are built for all target platforms. Setting this field
-allows the layer build to be narrowed to a subset of the supported targets.
+allows a layer build to be narrowed to a subset of the supported targets,
+affecting both that layer and all layers that depend on it.
 Setting this field to an empty list also allows a layer build to be disabled
-without having to delete it entirely.
-Permitted entries in the <code class="docutils literal notranslate"><span class="pre">platforms</span></code> list are:</p>
+without having to delete it entirely.</p>
+<p>Permitted entries in the <code class="docutils literal notranslate"><span class="pre">platforms</span></code> list are:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;win_amd64&quot;</span></code>: Windows on x86-64</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;win_arm64&quot;</span></code>: Windows on ARM64/Aarch64 (not currently tested in CI)</p></li>
@@ -401,9 +405,30 @@ Permitted entries in the <code class="docutils literal notranslate"><span class=
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;macosx_arm64&quot;</span></code>: macOS on Apple (ARM64/Aarch64) silicon</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;macosx_x86_64&quot;</span></code>: macOS on Intel silicon (not currently tested in CI)</p></li>
 </ul>
+<p>If no platforms are specified, the default platform list is used:
+<code class="docutils literal notranslate"><span class="pre">[&quot;linux_x86_64&quot;,</span> <span class="pre">&quot;macosx_arm64&quot;,</span> <span class="pre">&quot;win_amd64&quot;]</span></code>.</p>
 <div class="versionchanged">
 <p><span class="versionmodified changed">Changed in version 0.3.0: </span>Added <code class="docutils literal notranslate"><span class="pre">win_arm64</span></code> and <code class="docutils literal notranslate"><span class="pre">linux_aarch64</span></code> as permitted target platforms
 (<a class="reference internal" href="../changelog/#changelog-0-3-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.8.0: </span>Narrowing the target platforms for a layer now also narrows the target
+platforms for all layers that depend on that layer
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</li>
+</ul>
+<ul id="macosx-target">
+<li><p><code class="docutils literal notranslate"><span class="pre">macosx_target</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>)
+sets <a class="extlink-uv-envvar reference external" href="https://docs.astral.sh/uv/reference/environment/#MACOSX_DEPLOYMENT_TARGET">MACOSX_DEPLOYMENT_TARGET</a> in the <code class="docutils literal notranslate"><span class="pre">uv</span></code> subprocess environment when
+installing packages, which may affect the exact wheels selected for projects which
+publish wheels for multiple macOS versions.</p>
+<p>If this field is not set, the <code class="docutils literal notranslate"><span class="pre">MACOSX_DEPLOYMENT_TARGET</span></code> setting from the
+calling environment is used without modification. If it is not set at all,
+the default target macOS version is determined by the <code class="docutils literal notranslate"><span class="pre">uv</span></code> version.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for setting the minimum macOS target on a per-layer basis
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
 </div>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dynlib_exclude</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
