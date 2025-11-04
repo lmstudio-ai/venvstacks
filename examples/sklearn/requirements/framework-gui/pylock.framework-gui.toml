@@ -8,6 +8,7 @@ requires-python = "==3.11.*"
 [[packages]]
 name = "pyside6"
 version = "6.10.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'ARM64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -53,6 +54,7 @@ sha256 = "4b709bdeeb89d386059343a5a706fc185cee37b517bda44c7d6b64d5fdaf3339"
 [[packages]]
 name = "pyside6-addons"
 version = "6.10.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'ARM64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -98,6 +100,7 @@ sha256 = "92536427413f3b6557cf53f1a515cd766725ee46a170aff57ad2ff1dfce0ffb1"
 [[packages]]
 name = "pyside6-essentials"
 version = "6.10.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'ARM64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -143,6 +146,7 @@ sha256 = "6dd0936394cb14da2fd8e869899f5e0925a738b1c8d74c2f22503720ea363fb1"
 [[packages]]
 name = "shiboken6"
 version = "6.10.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'ARM64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
