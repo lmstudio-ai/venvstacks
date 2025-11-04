@@ -16,12 +16,7 @@ requirements = [
     "mlx==0.29.3",
     "mlx[cpu]; sys_platform == 'linux'",
 ]
-# Platform restrictions are not currently inherited from lower layers
-# https://github.com/lmstudio-ai/venvstacks/issues/244
-platforms = [
-    "macosx_arm64",
-    "linux_x86_64",
-]
+# Platform restrictions are inherited from lower layers
 
 [[frameworks]]
 name = "mlx-cuda"
@@ -44,12 +39,7 @@ requirements = [
     # Exact version pin is inherited from the framework layer
     "mlx",
 ]
-# Platform restrictions are not currently inherited from lower layers
-# https://github.com/lmstudio-ai/venvstacks/issues/244
-platforms = [
-    "macosx_arm64",
-    "linux_x86_64",
-]
+# Platform restrictions are inherited from lower layers
 
 [[applications]]
 name = "mlx-example-cuda"
@@ -59,11 +49,7 @@ requirements = [
     # Exact version pin is inherited from the framework layer
     "mlx",
 ]
-# Platform restrictions are not currently inherited from lower layers
-# https://github.com/lmstudio-ai/venvstacks/issues/244
-platforms = [
-    "linux_x86_64",
-]
+# Platform restrictions are inherited from lower layers
 
 [tool.uv]
 exclude-newer = "2025-10-19T00:00:00Z"
@@ -72,5 +58,5 @@ environments = [
     "sys_platform == 'darwin' and platform_machine == 'arm64'",
     "sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
-# No need to set required-environments as the required
-# CPU architecture is specified per environment
+# required-environments is intentionally NOT set,
+# as not all layers are built for all platforms
