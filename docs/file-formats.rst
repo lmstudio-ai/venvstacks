@@ -127,9 +127,11 @@ All layer specifications may also contain the following optional fields:
 
 * ``platforms`` (:toml:`array` of :toml:`strings <string>`):
   by default, all layers are built for all target platforms. Setting this field
-  allows the layer build to be narrowed to a subset of the supported targets.
+  allows a layer build to be narrowed to a subset of the supported targets,
+  affecting both that layer and all layers that depend on it.
   Setting this field to an empty list also allows a layer build to be disabled
   without having to delete it entirely.
+
   Permitted entries in the ``platforms`` list are:
 
   * ``"win_amd64"``: Windows on x86-64
@@ -142,6 +144,11 @@ All layer specifications may also contain the following optional fields:
   .. versionchanged:: 0.3.0
      Added ``win_arm64`` and ``linux_aarch64`` as permitted target platforms
      (:ref:`release details <changelog-0.3.0>`).
+
+  .. versionchanged:: 0.8.0
+     Narrowing the target platforms for a layer now also narrows the target
+     platforms for all layers that depend on that layer
+     (:ref:`release details <changelog-0.8.0>`).
 
 .. _macosx-target:
 

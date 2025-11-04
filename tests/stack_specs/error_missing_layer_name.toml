@@ -1,0 +1,6 @@
+# Ensure suitable error is raised for a missing layer name
+
+[[runtimes]]
+# name field omitted
+python_implementation = "cpython@3.11.11"
+requirements = []

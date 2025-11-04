@@ -75,6 +75,7 @@ EXPECTED_STACK_SPEC_ERRORS = {
     "error_inconsistent_runtimes.toml": "inconsistent frameworks",
     "error_inconsistent_app_indexes.toml": 'invalid.*inconsistent package index override.*index_overrides = {pytorch-cpu = "pytorch-cu128"}',
     "error_inconsistent_framework_indexes.toml": 'invalid.*inconsistent package index override.*index_overrides = {pytorch-cpu = "pytorch-cu128"}',
+    "error_inconsistent_platforms.toml": "invalid.*not supported by lower layers.*win_amd64",
     "error_inconsistent_runtime_indexes.toml": 'invalid.*inconsistent package index override.*index_overrides = {pytorch-cpu = "pytorch-cu128"}',
     "error_invalid_requirement_syntax.toml": "invalid requirement syntax",
     "error_launch_support_conflict.toml": "'name'.*conflicts with.*'layer'",
@@ -82,11 +83,13 @@ EXPECTED_STACK_SPEC_ERRORS = {
     "error_layer_dep_cycle.toml": "unknown framework",
     "error_layer_dep_forward_reference.toml": "unknown framework",
     "error_missing_launch_module.toml": "launch module.*does not exist",
+    "error_missing_layer_name.toml": "missing 'name'",
     "error_missing_support_modules.toml": "support modules do not exist",
     "error_support_modules_conflict.toml": "Conflicting support module names.*'layer'",
     "error_unknown_framework.toml": "unknown framework",
     "error_unknown_runtime.toml": "unknown runtime",
     "error_unknown_package_index.toml": "unknown package index",
+    "error_unknown_platform.toml": "cpython-3.11.*invalid target.*win32_x86_64.*expected",
     "error_unknown_priority_index.toml": "unknown package index",
 }
 
