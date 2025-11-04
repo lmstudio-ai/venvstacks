@@ -113,6 +113,9 @@ EXPECTED_APPLICATIONS = [
     ApplicationEnvSummary("no-framework", "app-", "cpython-3.11", ()),
 ]
 
+DISABLED_LAYER = ApplicationEnvSummary("disabled", "app-", "cpython-3.11", ())
+
+
 EXPECTED_ENVIRONMENTS = EXPECTED_RUNTIMES.copy()
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_FRAMEWORKS)
 EXPECTED_ENVIRONMENTS.extend(EXPECTED_APPLICATIONS)
@@ -408,10 +411,10 @@ class TestMinimalSpec(SpecLoadingTestCase):
     def test_spec_loading(self) -> None:
         self.check_stack_specification(
             MINIMAL_PROJECT_STACK_SPEC_PATH,
-            EXPECTED_ENVIRONMENTS,
+            EXPECTED_ENVIRONMENTS + [DISABLED_LAYER],
             EXPECTED_RUNTIMES,
             EXPECTED_FRAMEWORKS,
-            EXPECTED_APPLICATIONS,
+            EXPECTED_APPLICATIONS + [DISABLED_LAYER],
         )
 
 
