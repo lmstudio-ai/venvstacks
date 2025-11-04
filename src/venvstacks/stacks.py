@@ -231,7 +231,7 @@ class TargetPlatform(StrEnum):
     def _as_uv_target_environment(self) -> str:
         target_os, _, machine = self.partition("_")
         sys_platform = _SYS_PLATFORM_MARKERS[target_os]
-        if sys_platform == "win32":
+        if sys_platform == "win32" and machine == "amd64":
             # On Windows, sysconfig.get_platform() (platform tags) and
             # platform.machine() (environment markers) differ in casing
             machine = machine.upper()
