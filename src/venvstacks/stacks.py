@@ -210,7 +210,17 @@ class TargetPlatform(StrEnum):
         """List of the platforms targeted by default."""
         # Explicit cast needed because mypy doesn't correctly infer
         # that the enum entries are instances of the class being defined
-        return cast(list[Self], [cls.LINUX, cls.MACOS_APPLE, cls.WINDOWS])
+        return cast(
+            list[Self],
+            [
+                cls.LINUX,
+                cls.LINUX_AARCH64,
+                cls.MACOS_APPLE,
+                # MACOS_INTEL is omitted by default as a legacy platform
+                cls.WINDOWS,
+                cls.WINDOWS_ARM64,
+            ],
+        )
 
     def _as_uv_python_platform(self) -> str:
         platform, _, arch = self.partition("_")
@@ -221,6 +231,10 @@ class TargetPlatform(StrEnum):
     def _as_uv_target_environment(self) -> str:
         target_os, _, machine = self.partition("_")
         sys_platform = _SYS_PLATFORM_MARKERS[target_os]
+        if sys_platform == "win32":
+            # On Windows, sysconfig.get_platform() (platform tags) and
+            # platform.machine() (environment markers) differ in casing
+            machine = machine.upper()
         return f"sys_platform == {sys_platform!r} and platform_machine == {machine!r}"
 
 

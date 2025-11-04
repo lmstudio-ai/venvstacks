@@ -8,7 +8,7 @@ requires-python = "==3.11.*"
 [[packages]]
 name = "filelock"
 version = "3.20.0"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
+marker = "(platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -30,7 +30,7 @@ sha256 = "711e943b4ec6be42e1d4e6690b48dc175c822967466bb31c0c293f34334c13f4"
 [[packages]]
 name = "fsspec"
 version = "2025.10.0"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
+marker = "(platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -52,7 +52,7 @@ sha256 = "b6789427626f068f9a83ca4e8a3cc050850b6c0f71f99ddb4f542b8266a26a59"
 [[packages]]
 name = "jinja2"
 version = "3.1.6"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
+marker = "(platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -74,16 +74,8 @@ sha256 = "0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"
 [[packages]]
 name = "markupsafe"
 version = "3.0.3"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
+marker = "(platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/e1/2e/5898933336b61975ce9dc04decbc0a7f2fee78c30353c5efba7f2d6ff27a/markupsafe-3.0.3-cp311-cp311-macosx_11_0_arm64.whl"
-upload-time = 2025-09-27T18:36:19Z
-size = 12058
-
-[packages.wheels.hashes]
-sha256 = "4bd4cd07944443f5a265608cc6aab442e4f74dff8088b0dfc8238647b8f6ae9a"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/30/ac/0273f6fcb5f42e314c6d8cd99effae6a5354604d461b8d392b5ec9530a54/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl"
@@ -125,14 +117,6 @@ size = 15077
 [packages.wheels.hashes]
 sha256 = "de8a88e63464af587c950061a5e6a67d3632e36df62b986892331d4620a35c01"
 
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/35/73/893072b42e6862f319b5207adc9ae06070f095b358655f077f69a35601f0/markupsafe-3.0.3-cp311-cp311-win_arm64.whl"
-upload-time = 2025-09-27T18:36:29Z
-size = 13876
-
-[packages.wheels.hashes]
-sha256 = "3b562dd9e9ea93f13d53989d23a7e775fdfd1066c33494ff43f5418bc8c58a5c"
-
 [packages.sdist]
 url = "https://files.pythonhosted.org/packages/7e/99/7690b6d4034fffd95959cbe0c02de8deb3098cc577c67bb6a24fe5d7caa7/markupsafe-3.0.3.tar.gz"
 upload-time = 2025-09-27T18:37:40Z
@@ -144,7 +128,7 @@ sha256 = "722695808f4b6457b320fdc131280796bdceb04ab50fe1795cd540799ebe1698"
 [[packages]]
 name = "mpmath"
 version = "1.3.0"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
+marker = "(platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -166,7 +150,7 @@ sha256 = "7a28eb2a9774d00c7bc92411c19a89209d5da7c4c9a9e227be8330a23a25b91f"
 [[packages]]
 name = "networkx"
 version = "3.5"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
+marker = "(platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -406,7 +390,7 @@ sha256 = "f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c"
 [[packages]]
 name = "sympy"
 version = "1.14.0"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
+marker = "(platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -428,7 +412,7 @@ sha256 = "d3d3fe8df1e5a0b42f0e7bdf50541697dbe7d23746e894990c030e2b05e72517"
 [[packages]]
 name = "torch"
 version = "2.8.0+cu128"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
+marker = "(platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://download.pytorch.org/whl/cu128/"
 
 [[packages.wheels]]
@@ -460,7 +444,7 @@ sha256 = "7b70f5e6a41e52e48cfc087436c8a28c17ff98db369447bcaff3b887a3ab4467"
 [[packages]]
 name = "typing-extensions"
 version = "4.15.0"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
+marker = "(platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
