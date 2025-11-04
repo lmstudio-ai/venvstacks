@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="search" title="Search" href="../../../search/"><link rel="next" title="venvstacks.stacks.LayerSpecMetadata" href="../venvstacks.stacks.LayerSpecMetadata/"><link rel="prev" title="venvstacks.stacks.BuildEnvironment" href="../venvstacks.stacks.BuildEnvironment/">
+<link rel="search" title="Search" href="../../../search/"><link rel="next" title="venvstacks.stacks.LayerCategory" href="../venvstacks.stacks.LayerCategory/"><link rel="prev" title="venvstacks.stacks.BuildEnvironment" href="../venvstacks.stacks.BuildEnvironment/">
         <link rel="canonical" href="https://venvstacks.lmstudio.ai/api/stacks/venvstacks.stacks.LayerCategories/">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
@@ -173,7 +173,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -203,7 +203,9 @@
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.StackSpec/">venvstacks.stacks.StackSpec</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.BuildEnvironment/">venvstacks.stacks.BuildEnvironment</a></li>
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">venvstacks.stacks.LayerCategories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayerCategory/">venvstacks.stacks.LayerCategory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayerSpecMetadata/">venvstacks.stacks.LayerSpecMetadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayerVariant/">venvstacks.stacks.LayerVariant</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.LayerVariants/">venvstacks.stacks.LayerVariants</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.TargetPlatform/">venvstacks.stacks.TargetPlatform</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../venvstacks.stacks.TargetPlatforms/">venvstacks.stacks.TargetPlatforms</a></li>
@@ -277,35 +279,14 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
           <section id="venvstacks-stacks-layercategories">
 <h1>venvstacks.stacks.LayerCategories<a class="headerlink" href="#venvstacks-stacks-layercategories" title="Link to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="venvstacks.stacks.LayerCategories">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">venvstacks.stacks.</span></span><span class="sig-name descname"><span class="pre">LayerCategories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#venvstacks.stacks.LayerCategories" title="Link to this definition">¶</a></dt>
-<dd><p>Enum for defined layer categories (collections of each variant).</p>
-<p class="rubric">Attributes</p>
-<div class="table-wrapper autosummary longtable docutils container">
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">RUNTIMES</span></code></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">FRAMEWORKS</span></code></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">APPLICATIONS</span></code></p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</dd></dl>
-
+<p>Readability alias for <a class="reference internal" href="../venvstacks.stacks.LayerCategory/#venvstacks.stacks.LayerCategory" title="venvstacks.stacks.LayerCategory"><code class="xref py py-class docutils literal notranslate"><span class="pre">LayerCategory</span></code></a></p>
 </section>
 
         </article>
@@ -313,12 +294,12 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../venvstacks.stacks.LayerSpecMetadata/">
+          <a class="next-page" href="../venvstacks.stacks.LayerCategory/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">venvstacks.stacks.LayerSpecMetadata</div>
+                <div class="title">venvstacks.stacks.LayerCategory</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -351,27 +332,8 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">venvstacks.stacks.LayerCategories</a><ul>
-<li><a class="reference internal" href="#venvstacks.stacks.LayerCategories"><code class="docutils literal notranslate"><span class="pre">LayerCategories</span></code></a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

@@ -207,7 +207,9 @@
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.StackSpec/">venvstacks.stacks.StackSpec</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.BuildEnvironment/">venvstacks.stacks.BuildEnvironment</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.LayerCategories/">venvstacks.stacks.LayerCategories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.LayerCategory/">venvstacks.stacks.LayerCategory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.LayerSpecMetadata/">venvstacks.stacks.LayerSpecMetadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.LayerVariant/">venvstacks.stacks.LayerVariant</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.LayerVariants/">venvstacks.stacks.LayerVariants</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.TargetPlatform/">venvstacks.stacks.TargetPlatform</a></li>
 <li class="toctree-l3"><a class="reference internal" href="venvstacks.stacks.TargetPlatforms/">venvstacks.stacks.TargetPlatforms</a></li>
@@ -313,20 +315,26 @@ without any deprecation period.</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.LayerCategories/#venvstacks.stacks.LayerCategories" title="venvstacks.stacks.LayerCategories"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerCategories</span></code></a></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerCategories</span></code></p></td>
+<td><p>alias of <a class="reference internal" href="venvstacks.stacks.LayerCategory/#venvstacks.stacks.LayerCategory" title="venvstacks.stacks.LayerCategory"><code class="xref py py-class docutils literal notranslate"><span class="pre">LayerCategory</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.LayerCategory/#venvstacks.stacks.LayerCategory" title="venvstacks.stacks.LayerCategory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerCategory</span></code></a></p></td>
 <td><p>Enum for defined layer categories (collections of each variant).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.LayerSpecMetadata/#venvstacks.stacks.LayerSpecMetadata" title="venvstacks.stacks.LayerSpecMetadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerSpecMetadata</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.LayerSpecMetadata/#venvstacks.stacks.LayerSpecMetadata" title="venvstacks.stacks.LayerSpecMetadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerSpecMetadata</span></code></a></p></td>
 <td><p>Details of a defined environment layer.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.LayerVariants/#venvstacks.stacks.LayerVariants" title="venvstacks.stacks.LayerVariants"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerVariants</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.LayerVariant/#venvstacks.stacks.LayerVariant" title="venvstacks.stacks.LayerVariant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerVariant</span></code></a></p></td>
 <td><p>Enum for defined layer variants.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.TargetPlatform/#venvstacks.stacks.TargetPlatform" title="venvstacks.stacks.TargetPlatform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TargetPlatform</span></code></a></p></td>
-<td><p>alias of <a class="reference internal" href="venvstacks.stacks.TargetPlatforms/#venvstacks.stacks.TargetPlatforms" title="venvstacks.stacks.TargetPlatforms"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetPlatforms</span></code></a></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerVariants</span></code></p></td>
+<td><p>alias of <a class="reference internal" href="venvstacks.stacks.LayerVariant/#venvstacks.stacks.LayerVariant" title="venvstacks.stacks.LayerVariant"><code class="xref py py-class docutils literal notranslate"><span class="pre">LayerVariant</span></code></a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="venvstacks.stacks.TargetPlatforms/#venvstacks.stacks.TargetPlatforms" title="venvstacks.stacks.TargetPlatforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TargetPlatforms</span></code></a></p></td>
-<td><p>Enum for support target deployment platforms.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="venvstacks.stacks.TargetPlatform/#venvstacks.stacks.TargetPlatform" title="venvstacks.stacks.TargetPlatform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TargetPlatform</span></code></a></p></td>
+<td><p>Enum for supported target deployment platforms.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">TargetPlatforms</span></code></p></td>
+<td><p>alias of <a class="reference internal" href="venvstacks.stacks.TargetPlatform/#venvstacks.stacks.TargetPlatform" title="venvstacks.stacks.TargetPlatform"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetPlatform</span></code></a></p></td>
 </tr>
 </tbody>
 </table>
