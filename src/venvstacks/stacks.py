@@ -2063,9 +2063,13 @@ class LayerEnvBase(ABC):
         assert self.executables_path.relative_to(self.env_path)
         assert self.dynlib_path.relative_to(self.env_path)
         # Adjust op selections based on the target platform
-        targets_platform = self.targets_platform()
-        self.want_build = self.want_build and targets_platform
-        self.want_publish = self.want_publish and targets_platform
+        if not self.env_spec.platforms:
+            # If the spec doesn't target *any* platforms, exclude it completely
+            self.exclude_layer()
+        else:
+            targets_platform = self.targets_platform()
+            self.want_build = self.want_build and targets_platform
+            self.want_publish = self.want_publish and targets_platform
 
     def _get_other_lock_inputs(self) -> tuple[str, ...]:
         # TODO: consider incorporating the uv config settings into the implicit layer versioning
@@ -3942,9 +3946,13 @@ class BuildEnvironment:
 
         All runtimes are produced first, then frameworks, then applications.
         """
-        return chain(
+        defined_environments = chain(
             self.runtimes.values(), self.frameworks.values(), self.applications.values()
         )
+        for env in defined_environments:
+            if env.env_spec.platforms:
+                # Layer specification targets at least one platform
+                yield env
 
     def environments_to_lock(self) -> Iterator[LayerEnvBase]:
         """Iterate over all environments where locking is requested or allowed.
@@ -4141,6 +4149,9 @@ class BuildEnvironment:
         for layered_env in layered_envs:
             env_name = layered_env.env_name
             env_spec = layered_env.env_spec
+            if not env_spec.platforms:
+                # Don't override automatic exclusion of layers with no targets
+                continue
             rt_env_name = env_spec.runtime.env_name
             fw_env_names = [fw_spec.env_name for fw_spec in env_spec.frameworks]
             if env_name in included_envs:
