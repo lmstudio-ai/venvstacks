@@ -33,6 +33,8 @@ dependencies = [
     "tomlkit>=0.13.2",
     # dulwich is used for git metadata processing to avoid any external git CLI dependency
     "dulwich>=0.23.2",
+    # Compatibility workaround for https://github.com/pdm-project/pdm/issues/3665
+    "hishel<1.0.0",
 ]
 requires-python = ">=3.11"
 readme = "README.md"

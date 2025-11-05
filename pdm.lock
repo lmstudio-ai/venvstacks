@@ -5,7 +5,7 @@
 groups = ["default", "bootstrap", "dev", "docs", "dynlib-wheel-build", "lint", "task-runner", "test", "typecheck"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:f2a15df5c98647636c75a81fadda52c9cc998c7c9f313f5602f0334cc5c0ed8f"
+content_hash = "sha256:c1d01b2d08e05d709ca1068e8c0790fc2d81737f7cc1c74e18632b6048b3f08d"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -75,6 +75,20 @@ dependencies = [
 files = [
     {file = "anyio-4.11.0-py3-none-any.whl", hash = "sha256:0287e96f4d26d4149305414d4e3bc32f0dcd0862365a4bddea19d7a1ec38c4fc"},
     {file = "anyio-4.11.0.tar.gz", hash = "sha256:82a8d0b81e318cc5ce71a5f1f8b5c4e63619620b63141ef8c995fa0db95a57c4"},
+]
+
+[[package]]
+name = "anysqlite"
+version = "0.0.5"
+requires_python = ">=3.8"
+summary = ""
+groups = ["default", "bootstrap"]
+dependencies = [
+    "anyio>3.4.0",
+]
+files = [
+    {file = "anysqlite-0.0.5-py3-none-any.whl", hash = "sha256:cb345dc4f76f6b37f768d7a0b3e9cf5c700dfcb7a6356af8ab46a11f666edbe7"},
+    {file = "anysqlite-0.0.5.tar.gz", hash = "sha256:9dfcf87baf6b93426ad1d9118088c41dbf24ef01b445eea4a5d486bac2755cce"},
 ]
 
 [[package]]
@@ -442,17 +456,20 @@ files = [
 
 [[package]]
 name = "hishel"
-version = "1.1.2"
+version = "0.1.5"
 requires_python = ">=3.9"
-summary = "Elegant HTTP Caching for Python"
+summary = "Persistent cache implementation for httpx and httpcore"
 groups = ["default", "bootstrap"]
 dependencies = [
+    "anyio>=4.9.0",
+    "anysqlite>=0.0.5",
+    "httpx>=0.28.0",
     "msgpack>=1.1.2",
     "typing-extensions>=4.14.1",
 ]
 files = [
-    {file = "hishel-1.1.2-py3-none-any.whl", hash = "sha256:a427ce9de4974e32bdcf690bc0c8601efaebc1242d630d8106edfdfd94c0245d"},
-    {file = "hishel-1.1.2.tar.gz", hash = "sha256:16ce78c142cda1a08ed7ad0c7db61f545628cae47881fe2bddaecf812c1038b4"},
+    {file = "hishel-0.1.5-py3-none-any.whl", hash = "sha256:0bfbe9a2b9342090eba82ba6de88258092e1c4c7b730cd4cb4b570e4b40e44a7"},
+    {file = "hishel-0.1.5.tar.gz", hash = "sha256:9d40c682cd94fd6e1394fb05713ae20a75ed8aeba6f5272380444039ce6257f2"},
 ]
 
 [[package]]
