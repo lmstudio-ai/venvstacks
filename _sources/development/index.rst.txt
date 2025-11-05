@@ -237,6 +237,31 @@ closing and reopening the PR once the relevant fixes have been
 implemented.
 
 
+Project Management
+==================
+
+The project is primarily managed with ``pdm``, together with some additional
+supporting scripts.
+
+To update the locked CI dependencies, run the ``./lock_dev_venv.sh`` script in
+root of the repository. In addition to updating ``pdm``'s lockfile, this also
+runs the export processes for the flat constraints files used when installing
+packages with something other than ``pdm``, as well as the flat requirements
+file used for the documentation build process.
+
+In some cases, dependency entries in ``pyproject.toml`` may need to be updated
+without needing to update the locked CI dependencies (for example, adding a
+minimum version requirement that is lower than the already locked version).
+When this is the case, the expected input requirements hash in ``pdm.lock`` can
+be updated with the command ``pdm lock --dev --update-reuse``. If this makes
+any actual changes to the pinned dependencies, then the relevant exported files
+can be updated with ``./lock_dev_venv.sh --skip-lock``.
+
+Note: While ``uv`` is used as a runtime dependency of ``venvstacks`` to lock
+and build the defined layers, it is *not* used as the project management tool
+for the project itself.
+
+
 Release Management
 ==================
 

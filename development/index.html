@@ -465,6 +465,26 @@ implemented.</p>
 </section>
 </section>
 </section>
+<section id="project-management">
+<h2>Project Management<a class="headerlink" href="#project-management" title="Link to this heading">¶</a></h2>
+<p>The project is primarily managed with <code class="docutils literal notranslate"><span class="pre">pdm</span></code>, together with some additional
+supporting scripts.</p>
+<p>To update the locked CI dependencies, run the <code class="docutils literal notranslate"><span class="pre">./lock_dev_venv.sh</span></code> script in
+root of the repository. In addition to updating <code class="docutils literal notranslate"><span class="pre">pdm</span></code>’s lockfile, this also
+runs the export processes for the flat constraints files used when installing
+packages with something other than <code class="docutils literal notranslate"><span class="pre">pdm</span></code>, as well as the flat requirements
+file used for the documentation build process.</p>
+<p>In some cases, dependency entries in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> may need to be updated
+without needing to update the locked CI dependencies (for example, adding a
+minimum version requirement that is lower than the already locked version).
+When this is the case, the expected input requirements hash in <code class="docutils literal notranslate"><span class="pre">pdm.lock</span></code> can
+be updated with the command <code class="docutils literal notranslate"><span class="pre">pdm</span> <span class="pre">lock</span> <span class="pre">--dev</span> <span class="pre">--update-reuse</span></code>. If this makes
+any actual changes to the pinned dependencies, then the relevant exported files
+can be updated with <code class="docutils literal notranslate"><span class="pre">./lock_dev_venv.sh</span> <span class="pre">--skip-lock</span></code>.</p>
+<p>Note: While <code class="docutils literal notranslate"><span class="pre">uv</span></code> is used as a runtime dependency of <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> to lock
+and build the defined layers, it is <em>not</em> used as the project management tool
+for the project itself.</p>
+</section>
 <section id="release-management">
 <h2>Release Management<a class="headerlink" href="#release-management" title="Link to this heading">¶</a></h2>
 <section id="version-numbering">
@@ -580,6 +600,7 @@ test the release pipeline prior to publishing <code class="docutils literal notr
 </li>
 </ul>
 </li>
+<li><a class="reference internal" href="#project-management">Project Management</a></li>
 <li><a class="reference internal" href="#release-management">Release Management</a><ul>
 <li><a class="reference internal" href="#version-numbering">Version Numbering</a></li>
 <li><a class="reference internal" href="#preparing-new-releases">Preparing New Releases</a></li>
