@@ -3130,9 +3130,6 @@ class LayeredEnvBase(LayerEnvBase):
 
     def _ensure_virtual_environment(self) -> subprocess.CompletedProcess[str]:
         # Use the base Python installation to create a new virtual environment
-        # Due to https://github.com/astral-sh/uv/issues/2831 we're not aiming to
-        # replace `python -Im venv` with `uv venv` at this point (we want explicit
-        # control over whether files are symlinked or copied between environments)
         if self.base_python_path is None:
             self._fail_build("Base Python path not set")
         options = ["--without-pip"]

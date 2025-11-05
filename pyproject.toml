@@ -18,8 +18,10 @@ dependencies = [
     # pbs-installer>=2025.8.27 ensures the use of smaller runtime archives without debug symbols
     # (that lower bound is not specified by default to avoid conflicting with older version pins)
     "pbs-installer",
-    # Minimum uv version for Windows ARM64 support in --python-platform
-    "uv>=0.8.12",
+    # Due to https://github.com/astral-sh/uv/issues/2831 we're not trying to
+    # replace `python -Im venv` with `uv venv` at this point since we want explicit
+    # control over whether files are symlinked or copied between the environments
+    "uv>=0.6.9",
     # Installer is used for RECORD file editing
     "installer>=0.7.0",
     # packaging is used directly for low level metadata handling tasks
@@ -102,8 +104,6 @@ test = [
     "pbs-installer==2025.8.27",
     # Exact pin for tests as lock file regeneration is sensitive to the uv version
     "uv==0.8.18",
-    # Debugging potential CI problem with 25.3...
-    "pip==25.2",
 ]
 lint = [
     "ruff>=0.5.4",

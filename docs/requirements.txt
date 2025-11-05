@@ -5,12 +5,12 @@ accessible-pygments==0.0.5
 alabaster==1.0.0
 babel==2.17.0
 beautifulsoup4==4.14.2
-certifi==2025.10.5
-charset-normalizer==3.4.4
+certifi==2025.8.3
+charset-normalizer==3.4.3
 colorama==0.4.6
 docutils==0.21.2
 furo==2025.9.25
-idna==3.11
+idna==3.10
 imagesize==1.4.1
 jinja2==3.1.6
 markupsafe==3.0.3
