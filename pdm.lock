@@ -5,7 +5,7 @@
 groups = ["default", "bootstrap", "dev", "docs", "dynlib-wheel-build", "lint", "task-runner", "test", "typecheck"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:3417ab4bd677664efbd8d1ee6064449c73ae46efdd75d919217ef571bfa1da8c"
+content_hash = "sha256:f2a15df5c98647636c75a81fadda52c9cc998c7c9f313f5602f0334cc5c0ed8f"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
