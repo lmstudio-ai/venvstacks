@@ -84,8 +84,15 @@ Caveats and Limitations
   they refer to), but this support is *not* currently tested.
 * To avoid relying on the Python ecosystem's still limited support for cross-platform
   component installation, the stack build processes need to be executed on the target
-  platform (for example, by using an OS matrix in GitHub Actions).
+  platform (for example, by using an OS matrix in GitHub Actions). This restriction
+  also allows the layer build processing to execute some correctness checks in each
+  environment after installing the specified packages.
 
+Development Guide
+-----------------
+
+See the [development guide](https://venvstacks.lmstudio.ai/development/)
+in the main documentation.
 
 Project History
 ---------------

@@ -18,9 +18,8 @@ dependencies = [
     # pbs-installer>=2025.8.27 ensures the use of smaller runtime archives without debug symbols
     # (that lower bound is not specified by default to avoid conflicting with older version pins)
     "pbs-installer",
-    # TODO: Update to minimum uv version for Windows ARM64 support in --python-platform
-    # "uv>=0.8.12",
-    "uv>=0.6.9",
+    # Minimum uv version for Windows ARM64 support in --python-platform
+    "uv>=0.8.12",
     # Installer is used for RECORD file editing
     "installer>=0.7.0",
     # packaging is used directly for low level metadata handling tasks
