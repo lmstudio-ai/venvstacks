@@ -646,7 +646,7 @@ def _iter_pylock_packages(
     )
     for raw_pkg in raw_pkg_iter:
         pkg = LockedPackage.from_dict(raw_pkg)
-        if pkg.is_shared:
+        if exclude_shared and pkg.is_shared:
             continue
         yield pkg
 
