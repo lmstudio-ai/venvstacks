@@ -112,7 +112,7 @@ demonstrate such configurations using the public PyTorch repositories,
 as those are the kinds of parallel build scenarios where the simple caching
 proxy override approach may be insufficient.
 
-.. _versionadded: 0.8.0
+.. versionadded: 0.8.0
    Added support for ``uv`` configuration with layer specific adjustments
    (:ref:`release details <changelog-0.8.0>`).
 
@@ -128,7 +128,7 @@ be some situations where ``uv`` will be unable to lock a stack defined this way,
 while being able to successfully lock a stack that uses an appropriate index
 server configuration instead.
 
-.. _versionchanged: 0.8.0
+.. versionchanged: 0.8.0
    With the introduction of cross-platform layer lock files,
    wheels for all platforms should be present on the system
    used to lock the layers (:ref:`release details <changelog-0.8.0>`).
