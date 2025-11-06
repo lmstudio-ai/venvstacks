@@ -383,7 +383,7 @@ proxy override approach may be insufficient.</p>
 <section id="local-wheel-directories">
 <h3>Local wheel directories<a class="headerlink" href="#local-wheel-directories" title="Link to this heading">¶</a></h3>
 <p>Prior to the addition of index server configuration support, the only provided
-mechanism for providing additional wheels to the layer locking and building
+mechanism for including additional wheels in the layer locking and building
 process was to pass the <code class="docutils literal notranslate"><span class="pre">--local-wheels</span></code> option to the <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> CLI.</p>
 <p>This mechanism is still supported, with no plans to remove it, but there may
 be some situations where <code class="docutils literal notranslate"><span class="pre">uv</span></code> will be unable to lock a stack defined this way,

@@ -120,7 +120,7 @@ Local wheel directories
 -----------------------
 
 Prior to the addition of index server configuration support, the only provided
-mechanism for providing additional wheels to the layer locking and building
+mechanism for including additional wheels in the layer locking and building
 process was to pass the ``--local-wheels`` option to the ``venvstacks`` CLI.
 
 This mechanism is still supported, with no plans to remove it, but there may
