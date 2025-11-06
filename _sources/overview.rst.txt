@@ -172,7 +172,7 @@ Publishing environment layer archives
 
 Once the environments have been successfully built,
 the ``publish`` command allows each layer to be converted to a separate
-`reproducible <https://reproducible-builds.org/>`__` binary archive suitable
+`reproducible <https://reproducible-builds.org/>`__ binary archive suitable
 for transferring to another system, unpacking, and using the unpacked environments
 to run the included applications (needing only a small post-installation step using
 a Python script embedded in the built layer archives to correctly relink the deployed

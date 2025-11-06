@@ -199,6 +199,7 @@
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Project Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../glossary/">Essential Terms and Concepts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../file-formats/">Environment Stack File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source-builds/">Building Packages from Source</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/">Design Discussion</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/">Python API</a><input aria-label="Toggle navigation of Python API" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/cli/">venvstacks.cli</a></li>
@@ -471,7 +472,7 @@ and publishing to be performed in a single step (see the command line help for d
 </div>
 <p>Once the environments have been successfully built,
 the <code class="docutils literal notranslate"><span class="pre">publish</span></code> command allows each layer to be converted to a separate
-<code class="docutils literal notranslate"><span class="pre">reproducible</span> <span class="pre">&lt;https://reproducible-builds.org/&gt;`__</span></code> binary archive suitable
+<a class="reference external" href="https://reproducible-builds.org/">reproducible</a> binary archive suitable
 for transferring to another system, unpacking, and using the unpacked environments
 to run the included applications (needing only a small post-installation step using
 a Python script embedded in the built layer archives to correctly relink the deployed

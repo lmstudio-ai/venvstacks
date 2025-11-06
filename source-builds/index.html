@@ -1,14 +1,18 @@
 <!doctype html>
 <html class="no-js" lang="en" data-content_root="../">
-  <head>
-<meta charset="utf-8">
+  <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="color-scheme" content="light dark"><link rel="search" title="Search" href="#">
-        <link rel="canonical" href="https://venvstacks.lmstudio.ai/search/">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="venvstacks Package Source Builds - venvstacks Documentation" name="og:title" />
+<meta content="website" name="og:type" />
+<meta content="https://venvstacks.lmstudio.ai/source-builds/" name="og:url" />
+<meta content="venvstacks Package Source Builds - venvstacks Documentation" name="og:description" />
+<link rel="search" title="Search" href="../search/"><link rel="next" title="Design Discussion" href="../design/"><link rel="prev" title="Environment Stack File Formats" href="../file-formats/">
+        <link rel="canonical" href="https://venvstacks.lmstudio.ai/source-builds/">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-<meta name="robots" content="noindex" />
-<title>Search - venvstacks documentation</title><link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+        <title>Building Packages from Source - venvstacks documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -173,7 +177,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -185,17 +189,17 @@
   
   <span class="sidebar-brand-text">venvstacks documentation</span>
   
-</a><form class="sidebar-search-container" method="get" action="#" role="search">
+</a><form class="sidebar-search-container" method="get" action="../search/" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul>
+  <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../overview/">Project Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../glossary/">Essential Terms and Concepts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../file-formats/">Environment Stack File Formats</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../source-builds/">Building Packages from Source</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Building Packages from Source</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/">Design Discussion</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/">Python API</a><input aria-label="Toggle navigation of Python API" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/cli/">venvstacks.cli</a></li>
@@ -262,7 +266,17 @@
           <span>Back to top</span>
         </a>
         <div class="content-icon-container">
-          <div class="theme-toggle-container theme-toggle-content">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/blob/main/docs/source-builds.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/lmstudio-ai/venvstacks/edit/main/docs/source-builds.rst" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
@@ -270,30 +284,149 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          
-<noscript>
-<div class="admonition error">
-  <p class="admonition-title">Error</p>
-  <p>
-    Please activate JavaScript to enable the search functionality.
-  </p>
+          <section id="building-packages-from-source">
+<h1>Building Packages from Source<a class="headerlink" href="#building-packages-from-source" title="Link to this heading">¶</a></h1>
+<section id="reproducible-builds">
+<h2>Reproducible Builds<a class="headerlink" href="#reproducible-builds" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> is designed around ensuring that the layer archives that it
+produces are <a class="reference external" href="https://reproducible-builds.org/">reproducible</a>: if the same
+stack definition is built again later with the same
+<a class="reference external" href="https://reproducible-builds.org/docs/perimeter/">build environment</a>,
+then the resulting layer archives will be byte-for-byte identical with
+those produced by the original stack build.</p>
+<p>One of the ways this is achieved is by requiring that all Python packages
+included in a stack build be provided as pre-built
+<a class="reference external" href="https://packaging.python.org/en/latest/specifications/binary-distribution-format/">binary wheels</a>.
+This allows the layer lock files to record the exact binary hashes of their
+expected inputs, while the deterministic installation process for binary wheels
+avoids introducing variation into the layer archive output (avoiding the
+potentially build location dependent aspects of wheel installation is the reason
+some package features, such as direct execution scripts, are not available in
+the layer environments created by <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code>).</p>
+<p>While <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> does not natively support building components from source
+references, some users may not wish to use publicly available binary artifacts,
+or may depend on projects that don’t provide such artifacts. This section
+provides some suggestions and recommendations for handling these situations.</p>
+</section>
+<section id="building-artifacts-from-source">
+<h2>Building artifacts from source<a class="headerlink" href="#building-artifacts-from-source" title="Link to this heading">¶</a></h2>
+<p>The first task is determining which artifacts need to be built and then
+actually building them.</p>
+<section id="systematic-builds-of-entire-dependency-trees">
+<h3>Systematic builds of entire dependency trees<a class="headerlink" href="#systematic-builds-of-entire-dependency-trees" title="Link to this heading">¶</a></h3>
+<p>The <a class="reference external" href="https://github.com/python-wheel-build/fromager">Fromager</a> project
+is designed specifically for this task. Quoting the project’s goals,
+Fromager is designed to guarantee that:</p>
+<ul class="simple">
+<li><p>Every binary package you install was built from source in a reproducible
+environment compatible with your own.</p></li>
+<li><p>All dependencies are also built from source, no prebuilt binaries.</p></li>
+<li><p>The build tools themselves are built from source, ensuring a fully transparent toolchain.</p></li>
+<li><p>Builds can be customized for your needs:
+applying patches, adjusting compiler options, or producing build variants.</p></li>
+</ul>
+<p>That last point includes ensuring that built components with external dynamic
+library dependencies are linked against the desired versions of those libraries.</p>
+<p>Note that building complex stacks with Fromager may require passing <code class="docutils literal notranslate"><span class="pre">--skip-constraints</span></code>,
+as <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> intentionally allows layers that don’t depend on each other
+to specify conflicting package version constraints.</p>
+</section>
+<section id="selective-builds-of-required-packages">
+<h3>Selective builds of required packages<a class="headerlink" href="#selective-builds-of-required-packages" title="Link to this heading">¶</a></h3>
+<p>If appropriately configured, Fromager can technically support this approach as
+well. However, providing details of such a configuration is use case dependent
+and hence beyond the scope of these build suggestions.</p>
+<p>More commonly, the components that require building are found by repeatedly
+running venvstacks and recording the list of projects that the locking failures
+indicate do not have binary wheels available for installation.</p>
+<p>Once that list of projects is available, a use case dependent mechanism can
+then be used to coordinate downloading the source artifacts and producing
+appropriately built wheels for the platforms of interest (essentially
+undertaking an ad hoc approach to the problem that Fromager approaches
+systematically).</p>
+</section>
+</section>
+<section id="including-private-artifacts-in-layer-builds">
+<h2>Including private artifacts in layer builds<a class="headerlink" href="#including-private-artifacts-in-layer-builds" title="Link to this heading">¶</a></h2>
+<p>Once the binary wheels are available, the second task is then to actually
+include those wheels into the layer locking and building process.</p>
+<section id="private-index-servers">
+<h3>Private index servers<a class="headerlink" href="#private-index-servers" title="Link to this heading">¶</a></h3>
+<p>The primary recommended approach is to run the stack builds against a private
+index server such as a self-hosted <a class="reference external" href="https://doc.devpi.net/">depvi</a> instance,
+or a cloud-hosted repository service such as
+JFrog’s <a class="reference external" href="https://jfrog.com/help/r/jfrog-artifactory-documentation/pypi-repositories">Artifactory</a>
+or Astral’s <a class="reference external" href="https://astral.sh/pyx">pyx</a>.</p>
+<p>These can be set up to serve as both a caching proxy for publicly available packages
+<em>and</em> a host for privately built packages, allowing the stack builds to be
+appropriately configured with a single <code class="docutils literal notranslate"><span class="pre">tool.uv.index</span></code> entry in the stack
+definition file:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[[tool.uv.index]]</span>
+<span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://internal.example.com/pyindex/&quot;</span>
+<span class="n">default</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</pre></div>
 </div>
-</noscript>
-
-<div id="search-results"></div>
+<p>More complex arrangements using the
+<a class="reference internal" href="../file-formats/#package-indexes"><span class="std std-ref">package_indexes</span></a> and
+<a class="reference internal" href="../file-formats/#priority-indexes"><span class="std std-ref">priority_indexes</span></a> layer specification settings are
+also possible. The
+<a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/tree/main/examples">published examples</a>
+demonstrate such configurations using the public PyTorch repositories,
+as those are the kinds of parallel build scenarios where the simple caching
+proxy override approach may be insufficient.</p>
+</section>
+<section id="local-wheel-directories">
+<h3>Local wheel directories<a class="headerlink" href="#local-wheel-directories" title="Link to this heading">¶</a></h3>
+<p>Prior to the addition of index server configuration support, the only provided
+mechanism for including additional wheels in the layer locking and building
+process was to pass the <code class="docutils literal notranslate"><span class="pre">--local-wheels</span></code> option to the <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> CLI.</p>
+<p>This mechanism is still supported, with no plans to remove it, but there may
+be some situations where <code class="docutils literal notranslate"><span class="pre">uv</span></code> will be unable to lock a stack defined this way,
+while being able to successfully lock a stack that uses an appropriate index
+server configuration instead.</p>
+<p>As layer locking is cross-platform, wheels for all target platforms must be
+available when generating the layer lock files. If wheels for some platforms
+are absent, the missing <code class="docutils literal notranslate"><span class="pre">pylock.toml</span></code> entries mean that the affected layers
+will not be able to be built on those platforms, even if the wheels are present.</p>
+<p>The paths to local wheels are recorded in the layer lock files as relative
+paths, so that relative positioning must be maintained between the locking
+environment and the layer building environments (for example, if using a git
+repository to maintain the history of the layer lock files, checking the local
+wheels into the same repository with Git-LFS).</p>
+</section>
+</section>
+</section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          
-          
+          <a class="next-page" href="../design/">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Design Discussion</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../file-formats/">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Environment Stack File Formats</div>
+                
+              </div>
+            </a>
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -312,8 +445,37 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Building Packages from Source</a><ul>
+<li><a class="reference internal" href="#reproducible-builds">Reproducible Builds</a></li>
+<li><a class="reference internal" href="#building-artifacts-from-source">Building artifacts from source</a><ul>
+<li><a class="reference internal" href="#systematic-builds-of-entire-dependency-trees">Systematic builds of entire dependency trees</a></li>
+<li><a class="reference internal" href="#selective-builds-of-required-packages">Selective builds of required packages</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#including-private-artifacts-in-layer-builds">Including private artifacts in layer builds</a><ul>
+<li><a class="reference internal" href="#private-index-servers">Private index servers</a></li>
+<li><a class="reference internal" href="#local-wheel-directories">Local wheel directories</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
@@ -322,8 +484,5 @@
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
-    
-<script src="../_static/searchtools.js"></script>
-<script src="../_static/language_data.js"></script>
-<script src="../searchindex.js"></script></body>
+    </body>
 </html>
