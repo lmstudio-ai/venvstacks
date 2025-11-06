@@ -55,6 +55,7 @@ make future Python version upgrades more irritating):
    overview
    glossary
    file-formats
+   source-builds
    design
    api/index
    development/index
