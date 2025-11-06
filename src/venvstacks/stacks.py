@@ -539,6 +539,11 @@ class LockedWheel:
         return cls(**whl)
 
 
+_SHARED_PKG_MARKER = "from_lower_layer"
+_SHARED_PKG_CLAUSE = f"sys_platform == {_SHARED_PKG_MARKER!r}"
+_SHARED_PKG_SUFFIX = f") and {_SHARED_PKG_CLAUSE}"
+
+
 @total_ordering
 @dataclass
 class LockedPackage:
@@ -549,6 +554,13 @@ class LockedPackage:
     marker: str
     index: str
     wheels: list[LockedWheel]
+    is_shared: bool = field(default=False)
+
+    def __post_init__(self) -> None:
+        marker = self.marker
+        if _SHARED_PKG_MARKER in marker:
+            self.marker = self._remove_shared_package_marker_clause(marker)
+            self.is_shared = True
 
     def __str__(self) -> str:
         marker = self.marker
@@ -591,6 +603,18 @@ class LockedPackage:
         }
         return cls(**pkg)
 
+    def _get_shared_marker(self) -> str:
+        marker = self.marker
+        if not marker:
+            return _SHARED_PKG_CLAUSE
+        return f"({marker}{_SHARED_PKG_SUFFIX}"
+
+    @staticmethod
+    def _remove_shared_package_marker_clause(marker: str) -> str:
+        if marker == _SHARED_PKG_CLAUSE:
+            return ""
+        return marker.removeprefix("(").removesuffix(_SHARED_PKG_SUFFIX)
+
 
 def _iter_pylock_packages_raw(
     pylock_text: str,
@@ -610,23 +634,6 @@ def _iter_pylock_packages_raw(
         yield raw_pkg
 
 
-_SHARED_PKG_MARKER = "from_lower_layer"
-_SHARED_PKG_CLAUSE = f"sys_platform == {_SHARED_PKG_MARKER!r}"
-_SHARED_PKG_SUFFIX = f") and {_SHARED_PKG_CLAUSE}"
-
-
-def _mark_shared_package(marker: str) -> str:
-    if not marker:
-        return _SHARED_PKG_CLAUSE
-    return f"({marker}{_SHARED_PKG_SUFFIX}"
-
-
-def _remove_shared_package_marker(marker: str) -> str:
-    if marker == _SHARED_PKG_CLAUSE:
-        return ""
-    return marker.removeprefix("(").removesuffix(_SHARED_PKG_SUFFIX)
-
-
 def _iter_pylock_packages(
     pylock_text: str,
     text_origin: str = "unspecified pylock.toml",
@@ -639,7 +646,7 @@ def _iter_pylock_packages(
     )
     for raw_pkg in raw_pkg_iter:
         pkg = LockedPackage.from_dict(raw_pkg)
-        if exclude_shared and _SHARED_PKG_MARKER in pkg.marker:
+        if pkg.is_shared:
             continue
         yield pkg
 
@@ -2490,9 +2497,7 @@ class LayerEnvBase(ABC):
         # installed unconditionally on all platforms, or if their environment marker
         # matches the environment marker for the package in the current layer
         for pkg in all_required_packages:
-            pkg_marker = pkg.marker
-            if _SHARED_PKG_MARKER in pkg_marker:
-                pkg.marker = _remove_shared_package_marker(pkg_marker)
+            if pkg.is_shared:
                 shared_packages.append(str(pkg))
                 continue
             required_packages.append(str(pkg))
@@ -2582,7 +2587,7 @@ class LayerEnvBase(ABC):
                         or unconditional_req in available_packages
                     ):
                         # Add an unmatchable environment marker to skip package installation
-                        raw_pkg["marker"] = _mark_shared_package(pkg.marker)
+                        raw_pkg["marker"] = pkg._get_shared_marker()
                         # Also clear the "wheels" and "index" metadata for the package
                         raw_pkg.pop("index", "")
                         raw_pkg.pop("wheel", "")
