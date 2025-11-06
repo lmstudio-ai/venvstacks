@@ -124,7 +124,7 @@ mechanism for providing additional wheels to the layer locking and building
 process was to pass the ``--local-wheels`` option to the ``venvstacks`` CLI.
 
 This mechanism is still supported, with no plans to remove it, but there may
-be some situations where ``uv`` will unable to lock a stack defined this way,
+be some situations where ``uv`` will be unable to lock a stack defined this way,
 while being able to successfully lock a stack that uses an appropriate index
 server configuration instead.
 
