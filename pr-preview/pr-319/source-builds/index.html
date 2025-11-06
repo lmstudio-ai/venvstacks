@@ -389,6 +389,15 @@ process was to pass the <code class="docutils literal notranslate"><span class="
 be some situations where <code class="docutils literal notranslate"><span class="pre">uv</span></code> will be unable to lock a stack defined this way,
 while being able to successfully lock a stack that uses an appropriate index
 server configuration instead.</p>
+<p>As layer locking is cross-platform, wheels for all target platforms must be
+available when generating the layer lock files. If wheels for some platforms
+are absent, the missing <code class="docutils literal notranslate"><span class="pre">pylock.toml</span></code> entries mean that the affected layers
+will not be able to be built on those platforms, even if the wheels are present.</p>
+<p>The paths to local wheels are recorded in the layer lock files as relative
+paths, so that relative positioning must be maintained between the locking
+environment and the layer building environments (for example, if using a git
+repository to maintain the history of the layer lock files, checking the local
+wheels into the same repository with Git-LFS).</p>
 </section>
 </section>
 </section>
