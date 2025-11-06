@@ -92,7 +92,7 @@ or a cloud-hosted repository service such as
 JFrog's `Artifactory <https://jfrog.com/help/r/jfrog-artifactory-documentation/pypi-repositories>`__
 or Astral's `pyx <https://astral.sh/pyx>`__.
 
-These can be set up to serve as both a caching proxy for public available packages
+These can be set up to serve as both a caching proxy for publicly available packages
 *and* a host for privately built packages, allowing the stack builds to be
 appropriately configured with a single ``tool.uv.index`` entry in the stack
 definition file:
