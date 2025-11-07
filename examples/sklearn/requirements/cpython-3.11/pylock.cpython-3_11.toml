@@ -138,14 +138,6 @@ size = 225315
 [packages.wheels.hashes]
 sha256 = "3d1a3799d62d45c18bafd41c5fa05120b96a28079f2393af559b843d1a966a77"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/58/01/1253e6698a07380cd31a736d248a3f2a50a7c88779a1813da27503cadc2a/contourpy-1.3.3.tar.gz"
-upload-time = 2025-07-26T12:03:12Z
-size = 13466174
-
-[packages.sdist.hashes]
-sha256 = "083e12155b210502d0bca491432bb04d56dc3432f95a979b429f2848c3dbe880"
-
 [[packages]]
 name = "cycler"
 version = "0.12.1"
@@ -158,14 +150,6 @@ size = 8321
 
 [packages.wheels.hashes]
 sha256 = "85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/a9/95/a3dbbb5028f35eafb79008e7522a75244477d2838f38cbb722248dabc2a8/cycler-0.12.1.tar.gz"
-upload-time = 2023-10-07T05:32:18Z
-size = 7615
-
-[packages.sdist.hashes]
-sha256 = "88bb128f02ba341da8ef447245a9e138fae777f6a23943da4540077d3601eb1c"
 
 [[packages]]
 name = "fonttools"
@@ -243,14 +227,6 @@ size = 1143175
 
 [packages.wheels.hashes]
 sha256 = "906306ac7afe2156fcf0042173d6ebbb05416af70f6b370967b47f8f00103bbb"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/4b/42/97a13e47a1e51a5a7142475bbcf5107fe3a68fc34aef331c897d5fb98ad0/fonttools-4.60.1.tar.gz"
-upload-time = 2025-09-29T21:13:27Z
-size = 3559823
-
-[packages.sdist.hashes]
-sha256 = "ef00af0439ebfee806b25f24c8f92109157ff3fac5731dc7867957812e87b8d9"
 
 [[packages]]
 name = "kiwisolver"
@@ -401,14 +377,6 @@ size = 73929
 [packages.wheels.hashes]
 sha256 = "fb940820c63a9590d31d88b815e7a3aa5915cad3ce735ab45f0c730b39547de1"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/5c/3c/85844f1b0feb11ee581ac23fe5fce65cd049a200c1446708cc1b7f922875/kiwisolver-1.4.9.tar.gz"
-upload-time = 2025-08-10T21:27:49Z
-size = 97564
-
-[packages.sdist.hashes]
-sha256 = "c3b22c26c6fd6811b0ae8363b95ca8ce4ea3c202d3d0975b2914310ceb1bcc4d"
-
 [[packages]]
 name = "matplotlib"
 version = "3.10.7"
@@ -493,14 +461,6 @@ size = 8693919
 
 [packages.wheels.hashes]
 sha256 = "3886e47f64611046bc1db523a09dd0a0a6bed6081e6f90e13806dd1d1d1b5e91"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/ae/e2/d2d5295be2f44c678ebaf3544ba32d20c1f9ef08c49fe47f496180e1db15/matplotlib-3.10.7.tar.gz"
-upload-time = 2025-10-09T00:28:00Z
-size = 34804865
-
-[packages.sdist.hashes]
-sha256 = "a06ba7e2a2ef9131c79c49e63dad355d2d878413a0376c1727c8b9335ff731c7"
 
 [[packages]]
 name = "numpy"
@@ -651,14 +611,6 @@ size = 12971844
 [packages.wheels.hashes]
 sha256 = "2e267c7da5bf7309670523896df97f93f6e469fb931161f483cd6882b3b1a5dc"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/d0/19/95b3d357407220ed24c139018d2518fab0a61a948e68286a25f1a4d049ff/numpy-2.3.3.tar.gz"
-upload-time = 2025-09-09T16:54:12Z
-size = 20576648
-
-[packages.sdist.hashes]
-sha256 = "ddc7c39727ba62b80dfdbedf400d1c10ddfa8eefbd7ec8dcb118be8b56d31029"
-
 [[packages]]
 name = "packaging"
 version = "25.0"
@@ -671,14 +623,6 @@ size = 66469
 
 [packages.wheels.hashes]
 sha256 = "29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/a1/d4/1fc4078c65507b51b96ca8f8c3ba19e6a61c8253c72794544580a7b6c24d/packaging-25.0.tar.gz"
-upload-time = 2025-04-19T11:48:59Z
-size = 165727
-
-[packages.sdist.hashes]
-sha256 = "d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f"
 
 [[packages]]
 name = "pillow"
@@ -829,14 +773,6 @@ size = 6984598
 [packages.wheels.hashes]
 sha256 = "c84d689db21a1c397d001aa08241044aa2069e7587b398c8cc63020390b1c1b8"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/f3/0d/d0d6dea55cd152ce3d6767bb38a8fc10e33796ba4ba210cbab9354b6d238/pillow-11.3.0.tar.gz"
-upload-time = 2025-07-01T09:16:30Z
-size = 47113069
-
-[packages.sdist.hashes]
-sha256 = "3828ee7586cd0b2091b6209e5ad53e20d0649bbe87164a459d0676e035e8f523"
-
 [[packages]]
 name = "pyparsing"
 version = "3.2.5"
@@ -849,14 +785,6 @@ size = 113890
 
 [packages.wheels.hashes]
 sha256 = "e38a4f02064cf41fe6593d328d0512495ad1f3d8a91c4f73fc401b3079a59a5e"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/f2/a5/181488fc2b9d093e3972d2a472855aae8a03f000592dbfce716a512b3359/pyparsing-3.2.5.tar.gz"
-upload-time = 2025-09-21T04:11:06Z
-size = 1099274
-
-[packages.sdist.hashes]
-sha256 = "2df8d5b7b2802ef88e8d016a2eb9c7aeaa923529cd251ed0fe4608275d4105b6"
 
 [[packages]]
 name = "python-dateutil"
@@ -871,14 +799,6 @@ size = 229892
 [packages.wheels.hashes]
 sha256 = "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz"
-upload-time = 2024-03-01T18:36:20Z
-size = 342432
-
-[packages.sdist.hashes]
-sha256 = "37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3"
-
 [[packages]]
 name = "six"
 version = "1.17.0"
@@ -891,11 +811,3 @@ size = 11050
 
 [packages.wheels.hashes]
 sha256 = "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz"
-upload-time = 2024-12-04T17:35:28Z
-size = 34031
-
-[packages.sdist.hashes]
-sha256 = "ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"

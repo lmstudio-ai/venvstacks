@@ -2465,6 +2465,9 @@ class LayerEnvBase(ABC):
             ),
             "--quiet",
             "--no-color",
+            # Everything uv needs for package installation is expected to be
+            # defined in the lock file or the runtime environment
+            "--no-config",
         ]
         uv_pip_args.extend(("-r", os.fspath(requirements_path)))
         env: dict[str, Any] | None = None
@@ -2653,6 +2656,11 @@ class LayerEnvBase(ABC):
             for pkg_reversed_index, raw_pkg in enumerate(
                 reversed(raw_packages), start=1
             ):
+                # Source builds are not permitted when installing packages,
+                # so clear all package metadata that enables source builds
+                pkg_source_keys = ("archive", "directory", "sdist", "vcs")
+                for pkg_source_key in pkg_source_keys:
+                    raw_pkg.pop(pkg_source_key, None)
                 # Iterate in reverse to allow package deletion
                 pkg = LockedPackage.from_dict(raw_pkg)
                 marker = pkg.marker
