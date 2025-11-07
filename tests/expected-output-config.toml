@@ -33,4 +33,4 @@ UV_EXCLUDE_NEWER="2025-08-27 00:00:00+00:00"
 # Metadata updates can also be requested when the
 # expected layer content in the sample project changes
 
-# Last requested update: prevent source builds from layer locks
+# Last requested update: refactor constraint processing
