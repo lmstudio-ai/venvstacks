@@ -1,7 +1,7 @@
 .. Included in published docs via docs/changelog.rst
 
 .. Temporary link target for next release
-.. _changelog-0.8.0:
+.. _changelog-0.9.0:
 
 Unreleased
 ==========
@@ -10,7 +10,97 @@ See the fragment files in the `changelog.d directory`_.
 
 .. _changelog.d directory: https://github.com/lmstudio-ai/venvstacks/tree/main/docs/changelog.d
 
+.. _changelog-0.8.0:
+
 .. scriv-insert-here
+
+
+.. _changelog-0.8.0b1:
+
+0.8.0b1 — 2025-11-08
+====================
+
+Added
+-----
+
+- A `venvstacks.uv.toml` file located alongside the stack definition file is now
+  incorporated into the configuration passed to `uv` when locking and
+  building environments (added in :issue:`144`). This configuration may alternatively
+  be supplied via the `[tool.uv]` table in the stack definition file.
+- Each layer definition may now contain a :ref:`priority_indexes <priority-indexes>`
+  section that is used to adjust the `uv` `index` configuration when locking or
+  building that layer (added in :issue:`144`).
+- Each layer definition may now contain a :ref:`package_indexes <package-indexes>`
+  section that is used to adjust the `uv` `sources` configuration when locking or
+  building that layer, or any layer that depends on it (added in :issue:`270`).
+- Each layer definition may now contain a :ref:`index_overrides <index-overrides>`
+  section that allows apparent inconsistencies in layer package index configurations
+  to be marked as expected and acceptable (added in :issue:`269`).
+- Added :ref:`macosx_target <macosx-target>` to support per-layer configuration
+  of `MACOSX_DEPLOYMENT_TARGET` (added in :issue:`292`)
+- Setting `MACOSX_DEPLOYMENT_TARGET` in the calling environment now affects the
+  way layers that do not specify `macosx_target` are built on macOS. If this
+  environment variable is not specified at all, the default macOS version
+  target is the default portable target set by `uv` rather than the version
+  of the system running `venvstacks` (resolved in :issue:`292`)
+- The target GNU libc version for Linux layer builds is now the default portable
+  target set by `uv` rather than the libc version of the system running
+  `venvstacks` (resolved in :issue:`292`)
+- If `UV_EXCLUDE_NEWER` is set in the environment, or `exclude-newer` is set
+  in the `uv` tool configuration, the given time is used as the recorded
+  lock time for all updated layer locks (proposed in :issue:`10`).
+- Layer environments now provide a `targets_platform()` query method
+  that indicates whether that layer will be built and published for the current
+  (or specified) platform (added in :issue:`265`).
+
+Changed
+-------
+
+- Layer dependency locking is now cross-platform, using the ``pylock.toml``
+  format rather than a flat list of dependencies (proposed in :issue:`254`).
+  While not part of the published release, an
+  `example script <https://github.com/lmstudio-ai/venvstacks/blob/main/misc/migrate-to-pylock.py>`__
+  is available in the `venvstacks` source repository to remove or rename
+  previously generated platform specific files (this is particularly
+  necessary to preserve version numbering if using implicit layer versioning)
+- Locking operations are no longer filtered by platform. This means the
+  `BuildEnvironment.all_environments` iterator now reports all defined
+  layers with at least one target platform configured, not just those
+  for the current platform.
+  Iterate over `BuildEnvironment.environments_to_build` without any layer
+  filtering configured to obtain a list of layers specific to the current
+  platform (resolved in :issue:`265`).
+- Layer target platforms are now inferred from the layers they depend on.
+  An exception is raised if a layer specifies targets that are not also
+  targets for the lower layers it depends on (changed in :issue:`244`).
+- All build environment manipulation is now handled with `uv` (part of resolving
+  :issue:`144`). Previously, requirements compilation was handled with `uv`,
+  while actually adding and removing packages was handled with `pip`. Due to
+  related differences in package installation metadata (e.g. `INSTALLER`
+  containing `uv` rather than `pip`), layer archive hash values will change.
+- Hidden files and folders (those with names starting with `.`) created at the
+  top level of layer build environments are no longer included in the
+  corresponding deployed environments (whether exported locally or published
+  as a deployable layer archive).
+- The handling of shadowed packages across framework layers has changed,
+  so unconditionally shadowed packages are no longer treated as constraints
+  by higher layers. Environment marker conditions are also listed for
+  shared packages from lower layers in layer summaries (resolved in :issue:`292`).
+- To improve type hints reported in IDEs and errors reported by static type
+  checking, enums now use their singular form as their canonical name,
+  with the plural form available as an alias (changed in :pr:`308`).
+
+Fixed
+-----
+
+- Layer dependency declarations are now eagerly parsed and stored as structured
+  requirements. Invalid requirements are now reported as specification errors
+  rather than as cryptic locking command failures (resolved in :issue:`101`).
+- Using `pbs-installer` 2025.8.27 or later ensures that the smaller CPython base runtime
+  installations that omit debug symbols are consistently preferred (reported in :issue:`242`).
+  No explicit lower bound is set on the dependency declaration to allow `venvstacks` to be updated
+  without causing conflicts with existing `pbs-installer` pins to older versions.
+- Omitting all arguments now reports a non-zero exit code (reported in :issue:`246`).
 
 .. _changelog-0.7.0:
 
