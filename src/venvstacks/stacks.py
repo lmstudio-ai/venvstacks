@@ -3372,6 +3372,7 @@ class LayeredEnvBase(LayerEnvBase):
         )
         _LOG.debug(f"Generating {str(env_python_path)!r}...")
         env_python_path.unlink(missing_ok=True)
+        # Write the platform-specific script with platform-specific line endings
         env_python_path.write_text(sh_contents, encoding="utf-8")
         os.chmod(env_python_path, 0o755)
 
@@ -3407,6 +3408,7 @@ class LayeredEnvBase(LayerEnvBase):
             )
         sc_path = self.pylib_path / "sitecustomize.py"
         _LOG.debug(f"Generating {str(sc_path)!r}...")
+        # Write the sitecustomize file with platform-specific line endings
         sc_path.write_text(sc_contents, encoding="utf-8")
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:
