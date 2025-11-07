@@ -308,15 +308,15 @@ on the way releases are versioned.</p>
 <h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>A <code class="docutils literal notranslate"><span class="pre">venvstacks.uv.toml</span></code> file located alongside the stack definition file is now
-incorporated into the configuration passed to <code class="docutils literal notranslate"><span class="pre">uv</span></code> when locking and
-building environments (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>). This configuration may alternatively
+incorporated into the configuration passed to <code class="docutils literal notranslate"><span class="pre">uv</span></code> when locking environments
+(added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>). This configuration may alternatively
 be supplied via the <code class="docutils literal notranslate"><span class="pre">[tool.uv]</span></code> table in the stack definition file.</p></li>
 <li><p>Each layer definition may now contain a <a class="reference internal" href="../file-formats/#priority-indexes"><span class="std std-ref">priority_indexes</span></a>
-section that is used to adjust the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">index</span></code> configuration when locking or
-building that layer (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>).</p></li>
+section that is used to adjust the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">index</span></code> configuration when locking
+that layer (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>).</p></li>
 <li><p>Each layer definition may now contain a <a class="reference internal" href="../file-formats/#package-indexes"><span class="std std-ref">package_indexes</span></a>
-section that is used to adjust the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">sources</span></code> configuration when locking or
-building that layer, or any layer that depends on it (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/270">#270</a>).</p></li>
+section that is used to adjust the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">sources</span></code> configuration when locking
+that layer, or any layer that depends on it (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/270">#270</a>).</p></li>
 <li><p>Each layer definition may now contain a <a class="reference internal" href="../file-formats/#index-overrides"><span class="std std-ref">index_overrides</span></a>
 section that allows apparent inconsistencies in layer package index configurations
 to be marked as expected and acceptable (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/269">#269</a>).</p></li>
@@ -358,11 +358,6 @@ platform (resolved in <a class="extlink-issue reference external" href="https://
 <li><p>Layer target platforms are now inferred from the layers they depend on.
 An exception is raised if a layer specifies targets that are not also
 targets for the lower layers it depends on (changed in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/244">#244</a>).</p></li>
-<li><p>All build environment manipulation is now handled with <code class="docutils literal notranslate"><span class="pre">uv</span></code> (part of resolving
-<a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>). Previously, requirements compilation was handled with <code class="docutils literal notranslate"><span class="pre">uv</span></code>,
-while actually adding and removing packages was handled with <code class="docutils literal notranslate"><span class="pre">pip</span></code>. Due to
-related differences in package installation metadata (e.g. <code class="docutils literal notranslate"><span class="pre">INSTALLER</span></code>
-containing <code class="docutils literal notranslate"><span class="pre">uv</span></code> rather than <code class="docutils literal notranslate"><span class="pre">pip</span></code>), layer archive hash values will change.</p></li>
 <li><p>Hidden files and folders (those with names starting with <code class="docutils literal notranslate"><span class="pre">.</span></code>) created at the
 top level of layer build environments are no longer included in the
 corresponding deployed environments (whether exported locally or published
@@ -374,6 +369,11 @@ shared packages from lower layers in layer summaries (resolved in <a class="extl
 <li><p>To improve type hints reported in IDEs and errors reported by static type
 checking, enums now use their singular form as their canonical name,
 with the plural form available as an alias (changed in <a class="extlink-pr reference external" href="https://github.com/lmstudio-ai/venvstacks/pull/308">PR #308</a>).</p></li>
+<li><p>All build environment manipulation is now handled with <code class="docutils literal notranslate"><span class="pre">uv</span></code> (part of resolving
+<a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>). Previously, requirements compilation was handled with <code class="docutils literal notranslate"><span class="pre">uv</span></code>,
+while actually adding and removing packages was handled with <code class="docutils literal notranslate"><span class="pre">pip</span></code>. Due to
+related differences in package installation metadata (e.g. <code class="docutils literal notranslate"><span class="pre">INSTALLER</span></code>
+containing <code class="docutils literal notranslate"><span class="pre">uv</span></code> rather than <code class="docutils literal notranslate"><span class="pre">pip</span></code>), layer archive hash values will change.</p></li>
 </ul>
 </section>
 <section id="fixed">
