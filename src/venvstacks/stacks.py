@@ -591,6 +591,8 @@ _SHARED_PKG_MARKER = "from_lower_layer"
 _SHARED_PKG_CLAUSE = f"sys_platform == {_SHARED_PKG_MARKER!r}"
 _SHARED_PKG_SUFFIX = f") and {_SHARED_PKG_CLAUSE}"
 
+_PYLOCK_SOURCE_KEYS = ("archive", "directory", "sdist", "vcs")
+
 
 @total_ordering
 @dataclass
@@ -2656,11 +2658,6 @@ class LayerEnvBase(ABC):
             for pkg_reversed_index, raw_pkg in enumerate(
                 reversed(raw_packages), start=1
             ):
-                # Source builds are not permitted when installing packages,
-                # so clear all package metadata that enables source builds
-                pkg_source_keys = ("archive", "directory", "sdist", "vcs")
-                for pkg_source_key in pkg_source_keys:
-                    raw_pkg.pop(pkg_source_key, None)
                 # Iterate in reverse to allow package deletion
                 pkg = LockedPackage.from_dict(raw_pkg)
                 marker = pkg.marker
@@ -2680,6 +2677,10 @@ class LayerEnvBase(ABC):
                             # Environment marker check passes for all target platforms,
                             # so list this package without a marker in the layer lock file
                             pkg.marker = raw_pkg["marker"] = ""
+                # Source builds are not permitted when installing packages,
+                # so clear all package metadata that enables source builds
+                for pkg_source_key in _PYLOCK_SOURCE_KEYS:
+                    raw_pkg.pop(pkg_source_key, None)
                 if pinned_constraints:
                     # Update the environment markers for packages provided by lower layers
                     # The components from lower layers are marked as shared if they're either

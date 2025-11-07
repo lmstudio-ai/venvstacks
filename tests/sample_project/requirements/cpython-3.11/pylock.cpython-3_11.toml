@@ -19,14 +19,6 @@ size = 72622
 [packages.wheels.hashes]
 sha256 = "26e4f231ae924f1cd59128f4d08b56155a75bb5b0d61710cc5153b3c5f2b2dbe"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/63/ea/c37339d7b98251b7209bd74ed819ccf5452ffbb13062ce44bc4789943c97/dlltracer-1.0.3.tar.gz"
-upload-time = 2024-11-14T20:39:27Z
-size = 112997
-
-[packages.sdist.hashes]
-sha256 = "4c31d5d0cf621caf4f3e2534b1dd9f2649ee10f39547be2c18f400698d3d31c7"
-
 [[packages]]
 name = "numpy"
 version = "2.3.2"
@@ -175,11 +167,3 @@ size = 12977811
 
 [packages.wheels.hashes]
 sha256 = "6936aff90dda378c09bea075af0d9c675fe3a977a9d2402f95a87f440f59f619"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/37/7d/3fec4199c5ffb892bed55cff901e4f39a58c81df9c44c280499e92cad264/numpy-2.3.2.tar.gz"
-upload-time = 2025-07-24T21:32:07Z
-size = 20489306
-
-[packages.sdist.hashes]
-sha256 = "e0486a11ec30cdecb53f184d496d1c6a20786c81e55e41640270130056f8ee48"

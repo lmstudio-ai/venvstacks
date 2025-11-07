@@ -154,14 +154,6 @@ size = 12977811
 [packages.wheels.hashes]
 sha256 = "6936aff90dda378c09bea075af0d9c675fe3a977a9d2402f95a87f440f59f619"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/37/7d/3fec4199c5ffb892bed55cff901e4f39a58c81df9c44c280499e92cad264/numpy-2.3.2.tar.gz"
-upload-time = 2025-07-24T21:32:07Z
-size = 20489306
-
-[packages.sdist.hashes]
-sha256 = "e0486a11ec30cdecb53f184d496d1c6a20786c81e55e41640270130056f8ee48"
-
 [[packages]]
 name = "scipy"
 version = "1.16.1"
@@ -238,11 +230,3 @@ size = 38644572
 
 [packages.wheels.hashes]
 sha256 = "226652fca853008119c03a8ce71ffe1b3f6d2844cc1686e8f9806edafae68596"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/f5/4a/b927028464795439faec8eaf0b03b011005c487bb2d07409f28bf30879c4/scipy-1.16.1.tar.gz"
-upload-time = 2025-07-27T16:33:30Z
-size = 30580861
-
-[packages.sdist.hashes]
-sha256 = "44c76f9e8b6e8e488a586190ab38016e4ed2f8a038af7cd3defa903c0a2238b3"

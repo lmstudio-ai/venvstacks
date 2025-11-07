@@ -18,9 +18,10 @@ uv="0.8.18"
 pbs-installer="2025.8.27"
 
 # Additional environment variable settings to ensure
-# test_sample_project produces the expected metadata
+# test cases produce the expected metadata
 [env]
-UV_EXCLUDE_NEWER="2025-08-27 00:00:00+00:00"
+# ENV_VAR = value
+# (none currently, as exclude-newer migrated to the stack uv config)
 
 ########################################################
 # Explicitly requested updates

@@ -18,14 +18,6 @@ size = 107213
 [packages.wheels.hashes]
 sha256 = "60e474ac86736bbfd6f210f7a61218939c318f43f9972497381f1c5e930ed3d1"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/f1/b4/636b3b65173d3ce9a38ef5f0522789614e590dab6a8d505340a4efe4c567/anyio-4.10.0.tar.gz"
-upload-time = 2025-08-04T08:54:26Z
-size = 213252
-
-[packages.sdist.hashes]
-sha256 = "3f3fae35c96039744587aa5b8371e7e8e603c0702999535961dd336026973ba6"
-
 [[packages]]
 name = "certifi"
 version = "2025.8.3"
@@ -38,14 +30,6 @@ size = 161216
 
 [packages.wheels.hashes]
 sha256 = "f6c12493cfb1b06ba2ff328595af9350c65d6644968e5d3a2ffd78699af217a5"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/dc/67/960ebe6bf230a96cda2e0abcf73af550ec4f090005363542f0765df162e0/certifi-2025.8.3.tar.gz"
-upload-time = 2025-08-03T03:07:47Z
-size = 162386
-
-[packages.sdist.hashes]
-sha256 = "e564105f78ded564e3ae7c923924435e1daa7463faeab5bb932bc53ffae63407"
 
 [[packages]]
 name = "h11"
@@ -60,14 +44,6 @@ size = 37515
 [packages.wheels.hashes]
 sha256 = "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/01/ee/02a2c011bdab74c6fb3c75474d40b3052059d95df7e73351460c8588d963/h11-0.16.0.tar.gz"
-upload-time = 2025-04-24T03:35:25Z
-size = 101250
-
-[packages.sdist.hashes]
-sha256 = "4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1"
-
 [[packages]]
 name = "httpcore"
 version = "1.0.9"
@@ -80,14 +56,6 @@ size = 78784
 
 [packages.wheels.hashes]
 sha256 = "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/06/94/82699a10bca87a5556c9c59b5963f2d039dbd239f25bc2a63907a05a14cb/httpcore-1.0.9.tar.gz"
-upload-time = 2025-04-24T22:06:22Z
-size = 85484
-
-[packages.sdist.hashes]
-sha256 = "6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8"
 
 [[packages]]
 name = "httpx"
@@ -102,14 +70,6 @@ size = 73517
 [packages.wheels.hashes]
 sha256 = "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/b1/df/48c586a5fe32a0f01324ee087459e112ebb7224f646c0b5023f5e79e9956/httpx-0.28.1.tar.gz"
-upload-time = 2024-12-06T15:37:23Z
-size = 141406
-
-[packages.sdist.hashes]
-sha256 = "75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc"
-
 [[packages]]
 name = "idna"
 version = "3.10"
@@ -122,14 +82,6 @@ size = 70442
 
 [packages.wheels.hashes]
 sha256 = "946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/f1/70/7703c29685631f5a7590aa73f1f1d3fa9a380e654b86af429e0934a32f7d/idna-3.10.tar.gz"
-upload-time = 2024-09-15T18:07:39Z
-size = 190490
-
-[packages.sdist.hashes]
-sha256 = "12f65c9b470abda6dc35cf8e63cc574b1c52b11df2c86030af0ac09b01b13ea9"
 
 [[packages]]
 name = "sniffio"
@@ -144,14 +96,6 @@ size = 10235
 [packages.wheels.hashes]
 sha256 = "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/a2/87/a6771e1546d97e7e041b6ae58d80074f81b7d5121207425c964ddf5cfdbd/sniffio-1.3.1.tar.gz"
-upload-time = 2024-02-25T23:20:04Z
-size = 20372
-
-[packages.sdist.hashes]
-sha256 = "f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc"
-
 [[packages]]
 name = "typing-extensions"
 version = "4.15.0"
@@ -164,11 +108,3 @@ size = 44614
 
 [packages.wheels.hashes]
 sha256 = "f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/72/94/1a15dd82efb362ac84269196e94cf00f187f7ed21c242792a923cdb1c61f/typing_extensions-4.15.0.tar.gz"
-upload-time = 2025-08-25T13:49:26Z
-size = 109391
-
-[packages.sdist.hashes]
-sha256 = "0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466"
