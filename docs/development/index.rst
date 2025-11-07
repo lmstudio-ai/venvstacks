@@ -295,6 +295,8 @@ Prior to release:
 
 * Update the version in ``pyproject.toml`` to remove the pre-release suffix
 * Run ``scriv collect`` to update ``CHANGELOG.rst``
+* Review and edit the contents of ``CHANGELOG.rst``, including updating the
+  Sphinx anchor labels as appropriate for the release
 * Commit and push the updated version number and collected change log updates
 * Check the updated docs after the PR has been merged
 
@@ -304,10 +306,13 @@ Release (requires ``pandoc`` and a GitHub access token with release permissions)
 * Push the tag to the remote repo
 * Run ``scriv github-release --dry-run`` to check what would be published
 * Run ``scriv github-release`` to make the release from the annotated tag
+  (alternatively: create the GitHub release interactively in the web UI,
+  using the debug output from the ``scriv`` dry run as a starting point for
+  the GitHub release notes)
 
 After release:
 
-* Check the release GitHub Action has published to PyPI correctly
+* Check the release-triggered GitHub Action has published to PyPI correctly
 * Bump the version in ``pyproject.toml`` and add a ``.dev0`` suffix
 
 .. _`Getting Started`: https://pip.pypa.io/en/stable/development/getting-started/

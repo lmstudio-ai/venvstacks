@@ -42,7 +42,7 @@ and building specific layers via the :ref:`priority indexes <priority-indexes>` 
 :ref:`package indexes <package-indexes>` layer settings respectively. The :uv-config:`sources`
 field in the common configuration is also restricted to only referring to named indexes.
 
-If any indexes require authentication to access, this must be configured via the ``uv``'s
+If any indexes require authentication to access, this must be configured via ``uv``'s
 `runtime environment variables <https://docs.astral.sh/uv/reference/environment/>`__ rather
 than the file based configuration, as the package installation step relies solely on the
 generated layer lock files without reference to the config used when resolving the layers.
