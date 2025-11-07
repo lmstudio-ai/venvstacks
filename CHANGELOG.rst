@@ -24,15 +24,15 @@ Added
 -----
 
 - A `venvstacks.uv.toml` file located alongside the stack definition file is now
-  incorporated into the configuration passed to `uv` when locking and
-  building environments (added in :issue:`144`). This configuration may alternatively
+  incorporated into the configuration passed to `uv` when locking environments
+  (added in :issue:`144`). This configuration may alternatively
   be supplied via the `[tool.uv]` table in the stack definition file.
 - Each layer definition may now contain a :ref:`priority_indexes <priority-indexes>`
-  section that is used to adjust the `uv` `index` configuration when locking or
-  building that layer (added in :issue:`144`).
+  section that is used to adjust the `uv` `index` configuration when locking
+  that layer (added in :issue:`144`).
 - Each layer definition may now contain a :ref:`package_indexes <package-indexes>`
-  section that is used to adjust the `uv` `sources` configuration when locking or
-  building that layer, or any layer that depends on it (added in :issue:`270`).
+  section that is used to adjust the `uv` `sources` configuration when locking
+  that layer, or any layer that depends on it (added in :issue:`270`).
 - Each layer definition may now contain a :ref:`index_overrides <index-overrides>`
   section that allows apparent inconsistencies in layer package index configurations
   to be marked as expected and acceptable (added in :issue:`269`).
@@ -73,11 +73,6 @@ Changed
 - Layer target platforms are now inferred from the layers they depend on.
   An exception is raised if a layer specifies targets that are not also
   targets for the lower layers it depends on (changed in :issue:`244`).
-- All build environment manipulation is now handled with `uv` (part of resolving
-  :issue:`144`). Previously, requirements compilation was handled with `uv`,
-  while actually adding and removing packages was handled with `pip`. Due to
-  related differences in package installation metadata (e.g. `INSTALLER`
-  containing `uv` rather than `pip`), layer archive hash values will change.
 - Hidden files and folders (those with names starting with `.`) created at the
   top level of layer build environments are no longer included in the
   corresponding deployed environments (whether exported locally or published
@@ -89,6 +84,11 @@ Changed
 - To improve type hints reported in IDEs and errors reported by static type
   checking, enums now use their singular form as their canonical name,
   with the plural form available as an alias (changed in :pr:`308`).
+- All build environment manipulation is now handled with `uv` (part of resolving
+  :issue:`144`). Previously, requirements compilation was handled with `uv`,
+  while actually adding and removing packages was handled with `pip`. Due to
+  related differences in package installation metadata (e.g. `INSTALLER`
+  containing `uv` rather than `pip`), layer archive hash values will change.
 
 Fixed
 -----
