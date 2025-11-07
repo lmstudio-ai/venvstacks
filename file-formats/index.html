@@ -318,6 +318,10 @@ relevant to the <code class="docutils literal notranslate"><span class="pre">ven
 and building specific layers via the <a class="reference internal" href="#priority-indexes"><span class="std std-ref">priority indexes</span></a> and
 <a class="reference internal" href="#package-indexes"><span class="std std-ref">package indexes</span></a> layer settings respectively. The <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#sources">sources</a>
 field in the common configuration is also restricted to only referring to named indexes.</p>
+<p>If any indexes require authentication to access, this must be configured via the <code class="docutils literal notranslate"><span class="pre">uv</span></code>’s
+<a class="reference external" href="https://docs.astral.sh/uv/reference/environment/">runtime environment variables</a> rather
+than the file based configuration, as the package installation step relies solely on the
+generated layer lock files without reference to the config used when resolving the layers.</p>
 <p>Setting the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a> config setting (or the <code class="docutils literal notranslate"><span class="pre">UV_EXCLUDE_NEWER</span></code> environment
 variable) also records that value as the layer lock time for all updated layer locks.
 Layers with a more recent recorded lock time will also be relocked
