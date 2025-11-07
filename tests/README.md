@@ -167,3 +167,83 @@ To use `diffoscope` to debug CI failures:
 (See the previous section for the underlying commands that would need to be
 executed on Windows in order to do this in Powershell instead of a Windows
 bash terminal)
+
+Ad hoc stack operations
+-----------------------
+
+When the example stacks or the test cases that use full stack definitions
+aren't behaving as expected, it can be useful to run up an interactive Python
+prompt in the repository and use it to load and introspect a stack's behaviour.
+
+For example, loading the ``mlx`` example stack:
+
+```
+~/devel/venvstacks$ pdm run python
+Python 3.13.7 (main, Aug 14 2025, 00:00:00) [GCC 15.2.1 20250808 (Red Hat 15.2.1-1)] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from venvstacks.stacks import StackSpec
+... snip API stability warning ...
+>>> stack = StackSpec.load("examples/mlx/venvstacks.toml")
+>>> build_env = stack.define_build_environment()
+>>> import json
+>>> print(json.dumps(build_env.get_stack_status(), indent=2))
+{
+  "spec_name": "/home/acoghlan/devel/venvstacks/examples/mlx/venvstacks.toml",
+  "runtimes": [
+    {
+      "name": "cpython3.11",
+      "install_target": "cpython3.11",
+      "has_valid_lock": true,
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    }
+  ],
+  "frameworks": [
+    {
+      "name": "framework-mlx",
+      "install_target": "framework-mlx",
+      "has_valid_lock": true,
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    },
+    {
+      "name": "framework-mlx-cuda",
+      "install_target": "framework-mlx-cuda",
+      "has_valid_lock": true,
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    }
+  ],
+  "applications": [
+    {
+      "name": "app-mlx-example",
+      "install_target": "app-mlx-example",
+      "has_valid_lock": true,
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    },
+    {
+      "name": "app-mlx-example-cuda",
+      "install_target": "app-mlx-example-cuda",
+      "has_valid_lock": true,
+      "selected_operations": [
+        "lock-if-needed",
+        "build",
+        "publish"
+      ]
+    }
+  ]
+}
+```

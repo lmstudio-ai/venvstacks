@@ -2671,7 +2671,7 @@ class LayerEnvBase(ABC):
                         elif len(matching_platforms) == num_target_platforms:
                             # Environment marker check passes for all target platforms,
                             # so list this package without a marker in the layer lock file
-                            raw_pkg["marker"] = ""
+                            pkg.marker = raw_pkg["marker"] = ""
                 if pinned_constraints:
                     # Update the environment markers for packages provided by lower layers
                     # The components from lower layers are marked as shared if they're either

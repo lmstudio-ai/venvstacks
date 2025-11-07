@@ -8,7 +8,7 @@ requires-python = "==3.11.*"
 [[packages]]
 name = "mlx"
 version = "0.29.3"
-marker = "((platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux')) and sys_platform == 'from_lower_layer'"
+marker = "sys_platform == 'from_lower_layer'"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/94/13/3e91a37fa55dc0e9114620729ab61b27f45ed59053fc77846cad2df54f21/mlx-0.29.3-cp311-cp311-macosx_13_0_arm64.whl"
