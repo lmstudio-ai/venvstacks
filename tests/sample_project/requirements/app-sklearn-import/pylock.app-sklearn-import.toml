@@ -18,14 +18,6 @@ size = 307746
 [packages.wheels.hashes]
 sha256 = "4719a31f054c7d766948dcd83e9613686b27114f190f717cec7eaa2084f8a74a"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/dc/fe/0f5a938c54105553436dbff7a61dc4fed4b1b2c98852f8833beaf4d5968f/joblib-1.5.1.tar.gz"
-upload-time = 2025-05-23T12:04:37Z
-size = 330475
-
-[packages.sdist.hashes]
-sha256 = "f4f86e351f39fe3d0d32a9f2c3d8af1ee4cec285aafcb27003dda5205576b444"
-
 [[packages]]
 name = "numpy"
 version = "2.3.2"
@@ -119,14 +111,6 @@ size = 10194071
 [packages.wheels.hashes]
 sha256 = "ee807923782faaf60d0d7331f5e86da7d5e3079e28b291973c545476c2b00d07"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/37/7d/3fec4199c5ffb892bed55cff901e4f39a58c81df9c44c280499e92cad264/numpy-2.3.2.tar.gz"
-upload-time = 2025-07-24T21:32:07Z
-size = 20489306
-
-[packages.sdist.hashes]
-sha256 = "e0486a11ec30cdecb53f184d496d1c6a20786c81e55e41640270130056f8ee48"
-
 [[packages]]
 name = "scikit-learn"
 version = "1.7.1"
@@ -171,14 +155,6 @@ size = 8735568
 
 [packages.wheels.hashes]
 sha256 = "3ddd9092c1bd469acab337d87930067c87eac6bd544f8d5027430983f1e1ae88"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/41/84/5f4af978fff619706b8961accac84780a6d298d82a8873446f72edb4ead0/scikit_learn-1.7.1.tar.gz"
-upload-time = 2025-07-18T08:01:54Z
-size = 7190445
-
-[packages.sdist.hashes]
-sha256 = "24b3f1e976a4665aa74ee0fcaac2b8fccc6ae77c8e07ab25da3ba6d3292b9802"
 
 [[packages]]
 name = "scipy"
@@ -257,14 +233,6 @@ size = 38508060
 [packages.wheels.hashes]
 sha256 = "f7b8013c6c066609577d910d1a2a077021727af07b6fab0ee22c2f901f22352a"
 
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/f5/4a/b927028464795439faec8eaf0b03b011005c487bb2d07409f28bf30879c4/scipy-1.16.1.tar.gz"
-upload-time = 2025-07-27T16:33:30Z
-size = 30580861
-
-[packages.sdist.hashes]
-sha256 = "44c76f9e8b6e8e488a586190ab38016e4ed2f8a038af7cd3defa903c0a2238b3"
-
 [[packages]]
 name = "threadpoolctl"
 version = "3.6.0"
@@ -277,11 +245,3 @@ size = 18638
 
 [packages.wheels.hashes]
 sha256 = "43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/b7/4d/08c89e34946fce2aec4fbb45c9016efd5f4d7f24af8e5d93296e935631d8/threadpoolctl-3.6.0.tar.gz"
-upload-time = 2025-03-13T13:49:23Z
-size = 21274
-
-[packages.sdist.hashes]
-sha256 = "8ab8b4aa3491d812b623328249fab5302a68d2d71745c8a4c719a2fcaba9f44e"

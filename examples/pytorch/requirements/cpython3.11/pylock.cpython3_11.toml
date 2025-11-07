@@ -153,11 +153,3 @@ size = 12973130
 
 [packages.wheels.hashes]
 sha256 = "81b3a59793523e552c4a96109dde028aa4448ae06ccac5a76ff6532a85558a7f"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/b5/f4/098d2270d52b41f1bd7db9fc288aaa0400cb48c2a3e2af6fa365d9720947/numpy-2.3.4.tar.gz"
-upload-time = 2025-10-15T16:18:11Z
-size = 20582187
-
-[packages.sdist.hashes]
-sha256 = "a7d018bfedb375a8d979ac758b120ba846a7fe764911a64465fd87b8729f4a6a"

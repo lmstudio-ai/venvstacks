@@ -105,6 +105,11 @@ of being inherited from lower layers are all signs that the difference may
 be due to a bug in the PR rather than an intentional or otherwise
 expected change.
 
+Note: if this job is triggered and there *isn't* an actual change in the test
+output, that will be reported as a failure of the update job. The current
+workaround for that is to ignore the failure and merge the PR anyway if the
+failure is determined to be a false alarm.
+
 
 Examining built artifacts
 -------------------------

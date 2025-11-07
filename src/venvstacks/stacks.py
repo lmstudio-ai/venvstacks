@@ -591,6 +591,8 @@ _SHARED_PKG_MARKER = "from_lower_layer"
 _SHARED_PKG_CLAUSE = f"sys_platform == {_SHARED_PKG_MARKER!r}"
 _SHARED_PKG_SUFFIX = f") and {_SHARED_PKG_CLAUSE}"
 
+_PYLOCK_SOURCE_KEYS = ("archive", "directory", "sdist", "vcs")
+
 
 @total_ordering
 @dataclass
@@ -2465,6 +2467,9 @@ class LayerEnvBase(ABC):
             ),
             "--quiet",
             "--no-color",
+            # Everything uv needs for package installation is expected to be
+            # defined in the lock file or the runtime environment
+            "--no-config",
         ]
         uv_pip_args.extend(("-r", os.fspath(requirements_path)))
         env: dict[str, Any] | None = None
@@ -2672,6 +2677,10 @@ class LayerEnvBase(ABC):
                             # Environment marker check passes for all target platforms,
                             # so list this package without a marker in the layer lock file
                             pkg.marker = raw_pkg["marker"] = ""
+                # Source builds are not permitted when installing packages,
+                # so clear all package metadata that enables source builds
+                for pkg_source_key in _PYLOCK_SOURCE_KEYS:
+                    raw_pkg.pop(pkg_source_key, None)
                 if pinned_constraints:
                     # Update the environment markers for packages provided by lower layers
                     # The components from lower layers are marked as shared if they're either
