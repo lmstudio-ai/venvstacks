@@ -54,6 +54,7 @@ from urllib.request import url2pathname
 import tomlkit
 
 from installer.records import parse_record_file
+from packaging.markers import Marker, UndefinedEnvironmentName
 from packaging.requirements import InvalidRequirement, Requirement
 from packaging.utils import NormalizedName, canonicalize_name
 from packaging.version import Version
@@ -180,6 +181,40 @@ _UV_PYTHON_PLATFORM_NAMES = {
 }
 
 
+_ENV_KEYS_BY_PLATFORM = {
+    "linux": {
+        "os_name": "posix",
+        "sys_platform": "linux",
+        "platform_system": "Linux",
+    },
+    "macosx": {
+        "os_name": "posix",
+        "sys_platform": "darwin",
+        "platform_system": "Darwin",
+    },
+    "win": {
+        "os_name": "nt",
+        "sys_platform": "win32",
+        "platform_system": "Windows",
+    },
+}
+_ENV_KEYS_BY_CPU_ARCH = {
+    "aarch64": {
+        "platform_machine": "aarch64",
+    },
+    "amd64": {
+        # Windows-specific, and uses this capitalisation
+        "platform_machine": "AMD64",
+    },
+    "arm64": {
+        "platform_machine": "arm64",
+    },
+    "x86_64": {
+        "platform_machine": "x86_64",
+    },
+}
+
+
 # Identify target platforms using strings based on
 # https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
 # macOS target system API version info is omitted (as that will be set universally for macOS builds)
@@ -203,6 +238,19 @@ class TargetPlatform(StrEnum):
         uv_arch = _ARCH_ALIASES.get(arch, arch)
         uv_platform = _UV_PYTHON_PLATFORM_NAMES.get(platform, platform)
         return f"{uv_arch}-{uv_platform}"
+
+    def _get_marker_environment(
+        self, py_version: str, py_implementation: str
+    ) -> dict[str, str]:
+        env = {
+            "python_version": py_version.rpartition(".")[0],
+            "python_full_version": py_version,
+            "implementation_name": py_implementation,
+        }
+        platform, _, arch = self.partition("_")
+        env.update(_ENV_KEYS_BY_PLATFORM[platform])
+        env.update(_ENV_KEYS_BY_CPU_ARCH[arch])
+        return env
 
 
 TargetPlatforms = TargetPlatform  # Use plural alias when the singular name reads oddly
@@ -557,14 +605,14 @@ class LockedPackage:
     is_shared: bool = field(default=False)
 
     def __post_init__(self) -> None:
-        marker = self.marker
-        if _SHARED_PKG_MARKER in marker:
-            self.marker = self._remove_shared_package_marker_clause(marker)
+        raw_marker = self.marker
+        if raw_marker and _SHARED_PKG_MARKER in raw_marker:
             self.is_shared = True
+            self.marker = self._remove_shared_package_marker_clause(raw_marker)
 
     def __str__(self) -> str:
-        marker = self.marker
-        marker_suffix = f" ; {marker}" if marker else ""
+        raw_marker = self.marker
+        marker_suffix = f" ; {raw_marker}" if raw_marker else ""
         return f"{self.name}=={self.version}{marker_suffix}"
 
     def __hash__(self) -> int:
@@ -648,7 +696,7 @@ def _iter_pylock_packages(
         pkg = LockedPackage.from_dict(raw_pkg)
         if exclude_shared and pkg.is_shared:
             continue
-        yield pkg
+        yield LockedPackage.from_dict(raw_pkg)
 
 
 def _iter_pylock_packages_from_file(
@@ -1284,6 +1332,12 @@ class LayerSpecBase(ABC):
         return result
 
 
+_PYTHON_IMPLEMENTATION_NAMES = {
+    "cpython": "CPython",
+    "pypy": "PyPy",
+}
+
+
 @dataclass
 class RuntimeSpec(LayerSpecBase):
     """Base runtime layer specification."""
@@ -1298,6 +1352,13 @@ class RuntimeSpec(LayerSpecBase):
         # python_implementation should be of the form "implementation@X.Y.Z"
         # (this may need adjusting if runtimes other than CPython are ever used...)
         return self.python_implementation.partition("@")[2]
+
+    @property
+    def py_implementation(self) -> str:
+        """Extract the expected python_implementation value for the base runtime."""
+        # python_implementation should be of the form "implementation@X.Y.Z"
+        pdm_impl_name = self.python_implementation.partition("@")[0]
+        return _PYTHON_IMPLEMENTATION_NAMES[pdm_impl_name]
 
 
 @dataclass
@@ -1883,6 +1944,7 @@ class LayerEnvBase(ABC):
     _py_version_info: tuple[str, str] = field(init=False, repr=False)
 
     # Derived from layer spec in subclass __post_init__
+    py_implementation: str = field(init=False, repr=False)
     py_version: str = field(init=False, repr=False)
 
     # Set in subclass __post_init__, or when build environments are created
@@ -2536,6 +2598,17 @@ class LayerEnvBase(ABC):
             pinned_constraints,
         )
 
+    def _match_target_platforms(self, raw_marker: str) -> Sequence[TargetPlatform]:
+        target_platforms: list[TargetPlatform] = []
+        py_version = self.py_version
+        py_impl = self.py_implementation
+        marker = Marker(raw_marker)
+        for platform in self.env_spec.platforms:
+            env = platform._get_marker_environment(py_version, py_impl)
+            if marker.evaluate(env):
+                target_platforms.append(platform)
+        return target_platforms
+
     def lock_requirements(self, lock_time: datetime | None = None) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
         pylock_path, pyproject_path, pinned_constraints = self.get_lock_inputs()
@@ -2573,14 +2646,37 @@ class LayerEnvBase(ABC):
             _LOG.debug(f"Raw uv export output for {self.env_name}:\n{raw_pylock_text}")
             pylock_dict = tomlkit.parse(raw_pylock_text).unwrap()
             raw_pkg: dict[str, Any]
-            if pinned_constraints:
-                # Edit the environment markers for packages provided by lower layers
-                # The components from lower layers are marked as shared if they're either
-                # installed unconditionally on all platforms, or if their environment marker
-                # matches the environment marker for the package in the current layer
-                available_packages = set(pinned_constraints)
-                for raw_pkg in pylock_dict.get("packages", ()):
-                    pkg = LockedPackage.from_dict(raw_pkg)
+            # Process the environment markers for locked packages
+            available_packages = set(pinned_constraints)
+            num_target_platforms = len(self.env_spec.platforms)
+            raw_packages = pylock_dict.get("packages", [])
+            for pkg_reversed_index, raw_pkg in enumerate(
+                reversed(raw_packages), start=1
+            ):
+                # Iterate in reverse to allow package deletion
+                pkg = LockedPackage.from_dict(raw_pkg)
+                marker = pkg.marker
+                if marker:
+                    try:
+                        matching_platforms = self._match_target_platforms(marker)
+                    except UndefinedEnvironmentName:
+                        # Marker checks a field we don't handle, so leave it alone
+                        pass
+                    else:
+                        if not matching_platforms:
+                            # Environment marker check fails for all target platforms,
+                            # so don't even list this package in the layer lock file
+                            del raw_packages[-pkg_reversed_index]
+                            continue
+                        elif len(matching_platforms) == num_target_platforms:
+                            # Environment marker check passes for all target platforms,
+                            # so list this package without a marker in the layer lock file
+                            pkg.marker = raw_pkg["marker"] = ""
+                if pinned_constraints:
+                    # Update the environment markers for packages provided by lower layers
+                    # The components from lower layers are marked as shared if they're either
+                    # installed unconditionally on all platforms, or if their environment marker
+                    # matches the environment marker for the package in the current layer
                     unconditional_req = LockedPackage(pkg.name, pkg.version, "", "", [])
                     if (
                         pkg in available_packages
@@ -2883,6 +2979,7 @@ class RuntimeEnv(LayerEnvBase):
         super().__post_init__()
         # Runtimes are their own base Python
         self.base_python_path = self.python_path
+        self.py_implementation = self.env_spec.py_implementation
 
     @property
     def env_spec(self) -> RuntimeSpec:
@@ -2960,6 +3057,7 @@ class LayeredEnvBase(LayerEnvBase):
         super().__post_init__()
         # Base runtime env will be linked when creating the build environments
         self.base_runtime = None
+        self.py_implementation = ""
         self.linked_constraints_paths = []
         self.linked_frameworks = []
 
@@ -3019,6 +3117,7 @@ class LayeredEnvBase(LayerEnvBase):
             self._fail_build(f"Layered environment base runtime already linked {self}")
         # Link the runtime environment
         self.base_runtime = runtime
+        self.py_implementation = runtime.env_spec.py_implementation
         # Link executable paths
         base_python_path = runtime.python_path
         assert base_python_path.is_absolute()
@@ -3273,6 +3372,7 @@ class LayeredEnvBase(LayerEnvBase):
         )
         _LOG.debug(f"Generating {str(env_python_path)!r}...")
         env_python_path.unlink(missing_ok=True)
+        # Write the platform-specific script with platform-specific line endings
         env_python_path.write_text(sh_contents, encoding="utf-8")
         os.chmod(env_python_path, 0o755)
 
@@ -3308,6 +3408,7 @@ class LayeredEnvBase(LayerEnvBase):
             )
         sc_path = self.pylib_path / "sitecustomize.py"
         _LOG.debug(f"Generating {str(sc_path)!r}...")
+        # Write the sitecustomize file with platform-specific line endings
         sc_path.write_text(sc_contents, encoding="utf-8")
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:

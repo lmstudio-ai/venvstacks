@@ -8,7 +8,7 @@ requires-python = "==3.11.*"
 [[packages]]
 name = "mlx"
 version = "0.29.3"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux')"
+marker = ""
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -46,7 +46,7 @@ sha256 = "8ead74126ffcc1ae49f3b1e0e988620ffbb059c38184f4e9390e294808e2c614"
 [[packages]]
 name = "mlx-cuda"
 version = "0.29.3"
-marker = "platform_machine == 'x86_64' and sys_platform == 'linux'"
+marker = ""
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -58,39 +58,9 @@ size = 62388548
 sha256 = "8576231501bc03152385caad318915d7820d4790666837f47ede2cc46c5d2628"
 
 [[packages]]
-name = "mlx-metal"
-version = "0.29.3"
-marker = "platform_machine == 'arm64' and sys_platform == 'darwin'"
-index = "https://pypi.org/simple"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/41/95/a00054a006df82bb1b5b8f666ae44a676b259146fadbff90fe654309fefc/mlx_metal-0.29.3-py3-none-macosx_13_0_arm64.whl"
-upload-time = 2025-10-17T19:19:25Z
-size = 36817352
-
-[packages.wheels.hashes]
-sha256 = "27b5a4d905202a71e84d9fd559ea0236813f6f960ef494e5cafe9c45df4c9d7c"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/c0/d8/5ee91eac16dfcf0334103120b47d4abd8c890ccc0d73d3eee4770ce8810f/mlx_metal-0.29.3-py3-none-macosx_14_0_arm64.whl"
-upload-time = 2025-10-17T19:18:42Z
-size = 36555573
-
-[packages.wheels.hashes]
-sha256 = "f426d4b67f96b4d6f0ed50d5992933595aadb370dc3e9ed2410bafbc16229882"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/cd/9a/39b7ecdf21cf2a39ced8d7933eed65c6cb38295cadfd0907dd1abd4d1ded/mlx_metal-0.29.3-py3-none-macosx_15_0_arm64.whl"
-upload-time = 2025-10-17T19:18:37Z
-size = 36549163
-
-[packages.wheels.hashes]
-sha256 = "106616f7f825851043c53d3dc186965c003985da9cbb6e5c034f35108fc1fc27"
-
-[[packages]]
 name = "nvidia-cublas-cu12"
 version = "12.9.1.4"
-marker = "platform_machine == 'x86_64' and sys_platform == 'linux'"
+marker = ""
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -104,7 +74,7 @@ sha256 = "453611eb21a7c1f2c2156ed9f3a45b691deda0440ec550860290dc901af5b4c2"
 [[packages]]
 name = "nvidia-cuda-nvrtc-cu12"
 version = "12.9.86"
-marker = "platform_machine == 'x86_64' and sys_platform == 'linux'"
+marker = ""
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -118,7 +88,7 @@ sha256 = "210cf05005a447e29214e9ce50851e83fc5f4358df8b453155d5e1918094dcb4"
 [[packages]]
 name = "nvidia-cudnn-cu12"
 version = "9.14.0.64"
-marker = "platform_machine == 'x86_64' and sys_platform == 'linux'"
+marker = ""
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -132,7 +102,7 @@ sha256 = "f7c123b5b35afba2134ea25b8e89a902eb0b46fabad722c3cbe10ac1302afc9b"
 [[packages]]
 name = "nvidia-nccl-cu12"
 version = "2.28.3"
-marker = "platform_machine == 'x86_64' and sys_platform == 'linux'"
+marker = ""
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
