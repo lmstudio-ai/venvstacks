@@ -510,6 +510,8 @@ test the release pipeline prior to publishing <code class="docutils literal notr
 <ul class="simple">
 <li><p>Update the version in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> to remove the pre-release suffix</p></li>
 <li><p>Run <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">collect</span></code> to update <code class="docutils literal notranslate"><span class="pre">CHANGELOG.rst</span></code></p></li>
+<li><p>Review and edit the contents of <code class="docutils literal notranslate"><span class="pre">CHANGELOG.rst</span></code>, including updating the
+Sphinx anchor labels as appropriate for the release</p></li>
 <li><p>Commit and push the updated version number and collected change log updates</p></li>
 <li><p>Check the updated docs after the PR has been merged</p></li>
 </ul>
@@ -518,11 +520,14 @@ test the release pipeline prior to publishing <code class="docutils literal notr
 <li><p>Use <a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/blob/main/misc/tag-release.sh">misc/tag-release.sh</a> to create an annotated tag for the current version</p></li>
 <li><p>Push the tag to the remote repo</p></li>
 <li><p>Run <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">github-release</span> <span class="pre">--dry-run</span></code> to check what would be published</p></li>
-<li><p>Run <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">github-release</span></code> to make the release from the annotated tag</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">scriv</span> <span class="pre">github-release</span></code> to make the release from the annotated tag
+(alternatively: create the GitHub release interactively in the web UI,
+using the debug output from the <code class="docutils literal notranslate"><span class="pre">scriv</span></code> dry run as a starting point for
+the GitHub release notes)</p></li>
 </ul>
 <p>After release:</p>
 <ul class="simple">
-<li><p>Check the release GitHub Action has published to PyPI correctly</p></li>
+<li><p>Check the release-triggered GitHub Action has published to PyPI correctly</p></li>
 <li><p>Bump the version in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> and add a <code class="docutils literal notranslate"><span class="pre">.dev0</span></code> suffix</p></li>
 </ul>
 </section>

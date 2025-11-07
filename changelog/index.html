@@ -299,13 +299,101 @@
 on the way releases are versioned.</p>
 </div>
 <section id="unreleased">
-<span id="changelog-0-8-0"></span><h2>Unreleased<a class="headerlink" href="#unreleased" title="Link to this heading">¶</a></h2>
+<span id="changelog-0-9-0"></span><h2>Unreleased<a class="headerlink" href="#unreleased" title="Link to this heading">¶</a></h2>
 <p>See the fragment files in the <a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/tree/main/docs/changelog.d">changelog.d directory</a>.</p>
+<span class="target" id="changelog-0-8-0"></span></section>
+<section id="b1-2025-11-08">
+<span id="changelog-0-8-0b1"></span><h2>0.8.0b1 — 2025-11-08<a class="headerlink" href="#b1-2025-11-08" title="Link to this heading">¶</a></h2>
+<section id="added">
+<h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">venvstacks.uv.toml</span></code> file located alongside the stack definition file is now
+incorporated into the configuration passed to <code class="docutils literal notranslate"><span class="pre">uv</span></code> when locking and
+building environments (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>). This configuration may alternatively
+be supplied via the <code class="docutils literal notranslate"><span class="pre">[tool.uv]</span></code> table in the stack definition file.</p></li>
+<li><p>Each layer definition may now contain a <a class="reference internal" href="../file-formats/#priority-indexes"><span class="std std-ref">priority_indexes</span></a>
+section that is used to adjust the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">index</span></code> configuration when locking or
+building that layer (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>).</p></li>
+<li><p>Each layer definition may now contain a <a class="reference internal" href="../file-formats/#package-indexes"><span class="std std-ref">package_indexes</span></a>
+section that is used to adjust the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">sources</span></code> configuration when locking or
+building that layer, or any layer that depends on it (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/270">#270</a>).</p></li>
+<li><p>Each layer definition may now contain a <a class="reference internal" href="../file-formats/#index-overrides"><span class="std std-ref">index_overrides</span></a>
+section that allows apparent inconsistencies in layer package index configurations
+to be marked as expected and acceptable (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/269">#269</a>).</p></li>
+<li><p>Added <a class="reference internal" href="../file-formats/#macosx-target"><span class="std std-ref">macosx_target</span></a> to support per-layer configuration
+of <code class="docutils literal notranslate"><span class="pre">MACOSX_DEPLOYMENT_TARGET</span></code> (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/292">#292</a>)</p></li>
+<li><p>Setting <code class="docutils literal notranslate"><span class="pre">MACOSX_DEPLOYMENT_TARGET</span></code> in the calling environment now affects the
+way layers that do not specify <code class="docutils literal notranslate"><span class="pre">macosx_target</span></code> are built on macOS. If this
+environment variable is not specified at all, the default macOS version
+target is the default portable target set by <code class="docutils literal notranslate"><span class="pre">uv</span></code> rather than the version
+of the system running <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> (resolved in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/292">#292</a>)</p></li>
+<li><p>The target GNU libc version for Linux layer builds is now the default portable
+target set by <code class="docutils literal notranslate"><span class="pre">uv</span></code> rather than the libc version of the system running
+<code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> (resolved in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/292">#292</a>)</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">UV_EXCLUDE_NEWER</span></code> is set in the environment, or <code class="docutils literal notranslate"><span class="pre">exclude-newer</span></code> is set
+in the <code class="docutils literal notranslate"><span class="pre">uv</span></code> tool configuration, the given time is used as the recorded
+lock time for all updated layer locks (proposed in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/10">#10</a>).</p></li>
+<li><p>Layer environments now provide a <code class="docutils literal notranslate"><span class="pre">targets_platform()</span></code> query method
+that indicates whether that layer will be built and published for the current
+(or specified) platform (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/265">#265</a>).</p></li>
+</ul>
+</section>
+<section id="changed">
+<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Layer dependency locking is now cross-platform, using the <code class="docutils literal notranslate"><span class="pre">pylock.toml</span></code>
+format rather than a flat list of dependencies (proposed in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/254">#254</a>).
+While not part of the published release, an
+<a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/blob/main/misc/migrate-to-pylock.py">example script</a>
+is available in the <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> source repository to remove or rename
+previously generated platform specific files (this is particularly
+necessary to preserve version numbering if using implicit layer versioning)</p></li>
+<li><p>Locking operations are no longer filtered by platform. This means the
+<code class="docutils literal notranslate"><span class="pre">BuildEnvironment.all_environments</span></code> iterator now reports all defined
+layers with at least one target platform configured, not just those
+for the current platform.
+Iterate over <code class="docutils literal notranslate"><span class="pre">BuildEnvironment.environments_to_build</span></code> without any layer
+filtering configured to obtain a list of layers specific to the current
+platform (resolved in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/265">#265</a>).</p></li>
+<li><p>Layer target platforms are now inferred from the layers they depend on.
+An exception is raised if a layer specifies targets that are not also
+targets for the lower layers it depends on (changed in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/244">#244</a>).</p></li>
+<li><p>All build environment manipulation is now handled with <code class="docutils literal notranslate"><span class="pre">uv</span></code> (part of resolving
+<a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/144">#144</a>). Previously, requirements compilation was handled with <code class="docutils literal notranslate"><span class="pre">uv</span></code>,
+while actually adding and removing packages was handled with <code class="docutils literal notranslate"><span class="pre">pip</span></code>. Due to
+related differences in package installation metadata (e.g. <code class="docutils literal notranslate"><span class="pre">INSTALLER</span></code>
+containing <code class="docutils literal notranslate"><span class="pre">uv</span></code> rather than <code class="docutils literal notranslate"><span class="pre">pip</span></code>), layer archive hash values will change.</p></li>
+<li><p>Hidden files and folders (those with names starting with <code class="docutils literal notranslate"><span class="pre">.</span></code>) created at the
+top level of layer build environments are no longer included in the
+corresponding deployed environments (whether exported locally or published
+as a deployable layer archive).</p></li>
+<li><p>The handling of shadowed packages across framework layers has changed,
+so unconditionally shadowed packages are no longer treated as constraints
+by higher layers. Environment marker conditions are also listed for
+shared packages from lower layers in layer summaries (resolved in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/292">#292</a>).</p></li>
+<li><p>To improve type hints reported in IDEs and errors reported by static type
+checking, enums now use their singular form as their canonical name,
+with the plural form available as an alias (changed in <a class="extlink-pr reference external" href="https://github.com/lmstudio-ai/venvstacks/pull/308">PR #308</a>).</p></li>
+</ul>
+</section>
+<section id="fixed">
+<h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Layer dependency declarations are now eagerly parsed and stored as structured
+requirements. Invalid requirements are now reported as specification errors
+rather than as cryptic locking command failures (resolved in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/101">#101</a>).</p></li>
+<li><p>Using <code class="docutils literal notranslate"><span class="pre">pbs-installer</span></code> 2025.8.27 or later ensures that the smaller CPython base runtime
+installations that omit debug symbols are consistently preferred (reported in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/242">#242</a>).
+No explicit lower bound is set on the dependency declaration to allow <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> to be updated
+without causing conflicts with existing <code class="docutils literal notranslate"><span class="pre">pbs-installer</span></code> pins to older versions.</p></li>
+<li><p>Omitting all arguments now reports a non-zero exit code (reported in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/246">#246</a>).</p></li>
+</ul>
+</section>
 </section>
 <section id="changelog-0-7-0">
 <span id="id2"></span><h2>0.7.0 — 2025-07-05<a class="headerlink" href="#changelog-0-7-0" title="Link to this heading">¶</a></h2>
-<section id="added">
-<h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<section id="id3">
+<h3>Added<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">show</span></code> <a class="reference internal" href="../overview/#command-show"><span class="std std-ref">subcommand</span></a> to display layer definitions (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/159">#159</a>).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--show</span></code> <a class="reference internal" href="../overview/#option-show"><span class="std std-ref">option</span></a> on subcommands (other than <code class="docutils literal notranslate"><span class="pre">show</span></code>) to display the selected
@@ -317,8 +405,8 @@ and operations as JSON rather than as a human-readable tree. For commands other 
 implies <code class="docutils literal notranslate"><span class="pre">--show-only</span></code> if <code class="docutils literal notranslate"><span class="pre">--show</span></code> is not passed explicitly (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/159">#159</a>).</p></li>
 </ul>
 </section>
-<section id="changed">
-<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<section id="id4">
+<h3>Changed<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Recursive source tree processing now excludes files excluded from version control
 when building from a git repository, and excludes <code class="docutils literal notranslate"><span class="pre">__pycache__</span></code> folders otherwise.
@@ -336,8 +424,8 @@ directly to <code class="docutils literal notranslate"><span class="pre">stdout<
 the given verbosity options (changed in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/5">#5</a>).</p></li>
 </ul>
 </section>
-<section id="fixed">
-<h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">¶</a></h3>
+<section id="id5">
+<h3>Fixed<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>When using the <code class="docutils literal notranslate"><span class="pre">--include</span></code> filtering option for layer builds, existing “build if needed”
 environments are now correctly updated if they have not previously been successfully
@@ -355,9 +443,9 @@ to a lower layer having an invalid lock (resolved in <a class="extlink-pr refere
 </section>
 </section>
 <section id="changelog-0-6-0">
-<span id="id3"></span><h2>0.6.0 — 2025-06-07<a class="headerlink" href="#changelog-0-6-0" title="Link to this heading">¶</a></h2>
-<section id="id4">
-<h3>Added<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<span id="id6"></span><h2>0.6.0 — 2025-06-07<a class="headerlink" href="#changelog-0-6-0" title="Link to this heading">¶</a></h2>
+<section id="id7">
+<h3>Added<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>A new optional field, <code class="docutils literal notranslate"><span class="pre">support_modules</span></code>, has been added to application layer specifications.
 This field allows application layers to embed copies of common unpackaged support libraries
@@ -366,8 +454,8 @@ without needing to duplicate that code in the source tree (proposed in <a class=
 layers that already have a valid layer lock (added in <a class="extlink-pr reference external" href="https://github.com/lmstudio-ai/venvstacks/pull/200">PR #200</a>).</p></li>
 </ul>
 </section>
-<section id="id5">
-<h3>Changed<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<section id="id8">
+<h3>Changed<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Added a <code class="docutils literal notranslate"><span class="pre">--lock-if-needed</span></code> option to the <code class="docutils literal notranslate"><span class="pre">build</span></code> subcommand that ensures layers
 are only locked if they don’t already have valid transitive environment locks.
@@ -382,8 +470,8 @@ Depending on the filesystem, this can make local exports significantly faster wh
 the installed packages contain large files (proposed in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/205">#205</a>).</p></li>
 </ul>
 </section>
-<section id="id6">
-<h3>Fixed<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<section id="id9">
+<h3>Fixed<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Launch module existence checks are now skipped for layers that will not
 be built for the target build platform (reported in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/204">#204</a>).</p></li>
@@ -391,16 +479,16 @@ be built for the target build platform (reported in <a class="extlink-issue refe
 </section>
 </section>
 <section id="changelog-0-5-1">
-<span id="id7"></span><h2>0.5.1 — 2025-05-26<a class="headerlink" href="#changelog-0-5-1" title="Link to this heading">¶</a></h2>
-<section id="id8">
-<h3>Changed<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
+<span id="id10"></span><h2>0.5.1 — 2025-05-26<a class="headerlink" href="#changelog-0-5-1" title="Link to this heading">¶</a></h2>
+<section id="id11">
+<h3>Changed<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Build failures for invalid layer locks now provide more details on the discrepancies
 that result in the lock being considered invalid (changed in <a class="extlink-pr reference external" href="https://github.com/lmstudio-ai/venvstacks/pull/181">PR #181</a>).</p></li>
 </ul>
 </section>
-<section id="id9">
-<h3>Fixed<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<section id="id12">
+<h3>Fixed<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">launch_module</span></code> is now correctly set in the internal <code class="docutils literal notranslate"><span class="pre">venvstacks_layer.json</span></code>
 configuration file shipped as part of application layers (resolved in <a class="extlink-pr reference external" href="https://github.com/lmstudio-ai/venvstacks/pull/174">PR #174</a>).</p></li>
@@ -416,9 +504,9 @@ scripts no longer corrupt the base Python environment link (reported in <a class
 </section>
 </section>
 <section id="changelog-0-5-0">
-<span id="id10"></span><h2>0.5.0 — 2025-05-12<a class="headerlink" href="#changelog-0-5-0" title="Link to this heading">¶</a></h2>
-<section id="id11">
-<h3>Changed<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<span id="id13"></span><h2>0.5.0 — 2025-05-12<a class="headerlink" href="#changelog-0-5-0" title="Link to this heading">¶</a></h2>
+<section id="id14">
+<h3>Changed<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Layer locks are now invalidated for launch module changes. This also means
 that implicit versioning will update the layer version (resolves <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/89">#89</a>).</p></li>
@@ -427,8 +515,8 @@ a layer now reports all ambiguous library targets in the layer instead of
 only reporting the first ambiguity encountered (resolved in <a class="extlink-pr reference external" href="https://github.com/lmstudio-ai/venvstacks/pull/158">PR #158</a>).</p></li>
 </ul>
 </section>
-<section id="id12">
-<h3>Fixed<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<section id="id15">
+<h3>Fixed<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
 <ul>
 <li><p>Previously defined layer locks are now correctly invalidated in the following
 cases (resolves <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/149">#149</a>):</p>
@@ -458,25 +546,25 @@ lock timestamp, even when that is more recent than the file’s local modificati
 </section>
 </section>
 <section id="changelog-0-4-1">
-<span id="id13"></span><h2>0.4.1 — 2025-04-25<a class="headerlink" href="#changelog-0-4-1" title="Link to this heading">¶</a></h2>
-<section id="id14">
-<h3>Added<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
+<span id="id16"></span><h2>0.4.1 — 2025-04-25<a class="headerlink" href="#changelog-0-4-1" title="Link to this heading">¶</a></h2>
+<section id="id17">
+<h3>Added<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Locking layers now emits package summary files for each layer, which should
 make it easier to see what has changed when locks are updated
 (suggested in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/108">#108</a>).</p></li>
 </ul>
 </section>
-<section id="id15">
-<h3>Changed<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
+<section id="id18">
+<h3>Changed<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>The exception raised when reporting dynamic library symlink conflicts in
 a layer now suggests using the <code class="docutils literal notranslate"><span class="pre">dynlib_exclude</span></code> setting to resolve the
 conflict (changed in <a class="extlink-pr reference external" href="https://github.com/lmstudio-ai/venvstacks/pull/141">PR #141</a>).</p></li>
 </ul>
 </section>
-<section id="id16">
-<h3>Fixed<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h3>
+<section id="id19">
+<h3>Fixed<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">--reset-lock</span></code> option now propagates to derived layers as intended
 (reported in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/137">#137</a>).</p></li>
@@ -484,9 +572,9 @@ conflict (changed in <a class="extlink-pr reference external" href="https://gith
 </section>
 </section>
 <section id="changelog-0-4-0">
-<span id="id17"></span><h2>0.4.0 — 2025-04-11<a class="headerlink" href="#changelog-0-4-0" title="Link to this heading">¶</a></h2>
-<section id="id18">
-<h3>Added<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
+<span id="id20"></span><h2>0.4.0 — 2025-04-11<a class="headerlink" href="#changelog-0-4-0" title="Link to this heading">¶</a></h2>
+<section id="id21">
+<h3>Added<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Framework layers may now specify <code class="docutils literal notranslate"><span class="pre">frameworks</span></code> to depend on one or more
 framework layers instead of depending directly on a runtime layer.
@@ -502,8 +590,8 @@ libraries which should not be symbolically linked into the
 (added as part of resolving <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/38">#38</a>).</p></li>
 </ul>
 </section>
-<section id="id19">
-<h3>Changed<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h3>
+<section id="id22">
+<h3>Changed<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>To enable loading of shared objects from other environment layers,
 framework and application environments on Linux and macOS now run
@@ -512,8 +600,8 @@ Python via a suitably capable shell environment (<code class="docutils literal n
 (changed in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/38">#38</a>).</p></li>
 </ul>
 </section>
-<section id="id20">
-<h3>Fixed<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h3>
+<section id="id23">
+<h3>Fixed<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Extension modules on Linux and macOS that rely on shared objects
 published by their dependencies (for example, PyTorch depending
@@ -524,9 +612,9 @@ for additional details (resolved in <a class="extlink-issue reference external" 
 </section>
 </section>
 <section id="changelog-0-3-0">
-<span id="id21"></span><h2>0.3.0 — 2025-03-28<a class="headerlink" href="#changelog-0-3-0" title="Link to this heading">¶</a></h2>
-<section id="id22">
-<h3>Added<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
+<span id="id24"></span><h2>0.3.0 — 2025-03-28<a class="headerlink" href="#changelog-0-3-0" title="Link to this heading">¶</a></h2>
+<section id="id25">
+<h3>Added<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">build</span></code> and <code class="docutils literal notranslate"><span class="pre">lock</span></code> subcommands accept a new <code class="docutils literal notranslate"><span class="pre">--reset-lock</span></code>
 CLI option. This multi-use option requests that any previously
@@ -543,8 +631,8 @@ depending on the OS, and this is reflected in their respective platform tags
 (added in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/107">#107</a>).</p></li>
 </ul>
 </section>
-<section id="id23">
-<h3>Changed<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
+<section id="id26">
+<h3>Changed<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>A Python API instability <code class="docutils literal notranslate"><span class="pre">FutureWarning</span></code> is now emitted at runtime (added while resolving <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/22">#22</a>).</p></li>
 <li><p>The previous <code class="xref py py-func docutils literal notranslate"><span class="pre">BuildEnvironment.get_unmatched_patterns()</span></code> method has been replaced
@@ -554,8 +642,8 @@ matching layer names and the unmatched patterns (changed in <a class="extlink-is
 rather than an iterable of filter patterns to be matched (changed in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/22">#22</a>).</p></li>
 </ul>
 </section>
-<section id="id24">
-<h3>Fixed<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h3>
+<section id="id27">
+<h3>Fixed<a class="headerlink" href="#id27" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--only-binary</span> <span class="pre">&quot;:all:&quot;</span></code> is now passed when locking the layers in addition
 to being passed when creating the layer environments. This avoids emitting
@@ -565,18 +653,18 @@ requirements that can’t be installed (resolved in <a class="extlink-issue refe
 </section>
 </section>
 <section id="changelog-0-2-1">
-<span id="id25"></span><h2>0.2.1 — 2024-12-05<a class="headerlink" href="#changelog-0-2-1" title="Link to this heading">¶</a></h2>
-<section id="id26">
-<h3>Fixed<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h3>
+<span id="id28"></span><h2>0.2.1 — 2024-12-05<a class="headerlink" href="#changelog-0-2-1" title="Link to this heading">¶</a></h2>
+<section id="id29">
+<h3>Fixed<a class="headerlink" href="#id29" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Fix Typer 0.14.0+ incompatibility when setting app name (reported by Rugved Somwanshi in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/96">#96</a>).</p></li>
 </ul>
 </section>
 </section>
 <section id="changelog-0-2-0">
-<span id="id27"></span><h2>0.2.0 — 2024-11-14<a class="headerlink" href="#changelog-0-2-0" title="Link to this heading">¶</a></h2>
-<section id="id28">
-<h3>Added<a class="headerlink" href="#id28" title="Link to this heading">¶</a></h3>
+<span id="id30"></span><h2>0.2.0 — 2024-11-14<a class="headerlink" href="#changelog-0-2-0" title="Link to this heading">¶</a></h2>
+<section id="id31">
+<h3>Added<a class="headerlink" href="#id31" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Setting <code class="docutils literal notranslate"><span class="pre">versioned</span> <span class="pre">=</span> <span class="pre">True</span></code> in a layer definition will now append a
 lock version number to the layer name that automatically increments
@@ -588,8 +676,8 @@ versioned and unversioned layer names are used (implemented in <a class="extlink
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">bound_to_implementation</span></code> to the published layer metadata (part of <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/78">#78</a>).</p></li>
 </ul>
 </section>
-<section id="id29">
-<h3>Changed<a class="headerlink" href="#id29" title="Link to this heading">¶</a></h3>
+<section id="id32">
+<h3>Changed<a class="headerlink" href="#id32" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Enabled rendered previews for documentation PRs (requested in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/43">#43</a>).</p></li>
 <li><p>Enabled link validity checks when rendering documentation (requested in <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/62">#62</a>).</p></li>
@@ -604,8 +692,8 @@ versioned and unversioned layer names are used (implemented in <a class="extlink
 and simplified it to always refer to the runtime layer’s install target name (part of <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/78">#78</a>).</p></li>
 </ul>
 </section>
-<section id="id30">
-<h3>Fixed<a class="headerlink" href="#id30" title="Link to this heading">¶</a></h3>
+<section id="id33">
+<h3>Fixed<a class="headerlink" href="#id33" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Post-installation scripts for layered environments now work
 correctly even when run with a Python installation other
@@ -614,9 +702,9 @@ than the expected base runtime (resolved in <a class="extlink-issue reference ex
 </section>
 </section>
 <section id="changelog-0-1-1">
-<span id="id31"></span><h2>0.1.1 — 2024-11-01<a class="headerlink" href="#changelog-0-1-1" title="Link to this heading">¶</a></h2>
-<section id="id32">
-<h3>Changed<a class="headerlink" href="#id32" title="Link to this heading">¶</a></h3>
+<span id="id34"></span><h2>0.1.1 — 2024-11-01<a class="headerlink" href="#changelog-0-1-1" title="Link to this heading">¶</a></h2>
+<section id="id35">
+<h3>Changed<a class="headerlink" href="#id35" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Update docs URL to
 <a class="reference external" href="https://venvstacks.lmstudio.ai">https://venvstacks.lmstudio.ai</a></p></li>
@@ -628,9 +716,9 @@ than the expected base runtime (resolved in <a class="extlink-issue reference ex
 </section>
 </section>
 <section id="changelog-0-1-0">
-<span id="id33"></span><h2>0.1.0 — 2024-10-31<a class="headerlink" href="#changelog-0-1-0" title="Link to this heading">¶</a></h2>
-<section id="id34">
-<h3>Changed<a class="headerlink" href="#id34" title="Link to this heading">¶</a></h3>
+<span id="id36"></span><h2>0.1.0 — 2024-10-31<a class="headerlink" href="#changelog-0-1-0" title="Link to this heading">¶</a></h2>
+<section id="id37">
+<h3>Changed<a class="headerlink" href="#id37" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Further documentation fixes and improvements</p></li>
 </ul>
@@ -638,8 +726,8 @@ than the expected base runtime (resolved in <a class="extlink-issue reference ex
 </section>
 <section id="rc1-post0-2024-10-30">
 <span id="changelog-0-1-0rc1-post0"></span><h2>0.1.0rc1.post0 — 2024-10-30<a class="headerlink" href="#rc1-post0-2024-10-30" title="Link to this heading">¶</a></h2>
-<section id="id35">
-<h3>Changed<a class="headerlink" href="#id35" title="Link to this heading">¶</a></h3>
+<section id="id38">
+<h3>Changed<a class="headerlink" href="#id38" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Included project URLs in project metadata</p></li>
 <li><p>Added installation instructions to README.md</p></li>
@@ -651,8 +739,8 @@ overview page and the top level docs landing page</p></li>
 </section>
 <section id="rc1-2024-10-29">
 <span id="changelog-0-1-0rc1"></span><h2>0.1.0rc1 — 2024-10-29<a class="headerlink" href="#rc1-2024-10-29" title="Link to this heading">¶</a></h2>
-<section id="id36">
-<h3>Added<a class="headerlink" href="#id36" title="Link to this heading">¶</a></h3>
+<section id="id39">
+<h3>Added<a class="headerlink" href="#id39" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Initial export of <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> from Project Amphibian.</p></li>
 <li><p>Adopted <code class="docutils literal notranslate"><span class="pre">scriv</span></code> for <code class="docutils literal notranslate"><span class="pre">CHANGELOG</span></code> management.</p></li>
@@ -710,70 +798,76 @@ overview page and the top level docs landing page</p></li>
             <ul>
 <li><a class="reference internal" href="#">Changelog</a><ul>
 <li><a class="reference internal" href="#unreleased">Unreleased</a></li>
-<li><a class="reference internal" href="#changelog-0-7-0">0.7.0 — 2025-07-05</a><ul>
+<li><a class="reference internal" href="#b1-2025-11-08">0.8.0b1 — 2025-11-08</a><ul>
 <li><a class="reference internal" href="#added">Added</a></li>
 <li><a class="reference internal" href="#changed">Changed</a></li>
 <li><a class="reference internal" href="#fixed">Fixed</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#changelog-0-6-0">0.6.0 — 2025-06-07</a><ul>
-<li><a class="reference internal" href="#id4">Added</a></li>
-<li><a class="reference internal" href="#id5">Changed</a></li>
-<li><a class="reference internal" href="#id6">Fixed</a></li>
+<li><a class="reference internal" href="#changelog-0-7-0">0.7.0 — 2025-07-05</a><ul>
+<li><a class="reference internal" href="#id3">Added</a></li>
+<li><a class="reference internal" href="#id4">Changed</a></li>
+<li><a class="reference internal" href="#id5">Fixed</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#changelog-0-5-1">0.5.1 — 2025-05-26</a><ul>
+<li><a class="reference internal" href="#changelog-0-6-0">0.6.0 — 2025-06-07</a><ul>
+<li><a class="reference internal" href="#id7">Added</a></li>
 <li><a class="reference internal" href="#id8">Changed</a></li>
 <li><a class="reference internal" href="#id9">Fixed</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#changelog-0-5-0">0.5.0 — 2025-05-12</a><ul>
+<li><a class="reference internal" href="#changelog-0-5-1">0.5.1 — 2025-05-26</a><ul>
 <li><a class="reference internal" href="#id11">Changed</a></li>
 <li><a class="reference internal" href="#id12">Fixed</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#changelog-0-5-0">0.5.0 — 2025-05-12</a><ul>
+<li><a class="reference internal" href="#id14">Changed</a></li>
+<li><a class="reference internal" href="#id15">Fixed</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#changelog-0-4-1">0.4.1 — 2025-04-25</a><ul>
-<li><a class="reference internal" href="#id14">Added</a></li>
-<li><a class="reference internal" href="#id15">Changed</a></li>
-<li><a class="reference internal" href="#id16">Fixed</a></li>
+<li><a class="reference internal" href="#id17">Added</a></li>
+<li><a class="reference internal" href="#id18">Changed</a></li>
+<li><a class="reference internal" href="#id19">Fixed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#changelog-0-4-0">0.4.0 — 2025-04-11</a><ul>
-<li><a class="reference internal" href="#id18">Added</a></li>
-<li><a class="reference internal" href="#id19">Changed</a></li>
-<li><a class="reference internal" href="#id20">Fixed</a></li>
+<li><a class="reference internal" href="#id21">Added</a></li>
+<li><a class="reference internal" href="#id22">Changed</a></li>
+<li><a class="reference internal" href="#id23">Fixed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#changelog-0-3-0">0.3.0 — 2025-03-28</a><ul>
-<li><a class="reference internal" href="#id22">Added</a></li>
-<li><a class="reference internal" href="#id23">Changed</a></li>
-<li><a class="reference internal" href="#id24">Fixed</a></li>
+<li><a class="reference internal" href="#id25">Added</a></li>
+<li><a class="reference internal" href="#id26">Changed</a></li>
+<li><a class="reference internal" href="#id27">Fixed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#changelog-0-2-1">0.2.1 — 2024-12-05</a><ul>
-<li><a class="reference internal" href="#id26">Fixed</a></li>
+<li><a class="reference internal" href="#id29">Fixed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#changelog-0-2-0">0.2.0 — 2024-11-14</a><ul>
-<li><a class="reference internal" href="#id28">Added</a></li>
-<li><a class="reference internal" href="#id29">Changed</a></li>
-<li><a class="reference internal" href="#id30">Fixed</a></li>
+<li><a class="reference internal" href="#id31">Added</a></li>
+<li><a class="reference internal" href="#id32">Changed</a></li>
+<li><a class="reference internal" href="#id33">Fixed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#changelog-0-1-1">0.1.1 — 2024-11-01</a><ul>
-<li><a class="reference internal" href="#id32">Changed</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#changelog-0-1-0">0.1.0 — 2024-10-31</a><ul>
-<li><a class="reference internal" href="#id34">Changed</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#rc1-post0-2024-10-30">0.1.0rc1.post0 — 2024-10-30</a><ul>
 <li><a class="reference internal" href="#id35">Changed</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#changelog-0-1-0">0.1.0 — 2024-10-31</a><ul>
+<li><a class="reference internal" href="#id37">Changed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rc1-post0-2024-10-30">0.1.0rc1.post0 — 2024-10-30</a><ul>
+<li><a class="reference internal" href="#id38">Changed</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#rc1-2024-10-29">0.1.0rc1 — 2024-10-29</a><ul>
-<li><a class="reference internal" href="#id36">Added</a></li>
+<li><a class="reference internal" href="#id39">Added</a></li>
 </ul>
 </li>
 </ul>
