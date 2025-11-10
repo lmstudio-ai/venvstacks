@@ -137,12 +137,12 @@ jobs:
     - name: Ensure other fast tests pass
       run: |
         source "$VIRTUAL_ENV_BIN_DIR/activate"
-        python -m tox -m test -- -m "not slow and not expected_output"
+        python -m tox -- -m "not slow and not expected_output"
 
     - name: Ensure other slow tests pass
       run: |
         source "$VIRTUAL_ENV_BIN_DIR/activate"
-        python -m tox -m test -- -m "slow and not expected_output"
+        python -m tox -- -m "slow and not expected_output"
 
     - name: Update outputs
       id: update-test-outputs
