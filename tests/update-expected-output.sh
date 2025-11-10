@@ -21,7 +21,7 @@ if [ -z "$CI" ]; then
   TOX_ENV_OPT="-m"
   TOX_ENV_MARKER="test"
 fi
-tox "$TOX_ENV_OPT" "$TOX_ENV_MARKER" -- -m "expected_output" -vvs || true
+tox $TOX_ENV_OPT $TOX_ENV_MARKER -- -m "expected_output" -vvs || true
 
 # Emit the list of changed files (if any) to the specified output file
 # Avoids setting a non-zero return code if `grep` doesn't match any lines
