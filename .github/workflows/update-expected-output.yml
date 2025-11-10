@@ -166,7 +166,7 @@ jobs:
       if: steps.update-test-outputs.outputs.updated
       uses: actions/upload-artifact@v4
       with:
-        name: venvstacks-test-outputs-${{ matrix.os }}
+        name: venvstacks-test-outputs-${{ matrix.os }}${{ matrix.suffix }}
         path: ${{ steps.update-test-outputs.outputs.updated }}
         # Just for passing the updated lock files to the update job
         retention-days: 1

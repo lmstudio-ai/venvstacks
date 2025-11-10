@@ -47,6 +47,12 @@ SAMPLE_PROJECT_PATH = _THIS_PATH.parent / "sample_project"
 SAMPLE_PROJECT_STACK_SPEC_PATH = SAMPLE_PROJECT_PATH / "venvstacks.toml"
 SAMPLE_PROJECT_REQUIREMENTS_PATH = SAMPLE_PROJECT_PATH / "requirements"
 SAMPLE_PROJECT_MANIFESTS_PATH = SAMPLE_PROJECT_PATH / "expected_manifests"
+# CPython switched to a new Windows zlib implementation in 3.14,
+# so its expected metadata is stored separately. Once 3.14 is the
+# oldest supported version, this special case can be dropped
+# (including the separate run in the update expected outputs CI job)
+if sys.version_info >= (3, 14) and sys.platform == "win32":
+    SAMPLE_PROJECT_MANIFESTS_PATH /= "py3.14"
 
 
 def _define_build_env(working_path: Path) -> BuildEnvironment:
@@ -62,12 +68,7 @@ def _define_build_env(working_path: Path) -> BuildEnvironment:
 
 def _get_expected_metadata(build_env: BuildEnvironment) -> ManifestData:
     """Path to the expected sample project archive metadata for the current platform."""
-    # CPython switched to a new Windows zlib implementation in 3.14,
-    # so its expected metadata is stored separately
-    metadata_path = SAMPLE_PROJECT_MANIFESTS_PATH / build_env.build_platform
-    if sys.version_info >= (3, 14) and sys.platform == "win32":
-        metadata_path = metadata_path / "py3.14"
-    return ManifestData(metadata_path)
+    return ManifestData(SAMPLE_PROJECT_MANIFESTS_PATH / build_env.build_platform)
 
 
 def _get_expected_dry_run_result(
