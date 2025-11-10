@@ -38,7 +38,11 @@ jobs:
       fail-fast: false  # Always report results for all targets
       max-parallel: 12
       matrix:
-        python-version: [3.11, 3.12, 3.13, 3.14]
+        # To avoid excessive CI runs, test the oldest supported version,
+        # the newest supported version, and one intermediate version
+        # Currently, 3.12 is skipped, as that is tested when generating the
+        # expected output updates, and is also the default local test target
+        python-version: [3.11, 3.13, 3.14]
         # Note: while venvstacks nominally supports x86-64 macOS, the actual demand
         #       for that is unclear, so skip macos-12 testing until it is requested
         #       Linux and Windows aarch64 testing is more gated on runner availability

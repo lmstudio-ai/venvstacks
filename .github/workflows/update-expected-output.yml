@@ -58,7 +58,7 @@ jobs:
       want-pr-macos: ${{ steps.set-matrix-result.outputs.want-pr-macos }}
     strategy:
       fail-fast: true  # Don't bother updating if any test run fails
-      max-parallel: 3
+      max-parallel: 4
       matrix:
         # The expected test output aims to be Python version independent,
         # but CPython switched to a new zlib implementation in 3.14
