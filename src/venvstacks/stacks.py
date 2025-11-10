@@ -242,10 +242,13 @@ class TargetPlatform(StrEnum):
     def _get_marker_environment(
         self, py_version: str, py_implementation: str
     ) -> dict[str, str]:
+        # CPython and PyPy both return mixed case names for platform.python_implementation(),
+        # and use the lowercase version of the same name for sys.implementation.name
         env = {
+            "implementation_name": py_implementation.lower(),
+            "platform_python_implementation": py_implementation,
             "python_version": py_version.rpartition(".")[0],
             "python_full_version": py_version,
-            "implementation_name": py_implementation,
         }
         platform, _, arch = self.partition("_")
         env.update(_ENV_KEYS_BY_PLATFORM[platform])
@@ -1334,6 +1337,11 @@ class LayerSpecBase(ABC):
         return result
 
 
+# Only CPython and PyPy are currently supported as potential runtimes
+# If pbs-installer gains support for other runtimes, they will also need
+# to be added here before they can be used with venvstacks
+# These names are the platform_python_implementation values
+# (implementation_name is derived by converting them back to lowercase)
 _PYTHON_IMPLEMENTATION_NAMES = {
     "cpython": "CPython",
     "pypy": "PyPy",
@@ -1352,12 +1360,12 @@ class RuntimeSpec(LayerSpecBase):
     def py_version(self) -> str:
         """Extract just the Python version string from the base runtime identifier."""
         # python_implementation should be of the form "implementation@X.Y.Z"
-        # (this may need adjusting if runtimes other than CPython are ever used...)
+        # (PDM uses the Python version to look up both CPython and PyPy releases)
         return self.python_implementation.partition("@")[2]
 
     @property
     def py_implementation(self) -> str:
-        """Extract the expected python_implementation value for the base runtime."""
+        """Extract the expected platform_python_implementation value for the base runtime."""
         # python_implementation should be of the form "implementation@X.Y.Z"
         pdm_impl_name = self.python_implementation.partition("@")[0]
         return _PYTHON_IMPLEMENTATION_NAMES[pdm_impl_name]
