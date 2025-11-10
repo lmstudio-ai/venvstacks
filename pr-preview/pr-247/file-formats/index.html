@@ -1,19 +1,19 @@
 <!doctype html>
 <html class="no-js" lang="en" data-content_root="../">
-  <head><meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta content="venvstacks File Formats - venvstacks Documentation" name="og:title" />
 <meta content="website" name="og:type" />
 <meta content="https://venvstacks.lmstudio.ai/stack-format/" name="og:url" />
 <meta content="venvstacks Specification and Metadata File Formats - venvstacks Documentation" name="og:description" />
-<link rel="search" title="Search" href="../search/" /><link rel="next" title="Design Discussion" href="../design/" /><link rel="prev" title="Essential Terms and Concepts" href="../glossary/" />
-        <link rel="canonical" href="https://venvstacks.lmstudio.ai/file-formats/" />
+<link rel="search" title="Search" href="../search/"><link rel="next" title="Building Packages from Source" href="../source-builds/"><link rel="prev" title="Essential Terms and Concepts" href="../glossary/">
+        <link rel="canonical" href="https://venvstacks.lmstudio.ai/file-formats/">
 
-    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
         <title>Environment Stack File Formats - venvstacks documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
     
@@ -149,14 +149,10 @@
   </symbol>
 </svg>
 
-<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
-<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
-<label class="overlay sidebar-overlay" for="__navigation">
-  <div class="visually-hidden">Hide navigation sidebar</div>
-</label>
-<label class="overlay toc-overlay" for="__toc">
-  <div class="visually-hidden">Hide table of contents sidebar</div>
-</label>
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
 
 <a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
@@ -166,8 +162,7 @@
   <header class="mobile-header">
     <div class="header-left">
       <label class="nav-overlay-icon" for="__navigation">
-        <div class="visually-hidden">Toggle site navigation sidebar</div>
-        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
       </label>
     </div>
     <div class="header-center">
@@ -175,8 +170,7 @@
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
-        <button class="theme-toggle">
-          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
           <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
           <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
           <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -184,8 +178,7 @@
         </button>
       </div>
       <label class="toc-overlay-icon toc-header-icon" for="__toc">
-        <div class="visually-hidden">Toggle table of contents sidebar</div>
-        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
   </header>
@@ -206,15 +199,18 @@
 <li class="toctree-l1"><a class="reference internal" href="../overview/">Project Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../glossary/">Essential Terms and Concepts</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Environment Stack File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source-builds/">Building Packages from Source</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/">Design Discussion</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../api/">Python API</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Python API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/">Python API</a><input aria-label="Toggle navigation of Python API" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/cli/">venvstacks.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/pack_venv/">venvstacks.pack_venv</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../api/stacks/">venvstacks.stacks</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of venvstacks.stacks</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/stacks/">venvstacks.stacks</a><input aria-label="Toggle navigation of venvstacks.stacks" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.StackSpec/">venvstacks.stacks.StackSpec</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.BuildEnvironment/">venvstacks.stacks.BuildEnvironment</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerCategories/">venvstacks.stacks.LayerCategories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerCategory/">venvstacks.stacks.LayerCategory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerSpecMetadata/">venvstacks.stacks.LayerSpecMetadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerVariant/">venvstacks.stacks.LayerVariant</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerVariants/">venvstacks.stacks.LayerVariants</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.TargetPlatform/">venvstacks.stacks.TargetPlatform</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.TargetPlatforms/">venvstacks.stacks.TargetPlatforms</a></li>
@@ -281,8 +277,7 @@
     <span class="visually-hidden">Edit this page</span>
   </a>
 </div><div class="theme-toggle-container theme-toggle-content">
-            <button class="theme-toggle">
-              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
               <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -290,8 +285,7 @@
             </button>
           </div>
           <label class="toc-overlay-icon toc-content-icon" for="__toc">
-            <div class="visually-hidden">Toggle table of contents sidebar</div>
-            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
@@ -299,7 +293,51 @@
 <span id="stack-specification-format"></span><h1>Environment Stack File Formats<a class="headerlink" href="#environment-stack-file-formats" title="Link to this heading">¶</a></h1>
 <section id="file-naming-and-formats">
 <h2>File naming and formats<a class="headerlink" href="#file-naming-and-formats" title="Link to this heading">¶</a></h2>
-<p>By convention, virtual environment stacks are specified in a file named <code class="docutils literal notranslate"><span class="pre">venvstacks.toml</span></code>.</p>
+<p>By convention, virtual environment stacks are specified in a file named <code class="docutils literal notranslate"><span class="pre">venvstacks.toml</span></code>. This
+convention is NOT enforced, so the CLI will accept any TOML file containing a correctly formatted
+stack definition.</p>
+<p>The package installation tool used to lock and build environments is <code class="docutils literal notranslate"><span class="pre">uv</span></code>. While the exact
+configuration settings used when invoking <code class="docutils literal notranslate"><span class="pre">uv</span></code> are generated dynamically by <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code>,
+baseline settings may be provided via either a <code class="docutils literal notranslate"><span class="pre">venvstacks.uv.toml</span></code> file in the same folder as
+the stack definition file or by defining a <code class="docutils literal notranslate"><span class="pre">[tool.uv]</span></code> table in the stack definition file. If
+both are present, the inline table configuration settings are used and the separate configuration
+file is ignored (note: this is the <em>opposite</em> of the way <code class="docutils literal notranslate"><span class="pre">uv</span></code> works for regular Python projects,
+where the presence of a <code class="docutils literal notranslate"><span class="pre">uv.toml</span></code> file overrides the settings in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>).</p>
+<p>The format of the <code class="docutils literal notranslate"><span class="pre">venvstacks.uv.toml</span></code> configuration file is that described for <code class="docutils literal notranslate"><span class="pre">uv.toml</span></code> in
+<a class="reference external" href="https://docs.astral.sh/uv/concepts/configuration-files/"><code class="docutils literal notranslate"><span class="pre">uv</span></code>’s tool documentation</a>. The <code class="docutils literal notranslate"><span class="pre">[tool.uv]</span></code> table supports the same settings, nested under the
+<code class="docutils literal notranslate"><span class="pre">tool.uv</span></code> subtable. Many of the
+<a class="reference external" href="https://docs.astral.sh/uv/reference/settings/">available configuration settings</a> are not
+relevant to the <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> use case, but at least the following are expected to be applicable:</p>
+<ul class="simple">
+<li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#index">index</a>: specifying which indexes to use for dependency resolution and retrieval</p></li>
+<li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#sources">sources</a>: specifying indexes to use for packages (overriding the default priorities)</p></li>
+<li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a>: ignore packages uploaded after the specified date</p></li>
+<li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#override-dependencies">override-dependencies</a>: override inaccurate or unwanted dependency declarations</p></li>
+</ul>
+<p>The <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#index">index</a> and <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#sources">sources</a> settings may be overridden when locking
+and building specific layers via the <a class="reference internal" href="#priority-indexes"><span class="std std-ref">priority indexes</span></a> and
+<a class="reference internal" href="#package-indexes"><span class="std std-ref">package indexes</span></a> layer settings respectively. The <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#sources">sources</a>
+field in the common configuration is also restricted to only referring to named indexes.</p>
+<p>If any indexes require authentication to access, this must be configured via <code class="docutils literal notranslate"><span class="pre">uv</span></code>’s
+<a class="reference external" href="https://docs.astral.sh/uv/reference/environment/">runtime environment variables</a> rather
+than the file based configuration, as the package installation step relies solely on the
+generated layer lock files without reference to the config used when resolving the layers.</p>
+<p>Setting the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a> config setting (or the <code class="docutils literal notranslate"><span class="pre">UV_EXCLUDE_NEWER</span></code> environment
+variable) also records that value as the layer lock time for all updated layer locks.
+Layers with a more recent recorded lock time will also be relocked
+(unless they have been excluded by layer filtering).</p>
+<p>Note that the following config settings are always set by <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> when invoking
+<code class="docutils literal notranslate"><span class="pre">uv</span></code>, so any attempts to set them in the common layer configuration will be ignored:</p>
+<ul class="simple">
+<li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#cache-keys">cache-keys</a> (always set to the inputs <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> provides)</p></li>
+<li><p><a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#no-build">no-build</a> (implicit source builds are always disabled)</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As of October 2025, there is an open <code class="docutils literal notranslate"><span class="pre">uv</span></code> issue that may cause problems when
+attempting to combine the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a> setting with custom indexes due to
+<a class="reference external" href="https://github.com/astral-sh/uv/issues/12449">missing artifact publication date information</a>.</p>
+</div>
 <p>The default output folder for layer metadata when publishing artifacts and locally exporting
 environments is called <code class="docutils literal notranslate"><span class="pre">__venvstacks__</span></code>. The platform-specific layer summary metadata
 files are called <code class="docutils literal notranslate"><span class="pre">venvstacks.json</span></code> and each is written to a folder named after the target
@@ -315,6 +353,15 @@ line-oriented human friendliness of the classic <code class="docutils literal no
 syntax used to define <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> when
 <a class="reference external" href="https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#writing-pyproject-toml" title="(in Python Packaging User Guide)"><span class="xref std std-ref">publishing Python packages</span></a>.</p>
 <p>All output metadata files generated by the build process are emitted as <a class="reference external" href="https://www.json.org/">JSON</a>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.8.0: </span>Added support for configuring <code class="docutils literal notranslate"><span class="pre">uv</span></code> execution and having it affect both locking and building
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>). User and system level default <code class="docutils literal notranslate"><span class="pre">uv</span></code> configuration
+settings no longer affect the behaviour of the locking process.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.8.0: </span>Setting <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#exclude-newer">exclude-newer</a> or <code class="docutils literal notranslate"><span class="pre">UV_EXCLUDE_NEWER</span></code> now also affects the recorded
+layer lock times (<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
 </section>
 <section id="defining-virtual-environment-stacks">
 <h2>Defining virtual environment stacks<a class="headerlink" href="#defining-virtual-environment-stacks" title="Link to this heading">¶</a></h2>
@@ -337,9 +384,11 @@ Dependencies are declared using the standard Python
 These declared dependencies will be transitively locked when locking the layer.
 The list of requirements must be present, but is permitted to be empty.</p></li>
 </ul>
-<p>While there are no formal restrictions on the symbols permitted in layer names,
-the <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> symbol is used to separate the layer name from the lock version for
-implicitly versioned layers, so using it as part of a layer name may cause
+<p>While there are no formal restrictions on the symbols permitted in layer names, it is
+recommended to avoid the use of any punctuation symbols other than <code class="docutils literal notranslate"><span class="pre">_</span></code> and <code class="docutils literal notranslate"><span class="pre">-</span></code>
+(as future releases may assign specific semantics to those symbols).
+The <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> symbol in particular is already used to separate the layer name from the lock
+version for implicitly versioned layers, so using it as part of a layer name may cause
 confusion when attempting to determine whether a published artifact or
 exported environment is using implicit lock versioning or is referring
 to an external version number.</p>
@@ -347,10 +396,11 @@ to an external version number.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">platforms</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
 by default, all layers are built for all target platforms. Setting this field
-allows the layer build to be narrowed to a subset of the supported targets.
+allows a layer build to be narrowed to a subset of the supported targets,
+affecting both that layer and all layers that depend on it.
 Setting this field to an empty list also allows a layer build to be disabled
-without having to delete it entirely.
-Permitted entries in the <code class="docutils literal notranslate"><span class="pre">platforms</span></code> list are:</p>
+without having to delete it entirely.</p>
+<p>Permitted entries in the <code class="docutils literal notranslate"><span class="pre">platforms</span></code> list are:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;win_amd64&quot;</span></code>: Windows on x86-64</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;win_arm64&quot;</span></code>: Windows on ARM64/Aarch64 (not currently tested in CI)</p></li>
@@ -363,6 +413,25 @@ Permitted entries in the <code class="docutils literal notranslate"><span class=
 <p><span class="versionmodified changed">Changed in version 0.3.0: </span>Added <code class="docutils literal notranslate"><span class="pre">win_arm64</span></code> and <code class="docutils literal notranslate"><span class="pre">linux_aarch64</span></code> as permitted target platforms
 (<a class="reference internal" href="../changelog/#changelog-0-3-0"><span class="std std-ref">release details</span></a>).</p>
 </div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.8.0: </span>Narrowing the target platforms for a layer now also narrows the target
+platforms for all layers that depend on that layer
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</li>
+</ul>
+<ul id="macosx-target">
+<li><p><code class="docutils literal notranslate"><span class="pre">macosx_target</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>)
+sets <a class="extlink-uv-envvar reference external" href="https://docs.astral.sh/uv/reference/environment/#MACOSX_DEPLOYMENT_TARGET">MACOSX_DEPLOYMENT_TARGET</a> in the <code class="docutils literal notranslate"><span class="pre">uv</span></code> subprocess environment when
+installing packages, which may affect the exact wheels selected for projects which
+publish wheels for multiple macOS versions.</p>
+<p>If this field is not set, the <code class="docutils literal notranslate"><span class="pre">MACOSX_DEPLOYMENT_TARGET</span></code> setting from the
+calling environment is used without modification. If it is not set at all,
+the default target macOS version is determined by the <code class="docutils literal notranslate"><span class="pre">uv</span></code> version.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for setting the minimum macOS target on a per-layer basis
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dynlib_exclude</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
 by default, dynamic library (also known as shared object) files on Linux
@@ -371,10 +440,70 @@ linked from a <code class="docutils literal notranslate"><span class="pre">share
 (see <a class="reference internal" href="../design/#dynamic-linking"><span class="std std-ref">How does dynamic linking work across layers?</span></a> for additional details).
 Setting this field allows files to be excluded from the linking process based
 on filename glob patterns. These patterns are checked against the <em>end</em> of the
-full path to the files using the equivalent of <a class="reference external" href="https://docs.python.org/3/library/glob.html#glob.translate" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">glob.translate()</span></code></a>.</p>
+full path to the files using the equivalent of <a class="reference external" href="https://docs.python.org/3/library/glob.html#glob.translate" title="(in Python v3.14)"><code class="xref py py-func docutils literal notranslate"><span class="pre">glob.translate()</span></code></a>.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">Added in version 0.4.0: </span>Added support for dynamic linking across layers on Linux and macOS
 (<a class="reference internal" href="../changelog/#changelog-0-4-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</li>
+</ul>
+<ul id="package-indexes">
+<li><p><code class="docutils literal notranslate"><span class="pre">package_indexes</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#table">table</a> mapping distribution package names to named <code class="docutils literal notranslate"><span class="pre">uv</span></code> indexes):
+by default, all layers are built with common tool configuration settings.
+To allow different layers to <em>selectively</em> retrieve wheels from different indexes,
+layers may define a <code class="docutils literal notranslate"><span class="pre">package_indexes</span></code> subtable that is used to add to or
+override the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">sources</span></code> configuration for that layer.
+For example, one framework layer definition may specify
+<code class="docutils literal notranslate"><span class="pre">package_indexes</span> <span class="pre">=</span> <span class="pre">{torch</span> <span class="pre">=</span> <span class="pre">&quot;pytorch_cu128&quot;}</span></code>,
+while an alternate framework layer definition
+may specify <code class="docutils literal notranslate"><span class="pre">package_indexes</span> <span class="pre">=</span> <span class="pre">{torch</span> <span class="pre">=</span> <span class="pre">&quot;pytorch_cpu&quot;}</span></code>.
+Upper layers inherit the package index overrides of all of the layers they depend on.
+A stack definition error is reported if a source override refers to an unknown index name,
+or if the collected source overrides for a given layer definition are inconsistent.
+Note: retrieving several packages from an index server that contains <em>only</em> those packages may
+be tedious to specify when using this setting. In these cases,
+<a class="reference internal" href="#priority-indexes"><span class="std std-ref">priority indexes</span></a> may be a more appropriate setting to use.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for <code class="docutils literal notranslate"><span class="pre">uv</span></code> configuration with layer specific adjustments
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</li>
+</ul>
+<ul id="index-overrides">
+<li><p><code class="docutils literal notranslate"><span class="pre">index_overrides</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#table">table</a> mapping <code class="docutils literal notranslate"><span class="pre">uv</span></code> index names to expected conflicts):
+by default, <a class="reference internal" href="#package-indexes"><span class="std std-ref">package index</span></a> specifications are expected to be
+consistent across all layers that a given layer depends on. This is inconvenient when
+attempting to define layers that depend on two different variants of an underlying
+framework layer, and will work as long as at least one of those layers is installed.
+For example, a layer may depend on both a layer that installs PyTorch with
+<code class="docutils literal notranslate"><span class="pre">package_indexes</span> <span class="pre">=</span> <span class="pre">{torch</span> <span class="pre">=</span> <span class="pre">&quot;pytorch_cu128&quot;}</span></code>, and another that specifies
+<code class="docutils literal notranslate"><span class="pre">package_indexes</span> <span class="pre">=</span> <span class="pre">{torch</span> <span class="pre">=</span> <span class="pre">&quot;pytorch_cpu&quot;}</span></code>. Assuming the CUDA layer is
+listed first, this conflict can be resolved by also specifying
+<code class="docutils literal notranslate"><span class="pre">index_overrides</span> <span class="pre">=</span> <span class="pre">{pytorch_cpu</span> <span class="pre">=</span> <span class="pre">&quot;pytorch_cu128&quot;}</span></code> to indicate that the
+apparent conflict is expected, and should not be considered an error.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for <code class="docutils literal notranslate"><span class="pre">uv</span></code> configuration with layer specific adjustments
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</li>
+</ul>
+<ul id="priority-indexes">
+<li><p><code class="docutils literal notranslate"><span class="pre">priority_indexes</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#array">array</a> of <a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">strings</a>):
+by default, all layers are built with common tool configuration settings. To allow different
+layers to retrieve wheels from different indexes, layers may define a <code class="docutils literal notranslate"><span class="pre">priority_indexes</span></code> list
+that is used to adjust the <code class="docutils literal notranslate"><span class="pre">uv</span></code> <code class="docutils literal notranslate"><span class="pre">index</span></code> configuration for that layer by moving the named
+indexes to the start of the index list (in the given order) and clearing their <code class="docutils literal notranslate"><span class="pre">explicit</span></code> flag.
+Upper layers do NOT automatically inherit the index priorities of the layers they depend on
+(however, they also do not install any of the packages provided by lower layers).
+A stack definition error is reported if a priority index list refers to an unknown index name.
+Note: specifying priority indexes in a layer specification gives those indexes priority for <em>all</em>
+packages when locking or building that layer. This may be undesirable if the alternate index
+contains outdated versions of other packages in addition to the packages that <em>should</em> be
+installed from that index. In these cases, <a class="reference internal" href="#package-indexes"><span class="std std-ref">package indexes</span></a>
+may be a more appropriate setting to use.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for <code class="docutils literal notranslate"><span class="pre">uv</span></code> configuration with layer specific adjustments
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
 </div>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">versioned</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#boolean">boolean</a>): by default, and when this setting is <code class="docutils literal notranslate"><span class="pre">false</span></code>,
@@ -500,7 +629,7 @@ on how the relative order of the application layer <code class="docutils literal
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">launch_module</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>): a relative path (starting from the folder containing
 the stack specification file) that specifies a Python module or import package that will
-be included in the built environment for execution with the <a class="reference external" href="https://docs.python.org/3/using/cmdline.html#cmdoption-m" title="(in Python v3.13)"><code class="xref std std-option docutils literal notranslate"><span class="pre">-m</span></code></a> switch.</p></li>
+be included in the built environment for execution with the <a class="reference external" href="https://docs.python.org/3/using/cmdline.html#cmdoption-m" title="(in Python v3.14)"><code class="xref std std-option docutils literal notranslate"><span class="pre">-m</span></code></a> switch.</p></li>
 </ul>
 <p>Application layer specifications may also contain the following optional field:</p>
 <ul class="simple">
@@ -599,7 +728,7 @@ imported for testing purposes from their source tree location).</p>
 </section>
 <section id="deprecated-fields">
 <h3>Deprecated fields<a class="headerlink" href="#deprecated-fields" title="Link to this heading">¶</a></h3>
-<p>The following field names were previously supported and now emit <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FutureWarning" title="(in Python v3.13)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">FutureWarning</span></code></a>
+<p>The following field names were previously supported and now emit <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FutureWarning" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">FutureWarning</span></code></a>
 when used in a loaded stack specification:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">build_requirements</span></code>: no longer has any effect (rendered non-functional before
@@ -697,12 +826,12 @@ including the effects of the <code class="docutils literal notranslate"><span cl
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../design/">
+          <a class="next-page" href="../source-builds/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Design Discussion</div>
+                <div class="title">Building Packages from Source</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>

@@ -1,19 +1,19 @@
 <!doctype html>
 <html class="no-js" lang="en" data-content_root="../">
-  <head><meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta content="venvstacks Design - venvstacks Documentation" name="og:title" />
 <meta content="website" name="og:type" />
 <meta content="https://venvstacks.lmstudio.ai/design/" name="og:url" />
 <meta content="venvstacks Design Discussion - venvstacks Documentation" name="og:description" />
-<link rel="search" title="Search" href="../search/" /><link rel="next" title="Python API" href="../api/" /><link rel="prev" title="Environment Stack File Formats" href="../file-formats/" />
-        <link rel="canonical" href="https://venvstacks.lmstudio.ai/design/" />
+<link rel="search" title="Search" href="../search/"><link rel="next" title="Python API" href="../api/"><link rel="prev" title="Building Packages from Source" href="../source-builds/">
+        <link rel="canonical" href="https://venvstacks.lmstudio.ai/design/">
 
-    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
         <title>Design Discussion - venvstacks documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
     
@@ -149,14 +149,10 @@
   </symbol>
 </svg>
 
-<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
-<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
-<label class="overlay sidebar-overlay" for="__navigation">
-  <div class="visually-hidden">Hide navigation sidebar</div>
-</label>
-<label class="overlay toc-overlay" for="__toc">
-  <div class="visually-hidden">Hide table of contents sidebar</div>
-</label>
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
 
 <a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
@@ -166,8 +162,7 @@
   <header class="mobile-header">
     <div class="header-left">
       <label class="nav-overlay-icon" for="__navigation">
-        <div class="visually-hidden">Toggle site navigation sidebar</div>
-        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
       </label>
     </div>
     <div class="header-center">
@@ -175,8 +170,7 @@
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
-        <button class="theme-toggle">
-          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
           <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
           <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
           <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -184,8 +178,7 @@
         </button>
       </div>
       <label class="toc-overlay-icon toc-header-icon" for="__toc">
-        <div class="visually-hidden">Toggle table of contents sidebar</div>
-        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
   </header>
@@ -206,15 +199,18 @@
 <li class="toctree-l1"><a class="reference internal" href="../overview/">Project Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../glossary/">Essential Terms and Concepts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../file-formats/">Environment Stack File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source-builds/">Building Packages from Source</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Design Discussion</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../api/">Python API</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Python API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/">Python API</a><input aria-label="Toggle navigation of Python API" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/cli/">venvstacks.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/pack_venv/">venvstacks.pack_venv</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../api/stacks/">venvstacks.stacks</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of venvstacks.stacks</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/stacks/">venvstacks.stacks</a><input aria-label="Toggle navigation of venvstacks.stacks" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.StackSpec/">venvstacks.stacks.StackSpec</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.BuildEnvironment/">venvstacks.stacks.BuildEnvironment</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerCategories/">venvstacks.stacks.LayerCategories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerCategory/">venvstacks.stacks.LayerCategory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerSpecMetadata/">venvstacks.stacks.LayerSpecMetadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerVariant/">venvstacks.stacks.LayerVariant</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.LayerVariants/">venvstacks.stacks.LayerVariants</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.TargetPlatform/">venvstacks.stacks.TargetPlatform</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/stacks/venvstacks.stacks.TargetPlatforms/">venvstacks.stacks.TargetPlatforms</a></li>
@@ -281,8 +277,7 @@
     <span class="visually-hidden">Edit this page</span>
   </a>
 </div><div class="theme-toggle-container theme-toggle-content">
-            <button class="theme-toggle">
-              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
               <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -290,8 +285,7 @@
             </button>
           </div>
           <label class="toc-overlay-icon toc-content-icon" for="__toc">
-            <div class="visually-hidden">Toggle table of contents sidebar</div>
-            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
@@ -335,7 +329,7 @@ resolver works, so it ended up making more sense to design
 <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> to work with <code class="docutils literal notranslate"><span class="pre">venv</span></code> and <code class="docutils literal notranslate"><span class="pre">pip</span></code>-style dependency
 resolution.</p>
 <p>The assorted “Python application packaging” utilities that produce
-standalone platform native executables or Python <a class="reference external" href="https://docs.python.org/3/library/zipapp.html#module-zipapp" title="(in Python v3.13)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">zipapp</span></code></a>
+standalone platform native executables or Python <a class="reference external" href="https://docs.python.org/3/library/zipapp.html#module-zipapp" title="(in Python v3.14)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">zipapp</span></code></a>
 archives were eliminated from consideration as they lacked the ability
 to readily share the large common framework components that feature
 heavily in the Python AI ecosystem across different applications.</p>
@@ -384,7 +378,7 @@ on dynamically linked libraries that are provided by a different Python
 package. For example, <a class="extlink-pypi reference external" href="https://pypi.org/project/torch/">PyTorch</a> supports using the nVidia
 CUDA libraries published through the <a class="extlink-pypi reference external" href="https://pypi.org/project/nvidia/">nvidia</a> PyPI project.</p>
 <p>On Windows, finding these dependencies at runtime generally relies on the
-package publishing them calling <a class="reference external" href="https://docs.python.org/3/library/os.html#os.add_dll_directory" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">os.add_dll_directory()</span></code></a> with the
+package publishing them calling <a class="reference external" href="https://docs.python.org/3/library/os.html#os.add_dll_directory" title="(in Python v3.14)"><code class="xref py py-func docutils literal notranslate"><span class="pre">os.add_dll_directory()</span></code></a> with the
 relevant package subdirectory.</p>
 <p>On Linux and macOS, making this example case work typically requires that
 the nVidia CUDA libraries be installed into the <em>same</em> <code class="docutils literal notranslate"><span class="pre">site-packages</span></code>
@@ -464,14 +458,14 @@ instead of depending directly on a runtime layer
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../file-formats/">
+          <a class="prev-page" href="../source-builds/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Environment Stack File Formats</div>
+                <div class="title">Building Packages from Source</div>
                 
               </div>
             </a>
