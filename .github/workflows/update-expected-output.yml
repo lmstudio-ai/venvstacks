@@ -62,8 +62,8 @@ jobs:
       matrix:
         # The expected test output aims to be Python version independent,
         # but CPython switched to a new zlib implementation in 3.14
-        # The first version here should match the `test` label in `tox.ini`
-        python-version: [3.12, 3.14]
+        # The version here should match the `test` label in `tox.ini`
+        python-version: [3.12]
         os: [ubuntu-22.04, windows-2022, macos-14]
         suffix: [""]
         include:
