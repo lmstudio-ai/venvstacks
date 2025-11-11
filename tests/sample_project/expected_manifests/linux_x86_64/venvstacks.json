@@ -16,20 +16,20 @@
         ],
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "02df0ffd58c60dab22914f13682a0bca1e8160f946423d43381e5696f76074a0"
+          "sha256": "4bbfc6664c763cb1552fd86eb0ea5679fa7870da4e1ba25bffd432fa9fcf4340"
         },
-        "archive_name": "app-scipy-import@3.tar.xz",
+        "archive_name": "app-scipy-import@4.tar.xz",
         "archive_size": 3668,
         "bound_to_implementation": false,
-        "install_target": "app-scipy-import@3",
+        "install_target": "app-scipy-import@4",
         "layer_name": "app-scipy-import",
-        "lock_version": 3,
+        "lock_version": 4,
         "locked_at": "2025-08-27T00:00:00+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [
-          "framework-scipy@3"
+          "framework-scipy@4"
         ],
-        "requirements_hash": "sha256:dac180110ac74e869e533a030633a501e933589ea882fee195b9fa7287d0f2f5",
+        "requirements_hash": "sha256:a0e6cc630a80d852110f2167ca5d024c7a46e34b38e1536ddaf4302c81383ced",
         "runtime_layer": "cpython-3.11",
         "target_platform": "linux_x86_64"
       },
@@ -51,7 +51,7 @@
         "required_layers": [
           "framework-sklearn"
         ],
-        "requirements_hash": "sha256:668c5b182cb4ed6c35333882b591d8ce8bf1029ea523844ea89c41318dadfd45",
+        "requirements_hash": "sha256:c5703805c24f367634ad60e8984ddb3102f1410661bcd3cb8c7b11d884b9973b",
         "runtime_layer": "cpython-3.12@2",
         "target_platform": "linux_x86_64"
       }
@@ -60,18 +60,18 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "5cd43e92674b335b93e867a8205c62dd232b34f471de84563b75c0b289e66662"
+          "sha256": "a4f924dfd653fa8e7b404dadce4f86267fda6b47cf78461298771b9829e0794d"
         },
-        "archive_name": "framework-scipy@3.tar.xz",
-        "archive_size": 22398168,
+        "archive_name": "framework-scipy@4.tar.xz",
+        "archive_size": 22393592,
         "bound_to_implementation": false,
-        "install_target": "framework-scipy@3",
+        "install_target": "framework-scipy@4",
         "layer_name": "framework-scipy",
-        "lock_version": 3,
+        "lock_version": 4,
         "locked_at": "2025-08-27T00:00:00+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [],
-        "requirements_hash": "sha256:1897027be2ff12149fe9ad3569e2a1f699dd667971113c4e3c39b285fa51615a",
+        "requirements_hash": "sha256:990cf41fa111551e98d68b90fce0c493aeeeb38b5763b778343635cbf181d58a",
         "runtime_layer": "cpython-3.11",
         "target_platform": "linux_x86_64"
       },
@@ -89,7 +89,7 @@
         "locked_at": "2025-08-27T00:00:00+00:00",
         "python_implementation": "cpython@3.12.9",
         "required_layers": [],
-        "requirements_hash": "sha256:5561c223e76f9af34a72820bf154603936382dfd37031474553f6af17beeb2d7",
+        "requirements_hash": "sha256:125cf60d6a49066d1c6b089174ecca6dc07a2c80b2c5c30284de0a1b59b8df12",
         "runtime_layer": "cpython-3.12@2",
         "target_platform": "linux_x86_64"
       },
