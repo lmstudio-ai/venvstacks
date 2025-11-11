@@ -1,0 +1,153 @@
+{
+  "layers": {
+    "applications": [
+      {
+        "app_launch_module": "scipy_client",
+        "app_launch_module_hash": "sha256/76d203dd6d3bb1fdb1117053c81590d42ef3f62b4b92b8d316b31f08334fbca6",
+        "app_support_modules": [
+          {
+            "hash": "sha256:f0db47066ec1e276e17579c221969006dde88da71e26bf5ddbfae356fa7c8fe7",
+            "name": "empty"
+          },
+          {
+            "hash": "sha256:00e03ab6300d0b5c87c8ddd650e8e94b1b079faa2d106be90e2c64a54b712125",
+            "name": "app_support"
+          }
+        ],
+        "archive_build": 1,
+        "archive_hashes": {
+          "sha256": "fb56bfb36ccff101e42b709110c752b5b4506eefbbbcf798e7db8c548115dbf5"
+        },
+        "archive_name": "app-scipy-client.zip",
+        "archive_size": 264640,
+        "bound_to_implementation": true,
+        "install_target": "app-scipy-client",
+        "layer_name": "app-scipy-client",
+        "lock_version": 1,
+        "locked_at": "2025-08-27T00:00:00+00:00",
+        "python_implementation": "cpython@3.11.11",
+        "required_layers": [
+          "framework-scipy@3",
+          "framework-http-client"
+        ],
+        "requirements_hash": "sha256:b30a27e08c82c9d15a1823f8b73eccad9d4eacfe11f3111d8ab26e82d3c7550c",
+        "runtime_layer": "cpython-3.11",
+        "target_platform": "win_amd64"
+      },
+      {
+        "app_launch_module": "sklearn_import",
+        "app_launch_module_hash": "sha256:fcb2d3f009b6bd274509ed8830e4640aadeef0b726b6de833edc16b76a893530",
+        "archive_build": 1,
+        "archive_hashes": {
+          "sha256": "503e38791a63f3f5b4766ad5885a449e2b140c3dfda9e91cc6601f715d3ab036"
+        },
+        "archive_name": "app-sklearn-import.zip",
+        "archive_size": 263855,
+        "bound_to_implementation": true,
+        "install_target": "app-sklearn-import",
+        "layer_name": "app-sklearn-import",
+        "lock_version": 1,
+        "locked_at": "2025-08-27T00:00:00+00:00",
+        "python_implementation": "cpython@3.12.9",
+        "required_layers": [
+          "framework-sklearn"
+        ],
+        "requirements_hash": "sha256:668c5b182cb4ed6c35333882b591d8ce8bf1029ea523844ea89c41318dadfd45",
+        "runtime_layer": "cpython-3.12@2",
+        "target_platform": "win_amd64"
+      }
+    ],
+    "frameworks": [
+      {
+        "archive_build": 1,
+        "archive_hashes": {
+          "sha256": "29126dc7efdaf593537d3e56cf5fa159b1d47945da0907d990f940fce6f03342"
+        },
+        "archive_name": "framework-scipy@3.zip",
+        "archive_size": 39855619,
+        "bound_to_implementation": true,
+        "install_target": "framework-scipy@3",
+        "layer_name": "framework-scipy",
+        "lock_version": 3,
+        "locked_at": "2025-08-27T00:00:00+00:00",
+        "python_implementation": "cpython@3.11.11",
+        "required_layers": [],
+        "requirements_hash": "sha256:1897027be2ff12149fe9ad3569e2a1f699dd667971113c4e3c39b285fa51615a",
+        "runtime_layer": "cpython-3.11",
+        "target_platform": "win_amd64"
+      },
+      {
+        "archive_build": 1,
+        "archive_hashes": {
+          "sha256": "e258a4033c72dd66fe23ea6e605ecd45e65196a6eeb9b16bc4b1cb9a86dd35d2"
+        },
+        "archive_name": "framework-sklearn.zip",
+        "archive_size": 49014616,
+        "bound_to_implementation": true,
+        "install_target": "framework-sklearn",
+        "layer_name": "framework-sklearn",
+        "lock_version": 1,
+        "locked_at": "2025-08-27T00:00:00+00:00",
+        "python_implementation": "cpython@3.12.9",
+        "required_layers": [],
+        "requirements_hash": "sha256:5561c223e76f9af34a72820bf154603936382dfd37031474553f6af17beeb2d7",
+        "runtime_layer": "cpython-3.12@2",
+        "target_platform": "win_amd64"
+      },
+      {
+        "archive_build": 1,
+        "archive_hashes": {
+          "sha256": "0a7f6dd3057eb1c9c1a188860751023778815f65e4e6e94b7f198fb492aa992a"
+        },
+        "archive_name": "framework-http-client.zip",
+        "archive_size": 873200,
+        "bound_to_implementation": true,
+        "install_target": "framework-http-client",
+        "layer_name": "framework-http-client",
+        "lock_version": 1,
+        "locked_at": "2025-08-27T00:00:00+00:00",
+        "python_implementation": "cpython@3.11.11",
+        "required_layers": [],
+        "requirements_hash": "sha256:780923a1f8fe6070446184a3a0ce3d4891721ab000f7aa3f7bb94524c9beb8fa",
+        "runtime_layer": "cpython-3.11",
+        "target_platform": "win_amd64"
+      }
+    ],
+    "runtimes": [
+      {
+        "archive_build": 1,
+        "archive_hashes": {
+          "sha256": "091354c237fdfff09f8355cf0ee4f18064167b24434ca900dd70a22f30b8b85e"
+        },
+        "archive_name": "cpython-3.11.zip",
+        "archive_size": 31504146,
+        "bound_to_implementation": true,
+        "install_target": "cpython-3.11",
+        "layer_name": "cpython-3.11",
+        "lock_version": 1,
+        "locked_at": "2025-08-27T00:00:00+00:00",
+        "python_implementation": "cpython@3.11.11",
+        "requirements_hash": "sha256:9c6a5fa5d6a44f30508ca7d9cbfc274aa949373b8fa0a278efdb8f153cc41593",
+        "runtime_layer": "cpython-3.11",
+        "target_platform": "win_amd64"
+      },
+      {
+        "archive_build": 1,
+        "archive_hashes": {
+          "sha256": "8c13a2e960ef9d93ca74d951e04efa47b824321bb37b571b9048ad60ec65475a"
+        },
+        "archive_name": "cpython-3.12@2.zip",
+        "archive_size": 29932375,
+        "bound_to_implementation": true,
+        "install_target": "cpython-3.12@2",
+        "layer_name": "cpython-3.12",
+        "lock_version": 2,
+        "locked_at": "2025-08-27T00:00:00+00:00",
+        "python_implementation": "cpython@3.12.9",
+        "requirements_hash": "sha256:40c458726a651ecc2b22bfc22927e4364b7db10a9d529ba4a79ab2b43a2d61ac",
+        "runtime_layer": "cpython-3.12@2",
+        "target_platform": "win_amd64"
+      }
+    ]
+  }
+}
