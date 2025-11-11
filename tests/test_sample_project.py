@@ -309,9 +309,6 @@ class TestBuildEnvironment(DeploymentTestCase):
         committed_locked_requirements = _collect_locked_requirements(build_env)
         # Create and link the layer build environments
         build_env.create_environments(lock=True)
-        # Don't even try to continue if the environments aren't locked & linked
-        self.check_layer_locks(self.build_env.all_environments())
-        self.check_build_environments(build_env.environments_to_build())
         # Test stage: ensure lock files can be regenerated without alteration
         generated_locked_requirements = _collect_locked_requirements(build_env)
         export_locked_requirements = True
@@ -330,6 +327,11 @@ class TestBuildEnvironment(DeploymentTestCase):
                 build_env,
                 list(generated_locked_requirements.keys()),
             )
+        # Don't even try to continue if the environments aren't locked & linked
+        # (this is intentionally *after* the lock output check, so the lock
+        # output can still be updated if the committed files are no longer valid)
+        self.check_layer_locks(self.build_env.all_environments())
+        self.check_build_environments(build_env.environments_to_build())
         # Test stage: ensure environments can be populated without building the artifacts
         build_env.create_environments()  # Use committed lock files
         subtests_started += 1
