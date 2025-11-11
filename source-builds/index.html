@@ -298,7 +298,13 @@ produces are <a class="reference external" href="https://reproducible-builds.org
 stack definition is built again later with the same
 <a class="reference external" href="https://reproducible-builds.org/docs/perimeter/">build environment</a>,
 then the resulting layer archives will be byte-for-byte identical with
-those produced by the original stack build.</p>
+those produced by the original stack build. In general, keeping the versions of
+<code class="docutils literal notranslate"><span class="pre">venvstacks</span></code>, <code class="docutils literal notranslate"><span class="pre">uv</span></code>, and <code class="docutils literal notranslate"><span class="pre">pbs-installer</span></code> consistent should produce
+consistent output artifacts. Note that changing the Python runtime used to
+build the layers <em>may</em> change the hashes if the standard library’s archiving
+implementation changes (for example, CPython 3.14 switched to <code class="docutils literal notranslate"><span class="pre">zlib-ng</span></code>,
+which means most archives generated for Windows layers will be smaller than
+previous versions when generated on CPython 3.14 or later)</p>
 <p>One of the ways this is achieved is by requiring that all Python packages
 included in a stack build be provided as pre-built
 <a class="reference external" href="https://packaging.python.org/en/latest/specifications/binary-distribution-format/">binary wheels</a>.
