@@ -110,19 +110,19 @@ def test_load_with_inconsistent_output_hash(temp_dir_path: Path) -> None:
 
 _MESSY_INPUT_REQUIREMENTS = """\
 # File header comment
-b==2.3.4 ; python_version >= 3.12  # Trailing comment
+b==2.3.4 ; python_version >= '3.12'  # Trailing comment
     c==3.4.5  # Leading whitespace
 a==1.2.3  # Entry out of order
 
 # Preceding line intentionally blank
-d==4.5.6 ; python_version < 3.12
+d==4.5.6 ; python_version < '3.12'
 """
 
 _EXPECTED_FLAT_REQUIREMENTS = [
     "a==1.2.3",
-    "b==2.3.4 ; python_version >= 3.12",
+    "b==2.3.4 ; python_version >= '3.12'",
     "c==3.4.5",
-    "d==4.5.6 ; python_version < 3.12",
+    "d==4.5.6 ; python_version < '3.12'",
 ]
 
 
@@ -151,7 +151,7 @@ hashes = { sha256 = "12345a", sha512 = "67890a" }
 [[packages]]
 name = "b"
 version = "2.3.4"
-marker = "python_version >= 3.12"
+marker = "python_version >= '3.12'"
 
 [[packages]]
 name = "c"
@@ -165,7 +165,7 @@ hashes = { sha256 = "12345c", sha512 = "67890c" }
 [[packages]]
 name = "d"
 version = "4.5.6"
-marker = "python_version < 3.12"
+marker = "python_version < '3.12'"
 
 [[packages.wheels]]
 name = "d-example.whl"
@@ -176,11 +176,11 @@ _EXPECTED_PYLOCK_HASH_INPUTS = [
     "a==1.2.3 from unspecified index",
     "a-example.whl:sha256:12345a",
     "a-example.whl:sha512:67890a",
-    "b==2.3.4 ; python_version >= 3.12 from unspecified index",
+    "b==2.3.4 ; python_version >= '3.12' from unspecified index",
     "c==3.4.5 from https://custom.index.invalid/",
     "c-example.whl:sha256:12345c",
     "c-example.whl:sha512:67890c",
-    "d==4.5.6 ; python_version < 3.12 from unspecified index",
+    "d==4.5.6 ; python_version < '3.12' from unspecified index",
     "d-example.whl:sha256:12345d",
     "d-example.whl:sha512:67890d",
 ]

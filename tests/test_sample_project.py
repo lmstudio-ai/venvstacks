@@ -309,8 +309,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         committed_locked_requirements = _collect_locked_requirements(build_env)
         # Create and link the layer build environments
         build_env.create_environments(lock=True)
-        # Don't even try to continue if the environments aren't locked & linked
-        self.check_layer_locks(self.build_env.all_environments())
+        # Don't even try to continue if the environments aren't correctly linked
         self.check_build_environments(build_env.environments_to_build())
         # Test stage: ensure lock files can be regenerated without alteration
         generated_locked_requirements = _collect_locked_requirements(build_env)
@@ -320,6 +319,9 @@ class TestBuildEnvironment(DeploymentTestCase):
             self.assertEqual(
                 committed_locked_requirements, generated_locked_requirements
             )
+            # While the layer locks are cross-platform, this test case
+            # only processes the layers that will be built for this platform
+            self.check_layer_locks(build_env.environments_to_build())
             export_locked_requirements = self.export_on_success  # Only export if forced
             subtests_passed += 1
         if export_locked_requirements:

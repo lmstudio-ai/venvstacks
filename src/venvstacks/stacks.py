@@ -54,7 +54,7 @@ from urllib.request import url2pathname
 import tomlkit
 
 from installer.records import parse_record_file
-from packaging.markers import Marker, UndefinedEnvironmentName
+from packaging.markers import Marker
 from packaging.requirements import InvalidRequirement, Requirement
 from packaging.utils import NormalizedName, canonicalize_name
 from packaging.version import Version
@@ -180,7 +180,7 @@ _UV_PYTHON_PLATFORM_NAMES = {
     "win": "pc-windows-msvc",
 }
 
-
+# Evaluate environment markers for cleaner layer locks and summaries
 _ENV_KEYS_BY_PLATFORM = {
     "linux": {
         "os_name": "posix",
@@ -244,6 +244,9 @@ class TargetPlatform(StrEnum):
     ) -> dict[str, str]:
         # CPython and PyPy both return mixed case names for platform.python_implementation(),
         # and use the lowercase version of the same name for sys.implementation.name
+        # Note: any environment markers that check the value of platform_release,
+        # platform_version, or implementation_version may cause problems
+        # (as those field values aren't emulated when evaluating markers)
         env = {
             "implementation_name": py_implementation.lower(),
             "platform_python_implementation": py_implementation,
@@ -592,36 +595,57 @@ class LockedWheel:
 
 _SHARED_PKG_MARKER = "from_lower_layer"
 _SHARED_PKG_CLAUSE = f"sys_platform == {_SHARED_PKG_MARKER!r}"
-_SHARED_PKG_SUFFIX = f") and {_SHARED_PKG_CLAUSE}"
+_SHARED_PKG_SUFFIX = f" and {_SHARED_PKG_CLAUSE}"
 
 _PYLOCK_SOURCE_KEYS = ("archive", "directory", "sdist", "vcs")
 
 
 @total_ordering
-@dataclass
+@dataclass(frozen=True)
 class LockedPackage:
     """Details of a locked distribution package (extracted from pylock.toml)."""
 
     name: str
     version: Version
-    marker: str
-    index: str
-    wheels: list[LockedWheel]
-    is_shared: bool = field(default=False)
+    marker_text: str = field(default="")
+    index: str | None = field(default=None)
+    wheels: list[LockedWheel] = field(default_factory=list)
+    is_shared: bool = field(default=False)  # Settable so field replacement works
+    marker: Marker | None = field(init=False, default=None)
 
     def __post_init__(self) -> None:
-        raw_marker = self.marker
-        if raw_marker and _SHARED_PKG_MARKER in raw_marker:
-            self.is_shared = True
-            self.marker = self._remove_shared_package_marker_clause(raw_marker)
+        raw_marker = self.marker_text
+        if raw_marker:
+            # Normalise marker formatting
+            # Use single quotes in marker text field to avoid escaping in TOML files
+            marker: Marker | None = Marker(raw_marker)
+            marker_text = str(marker).replace('"', "'")
+            if _SHARED_PKG_MARKER in marker_text:
+                # Omit the shared marker clause from the marker field
+                object.__setattr__(self, "is_shared", True)
+                marker_text = self._remove_shared_package_marker_clause(marker_text)
+                if marker_text:
+                    marker = Marker(marker_text)
+                else:
+                    marker = None
+            object.__setattr__(self, "marker", marker)
+            object.__setattr__(self, "marker_text", marker_text)
+
+    def as_pkg_only(self) -> Self:
+        """Equivalent package without any provenance details specified."""
+        return dc_replace(self, index=None, wheels=[])
+
+    def as_unconditional(self) -> Self:
+        """Equivalent package without any environment marker specified."""
+        return dc_replace(self, marker_text="")
 
     def __str__(self) -> str:
-        raw_marker = self.marker
-        marker_suffix = f" ; {raw_marker}" if raw_marker else ""
+        marker_text = self.marker_text
+        marker_suffix = f" ; {marker_text}" if marker_text else ""
         return f"{self.name}=={self.version}{marker_suffix}"
 
     def __hash__(self) -> int:
-        return hash((self.name, self.version, self.marker))
+        return hash((self.name, self.version, self.marker_text))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, LockedPackage):
@@ -629,7 +653,7 @@ class LockedPackage:
         return bool(
             self.name == other.name
             and self.version == other.version
-            and self.marker == other.marker
+            and self.marker_text == other.marker_text
         )
 
     def __lt__(self, other: Any) -> bool:
@@ -638,35 +662,43 @@ class LockedPackage:
         return bool(
             self.name < other.name
             and self.version < other.version
-            and self.marker < other.marker
+            and self.marker_text < other.marker_text
         )
 
     @classmethod
-    def from_dict(cls, pkg_entry: Mapping[str, Any]) -> Self:
+    def from_dict(cls, pkg_entry: Mapping[str, Any], *, pkg_only: bool = False) -> Self:
         """Parse a package entry extracted from a pylock.toml file."""
         # version isn't technically required, but all locked layer versions should be pinned
         # environment markers are genuinely optional for unconditionally installed packages
-        wheels = [LockedWheel.from_dict(whl) for whl in pkg_entry.get("wheels", ())]
         pkg = {
             "name": pkg_entry["name"],
             "version": Version(pkg_entry["version"]),
-            "marker": pkg_entry.get("marker", ""),
-            "index": pkg_entry.get("index", "unspecified index"),
-            "wheels": wheels,
+            "marker_text": pkg_entry.get("marker", ""),
         }
+        if not pkg_only:
+            pkg["index"] = pkg_entry.get("index", "unspecified index")
+            wheels = [LockedWheel.from_dict(whl) for whl in pkg_entry.get("wheels", ())]
+            pkg["wheels"] = wheels
         return cls(**pkg)
 
     def _get_shared_marker(self) -> str:
-        marker = self.marker
-        if not marker:
+        marker_text = self.marker_text
+        if not marker_text:
             return _SHARED_PKG_CLAUSE
-        return f"({marker}{_SHARED_PKG_SUFFIX}"
+        return f"({marker_text}){_SHARED_PKG_SUFFIX}"
 
     @staticmethod
-    def _remove_shared_package_marker_clause(marker: str) -> str:
-        if marker == _SHARED_PKG_CLAUSE:
+    def _remove_shared_package_marker_clause(marker_text: str) -> str:
+        if marker_text == _SHARED_PKG_CLAUSE:
             return ""
-        return marker.removeprefix("(").removesuffix(_SHARED_PKG_SUFFIX)
+        result = (
+            marker_text.removeprefix("(")
+            .removesuffix(_SHARED_PKG_SUFFIX)
+            .removesuffix(")")
+        )
+        # Eagerly detect any formatting issues that prevent removal
+        assert _SHARED_PKG_MARKER not in result
+        return result
 
 
 def _iter_pylock_packages_raw(
@@ -692,25 +724,29 @@ def _iter_pylock_packages(
     text_origin: str = "unspecified pylock.toml",
     *,
     exclude_shared: bool = False,
+    pkg_only: bool = False,
 ) -> Iterable[LockedPackage]:
     # Parse the package entries from the contents of a pylock.toml file
     raw_pkg_iter = _iter_pylock_packages_raw(
         pylock_text, text_origin, exclude_shared=exclude_shared
     )
     for raw_pkg in raw_pkg_iter:
-        pkg = LockedPackage.from_dict(raw_pkg)
+        pkg = LockedPackage.from_dict(raw_pkg, pkg_only=pkg_only)
         if exclude_shared and pkg.is_shared:
             continue
-        yield LockedPackage.from_dict(raw_pkg)
+        yield pkg
 
 
 def _iter_pylock_packages_from_file(
-    pylock_path: Path, *, exclude_shared: bool = False
+    pylock_path: Path,
+    *,
+    exclude_shared: bool = False,
+    pkg_only: bool = False,
 ) -> Iterable[LockedPackage]:
     # Read package details from a pylock.toml file
     pylock_text = pylock_path.read_text("utf-8")
     return _iter_pylock_packages(
-        pylock_text, str(pylock_path), exclude_shared=exclude_shared
+        pylock_text, str(pylock_path), exclude_shared=exclude_shared, pkg_only=pkg_only
     )
 
 
@@ -2255,7 +2291,7 @@ class LayerEnvBase(ABC):
         conditional_constraints: dict[str, list[LockedPackage]] = {}
         for constraint_path in constraint_paths:
             constraining_pkgs = _iter_pylock_packages_from_file(
-                constraint_path, exclude_shared=True
+                constraint_path, exclude_shared=True, pkg_only=True
             )
             for constraining_pkg in constraining_pkgs:
                 constrained_name = constraining_pkg.name
@@ -2280,11 +2316,12 @@ class LayerEnvBase(ABC):
         for constrained_name in constrained_names:
             conditional_pkgs = conditional_constraints.get(constrained_name, [])
             if conditional_pkgs:
-                shadowing_markers: set[str] = set()
+                shadowing_markers: set[Marker] = set()
                 for conditional_pkg in conditional_pkgs:
                     conditional_marker = conditional_pkg.marker
                     if conditional_marker in shadowing_markers:
                         continue
+                    assert conditional_marker is not None
                     shadowing_markers.add(conditional_marker)
                     pinned_constraints.append(conditional_pkg)
             unconditional_pkg = unconditional_constraints.get(constrained_name, None)
@@ -2611,16 +2648,44 @@ class LayerEnvBase(ABC):
             pinned_constraints,
         )
 
-    def _match_target_platforms(self, raw_marker: str) -> Sequence[TargetPlatform]:
+    def _match_target_platforms(self, marker: Marker) -> Sequence[TargetPlatform]:
         target_platforms: list[TargetPlatform] = []
         py_version = self.py_version
         py_impl = self.py_implementation
-        marker = Marker(raw_marker)
         for platform in self.env_spec.platforms:
             env = platform._get_marker_environment(py_version, py_impl)
             if marker.evaluate(env):
                 target_platforms.append(platform)
         return target_platforms
+
+    def _have_shared_package(
+        self,
+        pkg: LockedPackage,
+        platforms: Iterable[TargetPlatform],
+        packages_by_name: Mapping[str, Sequence[LockedPackage]],
+    ) -> bool:
+        available_packages = packages_by_name.get(pkg.name, None)
+        if available_packages is None:
+            # No lower layer has a package by that name -> definitely not available
+            return False
+        # Get the list of conditionally installed packages from lower layers
+        markers = [pkg.marker for pkg in available_packages if pkg.marker]
+        if len(markers) < len(available_packages):
+            # One of the layers has an unconditionally installed copy of the package
+            return True
+        py_version = self.py_version
+        py_impl = self.py_implementation
+        # We assume the caller has filtered the list of platforms to only
+        # those where the package being queried will be installed
+        required_platforms = set(platforms)
+        for platform in platforms:
+            env = platform._get_marker_environment(py_version, py_impl)
+            for marker in markers:
+                if marker.evaluate(env):
+                    required_platforms.remove(platform)
+                    break
+        # If all required platforms were found, package is available from lower layers
+        return not required_platforms
 
     def lock_requirements(self, lock_time: datetime | None = None) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
@@ -2661,52 +2726,72 @@ class LayerEnvBase(ABC):
             raw_pkg: dict[str, Any]
             # Process the environment markers for locked packages
             available_packages = set(pinned_constraints)
+            packages_by_name: dict[str, list[LockedPackage]] = {}
+            for pkg in available_packages:
+                packages_by_name.setdefault(pkg.name, []).append(pkg)
             num_target_platforms = len(self.env_spec.platforms)
-            raw_packages = pylock_dict.get("packages", [])
-            for pkg_reversed_index, raw_pkg in enumerate(
-                reversed(raw_packages), start=1
-            ):
+            raw_packages: list[dict[str, Any]] = pylock_dict.get("packages", [])
+            pkg_reversed_index = -1
+            for raw_pkg in reversed(raw_packages):
                 # Iterate in reverse to allow package deletion
-                pkg = LockedPackage.from_dict(raw_pkg)
+                pkg = LockedPackage.from_dict(raw_pkg, pkg_only=True)
+                assert not pkg.is_shared  # Should not be set in raw uv output
                 marker = pkg.marker
-                if marker:
-                    try:
-                        matching_platforms = self._match_target_platforms(marker)
-                    except UndefinedEnvironmentName:
-                        # Marker checks a field we don't handle, so leave it alone
-                        pass
-                    else:
-                        if not matching_platforms:
-                            # Environment marker check fails for all target platforms,
-                            # so don't even list this package in the layer lock file
-                            del raw_packages[-pkg_reversed_index]
-                            continue
-                        elif len(matching_platforms) == num_target_platforms:
-                            # Environment marker check passes for all target platforms,
-                            # so list this package without a marker in the layer lock file
-                            pkg.marker = raw_pkg["marker"] = ""
+                matching_platforms: Sequence[TargetPlatform]
+                if not marker:
+                    matching_platforms = self.env_spec.platforms
+                else:
+                    matching_platforms = self._match_target_platforms(marker)
+                    if not matching_platforms:
+                        # Environment marker check fails for all target platforms,
+                        # so don't even list this package in the layer lock file
+                        _LOG.info(
+                            f"{self.env_name}: dropping irrelevant package {pkg.name!r}"
+                        )
+                        # Assertion after removal is there because indexing
+                        # errors here were previously quite tricky to debug
+                        dropped_pkg = raw_packages.pop(pkg_reversed_index)
+                        assert dropped_pkg is raw_pkg
+                        continue
+                    if len(matching_platforms) == num_target_platforms:
+                        # Environment marker check passes for all target platforms,
+                        # so list this package without a marker in the layer lock file
+                        _LOG.info(
+                            f"{self.env_name}: marking {pkg.name!r} as unconditional"
+                        )
+                        pkg = pkg.as_unconditional()
+                        raw_pkg["marker"] = ""
+                # Kept this package, so bump the offset for any future removals
+                pkg_reversed_index -= 1
+                if available_packages:
+                    # Update the environment markers for packages provided by lower layers
+                    # The components from lower layers are marked as shared if they're either
+                    # installed unconditionally on all platforms, their environment marker
+                    # is an exact text match for the marker in this layer, or their environment
+                    # marker is valid for all of the platforms targeted by this layer where
+                    # this layer's environment marker is also valid
+                    unconditional_req = pkg.as_unconditional()
+                    is_shared = (
+                        pkg in available_packages
+                        or unconditional_req in available_packages
+                        or self._have_shared_package(
+                            pkg, matching_platforms, packages_by_name
+                        )
+                    )
+                    if is_shared:
+                        _LOG.info(f"{self.env_name}: marking {pkg.name!r} as shared")
+                        # Add an unmatchable environment marker to skip package installation
+                        raw_pkg["marker"] = pkg._get_shared_marker()
+                        # Also clear the "wheels" and "index" metadata for the package
+                        raw_pkg.pop("index", None)
+                        raw_pkg.pop("wheels", None)
                 # Source builds are not permitted when installing packages,
                 # so clear all package metadata that enables source builds
                 for pkg_source_key in _PYLOCK_SOURCE_KEYS:
                     raw_pkg.pop(pkg_source_key, None)
-                if pinned_constraints:
-                    # Update the environment markers for packages provided by lower layers
-                    # The components from lower layers are marked as shared if they're either
-                    # installed unconditionally on all platforms, or if their environment marker
-                    # matches the environment marker for the package in the current layer
-                    unconditional_req = LockedPackage(pkg.name, pkg.version, "", "", [])
-                    if (
-                        pkg in available_packages
-                        or unconditional_req in available_packages
-                    ):
-                        # Add an unmatchable environment marker to skip package installation
-                        raw_pkg["marker"] = pkg._get_shared_marker()
-                        # Also clear the "wheels" and "index" metadata for the package
-                        raw_pkg.pop("index", "")
-                        raw_pkg.pop("wheel", "")
             # Edit any absolute wheel file paths
             pylock_dir_path = pylock_path.parent
-            for raw_pkg in pylock_dict.get("packages", ()):
+            for raw_pkg in raw_packages:
                 for raw_whl in raw_pkg.get("wheels", ()):
                     _name, local_path = _extract_wheel_details(raw_whl)
                     if local_path is not None:
