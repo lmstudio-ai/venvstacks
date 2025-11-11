@@ -76,7 +76,7 @@ def _get_expected_dry_run_result(
 ) -> dict[str, Any]:
     # Dry run results report LayerCategories instances rather than plain strings
     untagged_metadata = _get_expected_metadata(build_env).combined_data
-    all_layer_manifests = untagged_metadata["layers"]
+    all_layer_manifests = untagged_metadata.get("layers", {})
     filtered_layer_manifests: dict[LayerCategories, Any] = {}
     for category, archive_manifests in all_layer_manifests.items():
         filtered_layer_manifests[LayerCategories(category)] = archive_manifests
