@@ -17,6 +17,7 @@ def test_runtime_cpython() -> None:
     assert spec.py_implementation == "CPython"
     assert spec.py_version == "3.13.7"
 
+
 def test_runtime_pypy() -> None:
     spec = RuntimeSpec.from_dict(
         {
@@ -27,6 +28,7 @@ def test_runtime_pypy() -> None:
     )
     assert spec.py_implementation == "PyPy"
     assert spec.py_version == "3.11.13"
+
 
 # Check inference of environment markers from platform and implementation
 _EXPECTED_IMPLEMENTATION_MARKERS = {
@@ -77,6 +79,7 @@ _EXPECTED_PLATFORM_MARKERS = {
         "platform_system": "Darwin",
     },
 }
+
 
 @pytest.mark.parametrize("platform", TargetPlatforms.get_all_target_platforms())
 @pytest.mark.parametrize("impl_name", _EXPECTED_IMPLEMENTATION_MARKERS.keys())
