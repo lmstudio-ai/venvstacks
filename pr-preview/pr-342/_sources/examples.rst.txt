@@ -21,7 +21,7 @@ scikit-learn
 This example is the one used in the :ref:`overview`. It illustrates sharing
 two different framework layers between a pair of application layers.
 
-The included scikit-learn demonstrations can be executed by Running
+The included scikit-learn demonstrations can be executed by running
 ``python -m sklearn_classification`` in the ``app-classification-demo``
 environment or ``python -m sklearn_clustering`` in the
 ``app-clustering-demo`` environment.

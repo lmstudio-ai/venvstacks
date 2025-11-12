@@ -1,8 +1,8 @@
 .. _glossary:
 
-----------------------------
-Essential Terms and Concepts
-----------------------------
+---------------
+Essential Terms
+---------------
 
 .. meta::
    :og:title: venvstacks Glossary - venvstacks Documentation

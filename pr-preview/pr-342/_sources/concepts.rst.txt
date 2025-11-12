@@ -106,6 +106,8 @@ Building layer environments
 WIP...
 
 ..
+    TODO: link to glossary terms where applicable
+
     High level:
 
         What the purpose of lock files are. Building vs locking
