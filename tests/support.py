@@ -15,6 +15,8 @@ from unittest.mock import create_autospec
 
 import pytest
 
+from packaging.markers import Marker
+
 from venvstacks._util import get_env_python, capture_python_output
 from venvstacks._injected.postinstall import DEPLOYED_LAYER_CONFIG
 
@@ -388,6 +390,11 @@ class DeploymentTestCase(unittest.TestCase):
             )
             pylock_text = pylock_path.read_text("utf-8")
             for raw_pkg in _iter_pylock_packages_raw(pylock_text, str(pylock_path)):
+                if "marker" in raw_pkg:
+                    # Check all defined markers are valid
+                    raw_marker = raw_pkg["marker"]
+                    self.assertTrue(raw_marker, "Marker field must not be empty")
+                    Marker(raw_marker)  # Raises an exception if marker is invalid
                 pkg = LockedPackage.from_dict(raw_pkg)
                 if pkg.is_shared:
                     self.assertNotIn("wheels", raw_pkg)

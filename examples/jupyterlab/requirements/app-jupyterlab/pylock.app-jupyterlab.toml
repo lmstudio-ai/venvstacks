@@ -1281,7 +1281,6 @@ sha256 = "1db8e35b67b3d218d818ae653e27f06c3aa420901fa7b081ca98cbedc874e0d0"
 [[packages]]
 name = "pycparser"
 version = "2.23"
-marker = ""
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
