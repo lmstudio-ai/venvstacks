@@ -77,6 +77,8 @@ EXPECTED_STACK_SPEC_ERRORS = {
     "error_inconsistent_framework_indexes.toml": 'invalid.*inconsistent package index override.*index_overrides = {pytorch-cpu = "pytorch-cu128"}',
     "error_inconsistent_platforms.toml": "invalid.*not supported by lower layers.*win_amd64",
     "error_inconsistent_runtime_indexes.toml": 'invalid.*inconsistent package index override.*index_overrides = {pytorch-cpu = "pytorch-cu128"}',
+    "error_invalid_linux_target_variant.toml": "libc variant.*[]'glibc'].*not 'unknown'",
+    "error_invalid_linux_target_version.toml": "libc version.*'X.Y'.*not '235'",
     "error_invalid_requirement_syntax.toml": "invalid requirement syntax",
     "error_launch_support_conflict.toml": "'name'.*conflicts with.*'layer'",
     "error_layer_dep_C3_conflict.toml": "linearization failed.*['layerC', 'layerD'].*['layerD', 'layerC']",

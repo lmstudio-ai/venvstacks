@@ -11,6 +11,7 @@ platforms = [
 [[frameworks]]
 name = "mlx"
 runtime = "cpython3.11"
+linux_target = "glibc@2.35"
 macosx_target = "14"
 requirements = [
     "mlx==0.29.3",
@@ -21,6 +22,7 @@ requirements = [
 [[frameworks]]
 name = "mlx-cuda"
 runtime = "cpython3.11"
+linux_target = "glibc@2.35"
 macosx_target = "14"
 requirements = [
     "mlx[cuda]==0.29.3",

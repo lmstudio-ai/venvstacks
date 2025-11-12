@@ -93,3 +93,38 @@ def test_marker_environments(platform: TargetPlatform, impl_name: str) -> None:
         **_EXPECTED_IMPLEMENTATION_MARKERS[impl_name],
     }
     assert platform._get_marker_environment(full_version, impl_name) == expected_markers
+
+
+# Check Linux target wheel selection
+_LINUX_TARGET_CASES = [
+    (None, "unknown-linux-gnu"),
+    ("glibc", "unknown-linux-gnu"),
+    ("glibc@2.28", "manylinux_2_28"),
+    # For https://github.com/lmstudio-ai/venvstacks/issues/340
+    # ("musl", "unknown-linux-musl"),
+    # ("musl@1.3", "musllinux_1_3"),  # If uv adds support for this...
+]
+
+
+@pytest.mark.parametrize("linux_target,expected_name", _LINUX_TARGET_CASES)
+def test_linux_target_parsing(linux_target: str | None, expected_name: str) -> None:
+    platform_name = TargetPlatform._parse_linux_target(linux_target)
+    assert platform_name == expected_name
+
+
+_LINUX_TARGET_INVALID_CASES = [
+    "",
+    "unknown",
+    "glibc@235",
+    "glibc@2.3.5",
+    "glibc@ints.required",
+    # Until https://github.com/lmstudio-ai/venvstacks/issues/340 is implemented
+    "musl",
+    "musl@1.3",
+]
+
+
+@pytest.mark.parametrize("linux_target", _LINUX_TARGET_INVALID_CASES)
+def test_linux_target_errors(linux_target: str) -> None:
+    with pytest.raises(ValueError):
+        TargetPlatform._parse_linux_target(linux_target)

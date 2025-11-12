@@ -179,6 +179,16 @@ _UV_PYTHON_PLATFORM_NAMES = {
     "macosx": "apple-darwin",
     "win": "pc-windows-msvc",
 }
+_UV_LINUX_TARGET_NAMES = {
+    "glibc": "unknown-linux-gnu",
+    # For https://github.com/lmstudio-ai/venvstacks/issues/340
+    # "musl": "unknown-linux-musl",
+}
+_UV_LIBC_WHEEL_TAGS = {
+    "glibc": "manylinux",
+    # For https://github.com/lmstudio-ai/venvstacks/issues/340
+    # "musl": "musllinux",
+}
 
 # Evaluate environment markers for cleaner layer locks and summaries
 _ENV_KEYS_BY_PLATFORM = {
@@ -233,10 +243,34 @@ class TargetPlatform(StrEnum):
         """Sorted list of all defined target platforms."""
         return sorted(set(cls.__members__.values()))
 
-    def _as_uv_python_platform(self) -> str:
+    @staticmethod
+    def _parse_linux_target(linux_target: str | None) -> str:
+        # Convert a layer spec linux target into a uv Python platform name
+        # https://docs.astral.sh/uv/reference/cli/#uv-pip-install--python-platform
+        if linux_target is None:
+            return _UV_LINUX_TARGET_NAMES["glibc"]
+        variant, has_version, version = linux_target.partition("@")
+        if variant not in _UV_LINUX_TARGET_NAMES:
+            expected_suffixes = sorted(_UV_LINUX_TARGET_NAMES)
+            err = f"Linux libc variant must be one of {expected_suffixes}, not {variant!r}"
+            raise ValueError(err)
+        if not has_version:
+            return _UV_LINUX_TARGET_NAMES[variant]
+        libc_wheel_tag = _UV_LIBC_WHEEL_TAGS[variant]
+        try:
+            major, minor = map(int, version.split("."))
+        except Exception:
+            err = f"Linux libc version must be of the form 'X.Y', not {version!r}"
+            raise ValueError(err) from None
+        return f"{libc_wheel_tag}_{major}_{minor}"
+
+    def _as_uv_python_platform(self, linux_target: str | None) -> str:
         platform, _, arch = self.partition("_")
         uv_arch = _ARCH_ALIASES.get(arch, arch)
-        uv_platform = _UV_PYTHON_PLATFORM_NAMES.get(platform, platform)
+        if platform != "linux" or linux_target is None:
+            uv_platform = _UV_PYTHON_PLATFORM_NAMES.get(platform, platform)
+        else:
+            uv_platform = self._parse_linux_target(linux_target)
         return f"{uv_arch}-{uv_platform}"
 
     def _get_marker_environment(
@@ -260,11 +294,6 @@ class TargetPlatform(StrEnum):
 
 
 TargetPlatforms = TargetPlatform  # Use plural alias when the singular name reads oddly
-
-_UV_PYTHON_PLATFORMS = {
-    platform: platform._as_uv_python_platform()
-    for platform in TargetPlatforms.get_all_target_platforms()
-}
 
 
 def get_build_platform() -> TargetPlatform:
@@ -357,11 +386,16 @@ class PackageIndexConfig:
         return []
 
     def _get_uv_pip_install_args(
-        self, build_path: Path, target_platform: TargetPlatform
+        self,
+        build_path: Path,
+        target_platform: TargetPlatform,
+        linux_target: str | None,
     ) -> list[str]:
         # Instruct `uv` to potentially target older (or newer) platform versions
-        # Most importantly, this respects MACOSX_DEPLOYMENT_TARGET on macOS
-        return ["--python-platform", _UV_PYTHON_PLATFORMS[target_platform]]
+        # This respects MACOSX_DEPLOYMENT_TARGET on macOS and allows targeting
+        # non-default libc versions on Linux
+        uv_platform = target_platform._as_uv_python_platform(linux_target)
+        return ["--python-platform", uv_platform]
 
     @staticmethod
     def _get_uv_input_config_path(spec_path: Path) -> Path:
@@ -1217,6 +1251,7 @@ class LayerSpecBase(ABC):
     dynlib_exclude: list[str] = field(repr=False)
 
     # Optionally specified on creation
+    linux_target: str | None = field(repr=False, default=None)
     macosx_target: str | None = field(repr=False, default=None)
     _index_config: PackageIndexConfig = field(
         repr=False, default_factory=PackageIndexConfig
@@ -1269,7 +1304,6 @@ class LayerSpecBase(ABC):
                 err = f"{layer_name} specifies target platforms not supported by lower layers"
                 hint = f"{[str(t) for t in sorted(unexpected_platforms)]}"
                 raise LayerSpecError(f"{err} ({hint})")
-
         fields["platforms"] = platforms
         # Ensure declared dependencies are syntactically valid
         try:
@@ -1323,6 +1357,11 @@ class LayerSpecBase(ABC):
                     f"({index_name})"
                 )
                 raise LayerSpecError(msg)
+        # Ensure a given linux target translates to a uv python platform suffix
+        try:
+            TargetPlatform._parse_linux_target(self.linux_target)
+        except ValueError as exc:
+            raise LayerSpecError(str(exc)) from None
 
     @property
     def env_name(self) -> EnvNameBuild:
@@ -2132,7 +2171,7 @@ class LayerEnvBase(ABC):
         self.env_lock = EnvironmentLock(
             self.requirements_path,
             (*map(str, self.env_spec.requirements),),
-            self._get_other_lock_inputs(),
+            self._get_lock_validity_inputs(),
             self._get_lock_version_inputs(),
             self.env_spec.versioned,
         )
@@ -2149,11 +2188,21 @@ class LayerEnvBase(ABC):
             self.want_build = self.want_build and targets_platform
             self.want_publish = self.want_publish and targets_platform
 
-    def _get_other_lock_inputs(self) -> tuple[str, ...]:
-        # TODO: consider incorporating the uv config settings into the implicit layer versioning
-        return (f"py_version={'.'.join(self._py_version_info)}",)
+    def _get_lock_validity_inputs(self) -> tuple[str, ...]:
+        # "Validity" inputs are non-dependency inputs that invalidate the lock when changed
+        # TODO: consider incorporating more uv config settings into the lock validity check
+        hash_inputs = [f"py_version={'.'.join(self._py_version_info)}"]
+        linux_target = self.env_spec.linux_target
+        if linux_target:
+            hash_inputs.append(f"linux_target={linux_target}")
+        macosx_target = self.env_spec.macosx_target
+        if macosx_target:
+            hash_inputs.append(f"macosx_target={macosx_target}")
+        return tuple(hash_inputs)
 
     def _get_lock_version_inputs(self) -> tuple[str, ...]:
+        # "Version" inputs are non-dependency inputs that only invalidate the lock
+        # when changed in a layer specification that is using implicit versioning
         return (
             f"env_name={self.env_name}",
             f"is_versioned_layer={self.env_spec.versioned}",
@@ -2499,6 +2548,7 @@ class LayerEnvBase(ABC):
     def _run_uv_pip_install(
         self,
         requirements_path: StrPath,
+        linux_target: str | None,
         macosx_target: str | None,
     ) -> subprocess.CompletedProcess[str]:
         # No need to pass in the layer project config,
@@ -2508,7 +2558,9 @@ class LayerEnvBase(ABC):
             "--python",
             str(self.python_path),
             *self.index_config._get_uv_pip_install_args(
-                self.build_path, self.build_platform
+                self.build_path,
+                self.build_platform,
+                linux_target,
             ),
             "--quiet",
             "--no-color",
@@ -2857,7 +2909,7 @@ class LayerEnvBase(ABC):
         assert not self.needs_lock()
         return self.env_lock
 
-    def get_install_inputs(self) -> tuple[Path, str | None]:
+    def get_install_inputs(self) -> tuple[Path, str | None, str | None]:
         """Ensure the inputs needed to install into this environment are defined and valid."""
         if not self.env_lock.has_valid_lock:
             lock_diagnostics = _format_json(self.env_lock.get_diagnostics())
@@ -2868,7 +2920,11 @@ class LayerEnvBase(ABC):
             ]
             self._fail_build("\n".join(failure_details))
         requirements_path, _pyproject_path, _pinned_constraints = self.get_lock_inputs()
-        return (requirements_path, self.env_spec.macosx_target)
+        return (
+            requirements_path,
+            self.env_spec.linux_target,
+            self.env_spec.macosx_target,
+        )
 
     def install_requirements(self) -> subprocess.CompletedProcess[str]:
         """Install the locked layer requirements into this environment.
