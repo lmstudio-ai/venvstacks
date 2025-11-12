@@ -193,7 +193,7 @@ All layer specifications may also contain the following optional fields:
   If this field is not set, the ``MACOSX_DEPLOYMENT_TARGET`` setting from the
   calling environment is used without modification. If it is not set at all,
   the default target macOS version is determined by the ``uv`` version
-   (``13.0`` in ``uv`` 0.9.8).
+  (``13.0`` in ``uv`` 0.9.8).
 
   .. versionadded:: 0.8.0
      Added support for setting the minimum macOS target on a per-layer basis
