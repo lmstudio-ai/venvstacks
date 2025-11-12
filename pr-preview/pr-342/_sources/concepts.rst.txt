@@ -1,0 +1,156 @@
+---------------------
+Concepts of Operation
+---------------------
+
+.. meta::
+   :og:title: venvstacks Concepts - venvstacks Documentation
+   :og:type: website
+   :og:url: https://venvstacks.lmstudio.ai/concepts/
+   :og:description: venvstacks Concepts of Operation - venvstacks Documentation
+
+Expected Usage Model
+====================
+
+``venvstacks`` is designed to decompose Python dependency trees into separately
+deployable and updatable layer artifacts, without having to distribute either
+individual package archives, or entire monolithic application execution
+environments.
+
+This process starts with a "stack definition", conventionally named
+``venvstacks.toml``. The exact format of this file is described in 
+:ref:`stack-specification-format`, but the key aspect for understanding the
+expected usage model is that it is used to define multiple stack "layers",
+broken down into the following categories:
+
+* Runtimes: Python runtimes used to execute applications
+* Frameworks: common Python packages used across multiple applications
+* Applications: Python modules and packages to implement specific functionality
+
+Each application layer may depend (directly or indirectly) on multiple framework
+layers, but will always depend on exactly one runtime layer. Similarly, each
+framework layer will depend on exactly one runtime layer, but may also depend
+on other framework layers.
+
+As forward references to subsequently defined layers are NOT permitted, the
+declaration of dependencies between layers forms a directed acyclic graph of
+separately deployable components.
+
+Stack definition & deployment flow
+----------------------------------
+
+The overall process for defining, building, and deploying environment stacks is
+as follows:
+
+* Define environment stack in `venvstacks.toml`
+
+   * ⮩ `venvstacks lock ...` 🠪 locked layer requirements & metadata files
+
+     * ⮩ `venvstacks build ...` 🠪 built layer environments with installed packages
+
+       * ⮩ `venvstacks local-export ...` 🠪 locally deployed environments
+       * ⮩ `venvstacks publish ...` 🠪 layer archives & metadata files
+
+         * ⮩ (use case dependent layer archive distribution mechanism)
+
+           * ⮩ (unpack archives & run post-installation scripts)
+
+            *  ⮩ remotely deployed environments
+
+The :ref:`overview` provides examples of executing the listed commands,
+while the sections below go into more detail regarding each of the steps.
+
+The :ref:`example-stacks` page gives a number of example stacks illustrating
+various features that stack definitions support.
+
+The :ref:`stack-specification-format` format page provides details of the
+layer specification format to be used in a stack definition file, as well
+as some information on the fields that are included in the layer lock,
+published artifact, and deployed environment metadata files.
+
+Locking layer dependencies
+--------------------------
+
+The layer specifications only declare the top-level packages that are to be
+available when using that layer. If these requirements were used directly
+to build the environments, the exact set of packages installed would potentially
+vary depending on exactly when and where the layer was built.
+
+Instead, ``uv`` is used to resolve the declared set of dependencies, generating
+a lock file that describes the full transitive dependency tree for that layer.
+By default, these layer lock files are stored in a ``requirements`` folder
+adjacent to the stack definition file.
+
+The layer lock files use the standardised
+`Python packaging lock format <https://packaging.python.org/en/latest/specifications/pylock-toml/>`__
+(more commonly known as the ``pylock.toml`` format). The lock file contents
+are adjusted such that only installation from binary packages is permitted,
+and so upper layers don't attempt to install packages that will be provided
+at runtime by lower layers.
+
+As the layer lock files are cross-platform, the entire stack can be locked
+anywhere, and the resulting lock files committed to source control alongside
+the stack definition file, ready to be built.
+
+
+.. versionchanged:: 0.8.0
+
+   Layer lock files are now cross-platform (using the ``pylock.toml`` format)
+   and only need to be locked once on any supported platform.
+   Previous versions needed to be locked separately on each platform, and
+   emitted separate per-layer ``requirements.txt`` files for each platform
+   (:ref:`release details <changelog-0.8.0>`).
+
+Building layer environments
+---------------------------
+
+WIP...
+
+..
+    High level:
+
+        What the purpose of lock files are. Building vs locking
+        How layers can be stacked (2 apps sharing the same framework for example)
+        Relocatability (local-export, postinstall, sitecustomize.py, pyvenv.cfg)
+
+    Additional information:
+
+        the dependencies that affect the hashes in the meta files
+        The python shim in the built layer (why is it an executable and not a symlink)
+
+    Issue 99:
+    * Running stacks after deploying them
+    * https://github.com/lmstudio-ai/venvstacks/issues/99
+
+
+    .. _reproducible-builds:
+
+    Reproducible Builds
+    -------------------
+
+    ``venvstacks`` is designed around ensuring that the layer archives that it
+    produces are `reproducible <https://reproducible-builds.org/>`__: if the same
+    stack definition is built again later with the same
+    `build environment <https://reproducible-builds.org/docs/perimeter/>`__,
+    then the resulting layer archives will be byte-for-byte identical with
+    those produced by the original stack build. In general, keeping the versions of
+    ``venvstacks``, ``uv``, and ``pbs-installer`` consistent should produce
+    consistent output artifacts. Note that changing the Python runtime used to
+    build the layers *may* change the hashes if the standard library's archiving
+    implementation changes (for example, CPython 3.14 switched to ``zlib-ng``,
+    which means most archives generated for Windows layers will be smaller than
+    previous versions when generated on CPython 3.14 or later)
+
+    One of the ways this is achieved is by requiring that all Python packages
+    included in a stack build be provided as pre-built
+    `binary wheels <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>`__.
+    This allows the layer lock files to record the exact binary hashes of their
+    expected inputs, while the deterministic installation process for binary wheels
+    avoids introducing variation into the layer archive output (avoiding the
+    potentially build location dependent aspects of wheel installation is the reason
+    some package features, such as direct execution scripts, are not available in
+    the layer environments created by ``venvstacks``).
+
+    While ``venvstacks`` does not natively support building components from source
+    references, some users may not wish to use publicly available binary artifacts,
+    or may depend on projects that don't provide such artifacts. This section
+    provides some suggestions and recommendations for handling these situations.
