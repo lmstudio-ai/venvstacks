@@ -155,6 +155,34 @@ All layer specifications may also contain the following optional fields:
      platforms for all layers that depend on that layer
      (:ref:`release details <changelog-0.8.0>`).
 
+.. _linux-target:
+
+* ``linux_target`` (:toml:`string`)
+  adjusts the :uv-config:`--python-platform <uv-pip-install--python-platform>`
+  value passed to the ``uv`` subprocess when installing packages, which may
+  affect the exact wheels selected for projects which publish wheels for
+  multiple Linux libc variants.
+
+  The following Linux target definitions are supported, mapping to the ``uv``
+  platform names shown:
+
+  * not set: ``unknown-linux-gnu`` (version is selected by ``uv``)
+  * ``glibc``: ``unknown-linux-gnu`` (version is selected by ``uv``)
+  * ``glibc@X.Y``: ``manylinux_X_Y`` (version as specified)
+
+  Setting this field is *required* to build layers containing projects that only
+  publish wheels for Linux libc versions that are newer than the default target.
+
+  The exact default target Linux libc version is determined by the ``uv``
+  version (``glibc@2.28`` in ``uv`` 0.9.8).
+
+  Note that it is *not* currently possible to specify that Linux layer builds
+  should :issue:`target musl libc <340>`.
+
+  .. versionadded:: 0.8.0
+     Added support for setting the target Linux libc variant on a per-layer basis
+     (:ref:`release details <changelog-0.8.0>`).
+
 .. _macosx-target:
 
 * ``macosx_target`` (:toml:`string`)
@@ -164,7 +192,8 @@ All layer specifications may also contain the following optional fields:
 
   If this field is not set, the ``MACOSX_DEPLOYMENT_TARGET`` setting from the
   calling environment is used without modification. If it is not set at all,
-  the default target macOS version is determined by the ``uv`` version.
+  the default target macOS version is determined by the ``uv`` version
+  (``13.0`` in ``uv`` 0.9.8).
 
   .. versionadded:: 0.8.0
      Added support for setting the minimum macOS target on a per-layer basis

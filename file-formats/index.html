@@ -420,6 +420,31 @@ platforms for all layers that depend on that layer
 </div>
 </li>
 </ul>
+<ul id="linux-target">
+<li><p><code class="docutils literal notranslate"><span class="pre">linux_target</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>)
+adjusts the <a class="extlink-uv-config reference external" href="https://docs.astral.sh/uv/reference/settings/#uv-pip-install--python-platform">–python-platform</a>
+value passed to the <code class="docutils literal notranslate"><span class="pre">uv</span></code> subprocess when installing packages, which may
+affect the exact wheels selected for projects which publish wheels for
+multiple Linux libc variants.</p>
+<p>The following Linux target definitions are supported, mapping to the <code class="docutils literal notranslate"><span class="pre">uv</span></code>
+platform names shown:</p>
+<ul class="simple">
+<li><p>not set: <code class="docutils literal notranslate"><span class="pre">unknown-linux-gnu</span></code> (version is selected by <code class="docutils literal notranslate"><span class="pre">uv</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">glibc</span></code>: <code class="docutils literal notranslate"><span class="pre">unknown-linux-gnu</span></code> (version is selected by <code class="docutils literal notranslate"><span class="pre">uv</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">glibc&#64;X.Y</span></code>: <code class="docutils literal notranslate"><span class="pre">manylinux_X_Y</span></code> (version as specified)</p></li>
+</ul>
+<p>Setting this field is <em>required</em> to build layers containing projects that only
+publish wheels for Linux libc versions that are newer than the default target.</p>
+<p>The exact default target Linux libc version is determined by the <code class="docutils literal notranslate"><span class="pre">uv</span></code>
+version (<code class="docutils literal notranslate"><span class="pre">glibc&#64;2.28</span></code> in <code class="docutils literal notranslate"><span class="pre">uv</span></code> 0.9.8).</p>
+<p>Note that it is <em>not</em> currently possible to specify that Linux layer builds
+should <a class="extlink-issue reference external" href="https://github.com/lmstudio-ai/venvstacks/issues/340">target musl libc</a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for setting the target Linux libc variant on a per-layer basis
+(<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
+</li>
+</ul>
 <ul id="macosx-target">
 <li><p><code class="docutils literal notranslate"><span class="pre">macosx_target</span></code> (<a class="extlink-toml reference external" href="https://toml.io/en/v1.0.0#string">string</a>)
 sets <a class="extlink-uv-envvar reference external" href="https://docs.astral.sh/uv/reference/environment/#MACOSX_DEPLOYMENT_TARGET">MACOSX_DEPLOYMENT_TARGET</a> in the <code class="docutils literal notranslate"><span class="pre">uv</span></code> subprocess environment when
@@ -427,7 +452,8 @@ installing packages, which may affect the exact wheels selected for projects whi
 publish wheels for multiple macOS versions.</p>
 <p>If this field is not set, the <code class="docutils literal notranslate"><span class="pre">MACOSX_DEPLOYMENT_TARGET</span></code> setting from the
 calling environment is used without modification. If it is not set at all,
-the default target macOS version is determined by the <code class="docutils literal notranslate"><span class="pre">uv</span></code> version.</p>
+the default target macOS version is determined by the <code class="docutils literal notranslate"><span class="pre">uv</span></code> version
+(<code class="docutils literal notranslate"><span class="pre">13.0</span></code> in <code class="docutils literal notranslate"><span class="pre">uv</span></code> 0.9.8).</p>
 <div class="versionadded">
 <p><span class="versionmodified added">Added in version 0.8.0: </span>Added support for setting the minimum macOS target on a per-layer basis
 (<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
