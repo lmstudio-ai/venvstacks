@@ -594,6 +594,36 @@ def test_build_env_layer_locks(temp_dir_path: Path, subtests: SubTests) -> None:
         assert invalid_locks == expected_invalid_locks
         assert build_env._needs_lock()
         subtests_passed += 1
+    with subtests.test("Change Linux target setting at application layer"):
+        # The transitive requirements shouldn't change, but the wheel selection needs checking
+        subtests_started += 1
+        spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
+        env_spec_to_modify = spec_data_to_check["applications"][0]
+        assert env_spec_to_modify["name"] == "to-be-modified"
+        env_spec_to_modify["linux_target"] = "glibc"
+        build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
+        expected_invalid_locks = {"app-to-be-modified"}
+        expected_valid_locks = all_layer_names - expected_invalid_locks
+        valid_locks, invalid_locks = _partition_envs(build_env)
+        assert valid_locks == expected_valid_locks
+        assert invalid_locks == expected_invalid_locks
+        assert build_env._needs_lock()
+        subtests_passed += 1
+    with subtests.test("Change macOS target setting at application layer"):
+        # The transitive requirements shouldn't change, but the wheel selection needs checking
+        subtests_started += 1
+        spec_data_to_check = tomllib.loads(EXAMPLE_STACK_SPEC)
+        env_spec_to_modify = spec_data_to_check["applications"][0]
+        assert env_spec_to_modify["name"] == "to-be-modified"
+        env_spec_to_modify["macosx_target"] = "12"
+        build_env = _define_lock_testing_env(updated_spec_path, spec_data_to_check)
+        expected_invalid_locks = {"app-to-be-modified"}
+        expected_valid_locks = all_layer_names - expected_invalid_locks
+        valid_locks, invalid_locks = _partition_envs(build_env)
+        assert valid_locks == expected_valid_locks
+        assert invalid_locks == expected_invalid_locks
+        assert build_env._needs_lock()
+        subtests_passed += 1
     with subtests.test("Change launch module name in unversioned application layer"):
         # Even though the launch module needs to be invoked differently,
         # there is no layer lock version update needed for explicit layer versioning

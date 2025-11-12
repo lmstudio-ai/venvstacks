@@ -18,6 +18,7 @@ requirements = [
 # https://github.com/astral-sh/uv/issues/6893
 name = "gui"
 runtime = "cpython-3.11"
+linux_target = "glibc@2.34"
 requirements = [
     "pyside6",
 ]
