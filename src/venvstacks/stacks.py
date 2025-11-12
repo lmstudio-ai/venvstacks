@@ -2760,7 +2760,7 @@ class LayerEnvBase(ABC):
                             f"{self.env_name}: marking {pkg.name!r} as unconditional"
                         )
                         pkg = pkg.as_unconditional()
-                        raw_pkg["marker"] = ""
+                        del raw_pkg["marker"]  # Omit the marker entirely
                 # Kept this package, so bump the offset for any future removals
                 pkg_reversed_index -= 1
                 if available_packages:
