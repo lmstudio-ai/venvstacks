@@ -8,21 +8,15 @@ Building Packages from Source
    :og:url: https://venvstacks.lmstudio.ai/source-builds/
    :og:description: venvstacks Package Source Builds - venvstacks Documentation
 
-Reproducible Builds
-===================
+Disallowing implicit source builds
+==================================
 
-``venvstacks`` is designed around ensuring that the layer archives that it
-produces are `reproducible <https://reproducible-builds.org/>`__: if the same
+As described in :ref:`publishing-archives`, published layer archives are
+expected to be `reproducible <https://reproducible-builds.org/>`__: if the same
 stack definition is built again later with the same
 `build environment <https://reproducible-builds.org/docs/perimeter/>`__,
 then the resulting layer archives will be byte-for-byte identical with
-those produced by the original stack build. In general, keeping the versions of
-``venvstacks``, ``uv``, and ``pbs-installer`` consistent should produce
-consistent output artifacts. Note that changing the Python runtime used to
-build the layers *may* change the hashes if the standard library's archiving
-implementation changes (for example, CPython 3.14 switched to ``zlib-ng``,
-which means most archives generated for Windows layers will be smaller than
-previous versions when generated on CPython 3.14 or later)
+those produced by the original stack build.
 
 One of the ways this is achieved is by requiring that all Python packages
 included in a stack build be provided as pre-built
@@ -152,7 +146,7 @@ environment and the layer building environments (for example, if using a git
 repository to maintain the history of the layer lock files, checking the local
 wheels into the same repository with Git-LFS).
 
-.. versionchanged: 0.8.0
+.. versionchanged:: 0.8.0
    With the introduction of cross-platform layer lock files,
    wheels for all relevant target platforms must be present on the system
    used to lock the layers (:ref:`release details <changelog-0.8.0>`).

@@ -43,8 +43,8 @@ were being assembled from individual wheels on the target systems.
 ``conda-pack`` itself, but because ``conda``'s notion of
 `environment stacking <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#nested-activation>`__
 refers specifically to accessing the ``PATH`` entries for other
-environments, it doesn't refer to being able combine ``sys.path``
-across multiple environments.
+environments, it doesn't refer to being able to combine ``sys.path``
+entries across multiple environments.
 
 Splitting environments into layers the way ``venvstacks`` does
 also doesn't align well with the way the ``conda`` dependency
