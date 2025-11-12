@@ -995,7 +995,7 @@ class TestMinimalBuild(DeploymentTestCase):
                 mock_uv_export.assert_called_once_with(build_path)
                 mock_uv_export.reset_mock()
                 mock_uv_install = cast(Mock, env.index_config._get_uv_pip_install_args)
-                mock_uv_install.assert_called_once_with(build_path, build_platform)
+                mock_uv_install.assert_called_once_with(build_path, build_platform, None)
                 mock_uv_install.reset_mock()
             subtests_passed += 1
         subtests_started += 1
