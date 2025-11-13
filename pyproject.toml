@@ -1,6 +1,6 @@
 [project]
 name = "venvstacks"
-version = "0.8.0.dev0"
+version = "0.8.0b1"
 description = "Use layered Python virtual environment stacks to share large dependencies"
 authors = [
     {name = "Alyssa Coghlan", email = "ncoghlan@gmail.com"},
@@ -18,10 +18,8 @@ dependencies = [
     # pbs-installer>=2025.8.27 ensures the use of smaller runtime archives without debug symbols
     # (that lower bound is not specified by default to avoid conflicting with older version pins)
     "pbs-installer",
-    # Due to https://github.com/astral-sh/uv/issues/2831 we're not trying to
-    # replace `python -Im venv` with `uv venv` at this point since we want explicit
-    # control over whether files are symlinked or copied between the environments
-    "uv>=0.6.9",
+    # Minimum uv version for Windows ARM64 support in --python-platform
+    "uv>=0.8.12",
     # Installer is used for RECORD file editing
     "installer>=0.7.0",
     # packaging is used directly for low level metadata handling tasks
@@ -35,6 +33,8 @@ dependencies = [
     "tomlkit>=0.13.2",
     # dulwich is used for git metadata processing to avoid any external git CLI dependency
     "dulwich>=0.23.2",
+    # Compatibility workaround for https://github.com/pdm-project/pdm/issues/3665
+    "hishel<1.0.0",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
@@ -47,6 +47,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Build Tools",
     "Typing :: Typed",
 ]

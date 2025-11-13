@@ -13,7 +13,15 @@ output_target="${1:?}"
 # Ignore return code, as the tests will fail when updates are needed.
 # Make the tests explicitly chatty to allow debugging when they pass
 # unexpectedly (failing to update the output when updates are expected)
-tox -m test -- -m "expected_output" -vvs || true
+TOX_ENV_OPT=""
+TOX_ENV_MARKER=""
+CI="${CI:-}"
+if [ -z "$CI" ]; then
+  # Not running in CI, so use the default test env instead of relying on tox-gh
+  TOX_ENV_OPT="-m"
+  TOX_ENV_MARKER="test"
+fi
+tox $TOX_ENV_OPT $TOX_ENV_MARKER -- -m "expected_output" -vvs || true
 
 # Emit the list of changed files (if any) to the specified output file
 # Avoids setting a non-zero return code if `grep` doesn't match any lines

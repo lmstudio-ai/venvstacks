@@ -11,7 +11,8 @@ platforms = [
 [[frameworks]]
 name = "mlx"
 runtime = "cpython3.11"
-# macosx-target = "14"
+linux_target = "glibc@2.35"
+macosx_target = "14"
 requirements = [
     "mlx==0.29.3",
     "mlx[cpu]; sys_platform == 'linux'",
@@ -21,20 +22,18 @@ requirements = [
 [[frameworks]]
 name = "mlx-cuda"
 runtime = "cpython3.11"
-# macosx-target = "14"
+linux_target = "glibc@2.35"
+macosx_target = "14"
 requirements = [
     "mlx[cuda]==0.29.3",
 ]
-# Separate CUDA-based layer stack is only needed on Linux
-platforms = [
-    "linux_x86_64",
-]
+# A separate CUDA-based layer stack is really only needed on Linux,
+# but is defined for macOS to demonstrate filtering of unused dependencies
 
 [[applications]]
 name = "mlx-example"
 launch_module = "report_mlx_version.py"
 frameworks = ["mlx"]
-# macosx-target = "14"
 requirements = [
     # Exact version pin is inherited from the framework layer
     "mlx",
@@ -42,14 +41,30 @@ requirements = [
 # Platform restrictions are inherited from lower layers
 
 [[applications]]
-name = "mlx-example-cuda"
+name = "mlx-cuda-linux"
 launch_module = "report_mlx_version.py"
 frameworks = ["mlx-cuda"]
 requirements = [
     # Exact version pin is inherited from the framework layer
-    "mlx",
+    "mlx[cuda]",
 ]
-# Platform restrictions are inherited from lower layers
+# macos-only dependencies should be omitted from the layer summary
+platforms = [
+    "linux_x86_64",
+]
+
+[[applications]]
+name = "mlx-cuda-macos"
+launch_module = "report_mlx_version.py"
+frameworks = ["mlx-cuda"]
+requirements = [
+    # Exact version pin is inherited from the framework layer
+    "mlx[cuda]",
+]
+# Linux-only dependencies should be omitted from the layer summary
+platforms = [
+    "macosx_arm64",
+]
 
 [tool.uv]
 exclude-newer = "2025-10-19T00:00:00Z"

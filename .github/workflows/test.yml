@@ -38,7 +38,11 @@ jobs:
       fail-fast: false  # Always report results for all targets
       max-parallel: 12
       matrix:
-        python-version: [3.11, 3.12, 3.13]
+        # To avoid excessive CI runs, test the oldest supported version,
+        # the newest supported version, and one intermediate version
+        # Currently, 3.12 is skipped, as that is tested when generating the
+        # expected output updates, and is also the default local test target
+        python-version: [3.11, 3.13, 3.14]
         # Note: while venvstacks nominally supports x86-64 macOS, the actual demand
         #       for that is unclear, so skip macos-12 testing until it is requested
         #       Linux and Windows aarch64 testing is more gated on runner availability
@@ -64,6 +68,8 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+        # Allow for pre-release testing of the next Python version
+        allow-prereleases: ${{ matrix.python-version == '3.15' }}
 
     - name: Set up Python ${{ matrix.python-version }}
       if: matrix.python-version == '3.13'
@@ -126,7 +132,7 @@ jobs:
 
     # Only run the slow tests on the oldest and newest versions
     - name: Slow tests
-      if: contains(fromJSON('["3.11", "3.13"]'), matrix.python-version)
+      if: contains(fromJSON('["3.11", "3.14"]'), matrix.python-version)
       id: slow_tests
       run: |
         export VENVSTACKS_EXPORT_TEST_ARTIFACTS="$GITHUB_WORKSPACE/export/tests"

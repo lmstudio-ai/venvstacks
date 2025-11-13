@@ -16,7 +16,7 @@
         ],
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "a24a4cedad7449a638e92817adfe4941c8f1544d326f6556625f32424c1a4a7f"
+          "sha256": "7ae5a1f952fcd42c8de30eaceebd823d2b865ae6e8d25a27b057a9a2013503f8"
         },
         "archive_name": "app-scipy-client.tar.xz",
         "archive_size": 3756,
@@ -27,10 +27,10 @@
         "locked_at": "2025-08-27T00:00:00+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [
-          "framework-scipy@2",
+          "framework-scipy@4",
           "framework-http-client"
         ],
-        "requirements_hash": "sha256:614f4a81ac2747845d6cba0debb87a30492475d82e4a961e3679f9c2760cd2fc",
+        "requirements_hash": "sha256:ce6c3dc740879e7c8ef8ffacabefb99620690affeb011c6989380fde32796131",
         "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       },
@@ -52,7 +52,7 @@
         "required_layers": [
           "framework-sklearn"
         ],
-        "requirements_hash": "sha256:796922ca62dd84a98bdc00d8dc57ae352939be86e86a18d3f237ac1eb05eb1b5",
+        "requirements_hash": "sha256:c5703805c24f367634ad60e8984ddb3102f1410661bcd3cb8c7b11d884b9973b",
         "runtime_layer": "cpython-3.12@2",
         "target_platform": "macosx_arm64"
       }
@@ -61,18 +61,18 @@
       {
         "archive_build": 1,
         "archive_hashes": {
-          "sha256": "55117de60c01b00a3603d36f1df18a989d48a97109b4f1aac5779d15ea3779fa"
+          "sha256": "2082e9337d998786036b0bcefa6e72519f94d34eefe5e85f0bf56cb54c24a9cd"
         },
-        "archive_name": "framework-scipy@2.tar.xz",
-        "archive_size": 17051100,
+        "archive_name": "framework-scipy@4.tar.xz",
+        "archive_size": 17041480,
         "bound_to_implementation": false,
-        "install_target": "framework-scipy@2",
+        "install_target": "framework-scipy@4",
         "layer_name": "framework-scipy",
-        "lock_version": 2,
+        "lock_version": 4,
         "locked_at": "2025-08-27T00:00:00+00:00",
         "python_implementation": "cpython@3.11.11",
         "required_layers": [],
-        "requirements_hash": "sha256:d205ed11c7755ba34bec3cb5ac2d1b48ed33437f3cdfae92aaf0381e40dee64c",
+        "requirements_hash": "sha256:990cf41fa111551e98d68b90fce0c493aeeeb38b5763b778343635cbf181d58a",
         "runtime_layer": "cpython-3.11",
         "target_platform": "macosx_arm64"
       },
@@ -90,7 +90,7 @@
         "locked_at": "2025-08-27T00:00:00+00:00",
         "python_implementation": "cpython@3.12.9",
         "required_layers": [],
-        "requirements_hash": "sha256:7d8d2a55685ecf35546ae119f9a5cef17920726b07a286a251b9d6a033f355a2",
+        "requirements_hash": "sha256:125cf60d6a49066d1c6b089174ecca6dc07a2c80b2c5c30284de0a1b59b8df12",
         "runtime_layer": "cpython-3.12@2",
         "target_platform": "macosx_arm64"
       },

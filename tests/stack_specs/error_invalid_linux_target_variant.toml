@@ -1,0 +1,7 @@
+# Ensure suitable error is raised for an unsupported Linux libc variant
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+linux_target = "unknown"

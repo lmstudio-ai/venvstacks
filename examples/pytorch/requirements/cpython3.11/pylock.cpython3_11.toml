@@ -8,8 +8,15 @@ requires-python = "==3.11.*"
 [[packages]]
 name = "numpy"
 version = "2.3.4"
-marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'ARM64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
+
+[[packages.wheels]]
+url = "https://files.pythonhosted.org/packages/60/e7/0e07379944aa8afb49a556a2b54587b828eb41dc9adc56fb7615b678ca53/numpy-2.3.4-cp311-cp311-macosx_10_9_x86_64.whl"
+upload-time = 2025-10-15T16:15:19Z
+size = 21259519
+
+[packages.wheels.hashes]
+sha256 = "e78aecd2800b32e8347ce49316d3eaf04aed849cd5b38e0af39f829a4e59f5eb"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/d0/cb/5a69293561e8819b09e34ed9e873b9a82b5f2ade23dce4c51dc507f6cfe1/numpy-2.3.4-cp311-cp311-macosx_11_0_arm64.whl"
@@ -26,6 +33,14 @@ size = 5381639
 
 [packages.wheels.hashes]
 sha256 = "1b219560ae2c1de48ead517d085bc2d05b9433f8e49d0955c82e8cd37bd7bf36"
+
+[[packages.wheels]]
+url = "https://files.pythonhosted.org/packages/ea/77/e95c757a6fe7a48d28a009267408e8aa382630cc1ad1db7451b3bc21dbb4/numpy-2.3.4-cp311-cp311-macosx_14_0_x86_64.whl"
+upload-time = 2025-10-15T16:15:27Z
+size = 6914296
+
+[packages.wheels.hashes]
+sha256 = "bafa7d87d4c99752d07815ed7a2c0964f8ab311eb8168f41b910bd01d15b6032"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/a3/d2/137c7b6841c942124eae921279e5c41b1c34bab0e6fc60c7348e69afd165/numpy-2.3.4-cp311-cp311-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl"
@@ -60,6 +75,14 @@ size = 18884682
 sha256 = "64c5825affc76942973a70acf438a8ab618dbd692b84cd5ec40a0a0509edc09a"
 
 [[packages.wheels]]
+url = "https://files.pythonhosted.org/packages/cf/85/f6f00d019b0cc741e64b4e00ce865a57b6bed945d1bbeb1ccadbc647959b/numpy-2.3.4-cp311-cp311-win32.whl"
+upload-time = 2025-10-15T16:15:38Z
+size = 6570076
+
+[packages.wheels.hashes]
+sha256 = "ed759bf7a70342f7817d88376eb7142fab9fef8320d6019ef87fae05a99874e1"
+
+[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/7d/10/f8850982021cb90e2ec31990291f9e830ce7d94eef432b15066e7cbe0bec/numpy-2.3.4-cp311-cp311-win_amd64.whl"
 upload-time = 2025-10-15T16:15:40Z
 size = 13089358
@@ -76,6 +99,14 @@ size = 10462292
 sha256 = "4c01835e718bcebe80394fd0ac66c07cbb90147ebbdad3dcecd3f25de2ae7e2c"
 
 [[packages.wheels]]
+url = "https://files.pythonhosted.org/packages/b1/b6/64898f51a86ec88ca1257a59c1d7fd077b60082a119affefcdf1dd0df8ca/numpy-2.3.4-pp311-pypy311_pp73-macosx_10_15_x86_64.whl"
+upload-time = 2025-10-15T16:17:55Z
+size = 21131552
+
+[packages.wheels.hashes]
+sha256 = "6e274603039f924c0fe5cb73438fa9246699c78a6df1bd3decef9ae592ae1c05"
+
+[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/ce/4c/f135dc6ebe2b6a3c77f4e4838fa63d350f85c99462012306ada1bd4bc460/numpy-2.3.4-pp311-pypy311_pp73-macosx_11_0_arm64.whl"
 upload-time = 2025-10-15T16:17:58Z
 size = 14377796
@@ -90,6 +121,14 @@ size = 5306904
 
 [packages.wheels.hashes]
 sha256 = "6d34ed9db9e6395bb6cd33286035f73a59b058169733a9db9f85e650b88df37e"
+
+[[packages.wheels]]
+url = "https://files.pythonhosted.org/packages/28/af/c44097f25f834360f9fb960fa082863e0bad14a42f36527b2a121abdec56/numpy-2.3.4-pp311-pypy311_pp73-macosx_14_0_x86_64.whl"
+upload-time = 2025-10-15T16:18:02Z
+size = 6819682
+
+[packages.wheels.hashes]
+sha256 = "fdebe771ca06bb8d6abce84e51dca9f7921fe6ad34a0c914541b063e9a68928b"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/c5/8c/cd283b54c3c2b77e188f63e23039844f56b23bba1712318288c13fe86baf/numpy-2.3.4-pp311-pypy311_pp73-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl"
@@ -114,11 +153,3 @@ size = 12973130
 
 [packages.wheels.hashes]
 sha256 = "81b3a59793523e552c4a96109dde028aa4448ae06ccac5a76ff6532a85558a7f"
-
-[packages.sdist]
-url = "https://files.pythonhosted.org/packages/b5/f4/098d2270d52b41f1bd7db9fc288aaa0400cb48c2a3e2af6fa365d9720947/numpy-2.3.4.tar.gz"
-upload-time = 2025-10-15T16:18:11Z
-size = 20582187
-
-[packages.sdist.hashes]
-sha256 = "a7d018bfedb375a8d979ac758b120ba846a7fe764911a64465fd87b8729f4a6a"

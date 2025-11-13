@@ -18,19 +18,7 @@
 # support a subset of an overall applications target platforms (for example, LM Studio
 # supports MLX, but only on macOS with Apple silicon).
 #
-# Permitted entries in the `platforms` list are:
-#
-# * "win_amd64": Windows on x86-64
-# * "linux_x86_64": Linux on x86_64
-# * "macosx_arm64": macOS on Apple silicon
-# * "macosx_x86_64": macOS on Intel silicon (not currently tested in CI)
-#
-# The specific platform strings used are chosen for convenience in comparison with the
-# platform identifying strings emitted by Python's `sysconfig.get_platform()` API.
-#
-# Omitting the field entirely means "build for all platforms", setting it to an empty
-# list allows a layer to be defined for shared testing purposes without adding it
-# to the default build set yet.
+# See https://venvstacks.lmstudio.ai/file-formats/ for more details
 
 ######################################
 # Python runtime layers
@@ -137,3 +125,7 @@ requirements = [
 ]
 
 # Add more [[applications]] sections to define additional applications (TOML array of tables)
+
+# Ensure CI can reproduce the same lock contents
+[tool.uv]
+exclude-newer="2025-08-27 00:00:00+00:00"

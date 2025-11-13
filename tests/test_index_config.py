@@ -17,7 +17,6 @@ SAMPLE_PROJECT_STACK_SPEC_PATH = SAMPLE_PROJECT_PATH / "venvstacks.toml"
 
 class _CommonTestDetails:
     BUILD_PATH = Path("/build_dir")
-    CONFIG_FILE = os.fspath(BUILD_PATH / "uv.toml")
 
 
 _EXPECTED_UV_PLATFORMS = {
@@ -49,7 +48,7 @@ class TestDefaultOptions(_CommonTestDetails):
     ) -> None:
         # The platform compatibility tag is mapped to a uv platform identifier
         assert self.TEST_CONFIG._get_uv_pip_install_args(
-            self.BUILD_PATH, build_platform
+            self.BUILD_PATH, build_platform, None
         ) == ["--python-platform", uv_platform]
 
     def test_local_wheel_indexes(self) -> None:
@@ -90,7 +89,7 @@ class TestConfiguredOptions(_CommonTestDetails):
     ) -> None:
         # The platform compatibility tag is mapped to a uv platform identifier
         assert self.TEST_CONFIG._get_uv_pip_install_args(
-            self.BUILD_PATH, build_platform
+            self.BUILD_PATH, build_platform, None
         ) == ["--python-platform", uv_platform]
 
     def test_local_wheel_indexes(self) -> None:

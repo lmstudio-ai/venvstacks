@@ -16,7 +16,7 @@
   "required_layers": [
     "framework-sklearn"
   ],
-  "requirements_hash": "sha256:796922ca62dd84a98bdc00d8dc57ae352939be86e86a18d3f237ac1eb05eb1b5",
+  "requirements_hash": "sha256:c5703805c24f367634ad60e8984ddb3102f1410661bcd3cb8c7b11d884b9973b",
   "runtime_layer": "cpython-3.12@2",
   "target_platform": "macosx_arm64"
 }

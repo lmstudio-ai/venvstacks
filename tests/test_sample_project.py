@@ -2,6 +2,7 @@
 
 import os.path
 import shutil
+import sys
 import tempfile
 
 from itertools import chain
@@ -46,6 +47,12 @@ SAMPLE_PROJECT_PATH = _THIS_PATH.parent / "sample_project"
 SAMPLE_PROJECT_STACK_SPEC_PATH = SAMPLE_PROJECT_PATH / "venvstacks.toml"
 SAMPLE_PROJECT_REQUIREMENTS_PATH = SAMPLE_PROJECT_PATH / "requirements"
 SAMPLE_PROJECT_MANIFESTS_PATH = SAMPLE_PROJECT_PATH / "expected_manifests"
+# CPython switched to a new Windows zlib implementation in 3.14,
+# so its expected metadata is stored separately. Once 3.14 is the
+# oldest supported version, this special case can be dropped
+# (including the separate run in the update expected outputs CI job)
+if sys.version_info >= (3, 14) and sys.platform == "win32":
+    SAMPLE_PROJECT_MANIFESTS_PATH /= "py3.14"
 
 
 def _define_build_env(working_path: Path) -> BuildEnvironment:
@@ -69,7 +76,7 @@ def _get_expected_dry_run_result(
 ) -> dict[str, Any]:
     # Dry run results report LayerCategories instances rather than plain strings
     untagged_metadata = _get_expected_metadata(build_env).combined_data
-    all_layer_manifests = untagged_metadata["layers"]
+    all_layer_manifests = untagged_metadata.get("layers", {})
     filtered_layer_manifests: dict[LayerCategories, Any] = {}
     for category, archive_manifests in all_layer_manifests.items():
         filtered_layer_manifests[LayerCategories(category)] = archive_manifests
@@ -302,8 +309,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         committed_locked_requirements = _collect_locked_requirements(build_env)
         # Create and link the layer build environments
         build_env.create_environments(lock=True)
-        # Don't even try to continue if the environments aren't locked & linked
-        self.check_layer_locks(self.build_env.all_environments())
+        # Don't even try to continue if the environments aren't correctly linked
         self.check_build_environments(build_env.environments_to_build())
         # Test stage: ensure lock files can be regenerated without alteration
         generated_locked_requirements = _collect_locked_requirements(build_env)
@@ -313,6 +319,9 @@ class TestBuildEnvironment(DeploymentTestCase):
             self.assertEqual(
                 committed_locked_requirements, generated_locked_requirements
             )
+            # While the layer locks are cross-platform, this test case
+            # only processes the layers that will be built for this platform
+            self.check_layer_locks(build_env.environments_to_build())
             export_locked_requirements = self.export_on_success  # Only export if forced
             subtests_passed += 1
         if export_locked_requirements:

@@ -19,8 +19,6 @@ requirements = [
 dynlib_exclude = [
     "triton/**"
 ]
-# Torch 2.8.0 doesn't provide linux_aarch64 wheels
-platforms = ["win_amd64", "win_arm64", "macosx_arm64", "linux_x86_64"]
 
 [[frameworks]]
 name = "torch-cu128"
@@ -34,8 +32,6 @@ requirements = [
 dynlib_exclude = [
     "triton/**"
 ]
-# Torch 2.8.0 only provides separate CUDA wheels for a subset of platforms
-platforms = ["win_amd64", "linux_x86_64"]
 
 [[applications]]
 name = "cpu"
@@ -45,7 +41,6 @@ requirements = [
     # Exact version pin is inherited from the framework layer
     "torch",
 ]
-# Inherit target platforms from the declared layer dependencies
 
 [[applications]]
 name = "cu128"
@@ -55,7 +50,6 @@ requirements = [
     # Exact version pin is inherited from the framework layer
     "torch",
 ]
-# Inherit target platforms from the declared layer dependencies
 
 [[applications]]
 name = "cu128-or-cpu"
@@ -72,9 +66,7 @@ requirements = [
     # Exact version pin is inherited from the framework layer
     "torch",
 ]
-# With required-environments set, this layer shadowing fails
-# due to an inconsistent lock definition
-platforms = []
+
 
 [tool.uv]
 # exclude-newer = "2025-10-11T00:00:00Z"

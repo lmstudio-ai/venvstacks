@@ -12,14 +12,13 @@ runtime = "cpython-3.11"
 requirements = [
     "scikit-learn",
 ]
-# scikit-learn doesn't provide win_arm64 wheels
-platforms = ["win_amd64", "macosx_arm64", "linux_aarch64", "linux_x86_64"]
 
 [[frameworks]]
 # Use a non-default GUI due to problems with Tcl/Tk in python-build-standalone:
 # https://github.com/astral-sh/uv/issues/6893
 name = "gui"
 runtime = "cpython-3.11"
+linux_target = "glibc@2.34"
 requirements = [
     "pyside6",
 ]

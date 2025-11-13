@@ -1,0 +1,8 @@
+# Ensure suitable error is raised for a malformed Linux libc version
+
+[[runtimes]]
+name = "cpython-3.11"
+python_implementation = "cpython@3.11.11"
+requirements = []
+# Versioned targets must use the form "libc_variant@X.Y"
+linux_target = "glibc@235"

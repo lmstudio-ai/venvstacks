@@ -54,6 +54,7 @@ from urllib.request import url2pathname
 import tomlkit
 
 from installer.records import parse_record_file
+from packaging.markers import Marker
 from packaging.requirements import InvalidRequirement, Requirement
 from packaging.utils import NormalizedName, canonicalize_name
 from packaging.version import Version
@@ -178,6 +179,50 @@ _UV_PYTHON_PLATFORM_NAMES = {
     "macosx": "apple-darwin",
     "win": "pc-windows-msvc",
 }
+_UV_LINUX_TARGET_NAMES = {
+    "glibc": "unknown-linux-gnu",
+    # For https://github.com/lmstudio-ai/venvstacks/issues/340
+    # "musl": "unknown-linux-musl",
+}
+_UV_LIBC_WHEEL_TAGS = {
+    "glibc": "manylinux",
+    # For https://github.com/lmstudio-ai/venvstacks/issues/340
+    # "musl": "musllinux",
+}
+
+# Evaluate environment markers for cleaner layer locks and summaries
+_ENV_KEYS_BY_PLATFORM = {
+    "linux": {
+        "os_name": "posix",
+        "sys_platform": "linux",
+        "platform_system": "Linux",
+    },
+    "macosx": {
+        "os_name": "posix",
+        "sys_platform": "darwin",
+        "platform_system": "Darwin",
+    },
+    "win": {
+        "os_name": "nt",
+        "sys_platform": "win32",
+        "platform_system": "Windows",
+    },
+}
+_ENV_KEYS_BY_CPU_ARCH = {
+    "aarch64": {
+        "platform_machine": "aarch64",
+    },
+    "amd64": {
+        # Windows-specific, and uses this capitalisation
+        "platform_machine": "AMD64",
+    },
+    "arm64": {
+        "platform_machine": "arm64",
+    },
+    "x86_64": {
+        "platform_machine": "x86_64",
+    },
+}
 
 # Support mapping platform compatibility tag prefixes to sys.platform values
 _SYS_PLATFORM_MARKERS = {
@@ -222,10 +267,34 @@ class TargetPlatform(StrEnum):
             ],
         )
 
-    def _as_uv_python_platform(self) -> str:
+    @staticmethod
+    def _parse_linux_target(linux_target: str | None) -> str:
+        # Convert a layer spec linux target into a uv Python platform name
+        # https://docs.astral.sh/uv/reference/cli/#uv-pip-install--python-platform
+        if linux_target is None:
+            return _UV_LINUX_TARGET_NAMES["glibc"]
+        variant, has_version, version = linux_target.partition("@")
+        if variant not in _UV_LINUX_TARGET_NAMES:
+            expected_suffixes = sorted(_UV_LINUX_TARGET_NAMES)
+            err = f"Linux libc variant must be one of {expected_suffixes}, not {variant!r}"
+            raise ValueError(err)
+        if not has_version:
+            return _UV_LINUX_TARGET_NAMES[variant]
+        libc_wheel_tag = _UV_LIBC_WHEEL_TAGS[variant]
+        try:
+            major, minor = map(int, version.split("."))
+        except Exception:
+            err = f"Linux libc version must be of the form 'X.Y', not {version!r}"
+            raise ValueError(err) from None
+        return f"{libc_wheel_tag}_{major}_{minor}"
+
+    def _as_uv_python_platform(self, linux_target: str | None) -> str:
         platform, _, arch = self.partition("_")
         uv_arch = _ARCH_ALIASES.get(arch, arch)
-        uv_platform = _UV_PYTHON_PLATFORM_NAMES.get(platform, platform)
+        if platform != "linux" or linux_target is None:
+            uv_platform = _UV_PYTHON_PLATFORM_NAMES.get(platform, platform)
+        else:
+            uv_platform = self._parse_linux_target(linux_target)
         return f"{uv_arch}-{uv_platform}"
 
     def _as_uv_target_environment(self) -> str:
@@ -237,13 +306,28 @@ class TargetPlatform(StrEnum):
             machine = machine.upper()
         return f"sys_platform == {sys_platform!r} and platform_machine == {machine!r}"
 
+    def _get_marker_environment(
+        self, py_version: str, py_implementation: str
+    ) -> dict[str, str]:
+        # CPython and PyPy both return mixed case names for platform.python_implementation(),
+        # and use the lowercase version of the same name for sys.implementation.name
+        # Note: any environment markers that check the value of platform_release,
+        # platform_version, or implementation_version may cause problems
+        # (as those field values aren't emulated when evaluating markers)
+        env = {
+            "implementation_name": py_implementation.lower(),
+            "platform_python_implementation": py_implementation,
+            "python_version": py_version.rpartition(".")[0],
+            "python_full_version": py_version,
+        }
+        platform, _, arch = self.partition("_")
+        env.update(_ENV_KEYS_BY_PLATFORM[platform])
+        env.update(_ENV_KEYS_BY_CPU_ARCH[arch])
+        return env
+
 
 TargetPlatforms = TargetPlatform  # Use plural alias when the singular name reads oddly
 
-_UV_PYTHON_PLATFORMS = {
-    platform: platform._as_uv_python_platform()
-    for platform in TargetPlatforms.get_all_target_platforms()
-}
 _UV_TARGET_ENVIRONMENTS = {
     platform: platform._as_uv_target_environment()
     for platform in TargetPlatforms.get_all_target_platforms()
@@ -340,11 +424,16 @@ class PackageIndexConfig:
         return []
 
     def _get_uv_pip_install_args(
-        self, build_path: Path, target_platform: TargetPlatform
+        self,
+        build_path: Path,
+        target_platform: TargetPlatform,
+        linux_target: str | None,
     ) -> list[str]:
         # Instruct `uv` to potentially target older (or newer) platform versions
-        # Most importantly, this respects MACOSX_DEPLOYMENT_TARGET on macOS
-        return ["--python-platform", _UV_PYTHON_PLATFORMS[target_platform]]
+        # This respects MACOSX_DEPLOYMENT_TARGET on macOS and allows targeting
+        # non-default libc versions on Linux
+        uv_platform = target_platform._as_uv_python_platform(linux_target)
+        return ["--python-platform", uv_platform]
 
     @staticmethod
     def _get_uv_input_config_path(spec_path: Path) -> Path:
@@ -576,24 +665,59 @@ class LockedWheel:
         return cls(**whl)
 
 
+_SHARED_PKG_MARKER = "from_lower_layer"
+_SHARED_PKG_CLAUSE = f"sys_platform == {_SHARED_PKG_MARKER!r}"
+_SHARED_PKG_SUFFIX = f" and {_SHARED_PKG_CLAUSE}"
+
+_PYLOCK_SOURCE_KEYS = ("archive", "directory", "sdist", "vcs")
+
+
 @total_ordering
-@dataclass
+@dataclass(frozen=True)
 class LockedPackage:
     """Details of a locked distribution package (extracted from pylock.toml)."""
 
     name: str
     version: Version
-    marker: str
-    index: str
-    wheels: list[LockedWheel]
+    marker_text: str = field(default="")
+    index: str | None = field(default=None)
+    wheels: list[LockedWheel] = field(default_factory=list)
+    is_shared: bool = field(default=False)  # Settable so field replacement works
+    marker: Marker | None = field(init=False, default=None)
+
+    def __post_init__(self) -> None:
+        raw_marker = self.marker_text
+        if raw_marker:
+            # Normalise marker formatting
+            # Use single quotes in marker text field to avoid escaping in TOML files
+            marker: Marker | None = Marker(raw_marker)
+            marker_text = str(marker).replace('"', "'")
+            if _SHARED_PKG_MARKER in marker_text:
+                # Omit the shared marker clause from the marker field
+                object.__setattr__(self, "is_shared", True)
+                marker_text = self._remove_shared_package_marker_clause(marker_text)
+                if marker_text:
+                    marker = Marker(marker_text)
+                else:
+                    marker = None
+            object.__setattr__(self, "marker", marker)
+            object.__setattr__(self, "marker_text", marker_text)
+
+    def as_pkg_only(self) -> Self:
+        """Equivalent package without any provenance details specified."""
+        return dc_replace(self, index=None, wheels=[])
+
+    def as_unconditional(self) -> Self:
+        """Equivalent package without any environment marker specified."""
+        return dc_replace(self, marker_text="")
 
     def __str__(self) -> str:
-        marker = self.marker
-        marker_suffix = f" ; {marker}" if marker else ""
+        marker_text = self.marker_text
+        marker_suffix = f" ; {marker_text}" if marker_text else ""
         return f"{self.name}=={self.version}{marker_suffix}"
 
     def __hash__(self) -> int:
-        return hash((self.name, self.version, self.marker))
+        return hash((self.name, self.version, self.marker_text))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, LockedPackage):
@@ -601,7 +725,7 @@ class LockedPackage:
         return bool(
             self.name == other.name
             and self.version == other.version
-            and self.marker == other.marker
+            and self.marker_text == other.marker_text
         )
 
     def __lt__(self, other: Any) -> bool:
@@ -610,23 +734,43 @@ class LockedPackage:
         return bool(
             self.name < other.name
             and self.version < other.version
-            and self.marker < other.marker
+            and self.marker_text < other.marker_text
         )
 
     @classmethod
-    def from_dict(cls, pkg_entry: Mapping[str, Any]) -> Self:
+    def from_dict(cls, pkg_entry: Mapping[str, Any], *, pkg_only: bool = False) -> Self:
         """Parse a package entry extracted from a pylock.toml file."""
         # version isn't technically required, but all locked layer versions should be pinned
         # environment markers are genuinely optional for unconditionally installed packages
-        wheels = [LockedWheel.from_dict(whl) for whl in pkg_entry.get("wheels", ())]
         pkg = {
             "name": pkg_entry["name"],
             "version": Version(pkg_entry["version"]),
-            "marker": pkg_entry.get("marker", ""),
-            "index": pkg_entry.get("index", "unspecified index"),
-            "wheels": wheels,
+            "marker_text": pkg_entry.get("marker", ""),
         }
+        if not pkg_only:
+            pkg["index"] = pkg_entry.get("index", "unspecified index")
+            wheels = [LockedWheel.from_dict(whl) for whl in pkg_entry.get("wheels", ())]
+            pkg["wheels"] = wheels
         return cls(**pkg)
+
+    def _get_shared_marker(self) -> str:
+        marker_text = self.marker_text
+        if not marker_text:
+            return _SHARED_PKG_CLAUSE
+        return f"({marker_text}){_SHARED_PKG_SUFFIX}"
+
+    @staticmethod
+    def _remove_shared_package_marker_clause(marker_text: str) -> str:
+        if marker_text == _SHARED_PKG_CLAUSE:
+            return ""
+        result = (
+            marker_text.removeprefix("(")
+            .removesuffix(_SHARED_PKG_SUFFIX)
+            .removesuffix(")")
+        )
+        # Eagerly detect any formatting issues that prevent removal
+        assert _SHARED_PKG_MARKER not in result
+        return result
 
 
 def _iter_pylock_packages_raw(
@@ -647,47 +791,34 @@ def _iter_pylock_packages_raw(
         yield raw_pkg
 
 
-_SHARED_PKG_MARKER = "from_lower_layer"
-_SHARED_PKG_CLAUSE = f"sys_platform == {_SHARED_PKG_MARKER!r}"
-_SHARED_PKG_SUFFIX = f") and {_SHARED_PKG_CLAUSE}"
-
-
-def _mark_shared_package(marker: str) -> str:
-    if not marker:
-        return _SHARED_PKG_CLAUSE
-    return f"({marker}{_SHARED_PKG_SUFFIX}"
-
-
-def _remove_shared_package_marker(marker: str) -> str:
-    if marker == _SHARED_PKG_CLAUSE:
-        return ""
-    return marker.removeprefix("(").removesuffix(_SHARED_PKG_SUFFIX)
-
-
 def _iter_pylock_packages(
     pylock_text: str,
     text_origin: str = "unspecified pylock.toml",
     *,
     exclude_shared: bool = False,
+    pkg_only: bool = False,
 ) -> Iterable[LockedPackage]:
     # Parse the package entries from the contents of a pylock.toml file
     raw_pkg_iter = _iter_pylock_packages_raw(
         pylock_text, text_origin, exclude_shared=exclude_shared
     )
     for raw_pkg in raw_pkg_iter:
-        pkg = LockedPackage.from_dict(raw_pkg)
-        if exclude_shared and _SHARED_PKG_MARKER in pkg.marker:
+        pkg = LockedPackage.from_dict(raw_pkg, pkg_only=pkg_only)
+        if exclude_shared and pkg.is_shared:
             continue
         yield pkg
 
 
 def _iter_pylock_packages_from_file(
-    pylock_path: Path, *, exclude_shared: bool = False
+    pylock_path: Path,
+    *,
+    exclude_shared: bool = False,
+    pkg_only: bool = False,
 ) -> Iterable[LockedPackage]:
     # Read package details from a pylock.toml file
     pylock_text = pylock_path.read_text("utf-8")
     return _iter_pylock_packages(
-        pylock_text, str(pylock_path), exclude_shared=exclude_shared
+        pylock_text, str(pylock_path), exclude_shared=exclude_shared, pkg_only=pkg_only
     )
 
 
@@ -1158,6 +1289,7 @@ class LayerSpecBase(ABC):
     dynlib_exclude: list[str] = field(repr=False)
 
     # Optionally specified on creation
+    linux_target: str | None = field(repr=False, default=None)
     macosx_target: str | None = field(repr=False, default=None)
     _index_config: PackageIndexConfig = field(
         repr=False, default_factory=PackageIndexConfig
@@ -1210,7 +1342,6 @@ class LayerSpecBase(ABC):
                 err = f"{layer_name} specifies target platforms not supported by lower layers"
                 hint = f"{[str(t) for t in sorted(unexpected_platforms)]}"
                 raise LayerSpecError(f"{err} ({hint})")
-
         fields["platforms"] = platforms
         # Ensure declared dependencies are syntactically valid
         try:
@@ -1264,6 +1395,11 @@ class LayerSpecBase(ABC):
                     f"({index_name})"
                 )
                 raise LayerSpecError(msg)
+        # Ensure a given linux target translates to a uv python platform suffix
+        try:
+            TargetPlatform._parse_linux_target(self.linux_target)
+        except ValueError as exc:
+            raise LayerSpecError(str(exc)) from None
 
     @property
     def env_name(self) -> EnvNameBuild:
@@ -1314,6 +1450,17 @@ class LayerSpecBase(ABC):
         return result
 
 
+# Only CPython and PyPy are currently supported as potential runtimes
+# If pbs-installer gains support for other runtimes, they will also need
+# to be added here before they can be used with venvstacks
+# These names are the platform_python_implementation values
+# (implementation_name is derived by converting them back to lowercase)
+_PYTHON_IMPLEMENTATION_NAMES = {
+    "cpython": "CPython",
+    "pypy": "PyPy",
+}
+
+
 @dataclass
 class RuntimeSpec(LayerSpecBase):
     """Base runtime layer specification."""
@@ -1326,8 +1473,15 @@ class RuntimeSpec(LayerSpecBase):
     def py_version(self) -> str:
         """Extract just the Python version string from the base runtime identifier."""
         # python_implementation should be of the form "implementation@X.Y.Z"
-        # (this may need adjusting if runtimes other than CPython are ever used...)
+        # (PDM uses the Python version to look up both CPython and PyPy releases)
         return self.python_implementation.partition("@")[2]
+
+    @property
+    def py_implementation(self) -> str:
+        """Extract the expected platform_python_implementation value for the base runtime."""
+        # python_implementation should be of the form "implementation@X.Y.Z"
+        pdm_impl_name = self.python_implementation.partition("@")[0]
+        return _PYTHON_IMPLEMENTATION_NAMES[pdm_impl_name]
 
 
 @dataclass
@@ -1913,6 +2067,7 @@ class LayerEnvBase(ABC):
     _py_version_info: tuple[str, str] = field(init=False, repr=False)
 
     # Derived from layer spec in subclass __post_init__
+    py_implementation: str = field(init=False, repr=False)
     py_version: str = field(init=False, repr=False)
 
     # Set in subclass __post_init__, or when build environments are created
@@ -2054,7 +2209,7 @@ class LayerEnvBase(ABC):
         self.env_lock = EnvironmentLock(
             self.requirements_path,
             (*map(str, self.env_spec.requirements),),
-            self._get_other_lock_inputs(),
+            self._get_lock_validity_inputs(),
             self._get_lock_version_inputs(),
             self.env_spec.versioned,
         )
@@ -2071,11 +2226,21 @@ class LayerEnvBase(ABC):
             self.want_build = self.want_build and targets_platform
             self.want_publish = self.want_publish and targets_platform
 
-    def _get_other_lock_inputs(self) -> tuple[str, ...]:
-        # TODO: consider incorporating the uv config settings into the implicit layer versioning
-        return (f"py_version={'.'.join(self._py_version_info)}",)
+    def _get_lock_validity_inputs(self) -> tuple[str, ...]:
+        # "Validity" inputs are non-dependency inputs that invalidate the lock when changed
+        # TODO: consider incorporating more uv config settings into the lock validity check
+        hash_inputs = [f"py_version={'.'.join(self._py_version_info)}"]
+        linux_target = self.env_spec.linux_target
+        if linux_target:
+            hash_inputs.append(f"linux_target={linux_target}")
+        macosx_target = self.env_spec.macosx_target
+        if macosx_target:
+            hash_inputs.append(f"macosx_target={macosx_target}")
+        return tuple(hash_inputs)
 
     def _get_lock_version_inputs(self) -> tuple[str, ...]:
+        # "Version" inputs are non-dependency inputs that only invalidate the lock
+        # when changed in a layer specification that is using implicit versioning
         return (
             f"env_name={self.env_name}",
             f"is_versioned_layer={self.env_spec.versioned}",
@@ -2213,7 +2378,7 @@ class LayerEnvBase(ABC):
         conditional_constraints: dict[str, list[LockedPackage]] = {}
         for constraint_path in constraint_paths:
             constraining_pkgs = _iter_pylock_packages_from_file(
-                constraint_path, exclude_shared=True
+                constraint_path, exclude_shared=True, pkg_only=True
             )
             for constraining_pkg in constraining_pkgs:
                 constrained_name = constraining_pkg.name
@@ -2238,11 +2403,12 @@ class LayerEnvBase(ABC):
         for constrained_name in constrained_names:
             conditional_pkgs = conditional_constraints.get(constrained_name, [])
             if conditional_pkgs:
-                shadowing_markers: set[str] = set()
+                shadowing_markers: set[Marker] = set()
                 for conditional_pkg in conditional_pkgs:
                     conditional_marker = conditional_pkg.marker
                     if conditional_marker in shadowing_markers:
                         continue
+                    assert conditional_marker is not None
                     shadowing_markers.add(conditional_marker)
                     pinned_constraints.append(conditional_pkg)
             unconditional_pkg = unconditional_constraints.get(constrained_name, None)
@@ -2424,6 +2590,7 @@ class LayerEnvBase(ABC):
     def _run_uv_pip_install(
         self,
         requirements_path: StrPath,
+        linux_target: str | None,
         macosx_target: str | None,
     ) -> subprocess.CompletedProcess[str]:
         # No need to pass in the layer project config,
@@ -2433,10 +2600,15 @@ class LayerEnvBase(ABC):
             "--python",
             str(self.python_path),
             *self.index_config._get_uv_pip_install_args(
-                self.build_path, self.build_platform
+                self.build_path,
+                self.build_platform,
+                linux_target,
             ),
             "--quiet",
             "--no-color",
+            # Everything uv needs for package installation is expected to be
+            # defined in the lock file or the runtime environment
+            "--no-config",
         ]
         uv_pip_args.extend(("-r", os.fspath(requirements_path)))
         env: dict[str, Any] | None = None
@@ -2531,9 +2703,7 @@ class LayerEnvBase(ABC):
         # installed unconditionally on all platforms, or if their environment marker
         # matches the environment marker for the package in the current layer
         for pkg in all_required_packages:
-            pkg_marker = pkg.marker
-            if _SHARED_PKG_MARKER in pkg_marker:
-                pkg.marker = _remove_shared_package_marker(pkg_marker)
+            if pkg.is_shared:
                 shared_packages.append(str(pkg))
                 continue
             required_packages.append(str(pkg))
@@ -2572,6 +2742,45 @@ class LayerEnvBase(ABC):
             pinned_constraints,
         )
 
+    def _match_target_platforms(self, marker: Marker) -> Sequence[TargetPlatform]:
+        target_platforms: list[TargetPlatform] = []
+        py_version = self.py_version
+        py_impl = self.py_implementation
+        for platform in self.env_spec.platforms:
+            env = platform._get_marker_environment(py_version, py_impl)
+            if marker.evaluate(env):
+                target_platforms.append(platform)
+        return target_platforms
+
+    def _have_shared_package(
+        self,
+        pkg: LockedPackage,
+        platforms: Iterable[TargetPlatform],
+        packages_by_name: Mapping[str, Sequence[LockedPackage]],
+    ) -> bool:
+        available_packages = packages_by_name.get(pkg.name, None)
+        if available_packages is None:
+            # No lower layer has a package by that name -> definitely not available
+            return False
+        # Get the list of conditionally installed packages from lower layers
+        markers = [pkg.marker for pkg in available_packages if pkg.marker]
+        if len(markers) < len(available_packages):
+            # One of the layers has an unconditionally installed copy of the package
+            return True
+        py_version = self.py_version
+        py_impl = self.py_implementation
+        # We assume the caller has filtered the list of platforms to only
+        # those where the package being queried will be installed
+        required_platforms = set(platforms)
+        for platform in platforms:
+            env = platform._get_marker_environment(py_version, py_impl)
+            for marker in markers:
+                if marker.evaluate(env):
+                    required_platforms.remove(platform)
+                    break
+        # If all required platforms were found, package is available from lower layers
+        return not required_platforms
+
     def lock_requirements(self, lock_time: datetime | None = None) -> EnvironmentLock:
         """Transitively lock the requirements for this environment."""
         pylock_path, pyproject_path, pinned_constraints = self.get_lock_inputs()
@@ -2609,27 +2818,74 @@ class LayerEnvBase(ABC):
             _LOG.debug(f"Raw uv export output for {self.env_name}:\n{raw_pylock_text}")
             pylock_dict = tomlkit.parse(raw_pylock_text).unwrap()
             raw_pkg: dict[str, Any]
-            if pinned_constraints:
-                # Edit the environment markers for packages provided by lower layers
-                # The components from lower layers are marked as shared if they're either
-                # installed unconditionally on all platforms, or if their environment marker
-                # matches the environment marker for the package in the current layer
-                available_packages = set(pinned_constraints)
-                for raw_pkg in pylock_dict.get("packages", ()):
-                    pkg = LockedPackage.from_dict(raw_pkg)
-                    unconditional_req = LockedPackage(pkg.name, pkg.version, "", "", [])
-                    if (
+            # Process the environment markers for locked packages
+            available_packages = set(pinned_constraints)
+            packages_by_name: dict[str, list[LockedPackage]] = {}
+            for pkg in available_packages:
+                packages_by_name.setdefault(pkg.name, []).append(pkg)
+            num_target_platforms = len(self.env_spec.platforms)
+            raw_packages: list[dict[str, Any]] = pylock_dict.get("packages", [])
+            pkg_reversed_index = -1
+            for raw_pkg in reversed(raw_packages):
+                # Iterate in reverse to allow package deletion
+                pkg = LockedPackage.from_dict(raw_pkg, pkg_only=True)
+                assert not pkg.is_shared  # Should not be set in raw uv output
+                marker = pkg.marker
+                matching_platforms: Sequence[TargetPlatform]
+                if not marker:
+                    matching_platforms = self.env_spec.platforms
+                else:
+                    matching_platforms = self._match_target_platforms(marker)
+                    if not matching_platforms:
+                        # Environment marker check fails for all target platforms,
+                        # so don't even list this package in the layer lock file
+                        _LOG.info(
+                            f"{self.env_name}: dropping irrelevant package {pkg.name!r}"
+                        )
+                        # Assertion after removal is there because indexing
+                        # errors here were previously quite tricky to debug
+                        dropped_pkg = raw_packages.pop(pkg_reversed_index)
+                        assert dropped_pkg is raw_pkg
+                        continue
+                    if len(matching_platforms) == num_target_platforms:
+                        # Environment marker check passes for all target platforms,
+                        # so list this package without a marker in the layer lock file
+                        _LOG.info(
+                            f"{self.env_name}: marking {pkg.name!r} as unconditional"
+                        )
+                        pkg = pkg.as_unconditional()
+                        del raw_pkg["marker"]  # Omit the marker entirely
+                # Kept this package, so bump the offset for any future removals
+                pkg_reversed_index -= 1
+                if available_packages:
+                    # Update the environment markers for packages provided by lower layers
+                    # The components from lower layers are marked as shared if they're either
+                    # installed unconditionally on all platforms, their environment marker
+                    # is an exact text match for the marker in this layer, or their environment
+                    # marker is valid for all of the platforms targeted by this layer where
+                    # this layer's environment marker is also valid
+                    unconditional_req = pkg.as_unconditional()
+                    is_shared = (
                         pkg in available_packages
                         or unconditional_req in available_packages
-                    ):
+                        or self._have_shared_package(
+                            pkg, matching_platforms, packages_by_name
+                        )
+                    )
+                    if is_shared:
+                        _LOG.info(f"{self.env_name}: marking {pkg.name!r} as shared")
                         # Add an unmatchable environment marker to skip package installation
-                        raw_pkg["marker"] = _mark_shared_package(pkg.marker)
+                        raw_pkg["marker"] = pkg._get_shared_marker()
                         # Also clear the "wheels" and "index" metadata for the package
-                        raw_pkg.pop("index", "")
-                        raw_pkg.pop("wheel", "")
+                        raw_pkg.pop("index", None)
+                        raw_pkg.pop("wheels", None)
+                # Source builds are not permitted when installing packages,
+                # so clear all package metadata that enables source builds
+                for pkg_source_key in _PYLOCK_SOURCE_KEYS:
+                    raw_pkg.pop(pkg_source_key, None)
             # Edit any absolute wheel file paths
             pylock_dir_path = pylock_path.parent
-            for raw_pkg in pylock_dict.get("packages", ()):
+            for raw_pkg in raw_packages:
                 for raw_whl in raw_pkg.get("wheels", ()):
                     _name, local_path = _extract_wheel_details(raw_whl)
                     if local_path is not None:
@@ -2695,7 +2951,7 @@ class LayerEnvBase(ABC):
         assert not self.needs_lock()
         return self.env_lock
 
-    def get_install_inputs(self) -> tuple[Path, str | None]:
+    def get_install_inputs(self) -> tuple[Path, str | None, str | None]:
         """Ensure the inputs needed to install into this environment are defined and valid."""
         if not self.env_lock.has_valid_lock:
             lock_diagnostics = _format_json(self.env_lock.get_diagnostics())
@@ -2706,7 +2962,11 @@ class LayerEnvBase(ABC):
             ]
             self._fail_build("\n".join(failure_details))
         requirements_path, _pyproject_path, _pinned_constraints = self.get_lock_inputs()
-        return (requirements_path, self.env_spec.macosx_target)
+        return (
+            requirements_path,
+            self.env_spec.linux_target,
+            self.env_spec.macosx_target,
+        )
 
     def install_requirements(self) -> subprocess.CompletedProcess[str]:
         """Install the locked layer requirements into this environment.
@@ -2919,6 +3179,7 @@ class RuntimeEnv(LayerEnvBase):
         super().__post_init__()
         # Runtimes are their own base Python
         self.base_python_path = self.python_path
+        self.py_implementation = self.env_spec.py_implementation
 
     @property
     def env_spec(self) -> RuntimeSpec:
@@ -2996,6 +3257,7 @@ class LayeredEnvBase(LayerEnvBase):
         super().__post_init__()
         # Base runtime env will be linked when creating the build environments
         self.base_runtime = None
+        self.py_implementation = ""
         self.linked_constraints_paths = []
         self.linked_frameworks = []
 
@@ -3055,6 +3317,7 @@ class LayeredEnvBase(LayerEnvBase):
             self._fail_build(f"Layered environment base runtime already linked {self}")
         # Link the runtime environment
         self.base_runtime = runtime
+        self.py_implementation = runtime.env_spec.py_implementation
         # Link executable paths
         base_python_path = runtime.python_path
         assert base_python_path.is_absolute()
@@ -3171,6 +3434,9 @@ class LayeredEnvBase(LayerEnvBase):
 
     def _ensure_virtual_environment(self) -> subprocess.CompletedProcess[str]:
         # Use the base Python installation to create a new virtual environment
+        # Due to https://github.com/astral-sh/uv/issues/2831 we're not aiming to
+        # replace `python -Im venv` with `uv venv` at this point (we want explicit
+        # control over whether files are symlinked or copied between environments)
         if self.base_python_path is None:
             self._fail_build("Base Python path not set")
         options = ["--without-pip"]
@@ -3306,6 +3572,7 @@ class LayeredEnvBase(LayerEnvBase):
         )
         _LOG.debug(f"Generating {str(env_python_path)!r}...")
         env_python_path.unlink(missing_ok=True)
+        # Write the platform-specific script with platform-specific line endings
         env_python_path.write_text(sh_contents, encoding="utf-8")
         os.chmod(env_python_path, 0o755)
 
@@ -3341,6 +3608,7 @@ class LayeredEnvBase(LayerEnvBase):
             )
         sc_path = self.pylib_path / "sitecustomize.py"
         _LOG.debug(f"Generating {str(sc_path)!r}...")
+        # Write the sitecustomize file with platform-specific line endings
         sc_path.write_text(sc_contents, encoding="utf-8")
 
     def _update_existing_environment(self, *, lock_only: bool = False) -> None:

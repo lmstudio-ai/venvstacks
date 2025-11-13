@@ -15,6 +15,8 @@ from unittest.mock import create_autospec
 
 import pytest
 
+from packaging.markers import Marker
+
 from venvstacks._util import get_env_python, capture_python_output
 from venvstacks._injected.postinstall import DEPLOYED_LAYER_CONFIG
 
@@ -381,25 +383,39 @@ class DeploymentTestCase(unittest.TestCase):
         for env in build_envs:
             pylock_path = env.requirements_path
             normalized_env_name = env.env_spec.env_name.replace(".", "_")
-            assert pylock_path.name == f"pylock.{normalized_env_name}.toml"
+            self.assertEqual(pylock_path.name, f"pylock.{normalized_env_name}.toml")
             pylock_metadata_path = env.env_lock._lock_metadata_path
-            assert (
-                pylock_metadata_path.name == f"pylock.{normalized_env_name}.meta.json"
+            self.assertEqual(
+                pylock_metadata_path.name, f"pylock.{normalized_env_name}.meta.json"
             )
             pylock_text = pylock_path.read_text("utf-8")
             for raw_pkg in _iter_pylock_packages_raw(pylock_text, str(pylock_path)):
+                if "marker" in raw_pkg:
+                    # Check all defined markers are valid
+                    raw_marker = raw_pkg["marker"]
+                    self.assertTrue(raw_marker, "Marker field must not be empty")
+                    Marker(raw_marker)  # Raises an exception if marker is invalid
                 pkg = LockedPackage.from_dict(raw_pkg)
-                for whl, raw_whl in zip(pkg.wheels, raw_pkg.get("wheels", ())):
+                if pkg.is_shared:
+                    self.assertNotIn("wheels", raw_pkg)
+                    self.assertNotIn("index", raw_pkg)
+                    continue
+                self.assertNotIn("sdist", raw_pkg)
+                for whl, raw_whl in zip(pkg.wheels, raw_pkg["wheels"]):
                     local_path = whl.local_path
                     if local_path is None:
                         # Not a local wheel
                         continue
                     # All local paths should be relative to the lock file
-                    assert not local_path.is_absolute(), f"{local_path} is absolute"
+                    self.assertFalse(
+                        local_path.is_absolute(), f"{local_path} is absolute"
+                    )
                     resolved_path = pylock_path.parent / local_path
-                    assert resolved_path.exists(), f"{resolved_path} does not exist"
+                    self.assertTrue(
+                        resolved_path.exists(), f"{resolved_path} does not exist"
+                    )
                     # Ensure local path is stored using POSIX path separators
-                    assert local_path.as_posix() == raw_whl["path"]
+                    self.assertEqual(local_path.as_posix(), raw_whl["path"])
             if env.needs_lock():
                 # A just-locked environment *shouldn't* still indicate it needs locking
                 # Report the first actually failing element of the lock validity check
@@ -430,7 +446,7 @@ class DeploymentTestCase(unittest.TestCase):
                 # base_python should refer to the venv's deployed base Python runtime
                 base_runtime = cast(LayeredEnvBase, env).base_runtime
                 self.assertIsNotNone(base_runtime)
-                assert base_runtime is not None
+                assert base_runtime is not None  # Also notify type checkers
                 relative_base_python = base_runtime.python_path.relative_to(
                     base_runtime.env_path
                 )

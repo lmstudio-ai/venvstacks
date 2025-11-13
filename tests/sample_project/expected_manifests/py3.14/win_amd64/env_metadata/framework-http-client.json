@@ -1,0 +1,18 @@
+{
+  "archive_build": 1,
+  "archive_hashes": {
+    "sha256": "0a7f6dd3057eb1c9c1a188860751023778815f65e4e6e94b7f198fb492aa992a"
+  },
+  "archive_name": "framework-http-client.zip",
+  "archive_size": 873200,
+  "bound_to_implementation": true,
+  "install_target": "framework-http-client",
+  "layer_name": "framework-http-client",
+  "lock_version": 1,
+  "locked_at": "2025-08-27T00:00:00+00:00",
+  "python_implementation": "cpython@3.11.11",
+  "required_layers": [],
+  "requirements_hash": "sha256:780923a1f8fe6070446184a3a0ce3d4891721ab000f7aa3f7bb94524c9beb8fa",
+  "runtime_layer": "cpython-3.11",
+  "target_platform": "win_amd64"
+}
