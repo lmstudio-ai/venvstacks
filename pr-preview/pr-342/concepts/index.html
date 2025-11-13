@@ -296,16 +296,17 @@
 <section id="expected-usage-model">
 <h2>Expected Usage Model<a class="headerlink" href="#expected-usage-model" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> is designed to decompose Python dependency trees into separately
-deployable and updatable layer artifacts, without having to distribute either
-individual package archives, or entire monolithic application execution
+deployable and updatable <a class="reference internal" href="../glossary/#term-layer"><span class="xref std std-term">layers</span></a>, without having to distribute
+either individual package archives, or entire monolithic application execution
 environments.</p>
-<p>This process starts with a “stack definition”, conventionally named
-<code class="docutils literal notranslate"><span class="pre">venvstacks.toml</span></code>. The exact format of this file is described in
-<a class="reference internal" href="../file-formats/#stack-specification-format"><span class="std std-ref">Environment Stack File Formats</span></a>, but the key aspect for understanding the
-expected usage model is that it is used to define multiple stack “layers”,
-broken down into the following categories:</p>
+<p>This process starts with a <a class="reference internal" href="../glossary/#term-stack-definition"><span class="xref std std-term">stack definition</span></a> file, conventionally
+named <code class="docutils literal notranslate"><span class="pre">venvstacks.toml</span></code> (and sometimes referred to as a stack specification).
+The exact format of this file is described in <a class="reference internal" href="../file-formats/#stack-specification-format"><span class="std std-ref">Environment Stack File Formats</span></a>,
+but the key aspect for understanding the expected usage model is that it is used
+to define multiple stack <a class="reference internal" href="../glossary/#term-layer"><span class="xref std std-term">layers</span></a>, broken down into the following
+categories:</p>
 <ul class="simple">
-<li><p>Runtimes: Python runtimes used to execute applications</p></li>
+<li><p>Runtimes: Python runtimes used as the basis for other environment layers</p></li>
 <li><p>Frameworks: common Python packages used across multiple applications</p></li>
 <li><p>Applications: Python modules and packages to implement specific functionality</p></li>
 </ul>
@@ -333,7 +334,7 @@ as follows:</p>
 <ul>
 <li><p>⮩ (use case dependent layer archive distribution mechanism)</p>
 <ul class="simple">
-<li><p>⮩ (unpack archives &amp; run post-installation scripts)</p></li>
+<li><p>⮩ (deploy layer archives - unpack and run post-installation scripts)</p></li>
 </ul>
 <blockquote>
 <div><ul class="simple">
@@ -379,6 +380,19 @@ at runtime by lower layers.</p>
 <p>As the layer lock files are cross-platform, the entire stack can be locked
 anywhere, and the resulting lock files committed to source control alongside
 the stack definition file, ready to be built.</p>
+<p>Alongside each layer lock file, the locking step also generates a layer lock
+metadata file. This metadata file records the combined hash of the transitively
+locked requirement set, together with three separate input hashes:</p>
+<ul class="simple">
+<li><p>Requirements: a combined hash of the declared dependencies for the layer</p></li>
+<li><p>Other validity inputs: a combined hash of other inputs that affect whether
+or not the previously generated layer lock is still considered valid
+(for example, the runtime Python version, the target Linux libc version, or
+the target macOS version)</p></li>
+<li><p>Layer version inputs: a combined hash of other inputs that affect whether or
+not the layer version should be updated for implicitly versioned layers
+(for example, the name and content hash of the launch module in app layers)</p></li>
+</ul>
 <div class="versionchanged">
 <p><span class="versionmodified changed">Changed in version 0.8.0: </span>Layer lock files are now cross-platform (using the <code class="docutils literal notranslate"><span class="pre">pylock.toml</span></code> format)
 and only need to be locked once on any supported platform.
@@ -389,7 +403,131 @@ emitted separate per-layer <code class="docutils literal notranslate"><span clas
 </section>
 <section id="building-layer-environments">
 <h3>Building layer environments<a class="headerlink" href="#building-layer-environments" title="Link to this heading">¶</a></h3>
-<p>WIP…</p>
+<p>The locking step defines which Python packages will be installed into each
+environment. The build step actually creates those environments and installs
+the specified packages. As the build step runs some post-installation checks
+inside the built environments, it must be executed separately on
+each target platform (cross-builds are not currently supported).</p>
+<p>Building an environment primarily consists of creating it with the standard
+library’s <code class="docutils literal notranslate"><span class="pre">venv</span></code> module, and then installing the specified packages with
+<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">compile</span></code>. However, some additional adjustments are also made:</p>
+<ul class="simple">
+<li><p>a <code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code> file is injected into the layer’s <code class="docutils literal notranslate"><span class="pre">site-packages</span></code>
+folder that allows code running in the build environment to import packages
+from the build environments of the layers that it depends on.</p></li>
+<li><p>a <code class="docutils literal notranslate"><span class="pre">share/venv/metadata/venvstacks_layer.json</span></code> file is injected with details
+about the environment, including the expected relative location of its
+runtime layer and the other layers that it depends on</p></li>
+<li><p>a top level <code class="docutils literal notranslate"><span class="pre">postinstall.py</span></code> script is injected that allows the creation of
+suitable <code class="docutils literal notranslate"><span class="pre">pyvenv.cfg</span></code> and <code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code> files (based on the contents
+of <code class="docutils literal notranslate"><span class="pre">venvstacks_layer.json</span></code>) after an environment has been locally exported
+or deployed from a published artifact. The <code class="docutils literal notranslate"><span class="pre">pyvenv.cfg</span></code> and
+<code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code> files used at build time are NOT included when exporting
+or publishing the layer</p></li>
+<li><p>on Linux and macOS, the environment is scanned for dynamic libraries as
+described in <a class="reference internal" href="../design/#dynamic-linking"><span class="std std-ref">How does dynamic linking work across layers?</span></a>, and the symlink to the base Python
+executable potentially replaced with a wrapper script that ensures the
+dynamic libraries from lower layers are available at runtime</p></li>
+</ul>
+</section>
+<section id="locally-exporting-layers">
+<h3>Locally exporting layers<a class="headerlink" href="#locally-exporting-layers" title="Link to this heading">¶</a></h3>
+<p>When iterating on new layer definitions (especially application layers that
+directly include complex launch modules rather than developing them as
+installable Python packages), it is inconvenient to go through the full
+layer publishing and installation process in order to confirm that an
+environment is working as expected.</p>
+<p>The local export command handles this use case by combining the artifact
+publication input filtering step with a local directory copy and execution
+of the <code class="docutils literal notranslate"><span class="pre">postinstall.py</span></code> environment setup script in the exported environment.</p>
+</section>
+<section id="publishing-layer-archives">
+<span id="publishing-archives"></span><h3>Publishing layer archives<a class="headerlink" href="#publishing-layer-archives" title="Link to this heading">¶</a></h3>
+<p>Once the stack layers have been locked and built, they may then be published
+as distributable layer archives. Depending on the use case, separate layer
+specifications may be used for different platforms, with the target platform
+information being encoded directly into the layer names, or else common layer
+specifications may be used across platforms, with the <code class="docutils literal notranslate"><span class="pre">--tag-outputs</span></code>
+option to the publication command being used to automatically add the
+relevant target platform compatibility tag to each built artifact.</p>
+<p>As part of the publication process, metadata files describing each artifact
+(including the other layers it expects to have available when deployed) are
+emitted alongside the generated artifacts.</p>
+<p>These published layer archives are expected to be
+<a class="reference external" href="https://reproducible-builds.org/">reproducible</a>: if the same
+stack definition is built again later with the same
+<a class="reference external" href="https://reproducible-builds.org/docs/perimeter/">build environment</a>,
+then the resulting layer archives will be byte-for-byte identical with
+those produced by the original stack build.</p>
+<p>In general, keeping the versions of <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code>, <code class="docutils literal notranslate"><span class="pre">uv</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">pbs-installer</span></code> consistent should produce consistent output artifacts.
+Note that changing the Python runtime used to create the layer archives <em>may</em>
+change the exact archive structure (and hence the artifact hashes) if the
+standard library’s archiving implementation changes (for example, CPython 3.14
+switched to <code class="docutils literal notranslate"><span class="pre">zlib-ng</span></code> on Windows, which means most archives generated for
+Windows layers will be smaller than previous versions when generated on
+CPython 3.14 or later)</p>
+</section>
+<section id="distributing-layer-archives-to-target-platforms">
+<h3>Distributing layer archives to target platforms<a class="headerlink" href="#distributing-layer-archives-to-target-platforms" title="Link to this heading">¶</a></h3>
+<p>As <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> is designed to build Python stacks for embedding in larger
+applications, it doesn’t make any assumptions regarding the distribution
+mechanism used to upload the layer archives and their metadata, nor the
+mechanism used to determine which archives to download and install at
+runtime.</p>
+<p>The publishes metadata files contain sufficient information to allow these
+selections to be made dynamically based on the information recorded there,
+but it may also make sense in some use cases for the embedding application to
+be tightly coupled to the defined set of available layers and maintain its
+own records of which layers should be installed on each target platform for
+various purposes.</p>
+</section>
+<section id="deploying-layer-archives">
+<h3>Deploying layer archives<a class="headerlink" href="#deploying-layer-archives" title="Link to this heading">¶</a></h3>
+<p>Once layer archives have been downloaded to the relevant target platform,
+they need to be unpacked and then configured using their included
+post-installation scripts.</p>
+<p>To run an application from an application layer:</p>
+<ul class="simple">
+<li><p>the application layer and the layers it depends must all be unpacked into a
+common destination directory on the target system</p></li>
+<li><p>starting from the runtime layer, the post-installation scripts for each
+deployed environment must be executed to ensure it is ready to run from its
+deployed location</p></li>
+<li><p>once all of the environments in the stack have been installed, the
+application may be executed from the application environment use the Python
+interpeter’s <code class="docutils literal notranslate"><span class="pre">-m</span></code> switch with the name of the layer’s launch module</p></li>
+</ul>
+<p>The general process for running the post-installation script when unpacking
+each layer is to:</p>
+<ul class="simple">
+<li><p>Read the layer config from <code class="docutils literal notranslate"><span class="pre">{env_path}share/venv/metadata/venvstacks_layer.json</span></code></p></li>
+<li><p>Resolve <code class="docutils literal notranslate"><span class="pre">base_python</span></code> from the layer config relative to the environment folder</p></li>
+<li><p>Use that resolved path to run <code class="docutils literal notranslate"><span class="pre">{base_python_path}</span> <span class="pre">{env_path}/postinstall.py</span></code></p></li>
+</ul>
+<p>Using the general process avoids having to directly account for the differences
+in virtual environment layouts across operating systems (for example, Windows
+virtual environments contain a <code class="docutils literal notranslate"><span class="pre">Scripts/python.exe</span></code> stub executable, while
+POSIX virtual environments contain a <code class="docutils literal notranslate"><span class="pre">bin/python</span></code> symlink or wrapper script.
+Base runtime environments may not necessarily put the Python executable in
+either of those locations)</p>
+</section>
+<section id="executing-deployed-applications">
+<h3>Executing deployed applications<a class="headerlink" href="#executing-deployed-applications" title="Link to this heading">¶</a></h3>
+<p>The general process to running the launch module for application layers is to:</p>
+<ul class="simple">
+<li><p>Read the layer config from <code class="docutils literal notranslate"><span class="pre">{env_path}share/venv/metadata/venvstacks_layer.json</span></code></p></li>
+<li><p>Read <code class="docutils literal notranslate"><span class="pre">launch_module</span></code> from the layer config</p></li>
+<li><p>Resolve <code class="docutils literal notranslate"><span class="pre">python</span></code> from the layer config relative to the environment folder</p></li>
+<li><p>Use that resolved path to run <code class="docutils literal notranslate"><span class="pre">{python_path}</span> <span class="pre">-m</span> <span class="pre">{launch_module}</span></code>
+(potentially with CLI arguments, depending on the use case)</p></li>
+</ul>
+<p>As for running the post-installation scripts, using the general process avoids
+having to directly account for the differences in virtual environment layouts
+across operating systems.</p>
+<p>Reading the launch module name from the configuration means avoids tightly
+coupling the software running the deployed stack to the exact launch module
+name used in the layer definition.</p>
 </section>
 </section>
 </section>
@@ -454,6 +592,11 @@ emitted separate per-layer <code class="docutils literal notranslate"><span clas
 <li><a class="reference internal" href="#stack-definition-deployment-flow">Stack definition &amp; deployment flow</a></li>
 <li><a class="reference internal" href="#locking-layer-dependencies">Locking layer dependencies</a></li>
 <li><a class="reference internal" href="#building-layer-environments">Building layer environments</a></li>
+<li><a class="reference internal" href="#locally-exporting-layers">Locally exporting layers</a></li>
+<li><a class="reference internal" href="#publishing-layer-archives">Publishing layer archives</a></li>
+<li><a class="reference internal" href="#distributing-layer-archives-to-target-platforms">Distributing layer archives to target platforms</a></li>
+<li><a class="reference internal" href="#deploying-layer-archives">Deploying layer archives</a></li>
+<li><a class="reference internal" href="#executing-deployed-applications">Executing deployed applications</a></li>
 </ul>
 </li>
 </ul>

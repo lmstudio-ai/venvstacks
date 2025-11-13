@@ -323,8 +323,8 @@ were being assembled from individual wheels on the target systems.</p>
 <code class="docutils literal notranslate"><span class="pre">conda-pack</span></code> itself, but because <code class="docutils literal notranslate"><span class="pre">conda</span></code>’s notion of
 <a class="reference external" href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#nested-activation">environment stacking</a>
 refers specifically to accessing the <code class="docutils literal notranslate"><span class="pre">PATH</span></code> entries for other
-environments, it doesn’t refer to being able combine <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>
-across multiple environments.</p>
+environments, it doesn’t refer to being able to combine <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>
+entries across multiple environments.</p>
 <p>Splitting environments into layers the way <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> does
 also doesn’t align well with the way the <code class="docutils literal notranslate"><span class="pre">conda</span></code> dependency
 resolver works, so it ended up making more sense to design

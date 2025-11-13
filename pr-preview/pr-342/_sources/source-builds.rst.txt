@@ -11,8 +11,8 @@ Building Packages from Source
 Disallowing implicit source builds
 ==================================
 
-``venvstacks`` is designed around ensuring that the layer archives that it
-produces are `reproducible <https://reproducible-builds.org/>`__: if the same
+As described in :ref:`publishing-archives`, published layer archives are
+expected to be `reproducible <https://reproducible-builds.org/>`__: if the same
 stack definition is built again later with the same
 `build environment <https://reproducible-builds.org/docs/perimeter/>`__,
 then the resulting layer archives will be byte-for-byte identical with
@@ -111,6 +111,13 @@ also possible. The
 demonstrate such configurations using the public PyTorch repositories,
 as those are the kinds of parallel build scenarios where the simple caching
 proxy override approach may be insufficient.
+
+Note: setting up a simple local repository without hash metadata in the HTTP
+index files may result in layer lock files omitting hash information for
+locally served artifacts. The `misc/gen_repo_links.py`_ helper script provides
+an example of recording hash information after the artifacts have been stored.
+
+.. _`misc/gen_repo_links.py`: https://github.com/lmstudio-ai/venvstacks/blob/main/misc/gen_repo_links.py
 
 .. versionadded: 0.8.0
    Added support for ``uv`` configuration with layer specific adjustments
