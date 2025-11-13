@@ -321,10 +321,9 @@ separately deployable components.</p>
 <h3>Stack definition &amp; deployment flow<a class="headerlink" href="#stack-definition-deployment-flow" title="Link to this heading">¶</a></h3>
 <p>The overall process for defining, building, and deploying environment stacks is
 as follows:</p>
-<ul>
+<ul class="simple">
 <li><p>Define environment stack in <code class="docutils literal notranslate"><span class="pre">venvstacks.toml</span></code></p>
-<blockquote>
-<div><ul>
+<ul>
 <li><p>⮩ <code class="docutils literal notranslate"><span class="pre">venvstacks</span> <span class="pre">lock</span> <span class="pre">...</span></code> 🠪 locked layer requirements &amp; metadata files</p>
 <ul>
 <li><p>⮩ <code class="docutils literal notranslate"><span class="pre">venvstacks</span> <span class="pre">build</span> <span class="pre">...</span></code> 🠪 built layer environments with installed packages</p>
@@ -333,14 +332,11 @@ as follows:</p>
 <li><p>⮩ <code class="docutils literal notranslate"><span class="pre">venvstacks</span> <span class="pre">publish</span> <span class="pre">...</span></code> 🠪 layer archives &amp; metadata files</p>
 <ul>
 <li><p>⮩ (use case dependent layer archive distribution mechanism)</p>
-<ul class="simple">
-<li><p>⮩ (deploy layer archives - unpack and run post-installation scripts)</p></li>
-</ul>
-<blockquote>
-<div><ul class="simple">
+<ul>
+<li><p>⮩ (deploy layer archives - unpack and run post-installation scripts)</p>
+<ul>
 <li><p>⮩ remotely deployed environments</p></li>
 </ul>
-</div></blockquote>
 </li>
 </ul>
 </li>
@@ -349,7 +345,8 @@ as follows:</p>
 </ul>
 </li>
 </ul>
-</div></blockquote>
+</li>
+</ul>
 </li>
 </ul>
 <p>The <a class="reference internal" href="../overview/#overview"><span class="std std-ref">Project Overview</span></a> provides examples of executing the listed commands,

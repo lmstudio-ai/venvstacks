@@ -44,16 +44,16 @@ as follows:
 
 * Define environment stack in `venvstacks.toml`
 
-   * ⮩ `venvstacks lock ...` 🠪 locked layer requirements & metadata files
+  * ⮩ `venvstacks lock ...` 🠪 locked layer requirements & metadata files
 
-     * ⮩ `venvstacks build ...` 🠪 built layer environments with installed packages
+    * ⮩ `venvstacks build ...` 🠪 built layer environments with installed packages
 
-       * ⮩ `venvstacks local-export ...` 🠪 locally deployed environments
-       * ⮩ `venvstacks publish ...` 🠪 layer archives & metadata files
+      * ⮩ `venvstacks local-export ...` 🠪 locally deployed environments
+      * ⮩ `venvstacks publish ...` 🠪 layer archives & metadata files
 
-         * ⮩ (use case dependent layer archive distribution mechanism)
+        * ⮩ (use case dependent layer archive distribution mechanism)
 
-           * ⮩ (deploy layer archives - unpack and run post-installation scripts)
+          * ⮩ (deploy layer archives - unpack and run post-installation scripts)
 
             *  ⮩ remotely deployed environments
 
