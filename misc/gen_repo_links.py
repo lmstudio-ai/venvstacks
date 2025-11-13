@@ -85,7 +85,7 @@ def get_project_artifact_info(project_details_path: Path) -> Sequence[ArtifactLi
                 "sha256": sha256_hash.hexdigest(),
             }
         )
-    return artifact_details
+    return sorted(artifact_details, key=lambda x: x["name"])
 
 
 def write_project_detail_file(project_details_path: Path) -> Path:
