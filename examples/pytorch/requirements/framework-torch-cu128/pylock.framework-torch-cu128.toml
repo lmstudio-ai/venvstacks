@@ -50,30 +50,6 @@ version = "3.0.3"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/08/db/fefacb2136439fc8dd20e797950e749aa1f4997ed584c62cfb8ef7c2be0e/markupsafe-3.0.3-cp311-cp311-macosx_10_9_x86_64.whl"
-upload-time = 2025-09-27T18:36:18Z
-size = 11631
-
-[packages.wheels.hashes]
-sha256 = "1cc7ea17a6824959616c525620e387f6dd30fec8cb44f649e31712db02123dad"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/e1/2e/5898933336b61975ce9dc04decbc0a7f2fee78c30353c5efba7f2d6ff27a/markupsafe-3.0.3-cp311-cp311-macosx_11_0_arm64.whl"
-upload-time = 2025-09-27T18:36:19Z
-size = 12058
-
-[packages.wheels.hashes]
-sha256 = "4bd4cd07944443f5a265608cc6aab442e4f74dff8088b0dfc8238647b8f6ae9a"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/1d/09/adf2df3699d87d1d8184038df46a9c80d78c0148492323f4693df54e17bb/markupsafe-3.0.3-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
-upload-time = 2025-09-27T18:36:20Z
-size = 24287
-
-[packages.wheels.hashes]
-sha256 = "6b5420a1d9450023228968e7e6a9ce57f65d148ab56d2313fcd589eee96a7a50"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/30/ac/0273f6fcb5f42e314c6d8cd99effae6a5354604d461b8d392b5ec9530a54/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl"
 upload-time = 2025-09-27T18:36:22Z
 size = 22940
@@ -88,14 +64,6 @@ size = 21887
 
 [packages.wheels.hashes]
 sha256 = "bc51efed119bc9cfdf792cdeaa4d67e8f6fcccab66ed4bfdd6bde3e59bfcbb2f"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/b2/76/7edcab99d5349a4532a459e1fe64f0b0467a3365056ae550d3bcf3f79e1e/markupsafe-3.0.3-cp311-cp311-musllinux_1_2_aarch64.whl"
-upload-time = 2025-09-27T18:36:24Z
-size = 23692
-
-[packages.wheels.hashes]
-sha256 = "068f375c472b3e7acbe2d5318dea141359e6900156b5b2ba06a30b169086b91a"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/a4/28/6e74cdd26d7514849143d69f0bf2399f929c37dc2b31e6829fd2045b2765/markupsafe-3.0.3-cp311-cp311-musllinux_1_2_riscv64.whl"
@@ -114,28 +82,12 @@ size = 22923
 sha256 = "f9e130248f4462aaa8e2552d547f36ddadbeaa573879158d721bbd33dfe4743a"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/0f/62/d9c46a7f5c9adbeeeda52f5b8d802e1094e9717705a645efc71b0913a0a8/markupsafe-3.0.3-cp311-cp311-win32.whl"
-upload-time = 2025-09-27T18:36:28Z
-size = 14572
-
-[packages.wheels.hashes]
-sha256 = "0db14f5dafddbb6d9208827849fad01f1a2609380add406671a26386cdf15a19"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/83/8a/4414c03d3f891739326e1783338e48fb49781cc915b2e0ee052aa490d586/markupsafe-3.0.3-cp311-cp311-win_amd64.whl"
 upload-time = 2025-09-27T18:36:29Z
 size = 15077
 
 [packages.wheels.hashes]
 sha256 = "de8a88e63464af587c950061a5e6a67d3632e36df62b986892331d4620a35c01"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/35/73/893072b42e6862f319b5207adc9ae06070f095b358655f077f69a35601f0/markupsafe-3.0.3-cp311-cp311-win_arm64.whl"
-upload-time = 2025-09-27T18:36:29Z
-size = 13876
-
-[packages.wheels.hashes]
-sha256 = "3b562dd9e9ea93f13d53989d23a7e775fdfd1066c33494ff43f5418bc8c58a5c"
 
 [[packages]]
 name = "mpmath"

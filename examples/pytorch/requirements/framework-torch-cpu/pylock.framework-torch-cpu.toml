@@ -50,14 +50,6 @@ version = "3.0.3"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/08/db/fefacb2136439fc8dd20e797950e749aa1f4997ed584c62cfb8ef7c2be0e/markupsafe-3.0.3-cp311-cp311-macosx_10_9_x86_64.whl"
-upload-time = 2025-09-27T18:36:18Z
-size = 11631
-
-[packages.wheels.hashes]
-sha256 = "1cc7ea17a6824959616c525620e387f6dd30fec8cb44f649e31712db02123dad"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/e1/2e/5898933336b61975ce9dc04decbc0a7f2fee78c30353c5efba7f2d6ff27a/markupsafe-3.0.3-cp311-cp311-macosx_11_0_arm64.whl"
 upload-time = 2025-09-27T18:36:19Z
 size = 12058
@@ -112,14 +104,6 @@ size = 22923
 
 [packages.wheels.hashes]
 sha256 = "f9e130248f4462aaa8e2552d547f36ddadbeaa573879158d721bbd33dfe4743a"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/0f/62/d9c46a7f5c9adbeeeda52f5b8d802e1094e9717705a645efc71b0913a0a8/markupsafe-3.0.3-cp311-cp311-win32.whl"
-upload-time = 2025-09-27T18:36:28Z
-size = 14572
-
-[packages.wheels.hashes]
-sha256 = "0db14f5dafddbb6d9208827849fad01f1a2609380add406671a26386cdf15a19"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/83/8a/4414c03d3f891739326e1783338e48fb49781cc915b2e0ee052aa490d586/markupsafe-3.0.3-cp311-cp311-win_amd64.whl"
@@ -179,7 +163,7 @@ sha256 = "e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5"
 [[packages]]
 name = "torch"
 version = "2.8.0"
-marker = "sys_platform == 'darwin'"
+marker = "platform_machine == 'arm64' and sys_platform == 'darwin'"
 index = "https://download.pytorch.org/whl/cpu/"
 
 [[packages.wheels]]
@@ -191,7 +175,7 @@ sha256 = "3d05017d19bc99741288e458888283a44b0ee881d53f05f72f8b1cfea8998122"
 [[packages]]
 name = "torch"
 version = "2.8.0+cpu"
-marker = "sys_platform != 'darwin'"
+marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
 index = "https://download.pytorch.org/whl/cpu/"
 
 [[packages.wheels]]

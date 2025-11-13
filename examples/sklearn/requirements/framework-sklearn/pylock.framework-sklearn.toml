@@ -29,14 +29,6 @@ version = "1.7.2"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/43/83/564e141eef908a5863a54da8ca342a137f45a0bfb71d1d79704c9894c9d1/scikit_learn-1.7.2-cp311-cp311-macosx_10_9_x86_64.whl"
-upload-time = 2025-09-09T08:20:32Z
-size = 9331967
-
-[packages.wheels.hashes]
-sha256 = "c7509693451651cd7361d30ce4e86a1347493554f172b1c72a39300fa2aea79e"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/18/d6/ba863a4171ac9d7314c4d3fc251f015704a2caeee41ced89f321c049ed83/scikit_learn-1.7.2-cp311-cp311-macosx_12_0_arm64.whl"
 upload-time = 2025-09-09T08:20:34Z
 size = 8648645
@@ -74,14 +66,6 @@ version = "1.16.2"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/0b/ef/37ed4b213d64b48422df92560af7300e10fe30b5d665dd79932baebee0c6/scipy-1.16.2-cp311-cp311-macosx_10_14_x86_64.whl"
-upload-time = 2025-09-11T17:39:20Z
-size = 36619956
-
-[packages.wheels.hashes]
-sha256 = "6ab88ea43a57da1af33292ebd04b417e8e2eaf9d5aa05700be8d6e1b6501cd92"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/85/ab/5c2eba89b9416961a982346a4d6a647d78c91ec96ab94ed522b3b6baf444/scipy-1.16.2-cp311-cp311-macosx_12_0_arm64.whl"
 upload-time = 2025-09-11T17:39:29Z
 size = 28931117
@@ -96,14 +80,6 @@ size = 20921997
 
 [packages.wheels.hashes]
 sha256 = "87eb178db04ece7c698220d523c170125dbffebb7af0345e66c3554f6f60c173"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/be/7c/33ea3e23bbadde96726edba6bf9111fb1969d14d9d477ffa202c67bec9da/scipy-1.16.2-cp311-cp311-macosx_14_0_x86_64.whl"
-upload-time = 2025-09-11T17:39:40Z
-size = 23523374
-
-[packages.wheels.hashes]
-sha256 = "4e409eac067dcee96a57fbcf424c13f428037827ec7ee3cb671ff525ca4fc34d"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/96/0b/7399dc96e1e3f9a05e258c98d716196a34f528eef2ec55aad651ed136d03/scipy-1.16.2-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.whl"
@@ -144,14 +120,6 @@ size = 38687626
 
 [packages.wheels.hashes]
 sha256 = "91e9e8a37befa5a69e9cacbe0bcb79ae5afb4a0b130fd6db6ee6cc0d491695fa"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/68/72/02f37316adf95307f5d9e579023c6899f89ff3a051fa079dbd6faafc48e5/scipy-1.16.2-cp311-cp311-win_arm64.whl"
-upload-time = 2025-09-11T17:40:30Z
-size = 25503506
-
-[packages.wheels.hashes]
-sha256 = "f3bf75a6dcecab62afde4d1f973f1692be013110cad5338007927db8da73249c"
 
 [[packages]]
 name = "threadpoolctl"

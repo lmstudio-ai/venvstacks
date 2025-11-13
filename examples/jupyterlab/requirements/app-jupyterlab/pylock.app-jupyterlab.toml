@@ -8,6 +8,7 @@ requires-python = "==3.11.*"
 [[packages]]
 name = "anyio"
 version = "4.11.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -21,7 +22,7 @@ sha256 = "0287e96f4d26d4149305414d4e3bc32f0dcd0862365a4bddea19d7a1ec38c4fc"
 [[packages]]
 name = "appnope"
 version = "0.1.4"
-marker = "sys_platform == 'darwin'"
+marker = "platform_machine == 'arm64' and sys_platform == 'darwin'"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -35,6 +36,7 @@ sha256 = "502575ee11cd7a28c0205f379b525beefebab9d161b7c964670864014ed7213c"
 [[packages]]
 name = "argon2-cffi"
 version = "25.1.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -48,6 +50,7 @@ sha256 = "fdc8b074db390fccb6eb4a3604ae7231f219aa669a2652e0f20e16ba513d5741"
 [[packages]]
 name = "argon2-cffi-bindings"
 version = "25.1.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -57,14 +60,6 @@ size = 54121
 
 [packages.wheels.hashes]
 sha256 = "aecba1723ae35330a008418a91ea6cfcedf6d31e5fbaa056a166462ff066d500"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/0a/08/a9bebdb2e0e602dde230bdde8021b29f71f7841bd54801bcfd514acb5dcf/argon2_cffi_bindings-25.1.0-cp39-abi3-macosx_10_9_x86_64.whl"
-upload-time = 2025-07-30T10:01:51Z
-size = 29177
-
-[packages.wheels.hashes]
-sha256 = "2630b6240b495dfab90aebe159ff784d08ea999aa4b0d17efa734055a07d2f44"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/b6/02/d297943bcacf05e4f2a94ab6f462831dc20158614e5d067c35d4e63b9acb/argon2_cffi_bindings-25.1.0-cp39-abi3-macosx_11_0_arm64.whl"
@@ -107,14 +102,6 @@ size = 86777
 sha256 = "1db89609c06afa1a214a69a462ea741cf735b29a57530478c06eb81dd403de99"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/74/cd/15777dfde1c29d96de7f18edf4cc94c385646852e7c7b0320aa91ccca583/argon2_cffi_bindings-25.1.0-cp39-abi3-win32.whl"
-upload-time = 2025-07-30T10:01:57Z
-size = 27180
-
-[packages.wheels.hashes]
-sha256 = "473bcb5f82924b1becbb637b63303ec8d10e84c8d241119419897a26116515d2"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/e2/c6/a759ece8f1829d1f162261226fbfd2c6832b3ff7657384045286d2afa384/argon2_cffi_bindings-25.1.0-cp39-abi3-win_amd64.whl"
 upload-time = 2025-07-30T10:01:58Z
 size = 31715
@@ -122,17 +109,10 @@ size = 31715
 [packages.wheels.hashes]
 sha256 = "a98cd7d17e9f7ce244c0803cad3c23a7d379c301ba618a5fa76a67d116618b98"
 
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/42/b9/f8d6fa329ab25128b7e98fd83a3cb34d9db5b059a9847eddb840a0af45dd/argon2_cffi_bindings-25.1.0-cp39-abi3-win_arm64.whl"
-upload-time = 2025-07-30T10:01:59Z
-size = 27149
-
-[packages.wheels.hashes]
-sha256 = "b0fdbcf513833809c882823f98dc2f931cf659d9a1429616ac3adebb49f5db94"
-
 [[packages]]
 name = "arrow"
 version = "1.3.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -159,6 +139,7 @@ sha256 = "e3078351a059199dd5138cb1c706e6430c05eff2ff136af5eb4790f9d28932e2"
 [[packages]]
 name = "async-lru"
 version = "2.0.5"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -185,6 +166,7 @@ sha256 = "adcf7e2a1fb3b36ac48d97835bb6d8ade15b8dcce26aba8bf1d14847b57a3373"
 [[packages]]
 name = "babel"
 version = "2.17.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -237,15 +219,8 @@ sha256 = "0f212c2744a9bb6de0c56639a6f68afe01ecd92d91f14ae897c4fe7bbeeef0de"
 [[packages]]
 name = "cffi"
 version = "2.0.0"
+marker = "(implementation_name == 'pypy' and platform_machine == 'arm64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/12/4a/3dfd5f7850cbf0d06dc84ba9aa00db766b52ca38d8b86e3a38314d52498c/cffi-2.0.0-cp311-cp311-macosx_10_13_x86_64.whl"
-upload-time = 2025-09-08T23:22:26Z
-size = 184344
-
-[packages.wheels.hashes]
-sha256 = "b4c854ef3adc177950a8dfc81a86f5115d2abd545751a304c5bcf2c2c7283cfe"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/4f/8b/f0e4c441227ba756aafbe78f117485b25bb26b1c059d01f137fa6d14896b/cffi-2.0.0-cp311-cp311-macosx_11_0_arm64.whl"
@@ -254,14 +229,6 @@ size = 180560
 
 [packages.wheels.hashes]
 sha256 = "2de9a304e27f7596cd03d16f1b7c72219bd944e99cc52b84d0145aefb07cbd3c"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/b1/b7/1200d354378ef52ec227395d95c2576330fd22a869f7a70e88e1447eb234/cffi-2.0.0-cp311-cp311-manylinux1_i686.manylinux2014_i686.manylinux_2_17_i686.manylinux_2_5_i686.whl"
-upload-time = 2025-09-08T23:22:29Z
-size = 209613
-
-[packages.wheels.hashes]
-sha256 = "baf5215e0ab74c16e2dd324e8ec067ef59e41125d3eade2b863d294fd5035c92"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/b8/56/6033f5e86e8cc9bb629f0077ba71679508bdf54a9a5e112a3c0b91870332/cffi-2.0.0-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.whl"
@@ -304,28 +271,12 @@ size = 218971
 sha256 = "a05d0c237b3349096d3981b727493e22147f934b20f6f125a3eba8f994bec4a9"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/ab/49/fa72cebe2fd8a55fbe14956f9970fe8eb1ac59e5df042f603ef7c8ba0adc/cffi-2.0.0-cp311-cp311-musllinux_1_2_i686.whl"
-upload-time = 2025-09-08T23:22:38Z
-size = 211972
-
-[packages.wheels.hashes]
-sha256 = "94698a9c5f91f9d138526b48fe26a199609544591f859c870d477351dc7b2414"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/0b/28/dd0967a76aab36731b6ebfe64dec4e981aff7e0608f60c2d46b46982607d/cffi-2.0.0-cp311-cp311-musllinux_1_2_x86_64.whl"
 upload-time = 2025-09-08T23:22:39Z
 size = 217078
 
 [packages.wheels.hashes]
 sha256 = "5fed36fccc0612a53f1d4d9a816b50a36702c28a2aa880cb8a122b3466638743"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/2b/c0/015b25184413d7ab0a410775fdb4a50fca20f5589b5dab1dbbfa3baad8ce/cffi-2.0.0-cp311-cp311-win32.whl"
-upload-time = 2025-09-08T23:22:40Z
-size = 172076
-
-[packages.wheels.hashes]
-sha256 = "c649e3a33450ec82378822b3dad03cc228b8f5963c0c12fc3b1e0ab940f768a5"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/ae/8f/dc5531155e7070361eb1b7e4c1a9d896d0cb21c49f807a6c03fd63fc877e/cffi-2.0.0-cp311-cp311-win_amd64.whl"
@@ -421,14 +372,6 @@ size = 151600
 sha256 = "1e8ac75d72fa3775e0b7cb7e4629cec13b7514d928d15ef8ea06bca03ef01cae"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/64/d4/9eb4ff2c167edbbf08cdd28e19078bf195762e9bd63371689cab5ecd3d0d/charset_normalizer-3.4.3-cp311-cp311-win32.whl"
-upload-time = 2025-08-09T07:56:05Z
-size = 99616
-
-[packages.wheels.hashes]
-sha256 = "6cf8fd4c04756b6b60146d98cd8a77d0cdae0e1ca20329da2ac85eed779b6849"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/f4/9c/996a4a028222e7761a96634d1820de8a744ff4327a00ada9c8942033089b/charset_normalizer-3.4.3-cp311-cp311-win_amd64.whl"
 upload-time = 2025-08-09T07:56:07Z
 size = 107108
@@ -447,7 +390,7 @@ sha256 = "ce571ab16d890d23b5c278547ba694193a45011ff86a9162a71307ed9f86759a"
 [[packages]]
 name = "colorama"
 version = "0.4.6"
-marker = "sys_platform == 'win32'"
+marker = "(platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -491,14 +434,6 @@ size = 3170322
 
 [packages.wheels.hashes]
 sha256 = "c6bdf134457ae0cac6fb68205776be635d31174eeac9541e1d0c062165c6461f"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/f2/13/1b8f87d39cf83c6b713de2620c31205299e6065622e7dd37aff4808dd410/debugpy-1.8.17-cp311-cp311-win32.whl"
-upload-time = 2025-09-17T16:33:33Z
-size = 5155078
-
-[packages.wheels.hashes]
-sha256 = "e79a195f9e059edfe5d8bf6f3749b2599452d3e9380484cd261f6b7cd2c7c4da"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/c2/c5/c012c60a2922cc91caa9675d0ddfbb14ba59e1e36228355f41cab6483469/debugpy-1.8.17-cp311-cp311-win_amd64.whl"
@@ -571,6 +506,7 @@ sha256 = "1c797122d0a86c5cace2e54bf4e819c36223b552017172f32c5c024a6b77e463"
 [[packages]]
 name = "fqdn"
 version = "1.5.1"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -584,6 +520,7 @@ sha256 = "3a179af3761e4df6eb2e026ff9e1a3033d3587bf980a0b1b2e1e5d08d7358014"
 [[packages]]
 name = "h11"
 version = "0.16.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -597,6 +534,7 @@ sha256 = "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"
 [[packages]]
 name = "httpcore"
 version = "1.0.9"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -610,6 +548,7 @@ sha256 = "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"
 [[packages]]
 name = "httpx"
 version = "0.28.1"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -660,6 +599,20 @@ size = 616170
 sha256 = "5f77efafc886d2f023442479b8149e7d86547ad0a979e9da9f045d252f648196"
 
 [[packages]]
+name = "ipython-genutils"
+version = "0.2.0"
+marker = "platform_machine == 'arm64' and sys_platform == 'win32'"
+index = "https://pypi.org/simple"
+
+[[packages.wheels]]
+url = "https://files.pythonhosted.org/packages/fa/bc/9bd3b5c2b4774d5f33b2d544f1460be9df7df2fe42f352135381c347c69a/ipython_genutils-0.2.0-py2.py3-none-any.whl"
+upload-time = 2017-03-13T22:12:25Z
+size = 26343
+
+[packages.wheels.hashes]
+sha256 = "72dd37233799e619666c9f639a9da83c34013a73e8bbc79a7a6348d93c61fab8"
+
+[[packages]]
 name = "ipython-pygments-lexers"
 version = "1.1.1"
 index = "https://pypi.org/simple"
@@ -675,6 +628,7 @@ sha256 = "a9462224a505ade19a605f71f8fa63c2048833ce50abc86768a0d81d876dc81c"
 [[packages]]
 name = "isoduration"
 version = "20.11.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -727,6 +681,7 @@ sha256 = "d9c9b3bc34a5f54d43c35e11ef7cb87d8bdd098c6ace87117a7b7e83e705c1d5"
 [[packages]]
 name = "jsonpointer"
 version = "3.0.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -792,6 +747,7 @@ sha256 = "c28d268fc90fb53f1338ded2eb410704c5449a358406e8a948b75706e24863d0"
 [[packages]]
 name = "jupyter-events"
 version = "0.12.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -805,6 +761,7 @@ sha256 = "6464b2fa5ad10451c3d35fabc75eab39556ae1e2853ad0c0cc31b656731a97fb"
 [[packages]]
 name = "jupyter-lsp"
 version = "2.3.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -818,6 +775,7 @@ sha256 = "e914a3cb2addf48b1c7710914771aaf1819d46b2e5a79b0f917b5478ec93f34f"
 [[packages]]
 name = "jupyter-server"
 version = "2.17.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -831,6 +789,7 @@ sha256 = "e8cb9c7db4251f51ed307e329b81b72ccf2056ff82d50524debde1ee1870e13f"
 [[packages]]
 name = "jupyter-server-terminals"
 version = "0.5.3"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -843,7 +802,22 @@ sha256 = "41ee0d7dc0ebf2809c668e0fc726dfaf258fcd3e769568996ca731b6194ae9aa"
 
 [[packages]]
 name = "jupyterlab"
+version = "2.3.2"
+marker = "platform_machine == 'arm64' and sys_platform == 'win32'"
+index = "https://pypi.org/simple"
+
+[[packages.wheels]]
+url = "https://files.pythonhosted.org/packages/04/e8/9120627b8be36c824dfc3d38a6cb919c3fab09672d4246b9c87fb45910c3/jupyterlab-2.3.2-py3-none-any.whl"
+upload-time = 2021-08-05T20:27:32Z
+size = 7882880
+
+[packages.wheels.hashes]
+sha256 = "2dbb5d1e5e3e0fc8c8cc1e5bec277b8892c7f98e62ee58d43bd4434fe318ab8f"
+
+[[packages]]
+name = "jupyterlab"
 version = "4.4.9"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -869,7 +843,22 @@ sha256 = "841a89020971da1d8693f1a99997aefc5dc424bb1b251fd6322462a1b8842780"
 
 [[packages]]
 name = "jupyterlab-server"
+version = "1.2.0"
+marker = "platform_machine == 'arm64' and sys_platform == 'win32'"
+index = "https://pypi.org/simple"
+
+[[packages.wheels]]
+url = "https://files.pythonhosted.org/packages/b4/eb/560043dcd8376328f8b98869efed66ef68307278406ab99c7f63a34d4ae2/jupyterlab_server-1.2.0-py3-none-any.whl"
+upload-time = 2020-07-05T11:03:41Z
+size = 29127
+
+[packages.wheels.hashes]
+sha256 = "55d256077bf13e5bc9e8fbd5aac51bef82f6315111cec6b712b9a5ededbba924"
+
+[[packages]]
+name = "jupyterlab-server"
 version = "2.27.3"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -883,6 +872,7 @@ sha256 = "e697488f66c3db49df675158a77b3b017520d772c6e1548c7d9bcc5df7944ee4"
 [[packages]]
 name = "lark"
 version = "1.3.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -897,14 +887,6 @@ sha256 = "80661f261fb2584a9828a097a2432efd575af27d20be0fd35d17f0fe37253831"
 name = "markupsafe"
 version = "3.0.3"
 index = "https://pypi.org/simple"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/08/db/fefacb2136439fc8dd20e797950e749aa1f4997ed584c62cfb8ef7c2be0e/markupsafe-3.0.3-cp311-cp311-macosx_10_9_x86_64.whl"
-upload-time = 2025-09-27T18:36:18Z
-size = 11631
-
-[packages.wheels.hashes]
-sha256 = "1cc7ea17a6824959616c525620e387f6dd30fec8cb44f649e31712db02123dad"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/e1/2e/5898933336b61975ce9dc04decbc0a7f2fee78c30353c5efba7f2d6ff27a/markupsafe-3.0.3-cp311-cp311-macosx_11_0_arm64.whl"
@@ -961,14 +943,6 @@ size = 22923
 
 [packages.wheels.hashes]
 sha256 = "f9e130248f4462aaa8e2552d547f36ddadbeaa573879158d721bbd33dfe4743a"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/0f/62/d9c46a7f5c9adbeeeda52f5b8d802e1094e9717705a645efc71b0913a0a8/markupsafe-3.0.3-cp311-cp311-win32.whl"
-upload-time = 2025-09-27T18:36:28Z
-size = 14572
-
-[packages.wheels.hashes]
-sha256 = "0db14f5dafddbb6d9208827849fad01f1a2609380add406671a26386cdf15a19"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/83/8a/4414c03d3f891739326e1783338e48fb49781cc915b2e0ee052aa490d586/markupsafe-3.0.3-cp311-cp311-win_amd64.whl"
@@ -1065,8 +1039,23 @@ size = 5195
 sha256 = "87af6efd6b5e897c81050477ef65c62e2b2f35d51703cae01aff2905b1852e1c"
 
 [[packages]]
+name = "notebook"
+version = "5.2.2"
+marker = "platform_machine == 'arm64' and sys_platform == 'win32'"
+index = "https://pypi.org/simple"
+
+[[packages.wheels]]
+url = "https://files.pythonhosted.org/packages/96/a2/d951ebb7855743f989287486ded73cd3f66915c3ecd9c5c5a0c7ca12377a/notebook-5.2.2-py2.py3-none-any.whl"
+upload-time = 2017-11-28T22:51:43Z
+size = 8028730
+
+[packages.wheels.hashes]
+sha256 = "8d63d3370800e41888e186af68a49ba7cfa1b2155a5de7fc167969c458872587"
+
+[[packages]]
 name = "notebook-shim"
 version = "0.2.4"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1080,6 +1069,7 @@ sha256 = "411a5be4e9dc882a074ccbcae671eda64cceb068767e9a3419096986560e1cef"
 [[packages]]
 name = "overrides"
 version = "7.7.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1132,7 +1122,7 @@ sha256 = "646204b5ee239c396d040b90f9e272e9a8017c630092bf59980beb62fd033887"
 [[packages]]
 name = "pexpect"
 version = "4.9.0"
-marker = "sys_platform != 'emscripten' and sys_platform != 'win32'"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1159,6 +1149,7 @@ sha256 = "e578a81bb873cbb89a41fcc904c7ef523cc18284b7e3b3ccf06aca1403b7ebd3"
 [[packages]]
 name = "prometheus-client"
 version = "0.23.1"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1188,28 +1179,12 @@ version = "7.1.0"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/46/62/ce4051019ee20ce0ed74432dd73a5bb087a6704284a470bb8adff69a0932/psutil-7.1.0-cp36-abi3-macosx_10_9_x86_64.whl"
-upload-time = 2025-09-17T20:14:56Z
-size = 245242
-
-[packages.wheels.hashes]
-sha256 = "76168cef4397494250e9f4e73eb3752b146de1dd950040b29186d0cce1d5ca13"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/38/61/f76959fba841bf5b61123fbf4b650886dc4094c6858008b5bf73d9057216/psutil-7.1.0-cp36-abi3-macosx_11_0_arm64.whl"
 upload-time = 2025-09-17T20:14:58Z
 size = 246682
 
 [packages.wheels.hashes]
 sha256 = "5d007560c8c372efdff9e4579c2846d71de737e4605f611437255e81efcca2c5"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/88/7a/37c99d2e77ec30d63398ffa6a660450b8a62517cabe44b3e9bae97696e8d/psutil-7.1.0-cp36-abi3-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl"
-upload-time = 2025-09-17T20:14:59Z
-size = 287994
-
-[packages.wheels.hashes]
-sha256 = "22e4454970b32472ce7deaa45d045b34d3648ce478e26a04c7e858a0a6e75ff3"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/9d/de/04c8c61232f7244aa0a4b9a9fbd63a89d5aeaf94b2fc9d1d16e2faa5cbb0/psutil-7.1.0-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
@@ -1226,14 +1201,6 @@ size = 293625
 
 [packages.wheels.hashes]
 sha256 = "7d4a113425c037300de3ac8b331637293da9be9713855c4fc9d2d97436d7259d"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/79/87/157c8e7959ec39ced1b11cc93c730c4fb7f9d408569a6c59dbd92ceb35db/psutil-7.1.0-cp37-abi3-win32.whl"
-upload-time = 2025-09-17T20:15:07Z
-size = 244812
-
-[packages.wheels.hashes]
-sha256 = "09ad740870c8d219ed8daae0ad3b726d3bf9a028a198e7f3080f6a1888b99bca"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/bf/e9/b44c4f697276a7a95b8e94d0e320a7bf7f3318521b23de69035540b39838/psutil-7.1.0-cp37-abi3-win_amd64.whl"
@@ -1254,7 +1221,7 @@ sha256 = "6937cb68133e7c97b6cc9649a570c9a18ba0efebed46d8c5dae4c07fa1b67a07"
 [[packages]]
 name = "ptyprocess"
 version = "0.7.0"
-marker = "os_name != 'nt' or (sys_platform != 'emscripten' and sys_platform != 'win32')"
+marker = "(os_name != 'nt' and platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1281,6 +1248,7 @@ sha256 = "1db8e35b67b3d218d818ae653e27f06c3aa420901fa7b081ca98cbedc874e0d0"
 [[packages]]
 name = "pycparser"
 version = "2.23"
+marker = "(implementation_name != 'PyPy' and platform_machine == 'arm64' and sys_platform == 'darwin') or (implementation_name != 'PyPy' and platform_machine == 'aarch64' and sys_platform == 'linux') or (implementation_name != 'PyPy' and platform_machine == 'x86_64' and sys_platform == 'linux') or (implementation_name != 'PyPy' and platform_machine == 'AMD64' and sys_platform == 'win32') or (implementation_name == 'pypy' and platform_machine == 'arm64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1320,6 +1288,7 @@ sha256 = "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"
 [[packages]]
 name = "python-json-logger"
 version = "4.0.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1333,16 +1302,8 @@ sha256 = "af09c9daf6a813aa4cc7180395f50f2a9e5fa056034c9953aec92e381c5ba1e2"
 [[packages]]
 name = "pywin32"
 version = "311"
-marker = "platform_python_implementation != 'PyPy' and sys_platform == 'win32'"
+marker = "(platform_machine == 'AMD64' and platform_python_implementation != 'PyPy' and sys_platform == 'win32') or (platform_machine == 'arm64' and platform_python_implementation != 'PyPy' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/7c/af/449a6a91e5d6db51420875c54f6aff7c97a86a3b13a0b4f1a5c13b988de3/pywin32-311-cp311-cp311-win32.whl"
-upload-time = 2025-07-14T20:13:13Z
-size = 8697031
-
-[packages.wheels.hashes]
-sha256 = "184eb5e436dea364dcd3d2316d577d625c0351bf237c4e9a5fabbcfa5a58b151"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/51/8f/9bb81dd5bb77d22243d33c8397f09377056d5c687aa6d4042bea7fbf8364/pywin32-311-cp311-cp311-win_amd64.whl"
@@ -1363,7 +1324,7 @@ sha256 = "a733f1388e1a842abb67ffa8e7aad0e70ac519e09b0f6a784e65a136ec7cefd2"
 [[packages]]
 name = "pywinpty"
 version = "3.0.2"
-marker = "os_name == 'nt'"
+marker = "os_name == 'nt' and platform_machine == 'AMD64' and sys_platform == 'win32'"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1377,15 +1338,8 @@ sha256 = "327790d70e4c841ebd9d0f295a780177149aeb405bca44c7115a3de5c2054b23"
 [[packages]]
 name = "pyyaml"
 version = "6.0.3"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/6d/16/a95b6757765b7b031c9374925bb718d55e0a9ba8a1b6a12d25962ea44347/pyyaml-6.0.3-cp311-cp311-macosx_10_13_x86_64.whl"
-upload-time = 2025-09-25T21:31:58Z
-size = 185826
-
-[packages.wheels.hashes]
-sha256 = "44edc647873928551a01e7a563d7452ccdebee747728c1080d881d68af7b997e"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/16/19/13de8e4377ed53079ee996e1ab0a9c33ec2faf808a4647b7b4c0d46dd239/pyyaml-6.0.3-cp311-cp311-macosx_11_0_arm64.whl"
@@ -1436,14 +1390,6 @@ size = 794986
 sha256 = "37503bfbfc9d2c40b344d06b2199cf0e96e97957ab1c1b546fd4f87e53e5d3e4"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/45/91/47a6e1c42d9ee337c4839208f30d9f09caa9f720ec7582917b264defc875/pyyaml-6.0.3-cp311-cp311-win32.whl"
-upload-time = 2025-09-25T21:32:08Z
-size = 142543
-
-[packages.wheels.hashes]
-sha256 = "8098f252adfa6c80ab48096053f512f2321f0b998f98150cea9bd23d83e1467b"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/da/e3/ea007450a105ae919a72393cb06f122f288ef60bba2dc64b26e2646fa315/pyyaml-6.0.3-cp311-cp311-win_amd64.whl"
 upload-time = 2025-09-25T21:32:09Z
 size = 158763
@@ -1463,14 +1409,6 @@ size = 1333328
 
 [packages.wheels.hashes]
 sha256 = "226b091818d461a3bef763805e75685e478ac17e9008f49fce2d3e52b3d58b86"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/bd/a0/fc7e78a23748ad5443ac3275943457e8452da67fda347e05260261108cbc/pyzmq-27.1.0-cp311-cp311-manylinux2014_i686.manylinux_2_17_i686.whl"
-upload-time = 2025-09-08T23:07:47Z
-size = 908803
-
-[packages.wheels.hashes]
-sha256 = "0790a0161c281ca9723f804871b4027f2e8b5a528d357c8952d08cd1a9c15581"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/7e/22/37d15eb05f3bdfa4abea6f6d96eb3bb58585fbd3e4e0ded4e743bc650c97/pyzmq-27.1.0-cp311-cp311-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl"
@@ -1497,28 +1435,12 @@ size = 1657531
 sha256 = "15c8bd0fe0dabf808e2d7a681398c4e5ded70a551ab47482067a572c054c8e2e"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/ab/21/e3180ca269ed4a0de5c34417dfe71a8ae80421198be83ee619a8a485b0c7/pyzmq-27.1.0-cp311-cp311-musllinux_1_2_i686.whl"
-upload-time = 2025-09-08T23:07:55Z
-size = 2034786
-
-[packages.wheels.hashes]
-sha256 = "bafcb3dd171b4ae9f19ee6380dfc71ce0390fefaf26b504c0e5f628d7c8c54f2"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/3b/b1/5e21d0b517434b7f33588ff76c177c5a167858cc38ef740608898cd329f2/pyzmq-27.1.0-cp311-cp311-musllinux_1_2_x86_64.whl"
 upload-time = 2025-09-08T23:07:57Z
 size = 1894220
 
 [packages.wheels.hashes]
 sha256 = "e829529fcaa09937189178115c49c504e69289abd39967cd8a4c215761373394"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/03/f2/44913a6ff6941905efc24a1acf3d3cb6146b636c546c7406c38c49c403d4/pyzmq-27.1.0-cp311-cp311-win32.whl"
-upload-time = 2025-09-08T23:07:59Z
-size = 567155
-
-[packages.wheels.hashes]
-sha256 = "6df079c47d5902af6db298ec92151db82ecb557af663098b92f2508c398bb54f"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/23/6d/d8d92a0eb270a925c9b4dd039c0b4dc10abc2fcbc48331788824ef113935/pyzmq-27.1.0-cp311-cp311-win_amd64.whl"
@@ -1545,14 +1467,6 @@ size = 1306279
 sha256 = "452631b640340c928fa343801b0d07eb0c3789a5ffa843f6e1a9cee0ba4eb4fc"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/e8/5e/c3c49fdd0f535ef45eefcc16934648e9e59dace4a37ee88fc53f6cd8e641/pyzmq-27.1.0-cp312-abi3-manylinux2014_i686.manylinux_2_17_i686.whl"
-upload-time = 2025-09-08T23:08:05Z
-size = 895645
-
-[packages.wheels.hashes]
-sha256 = "1c179799b118e554b66da67d88ed66cd37a169f1f23b5d9f0a231b4e8d44a113"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/f8/e5/b0b2504cb4e903a74dcf1ebae157f9e20ebb6ea76095f6cfffea28c42ecd/pyzmq-27.1.0-cp312-abi3-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl"
 upload-time = 2025-09-08T23:08:06Z
 size = 652574
@@ -1577,28 +1491,12 @@ size = 1642070
 sha256 = "0de3028d69d4cdc475bfe47a6128eb38d8bc0e8f4d69646adfbcd840facbac28"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/9c/80/2df2e7977c4ede24c79ae39dcef3899bfc5f34d1ca7a5b24f182c9b7a9ca/pyzmq-27.1.0-cp312-abi3-musllinux_1_2_i686.whl"
-upload-time = 2025-09-08T23:08:11Z
-size = 2021121
-
-[packages.wheels.hashes]
-sha256 = "cf44a7763aea9298c0aa7dbf859f87ed7012de8bda0f3977b6fb1d96745df856"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/46/bd/2d45ad24f5f5ae7e8d01525eb76786fa7557136555cac7d929880519e33a/pyzmq-27.1.0-cp312-abi3-musllinux_1_2_x86_64.whl"
 upload-time = 2025-09-08T23:08:13Z
 size = 1878550
 
 [packages.wheels.hashes]
 sha256 = "f30f395a9e6fbca195400ce833c731e7b64c3919aa481af4d88c3759e0cb7496"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/e6/2f/104c0a3c778d7c2ab8190e9db4f62f0b6957b53c9d87db77c284b69f33ea/pyzmq-27.1.0-cp312-abi3-win32.whl"
-upload-time = 2025-09-08T23:08:15Z
-size = 559184
-
-[packages.wheels.hashes]
-sha256 = "250e5436a4ba13885494412b3da5d518cd0d3a278a1ae640e113c073a5f88edd"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/fc/7f/a21b20d577e4100c6a41795842028235998a643b1ad406a6d4163ea8f53e/pyzmq-27.1.0-cp312-abi3-win_amd64.whl"
@@ -1615,22 +1513,6 @@ size = 552993
 
 [packages.wheels.hashes]
 sha256 = "75a2f36223f0d535a0c919e23615fc85a1e23b71f40c7eb43d7b1dedb4d8f15f"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/4c/c6/c4dcdecdbaa70969ee1fdced6d7b8f60cfabe64d25361f27ac4665a70620/pyzmq-27.1.0-pp311-pypy311_pp73-macosx_10_15_x86_64.whl"
-upload-time = 2025-09-08T23:09:49Z
-size = 836265
-
-[packages.wheels.hashes]
-sha256 = "18770c8d3563715387139060d37859c02ce40718d1faf299abddcdcc6a649066"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/3e/79/f38c92eeaeb03a2ccc2ba9866f0439593bb08c5e3b714ac1d553e5c96e25/pyzmq-27.1.0-pp311-pypy311_pp73-manylinux2014_i686.manylinux_2_17_i686.whl"
-upload-time = 2025-09-08T23:09:51Z
-size = 800208
-
-[packages.wheels.hashes]
-sha256 = "ac25465d42f92e990f8d8b0546b01c391ad431c3bf447683fdc40565941d0604"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/49/0e/3f0d0d335c6b3abb9b7b723776d0b21fa7f3a6c819a0db6097059aada160/pyzmq-27.1.0-pp311-pypy311_pp73-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl"
@@ -1685,6 +1567,7 @@ sha256 = "2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6"
 [[packages]]
 name = "rfc3339-validator"
 version = "0.1.4"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1698,6 +1581,7 @@ sha256 = "24f6ec1eda14ef823da9e36ec7113124b39c04d50a4d3d3a3c2859577e7791fa"
 [[packages]]
 name = "rfc3986-validator"
 version = "0.1.1"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1711,6 +1595,7 @@ sha256 = "2f235c432ef459970b4306369336b9d5dbdda31b510ca1e327636e01f528bfa9"
 [[packages]]
 name = "rfc3987-syntax"
 version = "1.1.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1725,14 +1610,6 @@ sha256 = "6c3d97604e4c5ce9f714898e05401a0445a641cfa276432b0a648c80856f6a3f"
 name = "rpds-py"
 version = "0.27.1"
 index = "https://pypi.org/simple"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/b5/c1/7907329fbef97cbd49db6f7303893bd1dd5a4a3eae415839ffdfb0762cae/rpds_py-0.27.1-cp311-cp311-macosx_10_12_x86_64.whl"
-upload-time = 2025-08-27T12:12:47Z
-size = 371063
-
-[packages.wheels.hashes]
-sha256 = "be898f271f851f68b318872ce6ebebbc62f303b654e43bf72683dbdc25b7c881"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/11/94/2aab4bc86228bcf7c48760990273653a4900de89c7537ffe1b0d6097ed39/rpds_py-0.27.1-cp311-cp311-macosx_11_0_arm64.whl"
@@ -1791,14 +1668,6 @@ size = 401093
 sha256 = "d252f2d8ca0195faa707f8eb9368955760880b2b42a8ee16d382bf5dd807f89a"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/37/8e/ac8577e3ecdd5593e283d46907d7011618994e1d7ab992711ae0f78b9937/rpds_py-0.27.1-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.whl"
-upload-time = 2025-08-27T12:13:00Z
-size = 417969
-
-[packages.wheels.hashes]
-sha256 = "6e5e54da1e74b91dbc7996b56640f79b195d5925c2b78efaa8c5d53e1d88edde"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/66/6d/87507430a8f74a93556fe55c6485ba9c259949a853ce407b1e23fea5ba31/rpds_py-0.27.1-cp311-cp311-musllinux_1_2_aarch64.whl"
 upload-time = 2025-08-27T12:13:01Z
 size = 558302
@@ -1807,28 +1676,12 @@ size = 558302
 sha256 = "ffce0481cc6e95e5b3f0a47ee17ffbd234399e6d532f394c8dce320c3b089c21"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/3a/bb/1db4781ce1dda3eecc735e3152659a27b90a02ca62bfeea17aee45cc0fbc/rpds_py-0.27.1-cp311-cp311-musllinux_1_2_i686.whl"
-upload-time = 2025-08-27T12:13:03Z
-size = 589259
-
-[packages.wheels.hashes]
-sha256 = "a205fdfe55c90c2cd8e540ca9ceba65cbe6629b443bc05db1f590a3db8189ff9"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/7b/0e/ae1c8943d11a814d01b482e1f8da903f88047a962dff9bbdadf3bd6e6fd1/rpds_py-0.27.1-cp311-cp311-musllinux_1_2_x86_64.whl"
 upload-time = 2025-08-27T12:13:04Z
 size = 554983
 
 [packages.wheels.hashes]
 sha256 = "689fb5200a749db0415b092972e8eba85847c23885c8543a8b0f5c009b1a5948"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/b2/d5/0b2a55415931db4f112bdab072443ff76131b5ac4f4dc98d10d2d357eb03/rpds_py-0.27.1-cp311-cp311-win32.whl"
-upload-time = 2025-08-27T12:13:06Z
-size = 217154
-
-[packages.wheels.hashes]
-sha256 = "3182af66048c00a075010bc7f4860f33913528a4b6fc09094a6e7598e462fe39"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/24/75/3b7ffe0d50dc86a6a964af0d1cc3a4a2cdf437cb7b099a4747bbb96d1819/rpds_py-0.27.1-cp311-cp311-win_amd64.whl"
@@ -1845,14 +1698,6 @@ size = 220998
 
 [packages.wheels.hashes]
 sha256 = "2f57af9b4d0793e53266ee4325535a31ba48e2f875da81a9177c9926dfa60746"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/0c/ed/e1fba02de17f4f76318b834425257c8ea297e415e12c68b4361f63e8ae92/rpds_py-0.27.1-pp311-pypy311_pp73-macosx_10_12_x86_64.whl"
-upload-time = 2025-08-27T12:15:51Z
-size = 371402
-
-[packages.wheels.hashes]
-sha256 = "cdfe4bb2f9fe7458b7453ad3c33e726d6d1c7c0a72960bcc23800d77384e42df"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/af/7c/e16b959b316048b55585a697e94add55a4ae0d984434d279ea83442e460d/rpds_py-0.27.1-pp311-pypy311_pp73-macosx_11_0_arm64.whl"
@@ -1911,28 +1756,12 @@ size = 402086
 sha256 = "4848ca84d6ded9b58e474dfdbad4b8bfb450344c0551ddc8d958bf4b36aa837c"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/8f/66/03e1087679227785474466fdd04157fb793b3b76e3fcf01cbf4c693c1949/rpds_py-0.27.1-pp311-pypy311_pp73-manylinux_2_5_i686.manylinux1_i686.whl"
-upload-time = 2025-08-27T12:16:06Z
-size = 419272
-
-[packages.wheels.hashes]
-sha256 = "2bde09cbcf2248b73c7c323be49b280180ff39fadcfe04e7b6f54a678d02a7cf"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/6a/24/e3e72d265121e00b063aef3e3501e5b2473cf1b23511d56e529531acf01e/rpds_py-0.27.1-pp311-pypy311_pp73-musllinux_1_2_aarch64.whl"
 upload-time = 2025-08-27T12:16:08Z
 size = 560003
 
 [packages.wheels.hashes]
 sha256 = "94c44ee01fd21c9058f124d2d4f0c9dc7634bec93cd4b38eefc385dabe71acbf"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/26/ca/f5a344c534214cc2d41118c0699fffbdc2c1bc7046f2a2b9609765ab9c92/rpds_py-0.27.1-pp311-pypy311_pp73-musllinux_1_2_i686.whl"
-upload-time = 2025-08-27T12:16:10Z
-size = 590482
-
-[packages.wheels.hashes]
-sha256 = "df8b74962e35c9249425d90144e721eed198e6555a0e22a563d29fe4486b51f6"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/ce/08/4349bdd5c64d9d193c360aa9db89adeee6f6682ab8825dca0a3f535f434f/rpds_py-0.27.1-pp311-pypy311_pp73-musllinux_1_2_x86_64.whl"
@@ -1945,6 +1774,7 @@ sha256 = "dc23e6820e3b40847e2f4a7726462ba0cf53089512abe9ee16318c366494c17a"
 [[packages]]
 name = "send2trash"
 version = "1.8.3"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1959,6 +1789,7 @@ sha256 = "0c31227e0bd08961c7665474a3d1ef7193929fedda4233843689baa056be46c9"
 [[packages]]
 name = "setuptools"
 version = "80.9.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -1985,6 +1816,7 @@ sha256 = "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"
 [[packages]]
 name = "sniffio"
 version = "1.3.1"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -2024,6 +1856,7 @@ sha256 = "d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695"
 [[packages]]
 name = "terminado"
 version = "0.18.1"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -2061,28 +1894,12 @@ size = 442563
 sha256 = "2436822940d37cde62771cff8774f4f00b3c8024fe482e16ca8387b8a2724db6"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/f2/b5/9b575a0ed3e50b00c40b08cbce82eb618229091d09f6d14bce80fc01cb0b/tornado-6.5.2-cp39-abi3-macosx_10_9_x86_64.whl"
-upload-time = 2025-08-08T18:26:44Z
-size = 440729
-
-[packages.wheels.hashes]
-sha256 = "583a52c7aa94ee046854ba81d9ebb6c81ec0fd30386d96f7640c96dad45a03ef"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/1b/4e/619174f52b120efcf23633c817fd3fed867c30bff785e2cd5a53a70e483c/tornado-6.5.2-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
 upload-time = 2025-08-08T18:26:46Z
 size = 444295
 
 [packages.wheels.hashes]
 sha256 = "b0fe179f28d597deab2842b86ed4060deec7388f1fd9c1b4a41adf8af058907e"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/95/fa/87b41709552bbd393c85dd18e4e3499dcd8983f66e7972926db8d96aa065/tornado-6.5.2-cp39-abi3-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl"
-upload-time = 2025-08-08T18:26:47Z
-size = 443644
-
-[packages.wheels.hashes]
-sha256 = "b186e85d1e3536d69583d2298423744740986018e393d0321df7340e71898882"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/f9/41/fb15f06e33d7430ca89420283a8762a4e6b8025b800ea51796ab5e6d9559/tornado-6.5.2-cp39-abi3-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
@@ -2101,28 +1918,12 @@ size = 444549
 sha256 = "06ceb1300fd70cb20e43b1ad8aaee0266e69e7ced38fa910ad2e03285009ce7c"
 
 [[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/9b/02/c8f4f6c9204526daf3d760f4aa555a7a33ad0e60843eac025ccfd6ff4a93/tornado-6.5.2-cp39-abi3-musllinux_1_2_i686.whl"
-upload-time = 2025-08-08T18:26:53Z
-size = 443973
-
-[packages.wheels.hashes]
-sha256 = "74db443e0f5251be86cbf37929f84d8c20c27a355dd452a5cfa2aada0d001ec4"
-
-[[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/ae/2d/f5f5707b655ce2317190183868cd0f6822a1121b4baeae509ceb9590d0bd/tornado-6.5.2-cp39-abi3-musllinux_1_2_x86_64.whl"
 upload-time = 2025-08-08T18:26:55Z
 size = 443954
 
 [packages.wheels.hashes]
 sha256 = "b5e735ab2889d7ed33b32a459cac490eda71a1ba6857b0118de476ab6c366c04"
-
-[[packages.wheels]]
-url = "https://files.pythonhosted.org/packages/e8/59/593bd0f40f7355806bf6573b47b8c22f8e1374c9b6fd03114bd6b7a3dcfd/tornado-6.5.2-cp39-abi3-win32.whl"
-upload-time = 2025-08-08T18:26:56Z
-size = 445023
-
-[packages.wheels.hashes]
-sha256 = "c6f29e94d9b37a95013bb669616352ddb82e3bfe8326fccee50583caebc8a5f0"
 
 [[packages.wheels]]
 url = "https://files.pythonhosted.org/packages/c7/2a/f609b420c2f564a748a2d80ebfb2ee02a73ca80223af712fca591386cafb/tornado-6.5.2-cp39-abi3-win_amd64.whl"
@@ -2156,6 +1957,7 @@ sha256 = "b74e89e397b1ed28cc831db7aea759ba6640cb3de13090ca145426688ff1ac4f"
 [[packages]]
 name = "types-python-dateutil"
 version = "2.9.0.20251008"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -2182,6 +1984,7 @@ sha256 = "f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"
 [[packages]]
 name = "uri-template"
 version = "1.3.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -2221,6 +2024,7 @@ sha256 = "a7bb560c8aee30f9957e5f9895805edd20602f2d7f720186dfd906e82b4982e1"
 [[packages]]
 name = "webcolors"
 version = "24.11.1"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]
@@ -2247,6 +2051,7 @@ sha256 = "a0af1213f3c2226497a97e2b3aa01a7e4bee4f403f95be16fc9acd2947514a78"
 [[packages]]
 name = "websocket-client"
 version = "1.9.0"
+marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')"
 index = "https://pypi.org/simple"
 
 [[packages.wheels]]

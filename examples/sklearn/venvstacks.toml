@@ -12,6 +12,13 @@ runtime = "cpython-3.11"
 requirements = [
     "scikit-learn",
 ]
+platforms = [
+    "linux_aarch64",
+    "linux_x86_64",
+    "macosx_arm64",
+    "win_amd64",
+    # "win_arm64",  # No wheel available on PyPI
+]
 
 [[frameworks]]
 # Use a non-default GUI due to problems with Tcl/Tk in python-build-standalone:
