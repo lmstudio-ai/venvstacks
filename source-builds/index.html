@@ -385,6 +385,10 @@ also possible. The
 demonstrate such configurations using the public PyTorch repositories,
 as those are the kinds of parallel build scenarios where the simple caching
 proxy override approach may be insufficient.</p>
+<p>Note: setting up a simple local repository without hash metadata in the HTTP
+index files may result in layer lock files omitting hash information for
+locally served artifacts. The <a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/blob/main/misc/gen_repo_links.py">misc/gen_repo_links.py</a> helper script provides
+an example of recording hash information after the artifacts have been stored.</p>
 </section>
 <section id="local-wheel-directories">
 <h3>Local wheel directories<a class="headerlink" href="#local-wheel-directories" title="Link to this heading">¶</a></h3>
