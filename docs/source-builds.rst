@@ -118,6 +118,13 @@ demonstrate such configurations using the public PyTorch repositories,
 as those are the kinds of parallel build scenarios where the simple caching
 proxy override approach may be insufficient.
 
+Note: setting up a simple local repository without hash metadata in the HTTP
+index files may result in layer lock files omitting hash information for
+locally served artifacts. The `misc/gen_repo_links.py`_ helper script provides
+an example of recording hash information after the artifacts have been stored.
+
+.. _`misc/gen_repo_links.py`: https://github.com/lmstudio-ai/venvstacks/blob/main/misc/gen_repo_links.py
+
 .. versionadded: 0.8.0
    Added support for ``uv`` configuration with layer specific adjustments
    (:ref:`release details <changelog-0.8.0>`).
