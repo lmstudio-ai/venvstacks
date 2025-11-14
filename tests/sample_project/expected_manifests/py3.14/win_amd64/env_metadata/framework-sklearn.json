@@ -1,7 +1,7 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "e258a4033c72dd66fe23ea6e605ecd45e65196a6eeb9b16bc4b1cb9a86dd35d2"
+    "sha256": "f24175177735d02f6118bbb533c2f5fc2358bb4be87714f093bbb6f8530e6d2b"
   },
   "archive_name": "framework-sklearn.zip",
   "archive_size": 49014616,
@@ -13,6 +13,6 @@
   "python_implementation": "cpython@3.12.9",
   "required_layers": [],
   "requirements_hash": "sha256:125cf60d6a49066d1c6b089174ecca6dc07a2c80b2c5c30284de0a1b59b8df12",
-  "runtime_layer": "cpython-3.12@2",
+  "runtime_layer": "cpython-3.12@3",
   "target_platform": "win_amd64"
 }

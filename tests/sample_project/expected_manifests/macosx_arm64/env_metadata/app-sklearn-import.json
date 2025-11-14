@@ -3,7 +3,7 @@
   "app_launch_module_hash": "sha256:fcb2d3f009b6bd274509ed8830e4640aadeef0b726b6de833edc16b76a893530",
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "7d33215e98db0903df1dc3898ac27b2d50b1960820f5be3b74741bc0fab754c5"
+    "sha256": "71be19d58c7c21a90ec3b570fae2191c4f7e3bf97efdbc4d72c95a43224f4a38"
   },
   "archive_name": "app-sklearn-import.tar.xz",
   "archive_size": 3616,
@@ -17,6 +17,6 @@
     "framework-sklearn"
   ],
   "requirements_hash": "sha256:c5703805c24f367634ad60e8984ddb3102f1410661bcd3cb8c7b11d884b9973b",
-  "runtime_layer": "cpython-3.12@2",
+  "runtime_layer": "cpython-3.12@3",
   "target_platform": "macosx_arm64"
 }
