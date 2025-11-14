@@ -17,6 +17,7 @@ from typing import Any, ClassVar
 from unittest import mock
 
 import pytest
+import tomlkit
 
 from support import (
     DeploymentTestCase,
@@ -32,6 +33,7 @@ from venvstacks.stacks import (
     LayerInstallationError,
     PackageIndexConfig,
     StackSpec,
+    get_build_platform,
 )
 from venvstacks._util import get_env_python, run_python_command, WINDOWS_BUILD
 
@@ -168,6 +170,19 @@ def _define_build_env(
     for src_path in WHEEL_PROJECT_PATHS:
         dest_path = working_path / src_path.name
         shutil.copyfile(src_path, dest_path)
+    # Set the target platform to reflect that only local wheels will be available
+    build_platform = str(get_build_platform())
+    stack_edit_path = working_path / "venvstacks.toml"
+    stack_spec_dict = tomlkit.parse(stack_edit_path.read_text("utf-8")).unwrap()
+    envs = [
+        *stack_spec_dict["runtimes"],
+        *stack_spec_dict["frameworks"],
+        *stack_spec_dict["applications"],
+    ]
+    for env in envs:
+        env["platforms"] = [build_platform]
+    amended_spec_text = tomlkit.dumps(stack_spec_dict)
+    stack_edit_path.write_text(amended_spec_text, encoding="utf-8", newline="\n")
     # Include "/../" in the spec path in order to test relative path resolution when
     # accessing the Python executables (that can be temperamental, especially on macOS).
     # The subdirectory won't be used for anything, so it being missing shouldn't matter.

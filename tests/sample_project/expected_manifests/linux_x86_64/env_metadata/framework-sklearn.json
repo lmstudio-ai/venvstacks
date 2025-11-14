@@ -1,10 +1,10 @@
 {
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "cde8c8039e7438db389b4a21877973e7704b950ceed5a48910b0c23e84f1b009"
+    "sha256": "c4f14fcda01e1b888f2f66b91bcd2bf7da4dc07404f55d6915aca2cccd614b3c"
   },
   "archive_name": "framework-sklearn.tar.xz",
-  "archive_size": 28097480,
+  "archive_size": 28090324,
   "bound_to_implementation": false,
   "install_target": "framework-sklearn",
   "layer_name": "framework-sklearn",
@@ -13,6 +13,6 @@
   "python_implementation": "cpython@3.12.9",
   "required_layers": [],
   "requirements_hash": "sha256:125cf60d6a49066d1c6b089174ecca6dc07a2c80b2c5c30284de0a1b59b8df12",
-  "runtime_layer": "cpython-3.12@2",
+  "runtime_layer": "cpython-3.12@3",
   "target_platform": "linux_x86_64"
 }

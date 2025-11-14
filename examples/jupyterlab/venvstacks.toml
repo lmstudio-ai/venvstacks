@@ -10,5 +10,14 @@ launch_module = "run_jupyterlab.py"
 runtime = "cpython3.11"
 requirements = ["jupyterlab"]
 
+platforms = [
+    "linux_aarch64",
+    "linux_x86_64",
+    "macosx_arm64",
+    "macosx_x86_64",
+    "win_amd64",
+    # "win_amd64",  # No public pyyaml wheel available
+]
+
 [tool.uv]
 exclude-newer = "2025-10-11T00:00:00Z"

@@ -98,7 +98,7 @@ requirements = [
     "scipy",
     "httpx",
 ]
-platforms = ["macosx_arm64", "macosx_x86_64", "win_amd64", "win_arm64"]
+platforms = ["macosx_arm64", "win_amd64", "win_arm64"]
 
 # Ensure one sample layer is built *only* on Linux
 [[applications]]
