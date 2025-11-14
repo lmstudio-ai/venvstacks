@@ -97,9 +97,10 @@ def test_marker_environments(platform: TargetPlatform, impl_name: str) -> None:
 
 # Check Linux target wheel selection
 _LINUX_TARGET_CASES = [
-    (None, "unknown-linux-gnu"),
-    ("glibc", "unknown-linux-gnu"),
+    (None, "manylinux_2_28"),
+    ("glibc", "manylinux_2_28"),
     ("glibc@2.28", "manylinux_2_28"),
+    ("glibc@2.35", "manylinux_2_35"),
     # For https://github.com/lmstudio-ai/venvstacks/issues/340
     # ("musl", "unknown-linux-musl"),
     # ("musl@1.3", "musllinux_1_3"),  # If uv adds support for this...
@@ -108,8 +109,8 @@ _LINUX_TARGET_CASES = [
 
 @pytest.mark.parametrize("linux_target,expected_name", _LINUX_TARGET_CASES)
 def test_linux_target_parsing(linux_target: str | None, expected_name: str) -> None:
-    platform_name = TargetPlatform._parse_linux_target(linux_target)
-    assert platform_name == expected_name
+    libc_variant, major, minor = TargetPlatform._parse_linux_target(linux_target)
+    assert f"{libc_variant}_{major}_{minor}" == expected_name
 
 
 _LINUX_TARGET_INVALID_CASES = [

@@ -17,6 +17,7 @@ from typing import Any, ClassVar
 from unittest import mock
 
 import pytest
+import tomlkit
 
 from support import (
     DeploymentTestCase,
@@ -29,9 +30,11 @@ from support import (
 
 from venvstacks.stacks import (
     BuildEnvironment,
-    LayerInstallationError,
+    LayerBaseName,
+    LayerLockError,
     PackageIndexConfig,
     StackSpec,
+    get_build_platform,
 )
 from venvstacks._util import get_env_python, run_python_command, WINDOWS_BUILD
 
@@ -112,6 +115,13 @@ class _WheelBuildEnv:
         }
         if venv_bin_dir not in path_envvar:
             env_settings["PATH"] = f"{venv_bin_dir}{os.pathsep}{path_envvar}"
+        # Building local wheels, so ensure the wheel build uses the
+        # same MACOSX_DEPLOYMENT_TARGET setting as the layer installs
+        if sys.platform == "darwin":
+            # ensure the local wheels are built for the running macOS version
+            # even if the calling environment specifies otherwise
+            this_osx = ".".join(platform.mac_ver()[0].split(".")[:2])
+            env_settings["MACOSX_DEPLOYMENT_TARGET"] = this_osx
         result = self._run_uv(
             [
                 "build",
@@ -168,6 +178,24 @@ def _define_build_env(
     for src_path in WHEEL_PROJECT_PATHS:
         dest_path = working_path / src_path.name
         shutil.copyfile(src_path, dest_path)
+    # Set the target platform to reflect that only local wheels will be available
+    build_platform = str(get_build_platform())
+    stack_edit_path = working_path / "venvstacks.toml"
+    stack_spec_dict = tomlkit.parse(stack_edit_path.read_text("utf-8")).unwrap()
+    envs = [
+        *stack_spec_dict["runtimes"],
+        *stack_spec_dict["frameworks"],
+        *stack_spec_dict["applications"],
+    ]
+    for env in envs:
+        env["platforms"] = [build_platform]
+        # the layer build on macOS defaults to targeting an older macOS version,
+        # so ensure uv targets the same version as the wheel builds
+        if sys.platform == "darwin":
+            this_osx = ".".join(platform.mac_ver()[0].split(".")[:2])
+            env["macosx_target"] = this_osx
+    amended_spec_text = tomlkit.dumps(stack_spec_dict)
+    stack_edit_path.write_text(amended_spec_text, encoding="utf-8", newline="\n")
     # Include "/../" in the spec path in order to test relative path resolution when
     # accessing the Python executables (that can be temperamental, especially on macOS).
     # The subdirectory won't be used for anything, so it being missing shouldn't matter.
@@ -278,16 +306,6 @@ class TestBuildEnvironment(DeploymentTestCase):
         # Loading local wheels, so ignore the date based lock resolution pin,
         # but allow for other env vars to be overridden
         os_env_updates.pop("UV_EXCLUDE_NEWER", None)
-        # Building local wheels, so ensure the layer installation uses the
-        # same MACOSX_DEPLOYMENT_TARGET setting as the wheel build
-        if (
-            sys.platform == "darwin"
-            and "MACOSX_DEPLOYMENT_TARGET" not in os_env_updates
-        ):
-            # the layer build may default to targeting an older macOS version,
-            # so ensure uv targets the same version as the wheel builds
-            this_osx = ".".join(platform.mac_ver()[0].split(".")[:2])
-            os_env_updates["MACOSX_DEPLOYMENT_TARGET"] = this_osx
         os_env_patch = mock.patch.dict("os.environ", os_env_updates)
         os_env_patch.start()
         self.addCleanup(os_env_patch.stop)
@@ -305,13 +323,20 @@ class TestBuildEnvironment(DeploymentTestCase):
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
 
+    # TODO: Define a negative Linux wheel selection test case based on renaming
+    #       the built wheel archives. Simply setting `linux_target` won't work
+    #       because the vague `linux_x86_64` tag on the built wheels is always
+    #       accepted regardless of the nominal Linux platform target version.
+
     @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test case")
     def test_macosx_wheel_selection(self) -> None:
         # Local test wheels are built for the current macOS version,
         # so targeting an older macOS version should fail
         major, minor = [*map(int, platform.mac_ver()[0].split(".")[:2])]
-        os.environ["MACOSX_DEPLOYMENT_TARGET"] = f"{major - 1}.{minor}"
-        with pytest.raises(LayerInstallationError, match="framework-both-wheels"):
+        wheel_env_name = LayerBaseName("both-wheels")
+        wheel_env = self.build_env.frameworks[wheel_env_name]
+        wheel_env.env_spec.macosx_target = f"{major - 1}.{minor}"
+        with pytest.raises(LayerLockError, match="framework-both-wheels"):
             self.build_env.create_environments()
 
     def test_locking_and_publishing(self) -> None:

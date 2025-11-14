@@ -5,7 +5,7 @@ name = "cpython-3.11"
 python_implementation = "cpython@3.11.11"
 requirements = [
     # Set up a potential version conflict with the upper layer
-    "numpy < 2.0",
+    "numpy>=2.3.0,<2.3.4",
 ]
 
 [[frameworks]]
@@ -13,5 +13,5 @@ name = "numpy"
 runtime = "cpython-3.11"
 requirements = [
     # Ensure layer locking fails due to the version constraint imposed by the lower layer
-    "numpy >= 2.0",
+    "numpy>=2.3.4",
 ]

@@ -56,6 +56,7 @@ Note that the following config settings are always set by ``venvstacks`` when in
 ``uv``, so any attempts to set them in the common layer configuration will be ignored:
 
 * :uv-config:`cache-keys` (always set to the inputs ``venvstacks`` provides)
+* :uv-config:`environments` (always set based on the layer's target platforms)
 * :uv-config:`no-build` (implicit source builds are always disabled)
 
 .. note::
@@ -146,6 +147,12 @@ All layer specifications may also contain the following optional fields:
   * ``"macosx_arm64"``: macOS on Apple (ARM64/Aarch64) silicon
   * ``"macosx_x86_64"``: macOS on Intel silicon (not currently tested in CI)
 
+  If no platforms are specified, all platforms are targeted for the layer.
+
+  There is no syntax for excluding platforms. If a platform needs to be
+  excluded (e.g. for a lack of available binary wheel distributions), then
+  the other included platforms must be explicitly listed.
+
   .. versionchanged:: 0.3.0
      Added ``win_arm64`` and ``linux_aarch64`` as permitted target platforms
      (:ref:`release details <changelog-0.3.0>`).
@@ -166,21 +173,23 @@ All layer specifications may also contain the following optional fields:
   The following Linux target definitions are supported, mapping to the ``uv``
   platform names shown:
 
-  * not set: ``unknown-linux-gnu`` (version is selected by ``uv``)
-  * ``glibc``: ``unknown-linux-gnu`` (version is selected by ``uv``)
+  * not set: ``manylinux_2_28`` (this version may change in a future release)
+  * ``glibc``: ``manylinux_2_28`` (this version may change in a future release)
   * ``glibc@X.Y``: ``manylinux_X_Y`` (version as specified)
 
-  Setting this field is *required* to build layers containing projects that only
-  publish wheels for Linux libc versions that are newer than the default target.
+  Setting this field is *required* to build layers containing projects that do
+  not publish wheels for Linux libc versions as old as the default target.
 
   The exact default target Linux libc version is determined by the ``uv``
   version (``glibc@2.28`` in ``uv`` 0.9.8).
 
-  Note that it is *not* currently possible to specify that Linux layer builds
-  should :issue:`target musl libc <340>`.
-
   .. versionadded:: 0.8.0
      Added support for setting the target Linux libc variant on a per-layer basis
+     (:ref:`release details <changelog-0.8.0>`).
+
+  .. versionchanged:: 0.8.0
+     The default Linux glibc target compatibility version is now ``2.28`` rather
+     than the version of glibc on the system running the layer build
      (:ref:`release details <changelog-0.8.0>`).
 
 .. _macosx-target:
@@ -191,12 +200,21 @@ All layer specifications may also contain the following optional fields:
   publish wheels for multiple macOS versions.
 
   If this field is not set, the ``MACOSX_DEPLOYMENT_TARGET`` setting from the
-  calling environment is used without modification. If it is not set at all,
-  the default target macOS version is determined by the ``uv`` version
-  (``13.0`` in ``uv`` 0.9.8).
+  calling environment is checked. If it is set, it is used without modification.
+  If it is not set, it will be set to ``13.0`` when installing packages.
 
   .. versionadded:: 0.8.0
      Added support for setting the minimum macOS target on a per-layer basis
+     (:ref:`release details <changelog-0.8.0>`).
+
+  .. versionchanged:: 0.8.0
+     Setting ``MACOSX_DEPLOYMENT_TARGET`` in the calling environment now
+     affects layers that do not otherwise specify a target macOS version
+     (:ref:`release details <changelog-0.8.0>`).
+
+  .. versionchanged:: 0.8.0
+     The default macOS target compatibility version is now ``13.0`` rather than
+     the version of macOS on the system running the layer build
      (:ref:`release details <changelog-0.8.0>`).
 
 * ``dynlib_exclude`` (:toml:`array` of :toml:`strings <string>`):

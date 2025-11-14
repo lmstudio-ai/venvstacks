@@ -13,7 +13,7 @@
   ],
   "archive_build": 1,
   "archive_hashes": {
-    "sha256": "7ae5a1f952fcd42c8de30eaceebd823d2b865ae6e8d25a27b057a9a2013503f8"
+    "sha256": "1f021761e67f13d40645e8eeee2d64d038fa6b72d9adca5c6706a3dce3f839b8"
   },
   "archive_name": "app-scipy-client.tar.xz",
   "archive_size": 3756,
@@ -24,7 +24,7 @@
   "locked_at": "2025-08-27T00:00:00+00:00",
   "python_implementation": "cpython@3.11.11",
   "required_layers": [
-    "framework-scipy@4",
+    "framework-scipy@5",
     "framework-http-client"
   ],
   "requirements_hash": "sha256:ce6c3dc740879e7c8ef8ffacabefb99620690affeb011c6989380fde32796131",

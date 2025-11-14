@@ -24,7 +24,7 @@ from dataclasses import dataclass, field, replace as dc_replace
 from datetime import datetime, timezone
 from enum import StrEnum
 from fnmatch import fnmatch
-from functools import total_ordering
+from functools import lru_cache, total_ordering
 from itertools import chain
 from pathlib import Path
 from typing import (
@@ -48,7 +48,7 @@ from typing import (
     TypeVar,
     TypedDict,
 )
-from urllib.parse import urlparse
+from urllib.parse import unquote as url_unquote, urlparse
 from urllib.request import url2pathname
 
 import tomlkit
@@ -56,7 +56,7 @@ import tomlkit
 from installer.records import parse_record_file
 from packaging.markers import Marker
 from packaging.requirements import InvalidRequirement, Requirement
-from packaging.utils import NormalizedName, canonicalize_name
+from packaging.utils import NormalizedName, canonicalize_name, parse_wheel_filename
 from packaging.version import Version
 
 from . import pack_venv
@@ -175,20 +175,32 @@ _ARCH_ALIASES = {
     "amd64": "x86_64",
 }
 _UV_PYTHON_PLATFORM_NAMES = {
-    "linux": "unknown-linux-gnu",
     "macosx": "apple-darwin",
     "win": "pc-windows-msvc",
 }
-_UV_LINUX_TARGET_NAMES = {
-    "glibc": "unknown-linux-gnu",
-    # For https://github.com/lmstudio-ai/venvstacks/issues/340
-    # "musl": "unknown-linux-musl",
-}
-_UV_LIBC_WHEEL_TAGS = {
+_LIBC_WHEEL_TAGS = {
     "glibc": "manylinux",
     # For https://github.com/lmstudio-ai/venvstacks/issues/340
     # "musl": "musllinux",
 }
+_LIBC_DEFAULT_VERSIONS = {
+    "glibc": (2, 28),
+    # For https://github.com/lmstudio-ai/venvstacks/issues/340
+    # "musl": (1, 2),
+}
+_DEFAULT_LIBC_VARIANT = "glibc"
+_DEFAULT_LIBC_VERSION = _LIBC_DEFAULT_VERSIONS[_DEFAULT_LIBC_VARIANT]
+_DEFAULT_LINUX_WHEEL_TAG = (
+    _LIBC_WHEEL_TAGS[_DEFAULT_LIBC_VARIANT],
+    *_DEFAULT_LIBC_VERSION,
+)
+_DEFAULT_LINUX_TARGET = (
+    f"{_DEFAULT_LIBC_VARIANT}@{_DEFAULT_LIBC_VERSION[0]}.{_DEFAULT_LIBC_VERSION[1]}"
+)
+_DEFAULT_MACOSX_TARGET = "13.0"
+
+TargetVersionLinux = tuple[str, int, int]
+TargetVersionMacOSX = tuple[int, int]
 
 # Evaluate environment markers for cleaner layer locks and summaries
 _ENV_KEYS_BY_PLATFORM = {
@@ -224,6 +236,13 @@ _ENV_KEYS_BY_CPU_ARCH = {
     },
 }
 
+# Support mapping platform compatibility tag prefixes to sys.platform values
+_SYS_PLATFORM_MARKERS = {
+    "win": "win32",
+    "macosx": "darwin",
+    "linux": "linux",
+}
+
 
 # Identify target platforms using strings based on
 # https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#basic-platform-tags
@@ -239,40 +258,97 @@ class TargetPlatform(StrEnum):
     MACOS_INTEL = "macosx_x86_64"
 
     @classmethod
-    def get_all_target_platforms(cls) -> list[Self]:
+    def get_all_target_platforms(cls) -> Sequence[Self]:
         """Sorted list of all defined target platforms."""
         return sorted(set(cls.__members__.values()))
 
+    @classmethod
+    def get_default_target_platforms(cls) -> Sequence[Self]:
+        """List of the platforms targeted by default."""
+        # Explicit cast needed because mypy doesn't correctly infer
+        # that the enum entries are instances of the class being defined
+        return cast(
+            list[Self],
+            [
+                cls.LINUX,
+                cls.LINUX_AARCH64,
+                cls.MACOS_APPLE,
+                # macOS Intel silicon is still targeted by default for now,
+                # but may be removed in future due to macOS 27+ dropping support
+                cls.MACOS_INTEL,
+                cls.WINDOWS,
+                cls.WINDOWS_ARM64,
+            ],
+        )
+
+    @lru_cache
+    def split_arch(self) -> tuple[str, str]:
+        """Split the target platform into its platform name and CPU arch."""
+        platform, _, arch = self.partition("_")
+        return platform, arch
+
+    @lru_cache
+    def is_linux_target(self) -> bool:
+        """Returns ``True`` for Linux targets, ``False`` otherwise."""
+        return self.startswith("linux_")
+
+    @lru_cache
+    def is_macosx_target(self) -> bool:
+        """Returns ``True`` for macOS targets, ``False`` otherwise."""
+        return self.startswith("macosx_")
+
+    @lru_cache
+    def is_windows_target(self) -> bool:
+        """Returns ``True`` for Windows targets, ``False`` otherwise."""
+        return self.startswith("win_")
+
     @staticmethod
-    def _parse_linux_target(linux_target: str | None) -> str:
+    def _default_linux_target() -> str:
+        return _DEFAULT_LINUX_TARGET
+
+    @staticmethod
+    @lru_cache
+    def _parse_linux_target(linux_target: str | None) -> TargetVersionLinux:
         # Convert a layer spec linux target into a uv Python platform name
         # https://docs.astral.sh/uv/reference/cli/#uv-pip-install--python-platform
-        if linux_target is None:
-            return _UV_LINUX_TARGET_NAMES["glibc"]
+        if linux_target is None or linux_target == "glibc":
+            return _DEFAULT_LINUX_WHEEL_TAG
         variant, has_version, version = linux_target.partition("@")
-        if variant not in _UV_LINUX_TARGET_NAMES:
-            expected_suffixes = sorted(_UV_LINUX_TARGET_NAMES)
+        if variant not in _LIBC_WHEEL_TAGS:
+            expected_suffixes = sorted(_LIBC_WHEEL_TAGS)
             err = f"Linux libc variant must be one of {expected_suffixes}, not {variant!r}"
             raise ValueError(err)
+        libc_wheel_tag = _LIBC_WHEEL_TAGS[variant]
         if not has_version:
-            return _UV_LINUX_TARGET_NAMES[variant]
-        libc_wheel_tag = _UV_LIBC_WHEEL_TAGS[variant]
+            return (libc_wheel_tag, *_LIBC_DEFAULT_VERSIONS[variant])
         try:
             major, minor = map(int, version.split("."))
         except Exception:
             err = f"Linux libc version must be of the form 'X.Y', not {version!r}"
             raise ValueError(err) from None
-        return f"{libc_wheel_tag}_{major}_{minor}"
+        return (libc_wheel_tag, major, minor)
 
-    def _as_uv_python_platform(self, linux_target: str | None) -> str:
-        platform, _, arch = self.partition("_")
+    @staticmethod
+    def _default_macosx_target() -> str:
+        return os.environ.get("MACOSX_DEPLOYMENT_TARGET", _DEFAULT_MACOSX_TARGET)
+
+    @staticmethod
+    def _parse_macosx_target(macosx_target: str) -> tuple[int, int]:
+        major, minor = map(int, f"{macosx_target}.0".split(".")[:2])
+        return major, minor
+
+    @lru_cache
+    def _as_uv_python_platform(self, linux_target: TargetVersionLinux) -> str:
+        platform, arch = self.split_arch()
         uv_arch = _ARCH_ALIASES.get(arch, arch)
-        if platform != "linux" or linux_target is None:
+        if platform != "linux":
             uv_platform = _UV_PYTHON_PLATFORM_NAMES.get(platform, platform)
         else:
-            uv_platform = self._parse_linux_target(linux_target)
+            libc_wheel_tag, major, minor = linux_target
+            uv_platform = f"{libc_wheel_tag}_{major}_{minor}"
         return f"{uv_arch}-{uv_platform}"
 
+    @lru_cache
     def _get_marker_environment(
         self, py_version: str, py_implementation: str
     ) -> dict[str, str]:
@@ -287,10 +363,107 @@ class TargetPlatform(StrEnum):
             "python_version": py_version.rpartition(".")[0],
             "python_full_version": py_version,
         }
-        platform, _, arch = self.partition("_")
+        platform, arch = self.split_arch()
         env.update(_ENV_KEYS_BY_PLATFORM[platform])
         env.update(_ENV_KEYS_BY_CPU_ARCH[arch])
         return env
+
+
+def _platform_tags_from_wheels(wheel_names: Iterable[str]) -> set[str]:
+    available_platform_tags: set[str] = set()
+    for wheel_name in wheel_names:
+        _name, _version, _build, tags = parse_wheel_filename(wheel_name)
+        available_platform_tags.update(tag.platform for tag in tags)
+    return available_platform_tags
+
+
+def _ensure_wheel_availability(
+    target_platforms: Iterable[TargetPlatform],
+    wheel_names: Iterable[str],
+    macosx_target_info: TargetVersionMacOSX,
+    linux_target_info: TargetVersionLinux,
+) -> set[TargetPlatform]:
+    """Ensure wheels are available for all specified platforms.
+
+    Returns the set of expected platforms with wheels missing.
+    """
+    # Note: this assumes that the Python version, implementation and ABI details
+    # have all been checked by the underlying locking process (valid for `uv`).
+    # It therefore only checks the platform tags cover all target platforms
+    wheel_platform_tags = _platform_tags_from_wheels(wheel_names)
+    if "any" in wheel_platform_tags:
+        # Cross-platform wheel -> all platforms are compatible -> no error
+        return set()
+    missing_platforms = set(target_platforms)
+    compatible_platforms: set[TargetPlatform] = set()
+    libc_wheel_tag, libc_major, libc_minor = linux_target_info
+    target_libc_version = (libc_major, libc_minor)
+    macosx_major, macosx_minor = macosx_target_info
+    target_macosx_version = (macosx_major, macosx_minor)
+    wheel_tag_details: dict[tuple[str, str], list[str]] = {}
+    for wheel_platform_tag in sorted(wheel_platform_tags):
+        platform, _, details = wheel_platform_tag.partition("_")
+        details, has_details, arch = details.rpartition("_")
+        if arch == "64":
+            # handle the "x86_64" special case
+            details, has_details, arch = details.rpartition("_")
+            if arch != "x86":
+                # Unknown CPU architecture, so just ignore the wheel details
+                continue
+            arch += "_64"  # Add the trailing suffix back to the architecture
+        # Translate manylinux2014 to a versioned manylinux tag
+        # No need to worry about manylinux1 (it's so old uv doesn't support it)
+        if platform == "manylinux2014":
+            platform = "manylinux"
+            has_details = "_"
+            details = "2_17"
+        if not has_details:
+            # Simple tag that aligns with the TargetPlatform enum
+            continue
+        wheel_tag_details.setdefault((platform, arch), []).append(details)
+    for target_platform in missing_platforms:
+        # Exact tag matches are always accepted, even on Linux and macOS
+        # This is to accept naive local builds that omit the version details
+        if str(target_platform) in wheel_platform_tags:
+            compatible_platforms.add(target_platform)
+        # Check for additional platform specific acceptable tag variations
+        if target_platform.is_linux_target():
+            # Check libc version compatibility
+            _, arch = target_platform.split_arch()
+            libc_tag_details = wheel_tag_details.get((libc_wheel_tag, arch))
+            if libc_tag_details:
+                # Acceptable if there is a wheel with a lower bound that is
+                # less than or equal to the layer's minimum supported version
+                for tag_details in libc_tag_details:
+                    tag_version = tuple(map(int, tag_details.split("_")[:2]))
+                    if tag_version <= target_libc_version:
+                        compatible_platforms.add(target_platform)
+                        break
+            continue
+        elif target_platform.is_macosx_target():
+            # Check target OS version compatibility
+            platform, arch = target_platform.split_arch()
+            macosx_tag_details = wheel_tag_details.get((platform, arch), [])
+            macosx_tag_details.extend(
+                # Note: this assumes there are only 2 macOS CPU architectures
+                #       (arm64 and x86_64)
+                wheel_tag_details.get((platform, "universal2"), [])
+            )
+            if macosx_tag_details:
+                # Acceptable if there is a wheel with a lower bound that is
+                # less than or equal to the layer's minimum supported version
+                for tag_details in macosx_tag_details:
+                    tag_version = tuple(map(int, tag_details.split("_")[:2]))
+                    if tag_version <= target_macosx_version:
+                        compatible_platforms.add(target_platform)
+                        break
+            continue
+        if target_platform.is_windows_target():
+            # Windows wheels currently don't support target environment bounds
+            continue
+        assert False, f"Unknown target platform: {target_platform}"
+    missing_platforms -= compatible_platforms
+    return missing_platforms
 
 
 TargetPlatforms = TargetPlatform  # Use plural alias when the singular name reads oddly
@@ -389,7 +562,7 @@ class PackageIndexConfig:
         self,
         build_path: Path,
         target_platform: TargetPlatform,
-        linux_target: str | None,
+        linux_target: TargetVersionLinux,
     ) -> list[str]:
         # Instruct `uv` to potentially target older (or newer) platform versions
         # This respects MACOSX_DEPLOYMENT_TARGET on macOS and allows targeting
@@ -584,7 +757,7 @@ def _hash_flat_reqs_file(requirements_path: Path) -> str | None:
 
 def _extract_wheel_details(
     locked_wheel: Mapping[str, Any],
-) -> tuple[str | None, Path | None]:
+) -> tuple[str, Path | None]:
     # Wheel name can be reported in one of three ways
     name: str | None = locked_wheel.get("name", None)
     raw_local_path: str | None = locked_wheel.get("path", None)
@@ -593,22 +766,23 @@ def _extract_wheel_details(
         local_path = Path(raw_local_path)
         if name is None:
             name = local_path.name
-        return name, local_path
-    raw_url: str = locked_wheel.get("url", None)
-    if raw_url is not None:
-        parsed_url = urlparse(raw_url)
-        url_path = parsed_url.path
-        if parsed_url.scheme == "file":
-            if parsed_url.netloc:
-                # Handle UNC paths on Windows
-                url_path = r"\\" + parsed_url.netloc + url_path
-            local_path = Path(url2pathname(url_path))
-            if name is None:
-                name = local_path.name
-        elif name is None:
-            # Convert to path to handle mixtures of forward and backslashes
-            name = Path(url_path).name
-    return name, local_path
+    else:
+        raw_url: str = locked_wheel.get("url", None)
+        if raw_url is not None:
+            parsed_url = urlparse(raw_url)
+            url_path = parsed_url.path
+            if parsed_url.scheme == "file":
+                if parsed_url.netloc:
+                    # Handle UNC paths on Windows
+                    url_path = r"\\" + parsed_url.netloc + url_path
+                local_path = Path(url2pathname(url_path))
+                if name is None:
+                    name = local_path.name
+            elif name is None:
+                # Convert to path to handle mixtures of forward and backslashes
+                name = Path(url_path).name
+    assert name is not None  # lock file generation is wrong if this ever fails
+    return url_unquote(name), local_path
 
 
 @dataclass
@@ -1245,21 +1419,21 @@ class LayerSpecBase(ABC):
     name: LayerBaseName
     versioned: bool
     requirements: list[Requirement] = field(repr=False)
-    platforms: list[TargetPlatforms] = field(repr=False)
+    platforms: list[TargetPlatform] = field(repr=False)
     package_indexes: dict[NormalizedName, str] = field(repr=False)
     priority_indexes: list[str] = field(repr=False)
     dynlib_exclude: list[str] = field(repr=False)
+    linux_target: str = field(repr=False)
+    macosx_target: str = field(repr=False)
 
     # Optionally specified on creation
-    linux_target: str | None = field(repr=False, default=None)
-    macosx_target: str | None = field(repr=False, default=None)
     _index_config: PackageIndexConfig = field(
         repr=False, default_factory=PackageIndexConfig
     )
 
     @classmethod
-    def _infer_platforms(cls, fields: Mapping[str, Any]) -> list[TargetPlatform]:
-        return TargetPlatforms.get_all_target_platforms()
+    def _infer_platforms(cls, fields: Mapping[str, Any]) -> Sequence[TargetPlatform]:
+        return TargetPlatforms.get_default_target_platforms()
 
     @staticmethod
     def _get_layer_name(data: Mapping[str, Any]) -> Any:
@@ -1278,12 +1452,14 @@ class LayerSpecBase(ABC):
         fields.setdefault("package_indexes", {})
         fields.setdefault("priority_indexes", [])
         fields.setdefault("dynlib_exclude", [])
+        fields.setdefault("linux_target", TargetPlatform._default_linux_target())
+        fields.setdefault("macosx_target", TargetPlatform._default_macosx_target())
         # Index overrides are expected to be have been applied externally
         fields.pop("index_overrides", None)
         # Ensure target platforms are known
         raw_platforms = fields.get("platforms", None)
         inferred_platforms = cls._infer_platforms(fields)
-        platforms: list[TargetPlatform]
+        platforms: Sequence[TargetPlatform]
         if raw_platforms is None:
             platforms = inferred_platforms
         else:
@@ -1309,7 +1485,7 @@ class LayerSpecBase(ABC):
         try:
             requirements = [Requirement(req) for req in fields["requirements"]]
         except InvalidRequirement as exc:
-            err = f"invalid requirement syntax: {exc}"
+            err = f"{layer_name} uses invalid requirement syntax: {exc}"
             raise LayerSpecError(err) from exc
         fields["requirements"] = requirements
         return cls(**fields)
@@ -1357,9 +1533,14 @@ class LayerSpecBase(ABC):
                     f"({index_name})"
                 )
                 raise LayerSpecError(msg)
-        # Ensure a given linux target translates to a uv python platform suffix
+        # Parse the Linux target (which validates and caches the result)
         try:
             TargetPlatform._parse_linux_target(self.linux_target)
+        except ValueError as exc:
+            raise LayerSpecError(str(exc)) from None
+        # Parse the macOS target (which validates and caches the result)
+        try:
+            TargetPlatform._parse_macosx_target(self.macosx_target)
         except ValueError as exc:
             raise LayerSpecError(str(exc)) from None
 
@@ -1384,6 +1565,14 @@ class LayerSpecBase(ABC):
     def targets_platform(self, target_platform: str | TargetPlatform) -> bool:
         """Returns `True` if the layer will be built for the given target platform."""
         return target_platform in self.platforms
+
+    def _targets_linux(self) -> bool:
+        """Returns `True` if the layer will be built for at least one Linux platform."""
+        return any(platform.is_linux_target() for platform in self.platforms)
+
+    def _targets_macosx(self) -> bool:
+        """Returns `True` if the layer will be built for at least one macOS platform."""
+        return any(platform.is_macosx_target() for platform in self.platforms)
 
     def to_dict(self) -> Mapping[str, Any]:
         """Convert spec details to a JSON-compatible dict."""
@@ -2191,13 +2380,16 @@ class LayerEnvBase(ABC):
     def _get_lock_validity_inputs(self) -> tuple[str, ...]:
         # "Validity" inputs are non-dependency inputs that invalidate the lock when changed
         # TODO: consider incorporating more uv config settings into the lock validity check
+        # Changing the Python version may result in the included wheels becoming
+        # incompatible even the transitive dependency tree remains the same
         hash_inputs = [f"py_version={'.'.join(self._py_version_info)}"]
-        linux_target = self.env_spec.linux_target
-        if linux_target:
-            hash_inputs.append(f"linux_target={linux_target}")
-        macosx_target = self.env_spec.macosx_target
-        if macosx_target:
-            hash_inputs.append(f"macosx_target={macosx_target}")
+        # Changing the target OS versions may render a previous lock invalid if
+        # the included wheels are too new to support the specified OS version
+        env_spec = self.env_spec
+        if env_spec._targets_linux():
+            hash_inputs.append(f"linux_target={env_spec.linux_target}")
+        if env_spec._targets_macosx():
+            hash_inputs.append(f"macosx_target={env_spec.macosx_target}")
         return tuple(hash_inputs)
 
     def _get_lock_version_inputs(self) -> tuple[str, ...]:
@@ -2548,11 +2740,10 @@ class LayerEnvBase(ABC):
     def _run_uv_pip_install(
         self,
         requirements_path: StrPath,
-        linux_target: str | None,
-        macosx_target: str | None,
     ) -> subprocess.CompletedProcess[str]:
         # No need to pass in the layer project config,
         # as everything is captured in the pylock.toml file
+        env_spec = self.env_spec
         uv_pip_args = [
             "install",
             "--python",
@@ -2560,7 +2751,7 @@ class LayerEnvBase(ABC):
             *self.index_config._get_uv_pip_install_args(
                 self.build_path,
                 self.build_platform,
-                linux_target,
+                TargetPlatform._parse_linux_target(env_spec.linux_target),
             ),
             "--quiet",
             "--no-color",
@@ -2569,9 +2760,7 @@ class LayerEnvBase(ABC):
             "--no-config",
         ]
         uv_pip_args.extend(("-r", os.fspath(requirements_path)))
-        env: dict[str, Any] | None = None
-        if macosx_target is not None:
-            env = {"MACOSX_DEPLOYMENT_TARGET": macosx_target}
+        env = {"MACOSX_DEPLOYMENT_TARGET": env_spec.macosx_target}
         try:
             return self._run_uv_pip(uv_pip_args, env=env)
         except subprocess.CalledProcessError as exc:
@@ -2757,37 +2946,51 @@ class LayerEnvBase(ABC):
             self.want_lock or self.want_lock_reset or self.env_lock.needs_full_lock
         )
         if want_full_lock:
-            _LOG.info(f"Locking {self.env_name} (generating {str(pylock_path)!r})")
+            env_name = self.env_name
+            _LOG.info(f"Locking {env_name} (generating {str(pylock_path)!r})")
             _LOG.debug(
-                f"uv lock input for {self.env_name}:\n"
+                f"uv lock input for {env_name}:\n"
                 f"{(pyproject_path / 'pyproject.toml').read_text('utf-8')}"
             )
             self._run_uv_lock(pyproject_path)
             _LOG.debug(
-                f"uv lock output for {self.env_name}:\n"
+                f"uv lock output for {env_name}:\n"
                 f"{(pyproject_path / 'uv.lock').read_text('utf-8')}"
             )
             self._run_uv_export_requirements(pylock_path, pyproject_path)
             if not pylock_path.exists():
                 self._fail_build(f"Failed to generate {str(pylock_path)!r}")
-            # We want to amend the lockfile to skip installing packages provided by lower layers
+            # We want to amend the lockfile to skip installing packages provided by lower layers,
+            # while also ensuring that the lock file provides wheels for all target platforms
             # We also want to remove the default header comment and instead add our own
+            # TODO: Given the complexity of this postprocessing, it should really be
+            #       refactored and unit tested with known inputs and expected outputs
             raw_pylock_text = pylock_path.read_text("utf-8")
-            _LOG.debug(f"Raw uv export output for {self.env_name}:\n{raw_pylock_text}")
+            _LOG.debug(f"Raw uv export output for {env_name}:\n{raw_pylock_text}")
             pylock_dict = tomlkit.parse(raw_pylock_text).unwrap()
             raw_pkg: dict[str, Any]
-            # Process the environment markers for locked packages
+            pylock_dir_path = pylock_path.parent
+            env_spec = self.env_spec
+            parsed_linux_target = TargetPlatform._parse_linux_target(
+                env_spec.linux_target
+            )
+            parsed_macosx_target = TargetPlatform._parse_macosx_target(
+                env_spec.macosx_target
+            )
+            # Process the environment markers and other details for locked packages
             available_packages = set(pinned_constraints)
             packages_by_name: dict[str, list[LockedPackage]] = {}
             for pkg in available_packages:
                 packages_by_name.setdefault(pkg.name, []).append(pkg)
-            num_target_platforms = len(self.env_spec.platforms)
+            num_target_platforms = len(env_spec.platforms)
             raw_packages: list[dict[str, Any]] = pylock_dict.get("packages", [])
             pkg_reversed_index = -1
+            missing_wheels: dict[str, set[TargetPlatform]] = {}
             for raw_pkg in reversed(raw_packages):
                 # Iterate in reverse to allow package deletion
                 pkg = LockedPackage.from_dict(raw_pkg, pkg_only=True)
                 assert not pkg.is_shared  # Should not be set in raw uv output
+                is_shared = False
                 marker = pkg.marker
                 matching_platforms: Sequence[TargetPlatform]
                 if not marker:
@@ -2798,7 +3001,7 @@ class LayerEnvBase(ABC):
                         # Environment marker check fails for all target platforms,
                         # so don't even list this package in the layer lock file
                         _LOG.info(
-                            f"{self.env_name}: dropping irrelevant package {pkg.name!r}"
+                            f"{env_name}: dropping irrelevant package {pkg.name!r}"
                         )
                         # Assertion after removal is there because indexing
                         # errors here were previously quite tricky to debug
@@ -2808,9 +3011,7 @@ class LayerEnvBase(ABC):
                     if len(matching_platforms) == num_target_platforms:
                         # Environment marker check passes for all target platforms,
                         # so list this package without a marker in the layer lock file
-                        _LOG.info(
-                            f"{self.env_name}: marking {pkg.name!r} as unconditional"
-                        )
+                        _LOG.info(f"{env_name}: marking {pkg.name!r} as unconditional")
                         pkg = pkg.as_unconditional()
                         del raw_pkg["marker"]  # Omit the marker entirely
                 # Kept this package, so bump the offset for any future removals
@@ -2831,7 +3032,7 @@ class LayerEnvBase(ABC):
                         )
                     )
                     if is_shared:
-                        _LOG.info(f"{self.env_name}: marking {pkg.name!r} as shared")
+                        _LOG.info(f"{env_name}: marking {pkg.name!r} as shared")
                         # Add an unmatchable environment marker to skip package installation
                         raw_pkg["marker"] = pkg._get_shared_marker()
                         # Also clear the "wheels" and "index" metadata for the package
@@ -2841,44 +3042,91 @@ class LayerEnvBase(ABC):
                 # so clear all package metadata that enables source builds
                 for pkg_source_key in _PYLOCK_SOURCE_KEYS:
                     raw_pkg.pop(pkg_source_key, None)
-            # Edit any absolute wheel file paths
-            pylock_dir_path = pylock_path.parent
-            for raw_pkg in raw_packages:
-                for raw_whl in raw_pkg.get("wheels", ()):
-                    _name, local_path = _extract_wheel_details(raw_whl)
-                    if local_path is not None:
-                        if local_path.is_absolute():
-                            # Local paths may technically be anywhere on the system
-                            # Making them relative is intended for use cases where
-                            # they're stored in a consistent location relative to
-                            # the layer lock files (e.g in Git LFS)
-                            # We avoid `walk_up=True` to maintain Python 3.11 compatibility
-                            _LOG.debug(
-                                f"Making {str(local_path)!r} relative to {str(pylock_dir_path)!r})"
-                            )
-                            try:
-                                common_prefix = os.path.commonpath(
-                                    (local_path, pylock_dir_path)
+                if not is_shared:
+                    # Edit any absolute wheel file paths and
+                    # ensure that we have wheels for all target platforms
+                    wheel_names: list[str] = []
+                    for raw_whl in raw_pkg.get("wheels", ()):
+                        name, local_path = _extract_wheel_details(raw_whl)
+                        wheel_names.append(name)
+                        if local_path is not None:
+                            if local_path.is_absolute():
+                                # Local paths may technically be anywhere on the system
+                                # Making them relative is intended for use cases where
+                                # they're stored in a consistent location relative to
+                                # the layer lock files (e.g in Git LFS)
+                                # We avoid `walk_up=True` to maintain Python 3.11 compatibility
+                                _LOG.debug(
+                                    f"{env_name}: Making {str(local_path)!r} relative to {str(pylock_dir_path)!r})"
                                 )
-                            except ValueError as path_exc:
-                                msg = f"Unable to locate {str(local_path)!r} relative to {str(pylock_dir_path)!r}"
-                                self._fail_build(msg, path_exc)
-                            common_path = Path(common_prefix)
-                            relative_local_path = local_path.relative_to(common_path)
-                            relative_pylock_dir_path = pylock_dir_path.relative_to(
-                                common_path
-                            )
-                            prefix_steps = len(relative_pylock_dir_path.parts)
-                            if relative_pylock_dir_path.drive:
-                                # On Windows, relative paths still include a drive component
-                                # (just without the trailing slash). The drive component is
-                                # ignored for the task of stepping up to the common prefix.
-                                prefix_steps -= 1
-                            relative_prefix = [".."] * prefix_steps
-                            relative_path = Path(*relative_prefix) / relative_local_path
-                            raw_whl.pop("url", None)
-                            # Always use forward slashes in the relative wheel paths
-                            raw_whl["path"] = relative_path.as_posix()
+                                try:
+                                    common_prefix = os.path.commonpath(
+                                        (local_path, pylock_dir_path)
+                                    )
+                                except ValueError as path_exc:
+                                    msg = f"{env_name}: Unable to locate {str(local_path)!r} relative to {str(pylock_dir_path)!r}"
+                                    self._fail_build(msg, path_exc)
+                                common_path = Path(common_prefix)
+                                relative_local_path = local_path.relative_to(
+                                    common_path
+                                )
+                                relative_pylock_dir_path = pylock_dir_path.relative_to(
+                                    common_path
+                                )
+                                prefix_steps = len(relative_pylock_dir_path.parts)
+                                if relative_pylock_dir_path.drive:
+                                    # On Windows, relative paths still include a drive component
+                                    # (just without the trailing slash). The drive component is
+                                    # ignored for the task of stepping up to the common prefix.
+                                    prefix_steps -= 1
+                                relative_prefix = [".."] * prefix_steps
+                                relative_path = (
+                                    Path(*relative_prefix) / relative_local_path
+                                )
+                                raw_whl.pop("url", None)
+                                # Always use forward slashes in the relative wheel paths
+                                raw_whl["path"] = relative_path.as_posix()
+                    _LOG.info(
+                        f"{env_name}: ensuring {pkg.name!r} has wheels for target platforms"
+                    )
+                    missed_platforms = _ensure_wheel_availability(
+                        matching_platforms,
+                        wheel_names,
+                        parsed_macosx_target,
+                        parsed_linux_target,
+                    )
+                    if missed_platforms:
+                        missing_wheels[pkg.name] = missed_platforms
+                        missing = sorted(str(platform) for platform in missed_platforms)
+                        _LOG.error(
+                            f"{env_name}: No {pkg.name!r} wheels for {missing!r}"
+                        )
+            if missing_wheels:
+                err_lines = [
+                    f"{env_name}: Some packages did not have wheels for all target platforms:",
+                    "",
+                ]
+                compatible_platforms = set(env_spec.platforms)
+                for pkg_name, missed_platforms in missing_wheels.items():
+                    compatible_platforms -= missed_platforms
+                    missing = sorted(str(platform) for platform in missed_platforms)
+                    err_lines.append(
+                        f"  {pkg_name}: no wheels available for {missing!r}"
+                    )
+                err_lines.append("")
+                if not compatible_platforms:
+                    hint = (
+                        "There are no platforms with wheels available for all packages."
+                    )
+                else:
+                    compatible = sorted(
+                        str(platform) for platform in compatible_platforms
+                    )
+                    hint = (
+                        f"Set platforms to {compatible!r} to limit to available wheels."
+                    )
+                err_lines.append(hint)
+                raise LayerLockError("\n".join(err_lines))
             amended_pylock_text = tomlkit.dumps(pylock_dict)
             executable_name = Path(sys.executable).name.removesuffix(".exe")
             pylock_text_with_header = "\n".join(
@@ -2909,7 +3157,7 @@ class LayerEnvBase(ABC):
         assert not self.needs_lock()
         return self.env_lock
 
-    def get_install_inputs(self) -> tuple[Path, str | None, str | None]:
+    def get_install_inputs(self) -> tuple[Path,]:
         """Ensure the inputs needed to install into this environment are defined and valid."""
         if not self.env_lock.has_valid_lock:
             lock_diagnostics = _format_json(self.env_lock.get_diagnostics())
@@ -2920,11 +3168,7 @@ class LayerEnvBase(ABC):
             ]
             self._fail_build("\n".join(failure_details))
         requirements_path, _pyproject_path, _pinned_constraints = self.get_lock_inputs()
-        return (
-            requirements_path,
-            self.env_spec.linux_target,
-            self.env_spec.macosx_target,
-        )
+        return (requirements_path,)
 
     def install_requirements(self) -> subprocess.CompletedProcess[str]:
         """Install the locked layer requirements into this environment.

@@ -19,6 +19,14 @@ requirements = [
 dynlib_exclude = [
     "triton/**"
 ]
+platforms = [
+    "linux_aarch64",
+    "linux_x86_64",
+    "macosx_arm64",
+    # "macosx_x86_64",  # PyTorch does not publish wheels for macOS on Intel
+    "win_amd64",
+    "win_arm64",
+]
 
 [[frameworks]]
 name = "torch-cu128"
@@ -31,6 +39,14 @@ requirements = [
 ]
 dynlib_exclude = [
     "triton/**"
+]
+platforms = [
+    # "linux_aarch64",  # No wheel available in the PyTorch 2.8.0 CUDA repo
+    "linux_x86_64",
+    # "macosx_arm64",  # CUDA is not used on macOS
+    # "macosx_x86_64",  # PyTorch does not publish wheels for macOS on Intel
+    "win_amd64",
+    # "win_arm64",  # No wheel available in the PyTorch 2.8.0 CUDA repo
 ]
 
 [[applications]]

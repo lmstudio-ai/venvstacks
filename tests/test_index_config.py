@@ -20,8 +20,8 @@ class _CommonTestDetails:
 
 
 _EXPECTED_UV_PLATFORMS = {
-    TargetPlatform.LINUX: "x86_64-unknown-linux-gnu",
-    TargetPlatform.LINUX_AARCH64: "aarch64-unknown-linux-gnu",
+    TargetPlatform.LINUX: "x86_64-manylinux_2_28",
+    TargetPlatform.LINUX_AARCH64: "aarch64-manylinux_2_28",
     TargetPlatform.MACOS_APPLE: "aarch64-apple-darwin",
     TargetPlatform.MACOS_INTEL: "x86_64-apple-darwin",
     TargetPlatform.WINDOWS: "x86_64-pc-windows-msvc",
@@ -48,7 +48,7 @@ class TestDefaultOptions(_CommonTestDetails):
     ) -> None:
         # The platform compatibility tag is mapped to a uv platform identifier
         assert self.TEST_CONFIG._get_uv_pip_install_args(
-            self.BUILD_PATH, build_platform, None
+            self.BUILD_PATH, build_platform, ("manylinux", 2, 28)
         ) == ["--python-platform", uv_platform]
 
     def test_local_wheel_indexes(self) -> None:
@@ -89,7 +89,7 @@ class TestConfiguredOptions(_CommonTestDetails):
     ) -> None:
         # The platform compatibility tag is mapped to a uv platform identifier
         assert self.TEST_CONFIG._get_uv_pip_install_args(
-            self.BUILD_PATH, build_platform, None
+            self.BUILD_PATH, build_platform, ("manylinux", 2, 28)
         ) == ["--python-platform", uv_platform]
 
     def test_local_wheel_indexes(self) -> None:

@@ -82,7 +82,7 @@ EXPECTED_MLX_APP_CUDA_MACOS = LayerDetails(
 )
 
 EXPECTED_TORCH_APP_CPU = LayerDetails(
-    expected_platforms=ALL_PLATFORMS,
+    expected_platforms=ALL_PLATFORMS - {TargetPlatform.MACOS_INTEL},
     expected_versions={
         "torch": {
             Package("torch", "sys_platform == 'darwin'", "2.8.0", shared=True),
@@ -92,7 +92,11 @@ EXPECTED_TORCH_APP_CPU = LayerDetails(
 )
 
 EXPECTED_TORCH_APP_CUDA = LayerDetails(
-    expected_platforms=ALL_PLATFORMS,
+    expected_platforms={
+        # Public CUDA wheels are only available for a subset of platforms
+        TargetPlatform.LINUX,
+        TargetPlatform.WINDOWS,
+    },
     expected_versions={
         "torch": {
             Package("torch", version="2.8.0+cu128", shared=True),
