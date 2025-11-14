@@ -14,6 +14,34 @@ See the fragment files in the `changelog.d directory`_.
 
 .. scriv-insert-here
 
+.. _changelog-0.8.0b2:
+
+0.8.0b2 — 2025-11-15
+====================
+
+Added
+-----
+
+
+- Added :ref:`linux_target <linux-target>` to support per-layer configuration
+  of Linux wheel selection based on the target libc variant and version
+  (added in :issue:`338`)
+- Running on CPython 3.14 is now tested in CI. Note that due to changes in the
+  ``zlib`` standard library module implementation, Windows layer archives built
+  using CPython 3.14 to run the build will typically be smaller than those
+  produced by previous versions (added in :pr:`247`).
+
+Fixed
+-----
+
+- The Python implementation name is now set correctly when evaluating
+  environment markers (resolved in :issue:`331`).
+- Resolved a number of issues related to incorrect layer dependency filtering
+  for different combinations of environment markers, layer target platforms,
+  and package provenance details (initial problem reported in :issue:`333`,
+  additional issues found when updating the test suite to ensure the example
+  stacks are producing the expected layer lock and package summary details).
+
 
 .. _changelog-0.8.0b1:
 
