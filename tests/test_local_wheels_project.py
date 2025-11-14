@@ -114,6 +114,13 @@ class _WheelBuildEnv:
         }
         if venv_bin_dir not in path_envvar:
             env_settings["PATH"] = f"{venv_bin_dir}{os.pathsep}{path_envvar}"
+        # Building local wheels, so ensure the wheel build uses the
+        # same MACOSX_DEPLOYMENT_TARGET setting as the layer installs
+        if sys.platform == "darwin":
+            # ensure the local wheels are built for the running macOS version
+            # even if the calling environment specifies otherwise
+            this_osx = ".".join(platform.mac_ver()[0].split(".")[:2])
+            env_settings["MACOSX_DEPLOYMENT_TARGET"] = this_osx
         result = self._run_uv(
             [
                 "build",
@@ -181,6 +188,11 @@ def _define_build_env(
     ]
     for env in envs:
         env["platforms"] = [build_platform]
+        # the layer build on macOS defaults to targeting an older macOS version,
+        # so ensure uv targets the same version as the wheel builds
+        if sys.platform == "darwin":
+            this_osx = ".".join(platform.mac_ver()[0].split(".")[:2])
+            env["macosx_target"] = this_osx
     amended_spec_text = tomlkit.dumps(stack_spec_dict)
     stack_edit_path.write_text(amended_spec_text, encoding="utf-8", newline="\n")
     # Include "/../" in the spec path in order to test relative path resolution when
@@ -293,16 +305,6 @@ class TestBuildEnvironment(DeploymentTestCase):
         # Loading local wheels, so ignore the date based lock resolution pin,
         # but allow for other env vars to be overridden
         os_env_updates.pop("UV_EXCLUDE_NEWER", None)
-        # Building local wheels, so ensure the layer installation uses the
-        # same MACOSX_DEPLOYMENT_TARGET setting as the wheel build
-        if (
-            sys.platform == "darwin"
-            and "MACOSX_DEPLOYMENT_TARGET" not in os_env_updates
-        ):
-            # the layer build may default to targeting an older macOS version,
-            # so ensure uv targets the same version as the wheel builds
-            this_osx = ".".join(platform.mac_ver()[0].split(".")[:2])
-            os_env_updates["MACOSX_DEPLOYMENT_TARGET"] = this_osx
         os_env_patch = mock.patch.dict("os.environ", os_env_updates)
         os_env_patch.start()
         self.addCleanup(os_env_patch.stop)
