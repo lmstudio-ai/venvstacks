@@ -29,6 +29,10 @@ environment or ``python -m sklearn_clustering`` in the
 .. literalinclude:: ../examples/sklearn/venvstacks.toml
   :language: TOML
 
+The generated layer lock files, lock metadata files, and layer package summaries
+for this stack can be found in the
+`scikit-learn example stack's requirements folder <https://github.com/lmstudio-ai/venvstacks/tree/main/examples/sklearn/requirements>`__
+
 JupyterLab
 ==========
 
@@ -40,6 +44,10 @@ will execute JupyterLab.
 
 .. literalinclude:: ../examples/jupyterlab/venvstacks.toml
   :language: TOML
+
+The generated layer lock files, lock metadata files, and layer package summaries
+for this stack can be found in the
+`JupyterLab example stack's requirements folder <https://github.com/lmstudio-ai/venvstacks/tree/main/examples/jupyterlab/requirements>`__
 
 Apple MLX
 =========
@@ -66,6 +74,10 @@ filtered out of the layer lock file).
 .. literalinclude:: ../examples/mlx/venvstacks.toml
   :language: TOML
 
+The generated layer lock files, lock metadata files, and layer package summaries
+for this stack can be found in the
+`Apple MLX example stack's requirements folder <https://github.com/lmstudio-ai/venvstacks/tree/main/examples/mlx/requirements>`__
+
 PyTorch
 =======
 
@@ -83,5 +95,9 @@ Running ``python -m report_torch_cuda_version`` in the ``app-cpu``,
 being used by PyTorch in that environment (``None`` indicates the use of the
 CPU).
 
-.. literalinclude:: ../examples/mlx/venvstacks.toml
+.. literalinclude:: ../examples/pytorch/venvstacks.toml
   :language: TOML
+
+The generated layer lock files, lock metadata files, and layer package summaries
+for this stack can be found in the
+`PyTorch example stack's requirements folder <https://github.com/lmstudio-ai/venvstacks/tree/main/examples/pytorch/requirements>`__
