@@ -7,7 +7,7 @@
 <meta content="website" name="og:type" />
 <meta content="https://venvstacks.lmstudio.ai/source-builds/" name="og:url" />
 <meta content="venvstacks Package Source Builds - venvstacks Documentation" name="og:description" />
-<link rel="search" title="Search" href="../search/"><link rel="next" title="Design Discussion" href="../design/"><link rel="prev" title="Environment Stack File Formats" href="../file-formats/">
+<link rel="search" title="Search" href="../search/"><link rel="next" title="Design Discussion" href="../design/"><link rel="prev" title="Example Stacks" href="../examples/">
         <link rel="canonical" href="https://venvstacks.lmstudio.ai/source-builds/">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
@@ -197,10 +197,12 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../overview/">Project Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary/">Essential Terms and Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/">Concepts of Operation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../file-formats/">Environment Stack File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/">Example Stacks</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Building Packages from Source</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/">Design Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary/">Essential Terms</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/">Python API</a><input aria-label="Toggle navigation of Python API" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/cli/">venvstacks.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/pack_venv/">venvstacks.pack_venv</a></li>
@@ -291,20 +293,14 @@
         <article role="main" id="furo-main-content">
           <section id="building-packages-from-source">
 <h1>Building Packages from Source<a class="headerlink" href="#building-packages-from-source" title="Link to this heading">¶</a></h1>
-<section id="reproducible-builds">
-<h2>Reproducible Builds<a class="headerlink" href="#reproducible-builds" title="Link to this heading">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> is designed around ensuring that the layer archives that it
-produces are <a class="reference external" href="https://reproducible-builds.org/">reproducible</a>: if the same
+<section id="disallowing-implicit-source-builds">
+<h2>Disallowing implicit source builds<a class="headerlink" href="#disallowing-implicit-source-builds" title="Link to this heading">¶</a></h2>
+<p>As described in <a class="reference internal" href="../concepts/#publishing-archives"><span class="std std-ref">Publishing layer archives</span></a>, published layer archives are
+expected to be <a class="reference external" href="https://reproducible-builds.org/">reproducible</a>: if the same
 stack definition is built again later with the same
 <a class="reference external" href="https://reproducible-builds.org/docs/perimeter/">build environment</a>,
 then the resulting layer archives will be byte-for-byte identical with
-those produced by the original stack build. In general, keeping the versions of
-<code class="docutils literal notranslate"><span class="pre">venvstacks</span></code>, <code class="docutils literal notranslate"><span class="pre">uv</span></code>, and <code class="docutils literal notranslate"><span class="pre">pbs-installer</span></code> consistent should produce
-consistent output artifacts. Note that changing the Python runtime used to
-build the layers <em>may</em> change the hashes if the standard library’s archiving
-implementation changes (for example, CPython 3.14 switched to <code class="docutils literal notranslate"><span class="pre">zlib-ng</span></code>,
-which means most archives generated for Windows layers will be smaller than
-previous versions when generated on CPython 3.14 or later)</p>
+those produced by the original stack build.</p>
 <p>One of the ways this is achieved is by requiring that all Python packages
 included in a stack build be provided as pre-built
 <a class="reference external" href="https://packaging.python.org/en/latest/specifications/binary-distribution-format/">binary wheels</a>.
@@ -408,6 +404,11 @@ paths, so that relative positioning must be maintained between the locking
 environment and the layer building environments (for example, if using a git
 repository to maintain the history of the layer lock files, checking the local
 wheels into the same repository with Git-LFS).</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.8.0: </span>With the introduction of cross-platform layer lock files,
+wheels for all relevant target platforms must be present on the system
+used to lock the layers (<a class="reference internal" href="../changelog/#changelog-0-8-0"><span class="std std-ref">release details</span></a>).</p>
+</div>
 </section>
 </section>
 </section>
@@ -426,14 +427,14 @@ wheels into the same repository with Git-LFS).</p>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../file-formats/">
+          <a class="prev-page" href="../examples/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Environment Stack File Formats</div>
+                <div class="title">Example Stacks</div>
                 
               </div>
             </a>
@@ -468,7 +469,7 @@ wheels into the same repository with Git-LFS).</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Building Packages from Source</a><ul>
-<li><a class="reference internal" href="#reproducible-builds">Reproducible Builds</a></li>
+<li><a class="reference internal" href="#disallowing-implicit-source-builds">Disallowing implicit source builds</a></li>
 <li><a class="reference internal" href="#building-artifacts-from-source">Building artifacts from source</a><ul>
 <li><a class="reference internal" href="#systematic-builds-of-entire-dependency-trees">Systematic builds of entire dependency trees</a></li>
 <li><a class="reference internal" href="#selective-builds-of-required-packages">Selective builds of required packages</a></li>

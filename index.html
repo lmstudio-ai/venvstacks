@@ -197,10 +197,12 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul>
 <li class="toctree-l1"><a class="reference internal" href="overview/">Project Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="glossary/">Essential Terms and Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/">Concepts of Operation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="file-formats/">Environment Stack File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/">Example Stacks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="source-builds/">Building Packages from Source</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design/">Design Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary/">Essential Terms</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="api/">Python API</a><input aria-label="Toggle navigation of Python API" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="api/cli/">venvstacks.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/pack_venv/">venvstacks.pack_venv</a></li>
@@ -329,7 +331,10 @@ make future Python version upgrades more irritating):</p>
 <li class="toctree-l2"><a class="reference internal" href="overview/#contributing-to-venvstacks-development">Contributing to <code class="docutils literal notranslate"><span class="pre">venvstacks</span></code> development</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="glossary/">Essential Terms and Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/">Concepts of Operation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="concepts/#expected-usage-model">Expected Usage Model</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="file-formats/">Environment Stack File Formats</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="file-formats/#file-naming-and-formats">File naming and formats</a></li>
 <li class="toctree-l2"><a class="reference internal" href="file-formats/#defining-virtual-environment-stacks">Defining virtual environment stacks</a></li>
@@ -338,8 +343,15 @@ make future Python version upgrades more irritating):</p>
 <li class="toctree-l2"><a class="reference internal" href="file-formats/#published-layer-metadata">Published layer metadata</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="examples/">Example Stacks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/#scikit-learn">scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/#jupyterlab">JupyterLab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/#apple-mlx">Apple MLX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/#pytorch">PyTorch</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="source-builds/">Building Packages from Source</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="source-builds/#reproducible-builds">Reproducible Builds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source-builds/#disallowing-implicit-source-builds">Disallowing implicit source builds</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source-builds/#building-artifacts-from-source">Building artifacts from source</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source-builds/#including-private-artifacts-in-layer-builds">Including private artifacts in layer builds</a></li>
 </ul>
@@ -349,6 +361,7 @@ make future Python version upgrades more irritating):</p>
 <li class="toctree-l2"><a class="reference internal" href="design/#technical">Technical</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="glossary/">Essential Terms</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/">Python API</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="api/cli/">venvstacks.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/pack_venv/">venvstacks.pack_venv</a></li>
