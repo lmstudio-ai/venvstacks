@@ -31,7 +31,7 @@ from support import (
 from venvstacks.stacks import (
     BuildEnvironment,
     LayerBaseName,
-    LayerInstallationError,
+    LayerLockError,
     PackageIndexConfig,
     StackSpec,
     get_build_platform,
@@ -331,7 +331,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         wheel_env_name = LayerBaseName("both-wheels")
         wheel_env = self.build_env.frameworks[wheel_env_name]
         wheel_env.env_spec.macosx_target = f"{major - 1}.{minor}"
-        with pytest.raises(LayerInstallationError, match="framework-both-wheels"):
+        with pytest.raises(LayerLockError, match="framework-both-wheels"):
             self.build_env.create_environments()
 
     def test_locking_and_publishing(self) -> None:
