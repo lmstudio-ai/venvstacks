@@ -328,7 +328,7 @@ class TestBuildEnvironment(DeploymentTestCase):
         # Local test wheels are built for the current macOS version,
         # so targeting an older macOS version should fail
         major, minor = [*map(int, platform.mac_ver()[0].split(".")[:2])]
-        wheel_env_name = LayerBaseName("framework-both-wheels")
+        wheel_env_name = LayerBaseName("both-wheels")
         wheel_env = self.build_env.frameworks[wheel_env_name]
         wheel_env.env_spec.macosx_target = f"{major - 1}.{minor}"
         with pytest.raises(LayerInstallationError, match="framework-both-wheels"):
