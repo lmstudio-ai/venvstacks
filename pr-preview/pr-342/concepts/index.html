@@ -351,7 +351,7 @@ as follows:</p>
 </ul>
 <p>The <a class="reference internal" href="../overview/#overview"><span class="std std-ref">Project Overview</span></a> provides examples of executing the listed commands,
 while the sections below go into more detail regarding each of the steps.</p>
-<p>The <a class="reference internal" href="../examples/#example-stacks"><span class="std std-ref">Example Stacks</span></a> page gives a number of example stacks illustrating
+<p>The <a class="reference internal" href="../examples/#example-stacks"><span class="std std-ref">Example Stacks</span></a> shows gives a number of example stacks illustrating
 various features that stack definitions support.</p>
 <p>The <a class="reference internal" href="../file-formats/#stack-specification-format"><span class="std std-ref">Environment Stack File Formats</span></a> format page provides details of the
 layer specification format to be used in a stack definition file, as well
@@ -374,9 +374,6 @@ adjacent to the stack definition file.</p>
 are adjusted such that only installation from binary packages is permitted,
 and so upper layers don’t attempt to install packages that will be provided
 at runtime by lower layers.</p>
-<p>As the layer lock files are cross-platform, the entire stack can be locked
-anywhere, and the resulting lock files committed to source control alongside
-the stack definition file, ready to be built.</p>
 <p>Alongside each layer lock file, the locking step also generates a layer lock
 metadata file. This metadata file records the combined hash of the transitively
 locked requirement set, together with three separate input hashes:</p>
@@ -390,6 +387,17 @@ the target macOS version)</p></li>
 not the layer version should be updated for implicitly versioned layers
 (for example, the name and content hash of the launch module in app layers)</p></li>
 </ul>
+<p>An easier to read summary of the included
+packages and their versions and summaries is generated alongside each layer
+lock file. These summary files also list which packages are expected to
+be imported from lower layers rather than being included directly in the
+layer’s own environment.</p>
+<p>As the layer lock files are cross-platform, the entire stack can be locked
+anywhere, and the resulting lock files committed to source control alongside
+the stack definition file, ready to be built. The <a class="reference internal" href="../examples/#example-stacks"><span class="std std-ref">Example Stacks</span></a> page
+includes links to the version control folders containing the generated layer
+lock files, layer lock metadata files, and layer package summaries for
+each example stack.</p>
 <div class="versionchanged">
 <p><span class="versionmodified changed">Changed in version 0.8.0: </span>Layer lock files are now cross-platform (using the <code class="docutils literal notranslate"><span class="pre">pylock.toml</span></code> format)
 and only need to be locked once on any supported platform.
@@ -449,7 +457,9 @@ option to the publication command being used to automatically add the
 relevant target platform compatibility tag to each built artifact.</p>
 <p>As part of the publication process, metadata files describing each artifact
 (including the other layers it expects to have available when deployed) are
-emitted alongside the generated artifacts.</p>
+emitted alongside the generated artifacts. A combined metadata file
+describing all of the layers in the entire stack specification is also
+published.</p>
 <p>These published layer archives are expected to be
 <a class="reference external" href="https://reproducible-builds.org/">reproducible</a>: if the same
 stack definition is built again later with the same
@@ -464,6 +474,12 @@ standard library’s archiving implementation changes (for example, CPython 3.14
 switched to <code class="docutils literal notranslate"><span class="pre">zlib-ng</span></code> on Windows, which means most archives generated for
 Windows layers will be smaller than previous versions when generated on
 CPython 3.14 or later)</p>
+<p>The
+<a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/tree/main/tests/sample_project/expected_manifests">expected manifests</a>
+for the test suite’s sample project provide an example of these artifact
+metadata files (they are included in source control as part of a test case that
+ensures relocking, rebuilding, and republishing the sample project only changes
+the generated files and artifacts when intending to do so).</p>
 </section>
 <section id="distributing-layer-archives-to-target-platforms">
 <h3>Distributing layer archives to target platforms<a class="headerlink" href="#distributing-layer-archives-to-target-platforms" title="Link to this heading">¶</a></h3>
@@ -472,7 +488,7 @@ applications, it doesn’t make any assumptions regarding the distribution
 mechanism used to upload the layer archives and their metadata, nor the
 mechanism used to determine which archives to download and install at
 runtime.</p>
-<p>The publishes metadata files contain sufficient information to allow these
+<p>The published metadata files contain sufficient information to allow these
 selections to be made dynamically based on the information recorded there,
 but it may also make sense in some use cases for the embedding application to
 be tightly coupled to the defined set of available layers and maintain its

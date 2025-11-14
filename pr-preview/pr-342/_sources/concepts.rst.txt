@@ -60,7 +60,7 @@ as follows:
 The :ref:`overview` provides examples of executing the listed commands,
 while the sections below go into more detail regarding each of the steps.
 
-The :ref:`example-stacks` page gives a number of example stacks illustrating
+The :ref:`example-stacks` shows gives a number of example stacks illustrating
 various features that stack definitions support.
 
 The :ref:`stack-specification-format` format page provides details of the
@@ -88,10 +88,6 @@ are adjusted such that only installation from binary packages is permitted,
 and so upper layers don't attempt to install packages that will be provided
 at runtime by lower layers.
 
-As the layer lock files are cross-platform, the entire stack can be locked
-anywhere, and the resulting lock files committed to source control alongside
-the stack definition file, ready to be built.
-
 Alongside each layer lock file, the locking step also generates a layer lock
 metadata file. This metadata file records the combined hash of the transitively
 locked requirement set, together with three separate input hashes:
@@ -104,6 +100,19 @@ locked requirement set, together with three separate input hashes:
 * Layer version inputs: a combined hash of other inputs that affect whether or
   not the layer version should be updated for implicitly versioned layers
   (for example, the name and content hash of the launch module in app layers)
+
+An easier to read summary of the included
+packages and their versions and summaries is generated alongside each layer
+lock file. These summary files also list which packages are expected to
+be imported from lower layers rather than being included directly in the
+layer's own environment.
+
+As the layer lock files are cross-platform, the entire stack can be locked
+anywhere, and the resulting lock files committed to source control alongside
+the stack definition file, ready to be built. The :ref:`example-stacks` page
+includes links to the version control folders containing the generated layer
+lock files, layer lock metadata files, and layer package summaries for
+each example stack.
 
 .. versionchanged:: 0.8.0
 
@@ -171,7 +180,9 @@ relevant target platform compatibility tag to each built artifact.
 
 As part of the publication process, metadata files describing each artifact
 (including the other layers it expects to have available when deployed) are
-emitted alongside the generated artifacts.
+emitted alongside the generated artifacts. A combined metadata file
+describing all of the layers in the entire stack specification is also
+published.
 
 These published layer archives are expected to be
 `reproducible <https://reproducible-builds.org/>`__: if the same
@@ -189,6 +200,13 @@ switched to ``zlib-ng`` on Windows, which means most archives generated for
 Windows layers will be smaller than previous versions when generated on
 CPython 3.14 or later)
 
+The 
+`expected manifests <https://github.com/lmstudio-ai/venvstacks/tree/main/tests/sample_project/expected_manifests>`__
+for the test suite's sample project provide an example of these artifact
+metadata files (they are included in source control as part of a test case that
+ensures relocking, rebuilding, and republishing the sample project only changes
+the generated files and artifacts when intending to do so).
+
 Distributing layer archives to target platforms
 -----------------------------------------------
 
@@ -198,7 +216,7 @@ mechanism used to upload the layer archives and their metadata, nor the
 mechanism used to determine which archives to download and install at
 runtime.
 
-The publishes metadata files contain sufficient information to allow these
+The published metadata files contain sufficient information to allow these
 selections to be made dynamically based on the information recorded there,
 but it may also make sense in some use cases for the embedding application to
 be tightly coupled to the defined set of available layers and maintain its

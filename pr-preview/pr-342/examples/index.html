@@ -353,6 +353,9 @@ environment or <code class="docutils literal notranslate"><span class="pre">pyth
 <span class="n">exclude-newer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;2025-10-11T00:00:00Z&quot;</span>
 </pre></div>
 </div>
+<p>The generated layer lock files, lock metadata files, and layer package summaries
+for this stack can be found in the
+<a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/tree/main/examples/sklearn/requirements">scikit-learn example stack’s requirements folder</a></p>
 </section>
 <section id="jupyterlab">
 <h2>JupyterLab<a class="headerlink" href="#jupyterlab" title="Link to this heading">¶</a></h2>
@@ -376,6 +379,9 @@ will execute JupyterLab.</p>
 <span class="n">exclude-newer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;2025-10-11T00:00:00Z&quot;</span>
 </pre></div>
 </div>
+<p>The generated layer lock files, lock metadata files, and layer package summaries
+for this stack can be found in the
+<a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/tree/main/examples/jupyterlab/requirements">JupyterLab example stack’s requirements folder</a></p>
 </section>
 <section id="apple-mlx">
 <h2>Apple MLX<a class="headerlink" href="#apple-mlx" title="Link to this heading">¶</a></h2>
@@ -474,6 +480,9 @@ filtered out of the layer lock file).</p>
 <span class="c1"># as not all layers are built for all platforms</span>
 </pre></div>
 </div>
+<p>The generated layer lock files, lock metadata files, and layer package summaries
+for this stack can be found in the
+<a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/tree/main/examples/mlx/requirements">Apple MLX example stack’s requirements folder</a></p>
 </section>
 <section id="pytorch">
 <h2>PyTorch<a class="headerlink" href="#pytorch" title="Link to this heading">¶</a></h2>
@@ -492,81 +501,92 @@ CPU).</p>
 <span class="k">[[runtimes]]</span>
 <span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython3.11&quot;</span>
 <span class="n">python_implementation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython@3.11.13&quot;</span>
-<span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
-<span class="n">platforms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="s2">&quot;macosx_arm64&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;linux_x86_64&quot;</span><span class="p">,</span>
+<span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="c1"># Share a common numpy across the different torch variants</span>
+<span class="w">    </span><span class="s2">&quot;numpy&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="k">[[frameworks]]</span>
-<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mlx&quot;</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;torch-cpu&quot;</span>
 <span class="n">runtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython3.11&quot;</span>
-<span class="n">linux_target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;glibc@2.35&quot;</span>
-<span class="n">macosx_target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;14&quot;</span>
+<span class="n">package_indexes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">torch</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;pytorch-cpu&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="c1"># priority_indexes = [&quot;pytorch-cpu&quot;]</span>
 <span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="s2">&quot;mlx==0.29.3&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;mlx[cpu]; sys_platform == &#39;linux&#39;&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;torch==2.8.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="c1"># Skip listing numpy, so numpy updates don&#39;t automatically invalidate the layer lock</span>
 <span class="p">]</span>
-<span class="c1"># Platform restrictions are inherited from lower layers</span>
+<span class="n">dynlib_exclude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;triton/**&quot;</span>
+<span class="p">]</span>
 
 <span class="k">[[frameworks]]</span>
-<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mlx-cuda&quot;</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;torch-cu128&quot;</span>
 <span class="n">runtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython3.11&quot;</span>
-<span class="n">linux_target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;glibc@2.35&quot;</span>
-<span class="n">macosx_target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;14&quot;</span>
+<span class="n">package_indexes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">torch</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;pytorch-cu128&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="c1"># priority_indexes = [&quot;pytorch-cu128&quot;]</span>
 <span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="s2">&quot;mlx[cuda]==0.29.3&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;torch==2.8.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="c1"># Skip listing numpy, so numpy updates don&#39;t automatically invalidate the layer lock</span>
 <span class="p">]</span>
-<span class="c1"># A separate CUDA-based layer stack is really only needed on Linux,</span>
-<span class="c1"># but is defined for macOS to demonstrate filtering of unused dependencies</span>
-
-<span class="k">[[applications]]</span>
-<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mlx-example&quot;</span>
-<span class="n">launch_module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;report_mlx_version.py&quot;</span>
-<span class="n">frameworks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;mlx&quot;</span><span class="p">]</span>
-<span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="c1"># Exact version pin is inherited from the framework layer</span>
-<span class="w">    </span><span class="s2">&quot;mlx&quot;</span><span class="p">,</span>
-<span class="p">]</span>
-<span class="c1"># Platform restrictions are inherited from lower layers</span>
-
-<span class="k">[[applications]]</span>
-<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mlx-cuda-linux&quot;</span>
-<span class="n">launch_module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;report_mlx_version.py&quot;</span>
-<span class="n">frameworks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;mlx-cuda&quot;</span><span class="p">]</span>
-<span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="c1"># Exact version pin is inherited from the framework layer</span>
-<span class="w">    </span><span class="s2">&quot;mlx[cuda]&quot;</span><span class="p">,</span>
-<span class="p">]</span>
-<span class="c1"># macos-only dependencies should be omitted from the layer summary</span>
-<span class="n">platforms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="s2">&quot;linux_x86_64&quot;</span><span class="p">,</span>
+<span class="n">dynlib_exclude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;triton/**&quot;</span>
 <span class="p">]</span>
 
 <span class="k">[[applications]]</span>
-<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mlx-cuda-macos&quot;</span>
-<span class="n">launch_module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;report_mlx_version.py&quot;</span>
-<span class="n">frameworks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;mlx-cuda&quot;</span><span class="p">]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpu&quot;</span>
+<span class="n">launch_module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;report_torch_cuda_version.py&quot;</span>
+<span class="n">frameworks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;torch-cpu&quot;</span><span class="p">]</span>
 <span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="c1"># Exact version pin is inherited from the framework layer</span>
-<span class="w">    </span><span class="s2">&quot;mlx[cuda]&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;torch&quot;</span><span class="p">,</span>
 <span class="p">]</span>
-<span class="c1"># Linux-only dependencies should be omitted from the layer summary</span>
-<span class="n">platforms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="s2">&quot;macosx_arm64&quot;</span><span class="p">,</span>
+
+<span class="k">[[applications]]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cu128&quot;</span>
+<span class="n">launch_module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;report_torch_cuda_version.py&quot;</span>
+<span class="n">frameworks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;torch-cu128&quot;</span><span class="p">]</span>
+<span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="c1"># Exact version pin is inherited from the framework layer</span>
+<span class="w">    </span><span class="s2">&quot;torch&quot;</span><span class="p">,</span>
 <span class="p">]</span>
+
+<span class="k">[[applications]]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cu128-or-cpu&quot;</span>
+<span class="n">launch_module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;report_torch_cuda_version.py&quot;</span>
+<span class="c1"># Both the CUDA and non-CUDA frameworks are added to the import path,</span>
+<span class="c1"># so this app will work as long as *either* of those layers is installed</span>
+<span class="c1"># If both are available, it uses the CUDA layer (as it is listed first)</span>
+<span class="c1"># However, the layer locking needs to be told that it is expected that</span>
+<span class="c1"># the two layers specify different source indexes, and given a conflict,</span>
+<span class="c1"># the pytorch-cu128 index should be used in preference to pytorch-cpu</span>
+<span class="n">index_overrides</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">pytorch-cpu</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;pytorch-cu128&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="n">frameworks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;torch-cu128&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;torch-cpu&quot;</span><span class="p">]</span>
+<span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="c1"># Exact version pin is inherited from the framework layer</span>
+<span class="w">    </span><span class="s2">&quot;torch&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
 
 <span class="k">[tool.uv]</span>
-<span class="n">exclude-newer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;2025-10-19T00:00:00Z&quot;</span>
-<span class="c1"># Only resolve for the relevant target platforms</span>
-<span class="n">environments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="s2">&quot;sys_platform == &#39;darwin&#39; and platform_machine == &#39;arm64&#39;&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;sys_platform == &#39;linux&#39; and platform_machine == &#39;x86_64&#39;&quot;</span><span class="p">,</span>
-<span class="p">]</span>
-<span class="c1"># required-environments is intentionally NOT set,</span>
-<span class="c1"># as not all layers are built for all platforms</span>
+<span class="c1"># exclude-newer = &quot;2025-10-11T00:00:00Z&quot;</span>
+<span class="c1"># The custom torch registries do not support exclude-newer,</span>
+<span class="c1"># and that currently requires avoiding the feature entirely</span>
+<span class="c1"># https://github.com/astral-sh/uv/issues/12449</span>
+
+<span class="k">[[tool.uv.index]]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;pytorch-cpu&quot;</span>
+<span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://download.pytorch.org/whl/cpu/&quot;</span>
+<span class="n">explicit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="k">[[tool.uv.index]]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;pytorch-cu128&quot;</span>
+<span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://download.pytorch.org/whl/cu128/&quot;</span>
+<span class="n">explicit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 </pre></div>
 </div>
+<p>The generated layer lock files, lock metadata files, and layer package summaries
+for this stack can be found in the
+<a class="reference external" href="https://github.com/lmstudio-ai/venvstacks/tree/main/examples/pytorch/requirements">PyTorch example stack’s requirements folder</a></p>
 </section>
 </section>
 
