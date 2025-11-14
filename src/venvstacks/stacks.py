@@ -1431,10 +1431,6 @@ class LayerSpecBase(ABC):
         repr=False, default_factory=PackageIndexConfig
     )
 
-    # Derived from other fields in __post_init__
-    _parsed_linux_target: TargetVersionLinux = field(repr=False, init=False)
-    _parsed_macosx_target: TargetVersionMacOSX = field(repr=False, init=False)
-
     @classmethod
     def _infer_platforms(cls, fields: Mapping[str, Any]) -> Sequence[TargetPlatform]:
         return TargetPlatforms.get_default_target_platforms()
@@ -1537,18 +1533,14 @@ class LayerSpecBase(ABC):
                     f"({index_name})"
                 )
                 raise LayerSpecError(msg)
-        # Parse the Linux target and cache the result
+        # Parse the Linux target (which validates and caches the result)
         try:
-            self._parsed_linux_target = TargetPlatform._parse_linux_target(
-                self.linux_target
-            )
+            TargetPlatform._parse_linux_target(self.linux_target)
         except ValueError as exc:
             raise LayerSpecError(str(exc)) from None
-        # Parse the macOS target and cache the result
+        # Parse the macOS target (which validates and caches the result)
         try:
-            self._parsed_macosx_target = TargetPlatform._parse_macosx_target(
-                self.macosx_target
-            )
+            TargetPlatform._parse_macosx_target(self.macosx_target)
         except ValueError as exc:
             raise LayerSpecError(str(exc)) from None
 
@@ -2759,7 +2751,7 @@ class LayerEnvBase(ABC):
             *self.index_config._get_uv_pip_install_args(
                 self.build_path,
                 self.build_platform,
-                env_spec._parsed_linux_target,
+                TargetPlatform._parse_linux_target(env_spec.linux_target),
             ),
             "--quiet",
             "--no-color",
@@ -2979,8 +2971,12 @@ class LayerEnvBase(ABC):
             raw_pkg: dict[str, Any]
             pylock_dir_path = pylock_path.parent
             env_spec = self.env_spec
-            parsed_linux_target = env_spec._parsed_linux_target
-            parsed_macosx_target = env_spec._parsed_macosx_target
+            parsed_linux_target = TargetPlatform._parse_linux_target(
+                env_spec.linux_target
+            )
+            parsed_macosx_target = TargetPlatform._parse_macosx_target(
+                env_spec.macosx_target
+            )
             # Process the environment markers and other details for locked packages
             available_packages = set(pinned_constraints)
             packages_by_name: dict[str, list[LockedPackage]] = {}
