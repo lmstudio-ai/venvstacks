@@ -3103,7 +3103,7 @@ class LayerEnvBase(ABC):
                         )
             if missing_wheels:
                 err_lines = [
-                    "Some packages did not have wheels for all target platforms:",
+                    f"{env_name}: Some packages did not have wheels for all target platforms:",
                     "",
                 ]
                 compatible_platforms = set(env_spec.platforms)
