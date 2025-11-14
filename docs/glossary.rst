@@ -1,8 +1,8 @@
 .. _glossary:
 
-----------------------------
-Essential Terms and Concepts
-----------------------------
+---------------
+Essential Terms
+---------------
 
 .. meta::
    :og:title: venvstacks Glossary - venvstacks Documentation
@@ -83,5 +83,6 @@ Essential Terms and Concepts
    environment stack
       An application layer with its supporting framework and base runtime layers.
 
+   stack definition
    stack specification
       A ``venvstacks.toml`` file that defines one or more environment stacks.

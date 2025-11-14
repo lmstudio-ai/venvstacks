@@ -53,10 +53,12 @@ make future Python version upgrades more irritating):
    :maxdepth: 2
 
    overview
-   glossary
+   concepts
    file-formats
+   examples
    source-builds
    design
+   glossary
    api/index
    development/index
    changelog
