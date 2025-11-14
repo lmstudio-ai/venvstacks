@@ -323,6 +323,11 @@ class TestBuildEnvironment(DeploymentTestCase):
         build_env.create_environments()
         self.check_build_environments(self.build_env.all_environments())
 
+    # TODO: Define a negative Linux wheel selection test case based on renaming
+    #       the built wheel archives. Simply setting `linux_target` won't work
+    #       because the vague `linux_x86_64` tag on the built wheels is always
+    #       accepted regardless of the nominal Linux platform target version.
+
     @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test case")
     def test_macosx_wheel_selection(self) -> None:
         # Local test wheels are built for the current macOS version,
