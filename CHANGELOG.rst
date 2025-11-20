@@ -10,9 +10,19 @@ See the fragment files in the `changelog.d directory`_.
 
 .. _changelog.d directory: https://github.com/lmstudio-ai/venvstacks/tree/main/docs/changelog.d
 
+.. scriv-insert-here
+
 .. _changelog-0.8.0:
 
-.. scriv-insert-here
+0.8.0 — 2025-11-20
+==================
+
+Changed
+-------
+
+- As part of switching to cross-platform layer locks, the generated lock files
+  are now checked to ensure relevant wheel entries are present for all target
+  platforms nominally supported by the layer (resolved in :issue:`326`).
 
 .. _changelog-0.8.0b2:
 
