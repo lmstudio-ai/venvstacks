@@ -317,6 +317,14 @@ environment or <code class="docutils literal notranslate"><span class="pre">pyth
 <span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="s2">&quot;scikit-learn&quot;</span><span class="p">,</span>
 <span class="p">]</span>
+<span class="n">platforms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;linux_aarch64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;linux_x86_64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;macosx_arm64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;macosx_x86_64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;win_amd64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="c1"># &quot;win_arm64&quot;,  # No wheel available on PyPI</span>
+<span class="p">]</span>
 
 <span class="k">[[frameworks]]</span>
 <span class="c1"># Use a non-default GUI due to problems with Tcl/Tk in python-build-standalone:</span>
@@ -327,6 +335,15 @@ environment or <code class="docutils literal notranslate"><span class="pre">pyth
 <span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="s2">&quot;pyside6&quot;</span><span class="p">,</span>
 <span class="p">]</span>
+<span class="n">platforms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="c1"># &quot;linux_aarch64&quot;,  # No wheel available on PyPI</span>
+<span class="w">    </span><span class="s2">&quot;linux_x86_64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;macosx_arm64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;macosx_x86_64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;win_amd64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;win_arm64&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
 
 
 <span class="k">[[applications]]</span>
@@ -374,6 +391,15 @@ will execute JupyterLab.</p>
 <span class="n">launch_module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;run_jupyterlab.py&quot;</span>
 <span class="n">runtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cpython3.11&quot;</span>
 <span class="n">requirements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;jupyterlab&quot;</span><span class="p">]</span>
+
+<span class="n">platforms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;linux_aarch64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;linux_x86_64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;macosx_arm64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;macosx_x86_64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;win_amd64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="c1"># &quot;win_amd64&quot;,  # No public pyyaml wheel available</span>
+<span class="p">]</span>
 
 <span class="k">[tool.uv]</span>
 <span class="n">exclude-newer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;2025-10-11T00:00:00Z&quot;</span>
@@ -518,6 +544,14 @@ CPU).</p>
 <span class="n">dynlib_exclude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="s2">&quot;triton/**&quot;</span>
 <span class="p">]</span>
+<span class="n">platforms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;linux_aarch64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;linux_x86_64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;macosx_arm64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="c1"># &quot;macosx_x86_64&quot;,  # PyTorch does not publish wheels for macOS on Intel</span>
+<span class="w">    </span><span class="s2">&quot;win_amd64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;win_arm64&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 
 <span class="k">[[frameworks]]</span>
 <span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;torch-cu128&quot;</span>
@@ -530,6 +564,14 @@ CPU).</p>
 <span class="p">]</span>
 <span class="n">dynlib_exclude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="s2">&quot;triton/**&quot;</span>
+<span class="p">]</span>
+<span class="n">platforms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="c1"># &quot;linux_aarch64&quot;,  # No wheel available in the PyTorch 2.8.0 CUDA repo</span>
+<span class="w">    </span><span class="s2">&quot;linux_x86_64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="c1"># &quot;macosx_arm64&quot;,  # CUDA is not used on macOS</span>
+<span class="w">    </span><span class="c1"># &quot;macosx_x86_64&quot;,  # PyTorch does not publish wheels for macOS on Intel</span>
+<span class="w">    </span><span class="s2">&quot;win_amd64&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="c1"># &quot;win_arm64&quot;,  # No wheel available in the PyTorch 2.8.0 CUDA repo</span>
 <span class="p">]</span>
 
 <span class="k">[[applications]]</span>
