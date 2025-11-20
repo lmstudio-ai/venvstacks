@@ -34,4 +34,4 @@ pbs-installer="2025.8.27"
 # Metadata updates can also be requested when the
 # expected layer content in the sample project changes
 
-# Last requested update: fixes to layer package filtering
+# Last requested update: always set Linux and macOS targets
